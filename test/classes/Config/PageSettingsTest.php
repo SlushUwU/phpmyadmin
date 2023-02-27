@@ -7,9 +7,7 @@ namespace PhpMyAdmin\Tests\Config;
 use PhpMyAdmin\Config\PageSettings;
 use PhpMyAdmin\Tests\AbstractTestCase;
 
-/**
- * @covers \PhpMyAdmin\Config\PageSettings
- */
+/** @covers \PhpMyAdmin\Config\PageSettings */
 class PageSettingsTest extends AbstractTestCase
 {
     /**
@@ -18,9 +16,13 @@ class PageSettingsTest extends AbstractTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
         parent::setLanguage();
+
         parent::setGlobalConfig();
+
         parent::setTheme();
+
         $GLOBALS['dbi'] = $this->createDatabaseInterface();
         $GLOBALS['server'] = 1;
         $GLOBALS['db'] = 'db';
@@ -56,7 +58,7 @@ class PageSettingsTest extends AbstractTestCase
             . '<form method="post" '
             . 'action="index.php&#x3F;route&#x3D;&#x25;2F&amp;db&#x3D;db&amp;server&#x3D;1&amp;lang&#x3D;en" '
             . 'class="config-form disableAjax">',
-            $html
+            $html,
         );
 
         $this->assertStringContainsString('<input type="hidden" name="submit_save" value="Browse">', $html);
@@ -65,7 +67,7 @@ class PageSettingsTest extends AbstractTestCase
             "window.Config.registerFieldValidator('MaxRows', 'validatePositiveNumber', true);\n"
             . "window.Config.registerFieldValidator('RepeatCells', 'validateNonNegativeNumber', true);\n"
             . "window.Config.registerFieldValidator('LimitChars', 'validatePositiveNumber', true);\n",
-            $html
+            $html,
         );
     }
 

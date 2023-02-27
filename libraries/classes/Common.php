@@ -56,8 +56,7 @@ use const E_USER_ERROR;
 
 final class Common
 {
-    /** @var ServerRequest|null */
-    private static $request = null;
+    private static ServerRequest|null $request = null;
 
     /**
      * Misc stuff and REQUIRED by ALL the scripts.
@@ -268,7 +267,7 @@ final class Common
                 echo self::getGenericError(sprintf(
                     __('You should upgrade to %s %s or later.'),
                     'MySQL',
-                    (string) $GLOBALS['cfg']['MysqlMinVersion']['human']
+                    (string) $GLOBALS['cfg']['MysqlMinVersion']['human'],
                 ));
 
                 return;
@@ -298,7 +297,7 @@ final class Common
             $response->setRequestStatus(false);
             $response->addJSON(
                 'message',
-                Message::error(__('Error: Token mismatch'))
+                Message::error(__('Error: Token mismatch')),
             );
 
             return;
@@ -519,9 +518,9 @@ final class Common
         if (isset($_POST['set_session']) && $_POST['set_session'] !== session_id()) {
             trigger_error(
                 __(
-                    'Failed to set session cookie. Maybe you are using HTTP instead of HTTPS to access phpMyAdmin.'
+                    'Failed to set session cookie. Maybe you are using HTTP instead of HTTPS to access phpMyAdmin.',
                 ),
-                E_USER_ERROR
+                E_USER_ERROR,
             );
         }
 
@@ -568,7 +567,7 @@ final class Common
             throw new RuntimeException(__(
                 'You have enabled mbstring.func_overload in your PHP '
                 . 'configuration. This option is incompatible with phpMyAdmin '
-                . 'and might cause some data to be corrupted!'
+                . 'and might cause some data to be corrupted!',
             ));
         }
 
@@ -581,7 +580,7 @@ final class Common
         }
 
         throw new RuntimeException(__(
-            'The ini_get and/or ini_set functions are disabled in php.ini. phpMyAdmin requires these functions!'
+            'The ini_get and/or ini_set functions are disabled in php.ini. phpMyAdmin requires these functions!',
         ));
     }
 

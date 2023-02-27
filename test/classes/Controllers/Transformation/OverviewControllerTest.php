@@ -13,9 +13,7 @@ use PhpMyAdmin\Transformations;
 
 use function __;
 
-/**
- * @covers \PhpMyAdmin\Controllers\Transformation\OverviewController
- */
+/** @covers \PhpMyAdmin\Controllers\Transformation\OverviewController */
 class OverviewControllerTest extends AbstractTestCase
 {
     /**
@@ -24,8 +22,11 @@ class OverviewControllerTest extends AbstractTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
         parent::setGlobalConfig();
+
         parent::setTheme();
+
         $GLOBALS['dbi'] = $this->createDatabaseInterface();
         $GLOBALS['text_dir'] = 'ltr';
 
@@ -46,15 +47,15 @@ class OverviewControllerTest extends AbstractTestCase
 
         $this->assertStringContainsString(
             __('Available media types'),
-            $actual
+            $actual,
         );
         $this->assertStringContainsString(
             'id="transformation">' . __('Available browser display transformations'),
-            $actual
+            $actual,
         );
         $this->assertStringContainsString(
             'id="input_transformation">' . __('Available input transformations'),
-            $actual
+            $actual,
         );
         $this->assertStringContainsString('Text/Plain', $actual);
         $this->assertStringContainsString('Image/JPEG: Inline', $actual);

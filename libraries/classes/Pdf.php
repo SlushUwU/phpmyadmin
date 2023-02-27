@@ -21,10 +21,10 @@ use function strtr;
 class Pdf extends TCPDF
 {
     /** @var array */
-    public $footerset = [];
+    public array $footerset = [];
 
     /** @var array */
-    public $alias = [];
+    public array $alias = [];
 
     /**
      * PDF font to use.
@@ -51,9 +51,10 @@ class Pdf extends TCPDF
         $unicode = true,
         $encoding = 'UTF-8',
         $diskcache = false,
-        $pdfa = false
+        $pdfa = false,
     ) {
         parent::__construct($orientation, $unit, $format, $unicode, $encoding, $diskcache, $pdfa);
+
         $this->setAuthor('phpMyAdmin ' . Version::VERSION);
         $this->AddFont('DejaVuSans', '', 'dejavusans.php');
         $this->AddFont('DejaVuSans', 'B', 'dejavusansb.php');
@@ -81,7 +82,7 @@ class Pdf extends TCPDF
             . $this->getAliasNumPage() . '/' . $this->getAliasNbPages(),
             'T',
             0,
-            'C'
+            'C',
         );
         $this->Cell(0, 6, Util::localisedDate(), 0, 1, 'R');
         $this->setY(20);
@@ -132,7 +133,7 @@ class Pdf extends TCPDF
     public function Error($error_message = ''): void
     {
         echo Message::error(
-            __('Error while creating PDF:') . ' ' . $error_message
+            __('Error while creating PDF:') . ' ' . $error_message,
         )->getDisplay();
         exit;
     }

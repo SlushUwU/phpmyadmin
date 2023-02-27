@@ -29,49 +29,40 @@ use function ksort;
 class Pdf extends PdfLib
 {
     /** @var array */
-    public $tablewidths;
+    public array $tablewidths = [];
 
     /** @var array */
-    public $headerset;
+    public array $headerset = [];
 
-    /** @var int|float */
-    private $dataY;
+    private int|float $dataY = 0;
 
-    /** @var int */
-    private $titleFontSize;
+    private int $titleFontSize = 0;
 
-    /** @var string */
-    private $titleText;
+    private string $titleText = '';
 
-    /** @var string */
-    private $dbAlias;
+    private string $dbAlias = '';
 
-    /** @var string */
-    private $tableAlias;
+    private string $tableAlias = '';
 
-    /** @var string */
-    private $purpose;
+    private string $purpose = '';
 
     /** @var array */
-    private $colTitles;
+    private array $colTitles = [];
 
-    /** @var ResultInterface */
-    private $results;
-
-    /** @var array */
-    private $colAlign;
+    private ResultInterface $results;
 
     /** @var array */
-    private $displayColumn;
-
-    /** @var string */
-    private $currentDb;
-
-    /** @var string */
-    private $currentTable;
+    private array $colAlign = [];
 
     /** @var array */
-    private $aliases;
+    private array $displayColumn = [];
+
+    private string $currentDb = '';
+
+    private string $currentTable = '';
+
+    /** @var array */
+    private array $aliases = [];
 
     private Relation $relation;
 
@@ -95,9 +86,10 @@ class Pdf extends PdfLib
         $unicode = true,
         $encoding = 'UTF-8',
         $diskcache = false,
-        $pdfa = false
+        $pdfa = false,
     ) {
         parent::__construct($orientation, $unit, $format, $unicode, $encoding, $diskcache, $pdfa);
+
         $this->relation = new Relation($GLOBALS['dbi']);
         $this->transformations = new Transformations();
     }
@@ -184,7 +176,7 @@ class Pdf extends PdfLib
                 . __('Purpose:') . ' ' . $this->purpose,
                 0,
                 1,
-                'L'
+                'L',
             );
             $l = $this->lMargin;
             foreach ($this->colTitles as $col => $txt) {
@@ -326,7 +318,7 @@ class Pdf extends PdfLib
             $this->tablewidths,
             $this->colTitles,
             $this->displayColumn,
-            $this->colAlign
+            $this->colAlign,
         );
 
         /**
@@ -387,7 +379,7 @@ class Pdf extends PdfLib
                         $this->FontSizePt,
                         $txt,
                         0,
-                        $this->colAlign[$col]
+                        $this->colAlign[$col],
                     );
                     $l += $this->tablewidths[$col];
                 }
@@ -461,7 +453,7 @@ class Pdf extends PdfLib
         $do_comments,
         $do_mime,
         $view = false,
-        array $aliases = []
+        array $aliases = [],
     ): void {
         $relationParameters = $this->relation->getRelationParameters();
 
@@ -469,7 +461,7 @@ class Pdf extends PdfLib
             $this->tablewidths,
             $this->colTitles,
             $this->displayColumn,
-            $this->colAlign
+            $this->colAlign,
         );
 
         /**
@@ -488,7 +480,7 @@ class Pdf extends PdfLib
             // Find which tables are related with the current one and write it in
             // an array
             $res_rel = $this->relation->getForeigners($db, $table);
-            $have_rel = ! empty($res_rel);
+            $have_rel = $res_rel !== [];
         } else {
             $have_rel = false;
         }
@@ -621,7 +613,7 @@ class Pdf extends PdfLib
                         $this->FontSizePt,
                         $txt,
                         0,
-                        $this->colAlign[$col]
+                        $this->colAlign[$col],
                     );
                     $l += $this->tablewidths[$col];
                 }
@@ -683,7 +675,7 @@ class Pdf extends PdfLib
             $this->tablewidths,
             $this->colTitles,
             $this->displayColumn,
-            $this->colAlign
+            $this->colAlign,
         );
 
         /**
@@ -692,7 +684,7 @@ class Pdf extends PdfLib
         $this->results = $GLOBALS['dbi']->query(
             $query,
             Connection::TYPE_USER,
-            DatabaseInterface::QUERY_UNBUFFERED
+            DatabaseInterface::QUERY_UNBUFFERED,
         );
         $numFields = $this->results->numFields();
         $fields = $GLOBALS['dbi']->getFieldsMeta($this->results);
@@ -768,9 +760,7 @@ class Pdf extends PdfLib
 
         // loop through the data; any column whose contents
         // is greater than the column size is resized
-        /**
-         * @todo force here a LIMIT to avoid reading all rows
-         */
+        /** @todo force here a LIMIT to avoid reading all rows */
         while ($row = $this->results->fetchRow()) {
             foreach ($colFits as $key => $val) {
                 /** @var float $stringWidth */
@@ -825,7 +815,7 @@ class Pdf extends PdfLib
         $this->results = $GLOBALS['dbi']->query(
             $query,
             Connection::TYPE_USER,
-            DatabaseInterface::QUERY_UNBUFFERED
+            DatabaseInterface::QUERY_UNBUFFERED,
         );
         $this->setY($this->tMargin);
         $this->AddPage();
@@ -864,9 +854,7 @@ class Pdf extends PdfLib
         $this->tableAlias = $tableAlias ?? '';
     }
 
-    /**
-     * @param array $aliases
-     */
+    /** @param array $aliases */
     public function setAliases(array $aliases): void
     {
         $this->aliases = $aliases;

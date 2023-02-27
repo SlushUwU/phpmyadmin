@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Selenium;
 
-/**
- * @coversNothing
- */
+/** @coversNothing */
 class TrackingTest extends TestBase
 {
     /**
@@ -15,6 +13,7 @@ class TrackingTest extends TestBase
     protected function setUp(): void
     {
         parent::setUp();
+
         $this->dbQuery(
             'USE `' . $this->databaseName . '`;'
             . 'CREATE TABLE `test_table` ('
@@ -27,7 +26,7 @@ class TrackingTest extends TestBase
             . ' `val` int(11) NOT NULL,'
             . ' PRIMARY KEY (`id`)'
             . ');'
-            . 'INSERT INTO `test_table` (val) VALUES (2), (3);'
+            . 'INSERT INTO `test_table` (val) VALUES (2), (3);',
         );
 
         $this->login();
@@ -62,22 +61,22 @@ class TrackingTest extends TestBase
 
         $this->assertStringContainsString(
             'DROP TABLE IF EXISTS `test_table`',
-            $this->getCellByTableId('ddl_versions', 1, 4)
+            $this->getCellByTableId('ddl_versions', 1, 4),
         );
 
         $this->assertStringContainsString(
             'CREATE TABLE `test_table` (',
-            $this->getCellByTableId('ddl_versions', 2, 4)
+            $this->getCellByTableId('ddl_versions', 2, 4),
         );
 
         $this->assertStringContainsString(
             'UPDATE test_table SET val = val + 1',
-            $this->getCellByTableId('dml_versions', 1, 4)
+            $this->getCellByTableId('dml_versions', 1, 4),
         );
 
         $this->assertStringNotContainsString(
             'DELETE FROM test_table WHERE val = 3',
-            $this->byId('dml_versions')->getText()
+            $this->byId('dml_versions')->getText(),
         );
 
         // only structure
@@ -88,17 +87,17 @@ class TrackingTest extends TestBase
         $this->waitAjax();
 
         $this->assertFalse(
-            $this->isElementPresent('id', 'dml_versions')
+            $this->isElementPresent('id', 'dml_versions'),
         );
 
         $this->assertStringContainsString(
             'DROP TABLE IF EXISTS `test_table`',
-            $this->getCellByTableId('ddl_versions', 1, 4)
+            $this->getCellByTableId('ddl_versions', 1, 4),
         );
 
         $this->assertStringContainsString(
             'CREATE TABLE `test_table` (',
-            $this->getCellByTableId('ddl_versions', 2, 4)
+            $this->getCellByTableId('ddl_versions', 2, 4),
         );
 
         // only data
@@ -109,17 +108,17 @@ class TrackingTest extends TestBase
         $this->waitAjax();
 
         $this->assertFalse(
-            $this->isElementPresent('id', 'ddl_versions')
+            $this->isElementPresent('id', 'ddl_versions'),
         );
 
         $this->assertStringContainsString(
             'UPDATE test_table SET val = val + 1',
-            $this->getCellByTableId('dml_versions', 1, 4)
+            $this->getCellByTableId('dml_versions', 1, 4),
         );
 
         $this->assertStringNotContainsString(
             'DELETE FROM test_table WHERE val = 3',
-            $this->byId('dml_versions')->getText()
+            $this->byId('dml_versions')->getText(),
         );
     }
 
@@ -134,7 +133,7 @@ class TrackingTest extends TestBase
         $this->waitForElement('cssSelector', "input[value='Activate now']");
         $this->executeSqlAndReturnToTableTracking();
         $this->assertFalse(
-            $this->isElementPresent('id', 'dml_versions')
+            $this->isElementPresent('id', 'dml_versions'),
         );
     }
 
@@ -162,7 +161,7 @@ class TrackingTest extends TestBase
         $this->waitAjax();
         $this->waitForElement(
             'xpath',
-            '//div[@class=\'alert alert-success\' and contains(., \'Tracking data deleted successfully.\')]'
+            '//div[@class=\'alert alert-success\' and contains(., \'Tracking data deleted successfully.\')]',
         );
 
         // Can not use getCellByTableId,
@@ -171,15 +170,15 @@ class TrackingTest extends TestBase
             'test_table',
             $this->waitForElement(
                 'cssSelector',
-                'table#noversions tbody tr:nth-child(1) th:nth-child(2)'
-            )->getText()
+                'table#noversions tbody tr:nth-child(1) th:nth-child(2)',
+            )->getText(),
         );
         $this->assertStringContainsString(
             'test_table_2',
             $this->waitForElement(
                 'cssSelector',
-                'table#noversions tbody tr:nth-child(2) th:nth-child(2)'
-            )->getText()
+                'table#noversions tbody tr:nth-child(2) th:nth-child(2)',
+            )->getText(),
         );
     }
 
@@ -195,22 +194,22 @@ class TrackingTest extends TestBase
 
         $this->assertStringContainsString(
             'id',
-            $this->getCellByTableId('tablestructure', 1, 2)
+            $this->getCellByTableId('tablestructure', 1, 2),
         );
 
         $this->assertStringContainsString(
             'val',
-            $this->getCellByTableId('tablestructure', 2, 2)
+            $this->getCellByTableId('tablestructure', 2, 2),
         );
 
         $this->assertStringContainsString(
             'PRIMARY',
-            $this->getCellByTableId('tablestructure_indexes', 1, 1)
+            $this->getCellByTableId('tablestructure_indexes', 1, 1),
         );
 
         $this->assertStringContainsString(
             'id',
-            $this->getCellByTableId('tablestructure_indexes', 1, 5)
+            $this->getCellByTableId('tablestructure_indexes', 1, 5),
         );
     }
 

@@ -7,7 +7,12 @@
     <arg name="colors"/>
     <arg name="extensions" value="php"/>
 
-    <file>.</file>
+    <file>./examples</file>
+    <file>./libraries</file>
+    <file>./public</file>
+    <file>./scripts</file>
+    <file>./test</file>
+    <file>./config.sample.inc.php</file>
 
     <exclude-pattern>*/build/*</exclude-pattern>
     <exclude-pattern>*/config.inc.php</exclude-pattern>
@@ -27,24 +32,6 @@
     </rule>
 
     <!-- Rules that should be followed, but are not required -->
-    <rule ref="SlevomatCodingStandard.Classes.ConstantSpacing.IncorrectCountOfBlankLinesAfterConstant">
-        <severity>4</severity>
-    </rule>
-    <rule ref="SlevomatCodingStandard.Classes.ParentCallSpacing.IncorrectLinesCountAfterControlStructure">
-        <severity>4</severity>
-    </rule>
-    <rule ref="SlevomatCodingStandard.Classes.ParentCallSpacing.IncorrectLinesCountBeforeControlStructure">
-        <severity>4</severity>
-    </rule>
-    <rule ref="SlevomatCodingStandard.Commenting.RequireOneLineDocComment.MultiLineDocComment">
-        <severity>4</severity>
-    </rule>
-    <rule ref="SlevomatCodingStandard.Functions.RequireTrailingCommaInCall.MissingTrailingComma">
-        <severity>4</severity>
-    </rule>
-    <rule ref="SlevomatCodingStandard.Functions.RequireTrailingCommaInDeclaration.MissingTrailingComma">
-        <severity>4</severity>
-    </rule>
     <rule ref="SlevomatCodingStandard.Operators.DisallowEqualOperators">
         <severity>4</severity>
     </rule>
@@ -54,13 +41,7 @@
     <rule ref="SlevomatCodingStandard.TypeHints.ParameterTypeHint.MissingTraversableTypeHintSpecification">
         <severity>4</severity>
     </rule>
-    <rule ref="SlevomatCodingStandard.TypeHints.PropertyTypeHint.MissingNativeTypeHint">
-        <severity>4</severity>
-    </rule>
     <rule ref="SlevomatCodingStandard.TypeHints.PropertyTypeHint.MissingTraversableTypeHintSpecification">
-        <severity>4</severity>
-    </rule>
-    <rule ref="SlevomatCodingStandard.TypeHints.ReturnTypeHint.MissingNativeTypeHint">
         <severity>4</severity>
     </rule>
     <rule ref="SlevomatCodingStandard.TypeHints.ReturnTypeHint.MissingTraversableTypeHintSpecification">

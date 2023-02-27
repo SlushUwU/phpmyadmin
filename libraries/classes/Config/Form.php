@@ -33,38 +33,34 @@ class Form
 {
     /**
      * Form name
-     *
-     * @var string
      */
-    public $name;
+    public string $name;
 
     /**
      * Arbitrary index, doesn't affect class' behavior
-     *
-     * @var int
      */
-    public $index;
+    public int|null $index;
 
     /**
      * Form fields (paths), filled by {@link readFormPaths()}, indexed by field name
      *
      * @var array
      */
-    public $fields;
+    public array $fields;
 
     /**
      * Stores default values for some fields (eg. pmadb tables)
      *
      * @var array
      */
-    public $default;
+    public array $default;
 
     /**
      * Caches field types, indexed by field names
      *
      * @var array
      */
-    private $fieldsTypes;
+    private array $fieldsTypes;
 
     /**
      * ConfigFile instance
@@ -73,10 +69,8 @@ class Form
 
     /**
      * A counter for the number of groups
-     *
-     * @var int
      */
-    private static $groupCounter = 0;
+    private static int $groupCounter = 0;
 
     /**
      * Reads default config values
@@ -84,13 +78,13 @@ class Form
      * @param string     $formName Form name
      * @param array      $form     Form data
      * @param ConfigFile $cf       Config file instance
-     * @param int        $index    arbitrary index, stored in Form::$index
+     * @param int|null   $index    arbitrary index, stored in Form::$index
      */
     public function __construct(
         $formName,
         array $form,
         ConfigFile $cf,
-        $index = null
+        $index = null,
     ) {
         $this->index = $index;
         $this->configFile = $cf;
@@ -104,14 +98,14 @@ class Form
      *
      * @return string|null one of: boolean, integer, double, string, select, array
      */
-    public function getOptionType($optionName)
+    public function getOptionType($optionName): string|null
     {
         $key = ltrim(
             mb_substr(
                 $optionName,
-                (int) mb_strrpos($optionName, '/')
+                (int) mb_strrpos($optionName, '/'),
             ),
-            '/'
+            '/',
         );
 
         return $this->fieldsTypes[$key] ?? null;
@@ -124,7 +118,7 @@ class Form
      *
      * @return array
      */
-    public function getOptionValueList($optionPath)
+    public function getOptionValueList($optionPath): array
     {
         $value = $this->configFile->getDbEntry($optionPath);
         if ($value === null) {
@@ -186,7 +180,7 @@ class Form
                 function ($value, $key, $prefix): void {
                     $this->readFormPathsCallback($value, $key, $prefix);
                 },
-                $prefix
+                $prefix,
             );
 
             return;
@@ -227,7 +221,7 @@ class Form
             function ($value, $key, $prefix): void {
                 $this->readFormPathsCallback($value, $key, $prefix);
             },
-            ''
+            '',
         );
 
         // $this->fields is an array of the form: [0..n] => 'field path'
@@ -237,7 +231,7 @@ class Form
         foreach ($paths as $path) {
             $key = ltrim(
                 mb_substr($path, (int) mb_strrpos($path, '/')),
-                '/'
+                '/',
             );
             $this->fields[$key] = $path;
         }

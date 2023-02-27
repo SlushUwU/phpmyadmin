@@ -8,13 +8,10 @@ use PhpMyAdmin\Dbal\DatabaseName;
 use PhpMyAdmin\Plugins\Schema\Eps\EpsRelationSchema;
 use PhpMyAdmin\Tests\AbstractTestCase;
 
-/**
- * @covers \PhpMyAdmin\Plugins\Schema\Eps\EpsRelationSchema
- */
+/** @covers \PhpMyAdmin\Plugins\Schema\Eps\EpsRelationSchema */
 class EpsRelationSchemaTest extends AbstractTestCase
 {
-    /** @var EpsRelationSchema */
-    protected $object;
+    protected EpsRelationSchema $object;
 
     /**
      * Sets up the fixture, for example, opens a network connection.
@@ -23,6 +20,7 @@ class EpsRelationSchemaTest extends AbstractTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
         $GLOBALS['dbi'] = $this->createDatabaseInterface();
         $_REQUEST['page_number'] = 33;
         $_REQUEST['eps_show_color'] = true;
@@ -51,6 +49,7 @@ class EpsRelationSchemaTest extends AbstractTestCase
     protected function tearDown(): void
     {
         parent::tearDown();
+
         unset($this->object);
     }
 

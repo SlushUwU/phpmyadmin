@@ -10,20 +10,17 @@ use PhpMyAdmin\Http\ServerRequest;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\DbiDummy;
 
-/**
- * @covers \PhpMyAdmin\Controllers\Import\ImportController
- */
+/** @covers \PhpMyAdmin\Controllers\Import\ImportController */
 class ImportControllerTest extends AbstractTestCase
 {
-    /** @var DatabaseInterface */
-    protected $dbi;
+    protected DatabaseInterface $dbi;
 
-    /** @var DbiDummy */
-    protected $dummyDbi;
+    protected DbiDummy $dummyDbi;
 
     protected function setUp(): void
     {
         parent::setUp();
+
         $this->dummyDbi = $this->createDbiDummy();
         $this->dbi = $this->createDatabaseInterface($this->dummyDbi);
         $GLOBALS['dbi'] = $this->dbi;
@@ -32,8 +29,11 @@ class ImportControllerTest extends AbstractTestCase
     public function testIndexParametrized(): void
     {
         parent::loadContainerBuilder();
+
         parent::loadDbiIntoContainerBuilder();
+
         parent::setLanguage();
+
         parent::setTheme();
 
         $GLOBALS['server'] = 1;
@@ -66,17 +66,17 @@ class ImportControllerTest extends AbstractTestCase
         $this->dummyDbi->addResult(
             'SELECT A.* FROM table1 A WHERE A.nomEtablissement = \'Saint-Louis - Châteaulin\''
             . ' AND foo = 4 AND `:a` IS NULL LIMIT 0, 25',
-            []
+            [],
         );
 
         $this->dummyDbi->addResult(
             'SHOW CREATE TABLE `pma_test`.`table1`',
-            []
+            [],
         );
 
         $this->dummyDbi->addResult(
             'SHOW FULL COLUMNS FROM `pma_test`.`table1`',
-            []
+            [],
         );
 
         /** @var ImportController $importController */
@@ -89,13 +89,13 @@ class ImportControllerTest extends AbstractTestCase
 
         $this->assertStringContainsString(
             'MySQL returned an empty result set (i.e. zero rows).',
-            $this->getResponseHtmlResult()
+            $this->getResponseHtmlResult(),
         );
 
         $this->assertStringContainsString(
             'SELECT A.*' . "\n" . 'FROM table1 A' . "\n"
                 . 'WHERE A.nomEtablissement = \'Saint-Louis - Châteaulin\' AND foo = 4 AND `:a` IS NULL',
-            $this->getResponseHtmlResult()
+            $this->getResponseHtmlResult(),
         );
 
         $this->dummyDbi->assertAllQueriesConsumed();

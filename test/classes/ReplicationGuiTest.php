@@ -9,17 +9,13 @@ use PhpMyAdmin\ReplicationGui;
 use PhpMyAdmin\ReplicationInfo;
 use PhpMyAdmin\Template;
 
-/**
- * @covers \PhpMyAdmin\ReplicationGui
- */
+/** @covers \PhpMyAdmin\ReplicationGui */
 class ReplicationGuiTest extends AbstractTestCase
 {
     /**
      * ReplicationGui instance
-     *
-     * @var ReplicationGui
      */
-    private $replicationGui;
+    private ReplicationGui $replicationGui;
 
     /**
      * Prepares environment for the test.
@@ -27,6 +23,7 @@ class ReplicationGuiTest extends AbstractTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
         $GLOBALS['dbi'] = $this->createDatabaseInterface();
         //$_POST
         $_POST['primary_add_user'] = 'primary_add_user';
@@ -50,9 +47,7 @@ class ReplicationGuiTest extends AbstractTestCase
         $this->replicationGui = new ReplicationGui(new Replication($GLOBALS['dbi']), new Template());
     }
 
-    /**
-     * @group medium
-     */
+    /** @group medium */
     public function testGetHtmlForPrimaryReplication(): void
     {
         $html = $this->replicationGui->getHtmlForPrimaryReplication(null, false, 'primary_add_user', null, null);
@@ -99,7 +94,7 @@ class ReplicationGuiTest extends AbstractTestCase
             null,
             true,
             $replicationInfo->getReplicaStatus(),
-            isset($_POST['replica_configure'])
+            isset($_POST['replica_configure']),
         );
 
         //legend

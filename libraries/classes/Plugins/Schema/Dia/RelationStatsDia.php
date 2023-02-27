@@ -20,26 +20,19 @@ use function shuffle;
  */
 class RelationStatsDia
 {
-    /** @var mixed */
-    public $srcConnPointsRight;
+    public mixed $srcConnPointsRight;
 
-    /** @var mixed */
-    public $srcConnPointsLeft;
+    public mixed $srcConnPointsLeft;
 
-    /** @var mixed */
-    public $destConnPointsRight;
+    public mixed $destConnPointsRight;
 
-    /** @var mixed */
-    public $destConnPointsLeft;
+    public mixed $destConnPointsLeft;
 
-    /** @var int */
-    public $masterTableId;
+    public int $masterTableId;
 
-    /** @var int */
-    public $foreignTableId;
+    public int $foreignTableId;
 
-    /** @var string */
-    public $referenceColor = '#000000';
+    public string $referenceColor = '#000000';
 
     /**
      * @see Relation_Stats_Dia::getXy
@@ -55,7 +48,7 @@ class RelationStatsDia
         $master_table,
         $master_field,
         $foreign_table,
-        $foreign_field
+        $foreign_field,
     ) {
         $src_pos = $this->getXy($master_table, $master_field);
         $dest_pos = $this->getXy($foreign_table, $foreign_field);
@@ -79,7 +72,7 @@ class RelationStatsDia
      *
      * @return array Table right,left connection points and key position
      */
-    private function getXy($table, $column)
+    private function getXy($table, $column): array
     {
         $pos = array_search($column, $table->fields);
         // left, right, position
@@ -214,7 +207,7 @@ class RelationStatsDia
             . $this->foreignTableId . '" connection="'
             . $this->destConnPointsRight . '"/>
             </dia:connections>
-            </dia:object>'
+            </dia:object>',
         );
     }
 }

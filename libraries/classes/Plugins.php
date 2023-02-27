@@ -71,7 +71,7 @@ class Plugins
             return new $class(
                 $container->get('relation'),
                 $container->get('export'),
-                $container->get('transformations')
+                $container->get('transformations'),
             );
         }
 
@@ -158,7 +158,7 @@ class Plugins
                 $plugins[] = new $class(
                     $container->get('relation'),
                     $container->get('export'),
-                    $container->get('transformations')
+                    $container->get('transformations'),
                 );
             } elseif ($type === 'Import' && is_subclass_of($class, ImportPlugin::class)) {
                 $plugins[] = new $class();
@@ -169,7 +169,7 @@ class Plugins
 
         usort($plugins, static fn (Plugin $plugin1, Plugin $plugin2): int => strcasecmp(
             $plugin1->getProperties()->getText(),
-            $plugin2->getProperties()->getText()
+            $plugin2->getProperties()->getText(),
         ));
 
         return $plugins;
@@ -182,7 +182,7 @@ class Plugins
      *
      * @return string  locale string for $name
      */
-    public static function getString($name)
+    public static function getString($name): string
     {
         return $GLOBALS[$name] ?? $name ?? '';
     }
@@ -198,7 +198,7 @@ class Plugins
      *
      * @return string  html input tag option 'checked'
      */
-    public static function checkboxCheck($section, $opt)
+    public static function checkboxCheck($section, $opt): string
     {
         // If the form is being repopulated using $_GET data, that is priority
         if (
@@ -223,7 +223,7 @@ class Plugins
      *
      * @return string  default value for option $opt
      */
-    public static function getDefault($section, $opt)
+    public static function getDefault($section, $opt): string
     {
         if (isset($_GET[$opt])) {
             // If the form is being repopulated using $_GET data, that is priority
@@ -294,7 +294,7 @@ class Plugins
         string $section,
         string $plugin_name,
         OptionsPropertyItem $propertyGroup,
-        bool $is_subgroup = false
+        bool $is_subgroup = false,
     ): string {
         $ret = "\n";
 
@@ -401,14 +401,12 @@ class Plugins
      * @param string              $plugin_name  unique plugin name
      * @param OptionsPropertyItem $propertyItem Property item
      * @psalm-param 'Export'|'Import'|'Schema' $section
-     *
-     * @return string
      */
     public static function getHtmlForProperty(
         $section,
         $plugin_name,
-        $propertyItem
-    ) {
+        $propertyItem,
+    ): string {
         $ret = '';
         $property_class = $propertyItem::class;
         switch ($property_class) {
@@ -422,7 +420,7 @@ class Plugins
                     . ' '
                     . self::checkboxCheck(
                         $section,
-                        $plugin_name . '_' . $propertyItem->getName()
+                        $plugin_name . '_' . $propertyItem->getName(),
                     );
 
                 if ($propertyItem->getForce() != null) {
@@ -449,7 +447,7 @@ class Plugins
                     . $propertyItem->getName() . '"'
                     . ' value="' . self::getDefault(
                         $section,
-                        $plugin_name . '_' . $propertyItem->getName()
+                        $plugin_name . '_' . $propertyItem->getName(),
                     )
                     . '"></li>';
                 break;
@@ -458,14 +456,12 @@ class Plugins
                 $ret .= self::getString($propertyItem->getText());
                 break;
             case RadioPropertyItem::class:
-                /**
-                 * @var RadioPropertyItem $pitem
-                 */
+                /** @var RadioPropertyItem $pitem */
                 $pitem = $propertyItem;
 
                 $default = self::getDefault(
                     $section,
-                    $plugin_name . '_' . $pitem->getName()
+                    $plugin_name . '_' . $pitem->getName(),
                 );
 
                 $ret .= '<li class="list-group-item">';
@@ -488,9 +484,7 @@ class Plugins
 
                 break;
             case SelectPropertyItem::class:
-                /**
-                 * @var SelectPropertyItem $pitem
-                 */
+                /** @var SelectPropertyItem $pitem */
                 $pitem = $propertyItem;
                 $ret .= '<li class="list-group-item">' . "\n";
                 $ret .= '<label for="select_' . $plugin_name . '_'
@@ -502,7 +496,7 @@ class Plugins
                     . $pitem->getName() . '">';
                 $default = self::getDefault(
                     $section,
-                    $plugin_name . '_' . $pitem->getName()
+                    $plugin_name . '_' . $pitem->getName(),
                 );
                 foreach ($pitem->getValues() as $key => $val) {
                     $ret .= '<option value="' . $key . '"';
@@ -516,9 +510,7 @@ class Plugins
                 $ret .= '</select>';
                 break;
             case TextPropertyItem::class:
-                /**
-                 * @var TextPropertyItem $pitem
-                 */
+                /** @var TextPropertyItem $pitem */
                 $pitem = $propertyItem;
                 $ret .= '<li class="list-group-item">' . "\n";
                 $ret .= '<label for="text_' . $plugin_name . '_'
@@ -528,7 +520,7 @@ class Plugins
                     . $pitem->getName() . '"'
                     . ' value="' . self::getDefault(
                         $section,
-                        $plugin_name . '_' . $pitem->getName()
+                        $plugin_name . '_' . $pitem->getName(),
                     ) . '"'
                     . ' id="text_' . $plugin_name . '_'
                     . $pitem->getName() . '"'
@@ -549,7 +541,7 @@ class Plugins
                     . $propertyItem->getName() . '"'
                     . ' value="' . self::getDefault(
                         $section,
-                        $plugin_name . '_' . $propertyItem->getName()
+                        $plugin_name . '_' . $propertyItem->getName(),
                     ) . '"'
                     . ' id="number_' . $plugin_name . '_'
                     . $propertyItem->getName() . '"'

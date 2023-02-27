@@ -14,18 +14,17 @@ use function stripos;
 use const CURLOPT_CAINFO;
 use const CURLOPT_CAPATH;
 
-/**
- * @covers \PhpMyAdmin\Utils\HttpRequest
- */
+/** @covers \PhpMyAdmin\Utils\HttpRequest */
 class HttpRequestTest extends AbstractTestCase
 {
-    /** @var HttpRequest */
-    private $httpRequest;
+    private HttpRequest $httpRequest;
 
     protected function setUp(): void
     {
         parent::setUp();
+
         parent::setProxySettings();
+
         $GLOBALS['dbi'] = $this->createDatabaseInterface();
         $this->httpRequest = new HttpRequest();
     }
@@ -64,13 +63,13 @@ class HttpRequestTest extends AbstractTestCase
      * @group network
      * @requires extension curl
      */
-    public function testCurl(string $url, string $method, bool $return_only_status, $expected): void
+    public function testCurl(string $url, string $method, bool $return_only_status, bool|string|null $expected): void
     {
         $result = $this->callFunction(
             $this->httpRequest,
             HttpRequest::class,
             'curl',
-            [$url, $method, $return_only_status]
+            [$url, $method, $return_only_status],
         );
         $this->validateHttp($result, $expected);
     }
@@ -78,18 +77,22 @@ class HttpRequestTest extends AbstractTestCase
     /**
      * Test for http request using Curl with CURLOPT_CAPATH
      *
-     * @param string $url                url
-     * @param string $method             method
-     * @param bool   $return_only_status return only status
-     * @param bool   $expected           expected result
+     * @param string           $url                url
+     * @param string           $method             method
+     * @param bool             $return_only_status return only status
+     * @param bool|string|null $expected           expected result
      *
      * @group medium
      * @dataProvider httpRequests
      * @group network
      * @requires extension curl
      */
-    public function testCurlCAPath(string $url, string $method, bool $return_only_status, $expected): void
-    {
+    public function testCurlCAPath(
+        string $url,
+        string $method,
+        bool $return_only_status,
+        bool|string|null $expected,
+    ): void {
         $this->checkCurlSslFlagsSupport();
         $result = $this->callFunction($this->httpRequest, HttpRequest::class, 'curl', [
             $url,
@@ -115,8 +118,12 @@ class HttpRequestTest extends AbstractTestCase
      * @group network
      * @requires extension curl
      */
-    public function testCurlCAInfo(string $url, string $method, bool $return_only_status, $expected): void
-    {
+    public function testCurlCAInfo(
+        string $url,
+        string $method,
+        bool $return_only_status,
+        bool|string|null $expected,
+    ): void {
         $this->checkCurlSslFlagsSupport();
         $result = $this->callFunction($this->httpRequest, HttpRequest::class, 'curl', [
             $url,
@@ -141,7 +148,7 @@ class HttpRequestTest extends AbstractTestCase
      * @dataProvider httpRequests
      * @group network
      */
-    public function testFopen(string $url, string $method, bool $return_only_status, $expected): void
+    public function testFopen(string $url, string $method, bool $return_only_status, bool|string|null $expected): void
     {
         if (! ini_get('allow_url_fopen')) {
             $this->markTestSkipped('Configuration directive allow_url_fopen is not enabled.');
@@ -151,7 +158,7 @@ class HttpRequestTest extends AbstractTestCase
             $this->httpRequest,
             HttpRequest::class,
             'fopen',
-            [$url, $method, $return_only_status]
+            [$url, $method, $return_only_status],
         );
         $this->validateHttp($result, $expected);
     }
@@ -169,7 +176,7 @@ class HttpRequestTest extends AbstractTestCase
      * @group network
      * @requires extension curl
      */
-    public function testCreate(string $url, string $method, bool $return_only_status, $expected): void
+    public function testCreate(string $url, string $method, bool $return_only_status, bool|string|null $expected): void
     {
         if (! ini_get('allow_url_fopen')) {
             $this->markTestSkipped('Configuration directive allow_url_fopen is not enabled.');
@@ -185,7 +192,7 @@ class HttpRequestTest extends AbstractTestCase
      * @param mixed $result   Result of HTTP request
      * @param mixed $expected Expected match
      */
-    private function validateHttp($result, $expected): void
+    private function validateHttp(mixed $result, mixed $expected): void
     {
         if ($expected === true) {
             $this->assertTrue($result);

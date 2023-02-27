@@ -13,25 +13,23 @@ use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\DbiDummy;
 use PhpMyAdmin\Tests\Stubs\ResponseRenderer;
 
-/**
- * @covers \PhpMyAdmin\Controllers\Server\Status\VariablesController
- */
+/** @covers \PhpMyAdmin\Controllers\Server\Status\VariablesController */
 class VariablesControllerTest extends AbstractTestCase
 {
-    /** @var DatabaseInterface */
-    protected $dbi;
+    protected DatabaseInterface $dbi;
 
-    /** @var DbiDummy */
-    protected $dummyDbi;
+    protected DbiDummy $dummyDbi;
 
-    /** @var Data */
-    private $data;
+    private Data $data;
 
     protected function setUp(): void
     {
         parent::setUp();
+
         parent::setGlobalConfig();
+
         parent::setTheme();
+
         $this->dummyDbi = $this->createDbiDummy();
         $this->dbi = $this->createDatabaseInterface($this->dummyDbi);
         $GLOBALS['dbi'] = $this->dbi;
@@ -63,7 +61,7 @@ class VariablesControllerTest extends AbstractTestCase
 
         $this->assertStringContainsString(
             '<label class="col-12 col-form-label" for="filterText">Containing the word:</label>',
-            $html
+            $html,
         );
 
         $this->assertStringContainsString('<label class="form-check-label" for="filterAlert">', $html);
@@ -79,7 +77,7 @@ class VariablesControllerTest extends AbstractTestCase
 
         $this->assertStringContainsString(
             '<table class="table table-striped table-hover table-sm" id="serverStatusVariables">',
-            $html
+            $html,
         );
         $this->assertStringContainsString('<th scope="col">Variable</th>', $html);
         $this->assertStringContainsString('<th scope="col">Value</th>', $html);

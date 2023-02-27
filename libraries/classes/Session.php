@@ -95,7 +95,7 @@ class Session
             $messages[] = preg_replace(
                 '/open\(.*, O_RDWR\)/',
                 'open(SESSION_FILE, O_RDWR)',
-                htmlspecialchars($error->getMessage())
+                htmlspecialchars($error->getMessage()),
             );
         }
 
@@ -110,9 +110,7 @@ class Session
         throw new SessionHandlerException($errorMessage);
     }
 
-    /**
-     * @throws SessionHandlerException
-     */
+    /** @throws SessionHandlerException */
     public static function setUp(Config $config, ErrorHandler $errorHandler): void
     {
         if (! empty(ini_get('session.auto_start')) && session_name() !== 'phpMyAdmin' && ! empty(session_id())) {
@@ -231,7 +229,7 @@ class Session
         }
 
         throw new SessionHandlerException(
-            'Failed to store CSRF token in session! Probably sessions are not working properly.'
+            'Failed to store CSRF token in session! Probably sessions are not working properly.',
         );
     }
 }

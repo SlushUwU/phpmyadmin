@@ -25,8 +25,7 @@ use function trim;
  */
 class GisMultiPolygon extends GisGeometry
 {
-    /** @var self */
-    private static $instance;
+    private static self $instance;
 
     /**
      * A private constructor; prevents direct creation of object.
@@ -40,7 +39,7 @@ class GisMultiPolygon extends GisGeometry
      *
      * @return GisMultiPolygon the singleton
      */
-    public static function singleton()
+    public static function singleton(): GisMultiPolygon
     {
         if (! isset(self::$instance)) {
             self::$instance = new GisMultiPolygon();
@@ -85,7 +84,7 @@ class GisMultiPolygon extends GisGeometry
         string $label,
         array $color,
         array $scale_data,
-        ImageWrapper $image
+        ImageWrapper $image,
     ): ImageWrapper {
         // allocate colors
         $black = $image->colorAllocate(0, 0, 0);
@@ -126,7 +125,7 @@ class GisMultiPolygon extends GisGeometry
                 (int) round($label_point[0]),
                 (int) round($label_point[1]),
                 $label,
-                $black
+                $black,
             );
         }
 
@@ -144,7 +143,7 @@ class GisMultiPolygon extends GisGeometry
      *
      * @return TCPDF the modified TCPDF instance
      */
-    public function prepareRowAsPdf($spatial, string $label, array $color, array $scale_data, $pdf)
+    public function prepareRowAsPdf($spatial, string $label, array $color, array $scale_data, $pdf): TCPDF
     {
         // Trim to remove leading 'MULTIPOLYGON(((' and trailing ')))'
         $multipolygon = mb_substr($spatial, 15, -3);
@@ -193,7 +192,7 @@ class GisMultiPolygon extends GisGeometry
      *
      * @return string the code related to a row in the GIS dataset
      */
-    public function prepareRowAsSvg($spatial, string $label, array $color, array $scale_data)
+    public function prepareRowAsSvg($spatial, string $label, array $color, array $scale_data): string
     {
         $polygon_options = [
             'name' => $label,
@@ -244,7 +243,7 @@ class GisMultiPolygon extends GisGeometry
      *
      * @return string JavaScript related to a row in the GIS dataset
      */
-    public function prepareRowAsOl($spatial, int $srid, string $label, array $color, array $scale_data)
+    public function prepareRowAsOl($spatial, int $srid, string $label, array $color, array $scale_data): string
     {
         $color[] = 0.8;
         $fill_style = ['color' => $color];
@@ -289,7 +288,7 @@ class GisMultiPolygon extends GisGeometry
      *
      * @return string the code to draw the ring
      */
-    private function drawPath($polygon, array $scale_data)
+    private function drawPath($polygon, array $scale_data): string
     {
         $points_arr = $this->extractPoints($polygon, $scale_data);
 
@@ -313,7 +312,7 @@ class GisMultiPolygon extends GisGeometry
      *
      * @return string WKT with the set of parameters passed by the GIS editor
      */
-    public function generateWkt(array $gis_data, $index, $empty = '')
+    public function generateWkt(array $gis_data, $index, $empty = ''): string
     {
         $data_row = $gis_data[$index]['MULTIPOLYGON'];
 
@@ -366,7 +365,7 @@ class GisMultiPolygon extends GisGeometry
      *
      * @return string the WKT for the data from ESRI shape files
      */
-    public function getShape(array $row_data)
+    public function getShape(array $row_data): string
     {
         // Determines whether each line ring is an inner ring or an outer ring.
         // If it's an inner ring get a point on the surface which can be used to
@@ -448,54 +447,35 @@ class GisMultiPolygon extends GisGeometry
     }
 
     /**
-     * Generate parameters for the GIS data editor from the value of the GIS column.
+     * Generate coordinate parameters for the GIS data editor from the value of the GIS column.
      *
-     * @param string $value Value of the GIS column
-     * @param int    $index Index of the geometry
+     * @param string $wkt Value of the GIS column
      *
-     * @return array params for the GIS data editor from the value of the GIS column
+     * @return array Coordinate params for the GIS data editor from the value of the GIS column
      */
-    public function generateParams($value, $index = -1)
+    protected function getCoordinateParams(string $wkt): array
     {
-        $params = [];
-        if ($index == -1) {
-            $index = 0;
-            $data = GisGeometry::generateParams($value);
-            $params['srid'] = $data['srid'];
-            $wkt = $data['wkt'];
-        } else {
-            $params[$index]['gis_type'] = 'MULTIPOLYGON';
-            $wkt = $value;
-        }
-
         // Trim to remove leading 'MULTIPOLYGON(((' and trailing ')))'
-        $multipolygon = mb_substr($wkt, 15, -3);
-        // Separate each polygon
-        $wkt_polygons = explode(')),((', $multipolygon);
+        $wkt_multipolygon = mb_substr($wkt, 15, -3);
+        $wkt_polygons = explode(')),((', $wkt_multipolygon);
+        $coords = ['no_of_polygons' => count($wkt_polygons)];
 
-        $param_row =& $params[$index]['MULTIPOLYGON'];
-        $param_row['no_of_polygons'] = count($wkt_polygons);
-
-        $k = 0;
-        foreach ($wkt_polygons as $wkt_polygon) {
+        foreach ($wkt_polygons as $k => $wkt_polygon) {
             $wkt_rings = explode('),(', $wkt_polygon);
-            $param_row[$k]['no_of_lines'] = count($wkt_rings);
-            $j = 0;
-            foreach ($wkt_rings as $wkt_ring) {
-                $points_arr = $this->extractPoints($wkt_ring, null);
-                $no_of_points = count($points_arr);
-                $param_row[$k][$j]['no_of_points'] = $no_of_points;
+            $coords[$k] = ['no_of_lines' => count($wkt_rings)];
+            foreach ($wkt_rings as $j => $wkt_ring) {
+                $points = $this->extractPoints($wkt_ring, null);
+                $no_of_points = count($points);
+                $coords[$k][$j] = ['no_of_points' => $no_of_points];
                 for ($i = 0; $i < $no_of_points; $i++) {
-                    $param_row[$k][$j][$i]['x'] = $points_arr[$i][0];
-                    $param_row[$k][$j][$i]['y'] = $points_arr[$i][1];
+                    $coords[$k][$j][$i] = [
+                        'x' => $points[$i][0],
+                        'y' => $points[$i][1],
+                    ];
                 }
-
-                $j++;
             }
-
-            $k++;
         }
 
-        return $params;
+        return $coords;
     }
 }

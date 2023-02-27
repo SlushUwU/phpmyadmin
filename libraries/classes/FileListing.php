@@ -75,7 +75,7 @@ class FileListing
     public function getFileSelectOptions(
         string $dir,
         string $extensions = '',
-        string $active = ''
+        string $active = '',
     ): string|false {
         $list = $this->getDirContent($dir, $extensions);
         if ($list === false) {
@@ -104,7 +104,7 @@ class FileListing
         }
 
         if ($GLOBALS['cfg']['BZipDump'] && function_exists('bzopen')) {
-            if (! empty($compressions)) {
+            if ($compressions !== '') {
                 $compressions .= '|';
             }
 
@@ -112,7 +112,7 @@ class FileListing
         }
 
         if ($GLOBALS['cfg']['ZipDump'] && function_exists('gzinflate')) {
-            if (! empty($compressions)) {
+            if ($compressions !== '') {
                 $compressions .= '|';
             }
 

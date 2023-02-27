@@ -11,16 +11,17 @@ use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Types;
 
-/**
- * @covers \PhpMyAdmin\Controllers\Table\FindReplaceController
- */
+/** @covers \PhpMyAdmin\Controllers\Table\FindReplaceController */
 class FindReplaceControllerTest extends AbstractTestCase
 {
     protected function setUp(): void
     {
         parent::setUp();
+
         parent::setLanguage();
+
         parent::setGlobalConfig();
+
         parent::setTheme();
 
         $GLOBALS['server'] = 1;
@@ -75,7 +76,7 @@ class FindReplaceControllerTest extends AbstractTestCase
         $tableSearch = new FindReplaceController(
             ResponseRenderer::getInstance(),
             new Template(),
-            $GLOBALS['dbi']
+            $GLOBALS['dbi'],
         );
         $columnIndex = 0;
         $find = 'Field';

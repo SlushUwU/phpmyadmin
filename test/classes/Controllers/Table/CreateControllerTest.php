@@ -15,9 +15,7 @@ use PhpMyAdmin\Transformations;
 
 use function array_merge;
 
-/**
- * @covers \PhpMyAdmin\Controllers\Table\CreateController
- */
+/** @covers \PhpMyAdmin\Controllers\Table\CreateController */
 class CreateControllerTest extends AbstractTestCase
 {
     public function testCreateController(): void
@@ -252,7 +250,7 @@ class CreateControllerTest extends AbstractTestCase
             $transformations,
             $this->createConfig(),
             $dbi,
-            new ColumnsDefinition($dbi, $relation, $transformations)
+            new ColumnsDefinition($dbi, $relation, $transformations),
         ))($this->createStub(ServerRequest::class));
 
         $this->assertSame($expected, $response->getHTMLResult());

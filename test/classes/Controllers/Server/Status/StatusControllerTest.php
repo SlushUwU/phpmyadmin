@@ -15,23 +15,23 @@ use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\DbiDummy;
 use PhpMyAdmin\Tests\Stubs\ResponseRenderer;
 
-/**
- * @covers \PhpMyAdmin\Controllers\Server\Status\StatusController
- */
+/** @covers \PhpMyAdmin\Controllers\Server\Status\StatusController */
 class StatusControllerTest extends AbstractTestCase
 {
-    /** @var DatabaseInterface */
-    protected $dbi;
+    protected DatabaseInterface $dbi;
 
-    /** @var DbiDummy */
-    protected $dummyDbi;
+    protected DbiDummy $dummyDbi;
 
     protected function setUp(): void
     {
         parent::setUp();
+
         $GLOBALS['text_dir'] = 'ltr';
+
         parent::setGlobalConfig();
+
         parent::setTheme();
+
         $this->dummyDbi = $this->createDbiDummy();
         $this->dbi = $this->createDatabaseInterface($this->dummyDbi);
         $GLOBALS['dbi'] = $this->dbi;
@@ -68,7 +68,7 @@ class StatusControllerTest extends AbstractTestCase
             $template,
             $data,
             new ReplicationGui(new Replication($GLOBALS['dbi']), $template),
-            $GLOBALS['dbi']
+            $GLOBALS['dbi'],
         );
 
         $replicationInfo = $data->getReplicationInfo();
@@ -106,7 +106,7 @@ class StatusControllerTest extends AbstractTestCase
         $this->assertStringContainsString('<th class="text-end" scope="col">ø per hour</th>', $html);
         $this->assertStringContainsString(
             '<table class="table table-striped table-hover col-12 col-md-6 w-auto">',
-            $html
+            $html,
         );
         $this->assertStringContainsString('<th>Max. concurrent connections</th>', $html);
         //Max_used_connections

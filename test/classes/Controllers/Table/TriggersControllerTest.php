@@ -13,20 +13,17 @@ use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\DbiDummy;
 use PhpMyAdmin\Tests\Stubs\ResponseRenderer;
 
-/**
- * @covers \PhpMyAdmin\Controllers\Table\TriggersController
- */
+/** @covers \PhpMyAdmin\Controllers\Table\TriggersController */
 class TriggersControllerTest extends AbstractTestCase
 {
-    /** @var DatabaseInterface */
-    protected $dbi;
+    protected DatabaseInterface $dbi;
 
-    /** @var DbiDummy */
-    protected $dummyDbi;
+    protected DbiDummy $dummyDbi;
 
     protected function setUp(): void
     {
         parent::setUp();
+
         $this->dummyDbi = $this->createDbiDummy();
         $this->dbi = $this->createDatabaseInterface($this->dummyDbi);
         $GLOBALS['dbi'] = $this->dbi;
@@ -48,7 +45,7 @@ class TriggersControllerTest extends AbstractTestCase
             'SELECT `PRIVILEGE_TYPE` FROM `INFORMATION_SCHEMA`.`SCHEMA_PRIVILEGES`'
             . ' WHERE GRANTEE=\'\'\'pma_test\'\'@\'\'localhost\'\'\' AND PRIVILEGE_TYPE=\'TRIGGER\''
             . ' AND \'test_db\' LIKE `TABLE_SCHEMA`',
-            [['TRIGGER']]
+            [['TRIGGER']],
         );
 
         $template = new Template();
@@ -57,7 +54,7 @@ class TriggersControllerTest extends AbstractTestCase
             $response,
             $template,
             $this->dbi,
-            new Triggers($this->dbi, $template, $response)
+            new Triggers($this->dbi, $template, $response),
         ))($this->createStub(ServerRequest::class));
 
         $items = [

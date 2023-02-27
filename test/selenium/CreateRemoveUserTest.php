@@ -7,31 +7,23 @@ namespace PhpMyAdmin\Tests\Selenium;
 use function bin2hex;
 use function random_bytes;
 
-/**
- * @coversNothing
- */
+/** @coversNothing */
 class CreateRemoveUserTest extends TestBase
 {
     /**
      * Create a test database for this test class
-     *
-     * @var bool
      */
-    protected static $createDatabase = false;
+    protected static bool $createDatabase = false;
 
     /**
      * Username for the user
-     *
-     * @var string
      */
-    private $txtUsername;
+    private string $txtUsername;
 
     /**
      * Password for the user
-     *
-     * @var string
      */
-    private $txtPassword;
+    private string $txtPassword;
 
     /**
      * Setup the browser environment to run the selenium test case
@@ -39,6 +31,7 @@ class CreateRemoveUserTest extends TestBase
     protected function setUp(): void
     {
         parent::setUp();
+
         $this->skipIfNotSuperUser();
         $this->txtUsername = 'test_user_' . bin2hex(random_bytes(4));
         $this->txtPassword = 'abc_123';
@@ -111,7 +104,7 @@ class CreateRemoveUserTest extends TestBase
         $success = $this->waitForElement('cssSelector', '.alert-success');
         $this->assertStringContainsString(
             'The selected users have been deleted',
-            $success->getText()
+            $success->getText(),
         );
     }
 }

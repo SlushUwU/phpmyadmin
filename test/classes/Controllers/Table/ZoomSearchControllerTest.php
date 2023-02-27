@@ -14,20 +14,17 @@ use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\DbiDummy;
 use PhpMyAdmin\Tests\Stubs\ResponseRenderer;
 
-/**
- * @covers \PhpMyAdmin\Controllers\Table\ZoomSearchController
- */
+/** @covers \PhpMyAdmin\Controllers\Table\ZoomSearchController */
 class ZoomSearchControllerTest extends AbstractTestCase
 {
-    /** @var DatabaseInterface */
-    protected $dbi;
+    protected DatabaseInterface $dbi;
 
-    /** @var DbiDummy */
-    protected $dummyDbi;
+    protected DbiDummy $dummyDbi;
 
     protected function setUp(): void
     {
         parent::setUp();
+
         $this->dummyDbi = $this->createDbiDummy();
         $this->dbi = $this->createDatabaseInterface($this->dummyDbi);
         $GLOBALS['dbi'] = $this->dbi;
@@ -52,7 +49,7 @@ class ZoomSearchControllerTest extends AbstractTestCase
             $template,
             new Search($this->dbi),
             new Relation($this->dbi),
-            $this->dbi
+            $this->dbi,
         );
         $controller($this->createStub(ServerRequest::class));
 

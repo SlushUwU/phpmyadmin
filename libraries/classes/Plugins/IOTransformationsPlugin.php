@@ -15,17 +15,13 @@ abstract class IOTransformationsPlugin extends TransformationsPlugin
 {
     /**
      * Specifies whether transformation was successful or not.
-     *
-     * @var bool
      */
-    protected $success = true;
+    protected bool $success = true;
 
     /**
      * To store the error message in case of failed transformations.
-     *
-     * @var string
      */
-    protected $error = '';
+    protected string $error = '';
 
     /**
      * Returns the html for input field to override default textarea.
@@ -52,8 +48,8 @@ abstract class IOTransformationsPlugin extends TransformationsPlugin
         $text_dir,
         $tabindex,
         $tabindex_for_value,
-        $idindex
-    ) {
+        $idindex,
+    ): string {
         return '';
     }
 
@@ -73,7 +69,7 @@ abstract class IOTransformationsPlugin extends TransformationsPlugin
      *
      * @return string error
      */
-    public function getError()
+    public function getError(): string
     {
         return $this->error;
     }

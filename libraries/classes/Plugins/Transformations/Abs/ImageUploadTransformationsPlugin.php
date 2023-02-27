@@ -28,7 +28,7 @@ abstract class ImageUploadTransformationsPlugin extends IOTransformationsPlugin
         return __(
             'Image upload functionality which also displays a thumbnail.'
             . ' The options are the width and height of the thumbnail'
-            . ' in pixels. Defaults to 100 X 100.'
+            . ' in pixels. Defaults to 100 X 100.',
         );
     }
 
@@ -38,10 +38,8 @@ abstract class ImageUploadTransformationsPlugin extends IOTransformationsPlugin
      * @param string             $buffer  text to be transformed
      * @param array              $options transformation options
      * @param FieldMetadata|null $meta    meta information
-     *
-     * @return string
      */
-    public function applyTransformation($buffer, array $options = [], FieldMetadata|null $meta = null)
+    public function applyTransformation($buffer, array $options = [], FieldMetadata|null $meta = null): string
     {
         return $buffer;
     }
@@ -71,11 +69,11 @@ abstract class ImageUploadTransformationsPlugin extends IOTransformationsPlugin
         $text_dir,
         $tabindex,
         $tabindex_for_value,
-        $idindex
-    ) {
+        $idindex,
+    ): string {
         $html = '';
         $src = '';
-        if (! empty($value)) {
+        if ($value !== '') {
             $html = '<input type="hidden" name="fields_prev' . $column_name_appendix
                 . '" value="' . bin2hex($value) . '">';
             $html .= '<input type="hidden" name="fields' . $column_name_appendix

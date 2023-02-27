@@ -34,14 +34,12 @@ class ConfigFile
      *
      * @var array
      */
-    private $cfgDb;
+    private array $cfgDb;
 
     /**
      * Stores original PMA config, not modified by user preferences
-     *
-     * @var array|null
      */
-    private $baseCfg;
+    private array|null $baseCfg = null;
 
     /**
      * Whether we are currently working in PMA Setup context
@@ -53,7 +51,7 @@ class ConfigFile
      *
      * @var array
      */
-    private $persistKeys = [];
+    private array $persistKeys = [];
 
     /**
      * Changes keys while updating config in {@link updateWithGlobalConfig()}
@@ -61,14 +59,12 @@ class ConfigFile
      *
      * @var array
      */
-    private $cfgUpdateReadMapping = [];
+    private array $cfgUpdateReadMapping = [];
 
     /**
      * Key filter for {@link set()}
-     *
-     * @var array|null
      */
-    private $setFilter;
+    private array|null $setFilter = null;
 
     /**
      * Instance id (key in $_SESSION array, separate for each server -
@@ -125,7 +121,7 @@ class ConfigFile
      *
      * @return array
      */
-    public function getPersistKeysMap()
+    public function getPersistKeysMap(): array
     {
         return $this->persistKeys;
     }
@@ -287,10 +283,8 @@ class ConfigFile
      *
      * @param string $path    Path of config file
      * @param mixed  $default Default values
-     *
-     * @return mixed
      */
-    public function get($path, $default = null)
+    public function get($path, $default = null): mixed
     {
         return Core::arrayRead($path, $_SESSION[$this->id], $default);
     }
@@ -302,10 +296,8 @@ class ConfigFile
      *
      * @param string $canonicalPath Canonical path
      * @param mixed  $default       Default value
-     *
-     * @return mixed
      */
-    public function getDefault($canonicalPath, $default = null)
+    public function getDefault($canonicalPath, $default = null): mixed
     {
         return Core::arrayRead($canonicalPath, $this->defaultCfg, $default);
     }
@@ -316,10 +308,8 @@ class ConfigFile
      *
      * @param string $path    Path
      * @param mixed  $default Default value
-     *
-     * @return mixed
      */
-    public function getValue($path, $default = null)
+    public function getValue($path, $default = null): mixed
     {
         $v = Core::arrayRead($path, $_SESSION[$this->id], null);
         if ($v !== null) {
@@ -335,10 +325,8 @@ class ConfigFile
      * Returns canonical path
      *
      * @param string $path Path
-     *
-     * @return string
      */
-    public function getCanonicalPath($path)
+    public function getCanonicalPath($path): string
     {
         return preg_replace('#^Servers/([\d]+)/#', 'Servers/1/', $path);
     }
@@ -348,20 +336,16 @@ class ConfigFile
      *
      * @param string $path    path of the variable in config db
      * @param mixed  $default default value
-     *
-     * @return mixed
      */
-    public function getDbEntry($path, $default = null)
+    public function getDbEntry($path, $default = null): mixed
     {
         return Core::arrayRead($path, $this->cfgDb, $default);
     }
 
     /**
      * Returns server count
-     *
-     * @return int
      */
-    public function getServerCount()
+    public function getServerCount(): int
     {
         return isset($_SESSION[$this->id]['Servers'])
             ? count($_SESSION[$this->id]['Servers'])
@@ -382,10 +366,8 @@ class ConfigFile
      * Returns DSN of given server
      *
      * @param int $server server index
-     *
-     * @return string
      */
-    public function getServerDSN($server)
+    public function getServerDSN($server): string
     {
         if (! isset($_SESSION[$this->id]['Servers'][$server])) {
             return '';
@@ -419,10 +401,8 @@ class ConfigFile
      * Returns server name
      *
      * @param int $id server index
-     *
-     * @return string
      */
-    public function getServerName($id)
+    public function getServerName($id): string
     {
         if (! isset($_SESSION[$this->id]['Servers'][$id])) {
             return '';
@@ -469,7 +449,7 @@ class ConfigFile
      *
      * @return array
      */
-    public function getConfig()
+    public function getConfig(): array
     {
         $c = $_SESSION[$this->id];
         foreach ($this->cfgUpdateReadMapping as $mapTo => $mapFrom) {
@@ -490,13 +470,13 @@ class ConfigFile
      *
      * @return array
      */
-    public function getConfigArray()
+    public function getConfigArray(): array
     {
         $c = $this->getFlatArray($_SESSION[$this->id]);
 
         $persistKeys = array_diff(
             array_keys($this->persistKeys),
-            array_keys($c)
+            array_keys($c),
         );
         foreach ($persistKeys as $k) {
             $c[$k] = $this->getDefault($this->getCanonicalPath($k));

@@ -18,26 +18,25 @@ use function __;
 use function array_sum;
 use function htmlspecialchars;
 
-/**
- * @covers \PhpMyAdmin\Controllers\Server\Status\QueriesController
- */
+/** @covers \PhpMyAdmin\Controllers\Server\Status\QueriesController */
 class QueriesControllerTest extends AbstractTestCase
 {
-    /** @var DatabaseInterface */
-    protected $dbi;
+    protected DatabaseInterface $dbi;
 
-    /** @var DbiDummy */
-    protected $dummyDbi;
+    protected DbiDummy $dummyDbi;
 
-    /** @var Data */
-    private $data;
+    private Data $data;
 
     protected function setUp(): void
     {
         parent::setUp();
+
         $GLOBALS['text_dir'] = 'ltr';
+
         parent::setGlobalConfig();
+
         parent::setTheme();
+
         $this->dummyDbi = $this->createDbiDummy();
         $this->dbi = $this->createDatabaseInterface($this->dummyDbi);
         $GLOBALS['dbi'] = $this->dbi;
@@ -84,57 +83,57 @@ class QueriesControllerTest extends AbstractTestCase
 
         $this->assertStringContainsString(
             __('per hour:'),
-            $html
+            $html,
         );
         $this->assertStringContainsString(
             Util::formatNumber($totalQueries * $hourFactor, 0),
-            $html
+            $html,
         );
 
         $valuePerMinute = Util::formatNumber($totalQueries * 60 / $this->data->status['Uptime'], 0);
         $this->assertStringContainsString(
             __('per minute:'),
-            $html
+            $html,
         );
         $this->assertStringContainsString(
             htmlspecialchars($valuePerMinute),
-            $html
+            $html,
         );
 
         $this->assertStringContainsString(
             __('Statements'),
-            $html
+            $html,
         );
 
         $this->assertStringContainsString(
             htmlspecialchars('change db'),
-            $html
+            $html,
         );
         $this->assertStringContainsString('54', $html);
         $this->assertStringContainsString(
             htmlspecialchars('select'),
-            $html
+            $html,
         );
         $this->assertStringContainsString(
             htmlspecialchars('set option'),
-            $html
+            $html,
         );
         $this->assertStringContainsString(
             htmlspecialchars('show databases'),
-            $html
+            $html,
         );
         $this->assertStringContainsString(
             htmlspecialchars('show status'),
-            $html
+            $html,
         );
         $this->assertStringContainsString(
             htmlspecialchars('show tables'),
-            $html
+            $html,
         );
 
         $this->assertStringContainsString(
             '<div id="serverstatusquerieschart" class="w-100 col-12 col-md-6" data-chart="',
-            $html
+            $html,
         );
     }
 }

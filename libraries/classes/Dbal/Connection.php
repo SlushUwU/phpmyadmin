@@ -12,16 +12,14 @@ final class Connection
 {
     /** User connection. */
     public const TYPE_USER = 0;
+
     /** Control user connection. */
     public const TYPE_CONTROL = 1;
+
     /** Auxiliary connection. Used for example for replication setup. */
     public const TYPE_AUXILIARY = 2;
 
-    /** @var object */
-    public $connection;
-
-    public function __construct(object $connection)
+    public function __construct(public object $connection)
     {
-        $this->connection = $connection;
     }
 }

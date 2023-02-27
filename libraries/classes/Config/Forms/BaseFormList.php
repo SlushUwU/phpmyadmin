@@ -20,22 +20,18 @@ class BaseFormList
      *
      * @var array<string, class-string<BaseForm>>
      */
-    protected static $all = [];
+    protected static array $all = [];
 
     /** @var BaseForm[] */
-    private $forms;
+    private array $forms = [];
 
-    /**
-     * @return string[]
-     */
-    public static function getAllFormNames()
+    /** @return string[] */
+    public static function getAllFormNames(): array
     {
         return array_keys(static::$all);
     }
 
-    /**
-     * @param string $name Name
-     */
+    /** @param string $name Name */
     public static function isValid(string $name): bool
     {
         return array_key_exists($name, static::$all);
@@ -44,10 +40,9 @@ class BaseFormList
     /**
      * @param string $name Name
      *
-     * @return string|null
      * @psalm-return class-string<BaseForm>|null
      */
-    public static function get(string $name)
+    public static function get(string $name): string|null
     {
         if (static::isValid($name)) {
             return static::$all[$name];
@@ -56,9 +51,7 @@ class BaseFormList
         return null;
     }
 
-    /**
-     * @param ConfigFile $cf Config file instance
-     */
+    /** @param ConfigFile $cf Config file instance */
     final public function __construct(ConfigFile $cf)
     {
         $this->forms = [];
@@ -89,7 +82,7 @@ class BaseFormList
      *
      * @return string HTML for errors
      */
-    public function displayErrors()
+    public function displayErrors(): string
     {
         $ret = '';
         foreach ($this->forms as $form) {
@@ -127,7 +120,7 @@ class BaseFormList
      *
      * @return string[]
      */
-    public static function getFields()
+    public static function getFields(): array
     {
         $names = [];
         foreach (static::$all as $class) {

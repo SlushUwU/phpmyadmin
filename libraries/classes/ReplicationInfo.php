@@ -11,7 +11,7 @@ use function sprintf;
 final class ReplicationInfo
 {
     /** @var string[] */
-    public $primaryVariables = [
+    public array $primaryVariables = [
         'File',
         'Position',
         'Binlog_Do_DB',
@@ -19,7 +19,7 @@ final class ReplicationInfo
     ];
 
     /** @var string[] */
-    public $replicaVariables = [
+    public array $replicaVariables = [
         'Slave_IO_State',
         'Master_Host',
         'Master_User',
@@ -56,19 +56,19 @@ final class ReplicationInfo
     ];
 
     /** @var array */
-    private $primaryStatus = [];
+    private array $primaryStatus = [];
 
     /** @var array */
-    private $replicaStatus = [];
+    private array $replicaStatus = [];
 
     /** @var array */
-    private $multiPrimaryStatus = [];
+    private array $multiPrimaryStatus = [];
 
     /** @var array */
-    private $primaryInfo = [];
+    private array $primaryInfo = [];
 
     /** @var array */
-    private $replicaInfo = [];
+    private array $replicaInfo = [];
 
     public function __construct(private DatabaseInterface $dbi)
     {
@@ -149,9 +149,7 @@ final class ReplicationInfo
         $this->primaryInfo['Ignore_DB'] = self::fill($this->primaryStatus, 'Binlog_Ignore_DB');
     }
 
-    /**
-     * @return array
-     */
+    /** @return array */
     public function getPrimaryInfo(): array
     {
         return $this->primaryInfo;
@@ -177,9 +175,7 @@ final class ReplicationInfo
         $this->replicaInfo['Wild_Ignore_Table'] = self::fill($this->replicaStatus, 'Replicate_Wild_Ignore_Table');
     }
 
-    /**
-     * @return array
-     */
+    /** @return array */
     public function getReplicaInfo(): array
     {
         return $this->replicaInfo;

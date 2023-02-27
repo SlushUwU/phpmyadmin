@@ -11,14 +11,13 @@ use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\ResponseRenderer;
 
-/**
- * @covers \PhpMyAdmin\Controllers\Table\ExportRowsController
- */
+/** @covers \PhpMyAdmin\Controllers\Table\ExportRowsController */
 class ExportRowsControllerTest extends AbstractTestCase
 {
     protected function setUp(): void
     {
         parent::setUp();
+
         $GLOBALS['dbi'] = $this->createDatabaseInterface();
         $GLOBALS['server'] = 2;
         $GLOBALS['active_page'] = null;
@@ -37,7 +36,7 @@ class ExportRowsControllerTest extends AbstractTestCase
         (new ExportRowsController(
             new ResponseRenderer(),
             new Template(),
-            $controller
+            $controller,
         ))($this->createStub(ServerRequest::class));
 
         /** @psalm-suppress InvalidArrayOffset */
@@ -59,7 +58,7 @@ class ExportRowsControllerTest extends AbstractTestCase
         (new ExportRowsController(
             $response,
             new Template(),
-            $controller
+            $controller,
         ))($this->createStub(ServerRequest::class));
 
         $this->assertSame(['message' => 'No row selected.'], $response->getJSONResult());
@@ -83,7 +82,7 @@ class ExportRowsControllerTest extends AbstractTestCase
         (new ExportRowsController(
             new ResponseRenderer(),
             new Template(),
-            $controller
+            $controller,
         ))($this->createStub(ServerRequest::class));
 
         /** @psalm-suppress InvalidArrayOffset */

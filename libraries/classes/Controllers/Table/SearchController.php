@@ -46,58 +46,51 @@ class SearchController extends AbstractController
      *
      * @var array
      */
-    private $columnNames;
+    private array $columnNames = [];
     /**
      * Types of columns
      *
      * @var array
      */
-    private $columnTypes;
+    private array $columnTypes = [];
     /**
      * Types of columns without any replacement
      *
      * @var array
      */
-    private $originalColumnTypes;
+    private array $originalColumnTypes = [];
     /**
      * Collations of columns
      *
      * @var array
      */
-    private $columnCollations;
+    private array $columnCollations = [];
     /**
      * Null Flags of columns
      *
      * @var array
      */
-    private $columnNullFlags;
+    private array $columnNullFlags = [];
     /**
      * Whether a geometry column is present
      */
-    private bool $geomColumnFlag;
+    private bool $geomColumnFlag = false;
     /**
      * Foreign Keys
      *
      * @var array
      */
-    private $foreigners;
+    private array $foreigners = [];
 
     public function __construct(
         ResponseRenderer $response,
         Template $template,
         private Search $search,
         private Relation $relation,
-        private DatabaseInterface $dbi
+        private DatabaseInterface $dbi,
     ) {
         parent::__construct($response, $template);
 
-        $this->columnNames = [];
-        $this->columnTypes = [];
-        $this->originalColumnTypes = [];
-        $this->columnCollations = [];
-        $this->columnNullFlags = [];
-        $this->geomColumnFlag = false;
-        $this->foreigners = [];
         $this->loadTableInfo();
     }
 
@@ -242,7 +235,7 @@ class SearchController extends AbstractController
             new RelationCleanup($this->dbi, $this->relation),
             new Operations($this->dbi, $this->relation),
             new Transformations(),
-            $this->template
+            $this->template,
         );
 
         $this->response->addHTML($sql->executeQueryAndSendQueryResponse(
@@ -259,7 +252,7 @@ class SearchController extends AbstractController
             null, // disp_query
             null, // disp_message
             $sql_query, // sql_query
-            null // complete_query
+            null, // complete_query
         ));
     }
 
@@ -319,7 +312,7 @@ class SearchController extends AbstractController
      *
      * @return array Array containing column's properties
      */
-    public function getColumnProperties($search_index, $column_index)
+    public function getColumnProperties($search_index, $column_index): array
     {
         $selected_operator = ($_POST['criteriaColumnOperators'][$search_index] ?? '');
         $entered_value = ($_POST['criteriaValues'] ?? '');
@@ -331,7 +324,7 @@ class SearchController extends AbstractController
         $typeOperators = $this->dbi->types->getTypeOperatorsHtml(
             $cleanType,
             $this->columnNullFlags[$column_index],
-            $selected_operator
+            $selected_operator,
         );
         $func = $this->template->render('table/search/column_comparison_operators', [
             'search_index' => $search_index,
@@ -343,7 +336,7 @@ class SearchController extends AbstractController
             $this->columnNames[$column_index],
             false,
             '',
-            ''
+            '',
         );
         $htmlAttributes = '';
         $isInteger = in_array($cleanType, $this->dbi->types->getIntegerTypes());
@@ -363,7 +356,7 @@ class SearchController extends AbstractController
 
         $searchColumnInForeigners = $this->relation->searchColumnInForeigners(
             $this->foreigners,
-            $this->columnNames[$column_index]
+            $this->columnNames[$column_index],
         );
 
         if (
@@ -376,7 +369,7 @@ class SearchController extends AbstractController
                 $foreignData['foreign_field'],
                 $foreignData['foreign_display'],
                 '',
-                $GLOBALS['cfg']['ForeignKeyMaxLimit']
+                $GLOBALS['cfg']['ForeignKeyMaxLimit'],
             );
         }
 

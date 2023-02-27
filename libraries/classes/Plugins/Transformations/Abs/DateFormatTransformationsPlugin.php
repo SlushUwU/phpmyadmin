@@ -44,7 +44,7 @@ abstract class DateFormatTransformationsPlugin extends TransformationsPlugin
             . ' UTC one (use "local" or "utc" strings) for that. According to'
             . ' that, date format has different value - for "local" see the'
             . ' documentation for PHP\'s strftime() function and for "utc" it'
-            . ' is done using gmdate() function.'
+            . ' is done using gmdate() function.',
         );
     }
 
@@ -54,10 +54,8 @@ abstract class DateFormatTransformationsPlugin extends TransformationsPlugin
      * @param string             $buffer  text to be transformed
      * @param array              $options transformation options
      * @param FieldMetadata|null $meta    meta information
-     *
-     * @return string
      */
-    public function applyTransformation($buffer, array $options = [], FieldMetadata|null $meta = null)
+    public function applyTransformation($buffer, array $options = [], FieldMetadata|null $meta = null): string
     {
         $buffer = (string) $buffer;
         // possibly use a global transform and feed it with special options
@@ -110,7 +108,7 @@ abstract class DateFormatTransformationsPlugin extends TransformationsPlugin
                         $aDate['second'],
                         $aDate['month'],
                         $aDate['day'],
-                        $aDate['year']
+                        $aDate['year'],
                     );
                 }
 
@@ -143,7 +141,7 @@ abstract class DateFormatTransformationsPlugin extends TransformationsPlugin
             }
 
             return '<dfn onclick="alert(' . htmlspecialchars((string) json_encode($source), ENT_COMPAT) . ');" title="'
-                . htmlspecialchars($source) . '">' . htmlspecialchars((string) $text) . '</dfn>';
+                . htmlspecialchars($source) . '">' . htmlspecialchars($text) . '</dfn>';
         }
 
         return htmlspecialchars((string) $buffer);

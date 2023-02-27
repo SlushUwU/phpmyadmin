@@ -32,13 +32,12 @@ use function sprintf;
 class EpsRelationSchema extends ExportRelationSchema
 {
     /** @var TableStatsEps[] */
-    private $tables = [];
+    private array $tables = [];
 
     /** @var RelationStatsEps[] Relations */
-    private $relations = [];
+    private array $relations = [];
 
-    /** @var int */
-    private $tablewidth = 0;
+    private int|float $tablewidth = 0;
 
     /**
      * Upon instantiation This starts writing the EPS document
@@ -60,8 +59,8 @@ class EpsRelationSchema extends ExportRelationSchema
             sprintf(
                 __('Schema of the %s database - Page %s'),
                 $this->db->getName(),
-                $this->pageNumber
-            )
+                $this->pageNumber,
+            ),
         );
         $this->diagram->setAuthor('phpMyAdmin ' . Version::VERSION);
         $this->diagram->setDate(date('j F Y, g:i a'));
@@ -82,7 +81,7 @@ class EpsRelationSchema extends ExportRelationSchema
                     $this->tablewidth,
                     $this->showKeys,
                     $this->tableDimension,
-                    $this->offline
+                    $this->offline,
                 );
             }
 
@@ -116,7 +115,7 @@ class EpsRelationSchema extends ExportRelationSchema
                             $master_field,
                             $rel['foreign_table'],
                             $rel['foreign_field'],
-                            $this->tableDimension
+                            $this->tableDimension,
                         );
                     }
 
@@ -136,7 +135,7 @@ class EpsRelationSchema extends ExportRelationSchema
                             $one_field,
                             $one_key['ref_table_name'],
                             $one_key['ref_index_list'][$index],
-                            $this->tableDimension
+                            $this->tableDimension,
                         );
                     }
                 }
@@ -151,9 +150,7 @@ class EpsRelationSchema extends ExportRelationSchema
         $this->diagram->endEpsDoc();
     }
 
-    /**
-     * @return array{fileName: non-empty-string, fileData: string}
-     */
+    /** @return array{fileName: non-empty-string, fileData: string} */
     public function getExportInfo(): array
     {
         return ['fileName' => $this->getFileName('.eps'), 'fileData' => $this->diagram->getOutputData()];
@@ -181,7 +178,7 @@ class EpsRelationSchema extends ExportRelationSchema
         $masterField,
         $foreignTable,
         $foreignField,
-        $tableDimension
+        $tableDimension,
     ): void {
         if (! isset($this->tables[$masterTable])) {
             $this->tables[$masterTable] = new TableStatsEps(
@@ -193,7 +190,7 @@ class EpsRelationSchema extends ExportRelationSchema
                 $this->pageNumber,
                 $this->tablewidth,
                 false,
-                $tableDimension
+                $tableDimension,
             );
         }
 
@@ -207,7 +204,7 @@ class EpsRelationSchema extends ExportRelationSchema
                 $this->pageNumber,
                 $this->tablewidth,
                 false,
-                $tableDimension
+                $tableDimension,
             );
         }
 
@@ -216,7 +213,7 @@ class EpsRelationSchema extends ExportRelationSchema
             $this->tables[$masterTable],
             $masterField,
             $this->tables[$foreignTable],
-            $foreignField
+            $foreignField,
         );
     }
 

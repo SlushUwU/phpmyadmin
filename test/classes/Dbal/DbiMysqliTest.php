@@ -17,8 +17,7 @@ use PhpMyAdmin\Tests\AbstractTestCase;
  */
 class DbiMysqliTest extends AbstractTestCase
 {
-    /** @var DbiMysqli */
-    protected $object;
+    protected DbiMysqli $object;
 
     /**
      * Sets up the fixture, for example, opens a network connection.
@@ -27,6 +26,7 @@ class DbiMysqliTest extends AbstractTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
         $this->object = new DbiMysqli();
     }
 

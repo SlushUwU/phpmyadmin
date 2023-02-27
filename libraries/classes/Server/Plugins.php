@@ -14,9 +14,7 @@ class Plugins
     {
     }
 
-    /**
-     * @return Plugin[]
-     */
+    /** @return Plugin[] */
     public function getAll(): array
     {
         $sql = 'SHOW PLUGINS';
@@ -33,14 +31,12 @@ class Plugins
         return $plugins;
     }
 
-    /**
-     * @return array<int|string, string>
-     */
+    /** @return array<int|string, string> */
     public function getAuthentication(): array
     {
         $result = $this->dbi->query(
             'SELECT `PLUGIN_NAME`, `PLUGIN_DESCRIPTION` FROM `information_schema`.`PLUGINS`'
-                . ' WHERE `PLUGIN_TYPE` = \'AUTHENTICATION\';'
+                . ' WHERE `PLUGIN_TYPE` = \'AUTHENTICATION\';',
         );
 
         $plugins = [];
@@ -82,9 +78,7 @@ class Plugins
         return $description;
     }
 
-    /**
-     * @param array $row Row fetched from database
-     */
+    /** @param array $row Row fetched from database */
     private function mapRowToPlugin(array $row): Plugin
     {
         return Plugin::fromState([

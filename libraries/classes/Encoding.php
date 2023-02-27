@@ -49,10 +49,8 @@ class Encoding
 
     /**
      * Chosen encoding engine
-     *
-     * @var int
      */
-    private static $engine = null;
+    private static int|null $engine = null;
 
     /**
      * Map of conversion engine configurations
@@ -65,7 +63,7 @@ class Encoding
      *
      * @var array
      */
-    private static $enginemap = [
+    private static array $enginemap = [
         'iconv' => [
             'iconv',
             self::ENGINE_ICONV,
@@ -93,7 +91,7 @@ class Encoding
      *
      * @var array
      */
-    private static $engineorder = [
+    private static array $engineorder = [
         'iconv',
         'mb',
         'recode',
@@ -101,10 +99,8 @@ class Encoding
 
     /**
      * Kanji encodings list
-     *
-     * @var string
      */
-    private static $kanjiEncodings = 'ASCII,SJIS,EUC-JP,JIS';
+    private static string $kanjiEncodings = 'ASCII,SJIS,EUC-JP,JIS';
 
     /**
      * Initializes encoding engine detecting available backends.
@@ -175,7 +171,7 @@ class Encoding
     public static function convertString(
         string $src_charset,
         string $dest_charset,
-        string $what
+        string $what,
     ): string {
         if ($src_charset === $dest_charset) {
             return $what;
@@ -190,7 +186,7 @@ class Encoding
             self::ENGINE_ICONV => iconv(
                 $src_charset,
                 $dest_charset . ($GLOBALS['cfg']['IconvExtraParams'] ?? ''),
-                $what
+                $what,
             ),
             self::ENGINE_MB => mb_convert_encoding($what, $dest_charset, $src_charset),
             default => $what,
@@ -345,7 +341,7 @@ class Encoding
 
         return array_intersect(
             array_map('strtolower', mb_list_encodings()),
-            $GLOBALS['cfg']['AvailableCharsets']
+            $GLOBALS['cfg']['AvailableCharsets'],
         );
     }
 }

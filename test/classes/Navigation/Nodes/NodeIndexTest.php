@@ -7,9 +7,7 @@ namespace PhpMyAdmin\Tests\Navigation\Nodes;
 use PhpMyAdmin\Navigation\Nodes\NodeIndex;
 use PhpMyAdmin\Tests\AbstractTestCase;
 
-/**
- * @covers \PhpMyAdmin\Navigation\Nodes\NodeIndex
- */
+/** @covers \PhpMyAdmin\Navigation\Nodes\NodeIndex */
 class NodeIndexTest extends AbstractTestCase
 {
     /**
@@ -18,6 +16,7 @@ class NodeIndexTest extends AbstractTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
         $GLOBALS['dbi'] = $this->createDatabaseInterface();
         $GLOBALS['server'] = 0;
     }
@@ -28,13 +27,12 @@ class NodeIndexTest extends AbstractTestCase
     public function testConstructor(): void
     {
         $parent = new NodeIndex('default');
-        $this->assertIsArray($parent->links);
         $this->assertEquals(
             [
                 'text' => ['route' => '/table/indexes', 'params' => ['db' => null, 'table' => null, 'index' => null]],
                 'icon' => ['route' => '/table/indexes', 'params' => ['db' => null, 'table' => null, 'index' => null]],
             ],
-            $parent->links
+            $parent->links,
         );
     }
 }

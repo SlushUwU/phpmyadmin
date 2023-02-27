@@ -64,7 +64,7 @@ class Common
                 $db,
                 $one_table['TABLE_NAME'],
                 is_string($one_table['ENGINE']) ? $one_table['ENGINE'] : '',
-                $DF
+                $DF,
             );
         }
 
@@ -87,8 +87,8 @@ class Common
             $fieldsRs = $this->dbi->query(
                 QueryGenerator::getColumnsSql(
                     $designerTable->getDatabaseName(),
-                    $designerTable->getTableName()
-                )
+                    $designerTable->getTableName(),
+                ),
             );
             $j = 0;
             while ($row = $fieldsRs->fetchAssoc()) {
@@ -149,7 +149,7 @@ class Common
                     $con['DCN'][$i] = rawurlencode($one_field);
                     $con['STN'][$i] = rawurlencode(
                         ($one_key['ref_db_name'] ?? $GLOBALS['db'])
-                        . '.' . $one_key['ref_table_name']
+                        . '.' . $one_key['ref_table_name'],
                     );
                     $con['SCN'][$i] = rawurlencode($one_key['ref_index_list'][$index]);
                     $i++;
@@ -277,7 +277,7 @@ class Common
             $query,
             'name',
             null,
-            Connection::TYPE_CONTROL
+            Connection::TYPE_CONTROL,
         );
     }
 
@@ -288,7 +288,7 @@ class Common
      *
      * @return string|null table name
      */
-    public function getPageName(int $pg)
+    public function getPageName(int $pg): string|null
     {
         $pdfFeature = $this->relation->getRelationParameters()->pdfFeature;
         if ($pdfFeature === null) {
@@ -302,7 +302,7 @@ class Common
         $page_name = $this->dbi->fetchValue(
             $query,
             0,
-            Connection::TYPE_CONTROL
+            Connection::TYPE_CONTROL,
         );
 
         return $page_name !== false ? $page_name : null;
@@ -357,7 +357,7 @@ class Common
         $default_page_no = $this->dbi->fetchValue(
             $query,
             0,
-            Connection::TYPE_CONTROL
+            Connection::TYPE_CONTROL,
         );
 
         return is_string($default_page_no) ? intval($default_page_no) : -1;
@@ -384,7 +384,7 @@ class Common
             $query,
             null,
             null,
-            Connection::TYPE_CONTROL
+            Connection::TYPE_CONTROL,
         );
 
         return $pageNos !== [];
@@ -398,7 +398,7 @@ class Common
      *
      * @return int id of the page to load
      */
-    public function getLoadingPage($db)
+    public function getLoadingPage($db): int
     {
         $pdfFeature = $this->relation->getRelationParameters()->pdfFeature;
         if ($pdfFeature === null) {
@@ -418,7 +418,7 @@ class Common
         $min_page_no = $this->dbi->fetchValue(
             $query,
             0,
-            Connection::TYPE_CONTROL
+            Connection::TYPE_CONTROL,
         );
 
         return is_string($min_page_no) ? intval($min_page_no) : -1;
@@ -429,10 +429,8 @@ class Common
      *
      * @param string $pageName name of the page
      * @param string $db       name of the database
-     *
-     * @return int|null
      */
-    public function createNewPage($pageName, $db)
+    public function createNewPage($pageName, $db): int|null
     {
         $pdfFeature = $this->relation->getRelationParameters()->pdfFeature;
         if ($pdfFeature === null) {
@@ -506,7 +504,7 @@ class Common
                 _pgettext(
                     'phpMyAdmin configuration storage is not configured for'
                         . ' "Display Features" on designer when user tries to set a display field.',
-                    'phpMyAdmin configuration storage is not configured for "Display Features".'
+                    'phpMyAdmin configuration storage is not configured for "Display Features".',
                 ),
             ];
         }
@@ -560,7 +558,7 @@ class Common
             // improve: check all other requirements for InnoDB relations
             $result = $this->dbi->query(
                 'SHOW INDEX FROM ' . Util::backquote($DB1)
-                . '.' . Util::backquote($T1) . ';'
+                . '.' . Util::backquote($T1) . ';',
             );
 
             // will be use to emphasis prim. keys in the table view
@@ -571,7 +569,7 @@ class Common
 
             $result = $this->dbi->query(
                 'SHOW INDEX FROM ' . Util::backquote($DB2)
-                . '.' . Util::backquote($T2) . ';'
+                . '.' . Util::backquote($T2) . ';',
             );
             // will be used to emphasis prim. keys in the table view
             $index_array2 = [];
@@ -673,7 +671,7 @@ class Common
      *
      * @return array array of success/failure and message
      */
-    public function removeRelation($T1, $F1, $T2, $F2)
+    public function removeRelation($T1, $F1, $T2, $F2): array
     {
         [$DB1, $T1] = explode('.', $T1);
         [$DB2, $T2] = explode('.', $T2);
@@ -762,7 +760,7 @@ class Common
             $orig_data = $this->dbi->fetchSingleRow(
                 $orig_data_query,
                 DatabaseInterface::FETCH_ASSOC,
-                Connection::TYPE_CONTROL
+                Connection::TYPE_CONTROL,
             );
 
             if (! empty($orig_data)) {

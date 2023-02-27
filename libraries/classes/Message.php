@@ -64,7 +64,7 @@ class Message implements Stringable
      *
      * @var array
      */
-    public static $level = [
+    public static array $level = [
         self::SUCCESS => 'success',
         self::NOTICE => 'notice',
         self::ERROR => 'error',
@@ -72,59 +72,47 @@ class Message implements Stringable
 
     /**
      * The message number
-     *
-     * @var int
      */
-    protected $number = self::NOTICE;
+    protected int $number = self::NOTICE;
 
     /**
      * The locale string identifier
-     *
-     * @var    string
      */
-    protected $string = '';
+    protected string $string = '';
 
     /**
      * The formatted message
-     *
-     * @var    string
      */
-    protected $message = '';
+    protected string $message = '';
 
     /**
      * Whether the message was already displayed
-     *
-     * @var bool
      */
-    protected $isDisplayed = false;
+    protected bool $isDisplayed = false;
 
     /**
      * Whether to use BB code when displaying.
-     *
-     * @var bool
      */
-    protected $useBBCode = true;
+    protected bool $useBBCode = true;
 
     /**
      * Unique id
-     *
-     * @var string
      */
-    protected $hash = null;
+    protected string|null $hash = null;
 
     /**
      * holds parameters
      *
      * @var    array
      */
-    protected $params = [];
+    protected array $params = [];
 
     /**
      * holds additional messages
      *
      * @var    array
      */
-    protected $addedMessages = [];
+    protected array $addedMessages = [];
 
     /**
      * @param string $string   The message to be displayed
@@ -137,7 +125,7 @@ class Message implements Stringable
         string $string = '',
         int $number = self::NOTICE,
         array $params = [],
-        int $sanitize = self::SANITIZE_NONE
+        int $sanitize = self::SANITIZE_NONE,
     ) {
         $this->setString($string, $sanitize & self::SANITIZE_STRING);
         $this->setNumber($number);
@@ -238,7 +226,7 @@ class Message implements Stringable
     public static function getMessageForAffectedRows(int $rows): self
     {
         $message = self::success(
-            _ngettext('%1$d row affected.', '%1$d rows affected.', $rows)
+            _ngettext('%1$d row affected.', '%1$d rows affected.', $rows),
         );
         $message->addParam($rows);
 
@@ -257,7 +245,7 @@ class Message implements Stringable
     public static function getMessageForDeletedRows(int $rows): self
     {
         $message = self::success(
-            _ngettext('%1$d row deleted.', '%1$d rows deleted.', $rows)
+            _ngettext('%1$d row deleted.', '%1$d rows deleted.', $rows),
         );
         $message->addParam($rows);
 
@@ -276,7 +264,7 @@ class Message implements Stringable
     public static function getMessageForInsertedRows(int $rows): self
     {
         $message = self::success(
-            _ngettext('%1$d row inserted.', '%1$d rows inserted.', $rows)
+            _ngettext('%1$d row inserted.', '%1$d rows inserted.', $rows),
         );
         $message->addParam($rows);
 
@@ -570,7 +558,7 @@ class Message implements Stringable
      *
      * @return mixed  the sanitized message(s)
      */
-    public static function sanitize($message)
+    public static function sanitize($message): mixed
     {
         if (is_array($message)) {
             foreach ($message as $key => $val) {
@@ -624,7 +612,7 @@ class Message implements Stringable
             $this->hash = md5(
                 $this->getNumber() .
                 $this->string .
-                $this->message
+                $this->message,
             );
         }
 

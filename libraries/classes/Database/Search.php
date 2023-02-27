@@ -26,17 +26,15 @@ class Search
 {
     /**
      * Database name
-     *
-     * @var string
      */
-    private $db;
+    private string $db;
 
     /**
      * Table Names
      *
      * @var array
      */
-    private $tablesNamesOnly;
+    private array $tablesNamesOnly;
 
     /**
      * Type of search
@@ -45,46 +43,33 @@ class Search
 
     /**
      * Already set search type
-     *
-     * @var int
      */
-    private $criteriaSearchType;
+    private int $criteriaSearchType;
 
     /**
      * Already set search type's description
-     *
-     * @var string
      */
-    private $searchTypeDescription;
+    private string $searchTypeDescription = '';
 
     /**
      * Search string/regexp
-     *
-     * @var string
      */
-    private $criteriaSearchString;
+    private string $criteriaSearchString;
 
     /**
      * Criteria Tables to search in
      *
      * @var string[]
      */
-    private $criteriaTables;
+    private array $criteriaTables = [];
 
     /**
      * Restrict the search to this column
-     *
-     * @var string
      */
-    private $criteriaColumnName;
+    private string $criteriaColumnName;
 
-    /** @var Template */
-    public $template;
-
-    /**
-     * @param string $db Database name
-     */
-    public function __construct(private DatabaseInterface $dbi, $db, Template $template)
+    /** @param string $db Database name */
+    public function __construct(private DatabaseInterface $dbi, $db, public Template $template)
     {
         $this->db = $db;
         $this->searchTypes = [
@@ -94,7 +79,6 @@ class Search
             '4' => __('the exact phrase as whole field'),
             '5' => __('as regular expression'),
         ];
-        $this->template = $template;
         // Sets criteria parameters
         $this->setSearchParams();
     }
@@ -125,7 +109,6 @@ class Search
             $this->criteriaSearchString = $_POST['criteriaSearchString'];
         }
 
-        $this->criteriaTables = [];
         if (empty($_POST['criteriaTables']) || ! is_array($_POST['criteriaTables'])) {
             unset($_POST['submit_search']);
         } else {
@@ -270,7 +253,7 @@ class Search
      *
      * @return string HTML for selection form
      */
-    public function getMainHtml()
+    public function getMainHtml(): string
     {
         return $this->template->render('database/search/main', [
             'db' => $this->db,

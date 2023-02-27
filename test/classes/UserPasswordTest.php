@@ -15,17 +15,15 @@ use PhpMyAdmin\UserPassword;
 
 use function str_repeat;
 
-/**
- * @covers \PhpMyAdmin\UserPassword
- */
+/** @covers \PhpMyAdmin\UserPassword */
 class UserPasswordTest extends AbstractTestCase
 {
-    /** @var UserPassword */
-    private $object;
+    private UserPassword $object;
 
     protected function setUp(): void
     {
         parent::setUp();
+
         $dbi = $this->createDatabaseInterface();
 
         $relation = new Relation($dbi);
@@ -34,38 +32,34 @@ class UserPasswordTest extends AbstractTestCase
             $dbi,
             $relation,
             new RelationCleanup($dbi, $relation),
-            new Plugins($dbi)
+            new Plugins($dbi),
         );
         $this->object = new UserPassword(
             $serverPrivileges,
             $this->createStub(AuthenticationPluginFactory::class),
-            $dbi
+            $dbi,
         );
     }
 
-    /**
-     * @dataProvider providerSetChangePasswordMsg
-     */
+    /** @dataProvider providerSetChangePasswordMsg */
     public function testSetChangePasswordMsg(
         bool $error,
         Message $message,
         bool $noPassword,
         string $password,
-        string $passwordConfirmation
+        string $passwordConfirmation,
     ): void {
         $this->assertEquals(
             ['error' => $error, 'msg' => $message],
             $this->object->setChangePasswordMsg(
                 $password,
                 $passwordConfirmation,
-                $noPassword
-            )
+                $noPassword,
+            ),
         );
     }
 
-    /**
-     * @psalm-return array{0: bool, 1: Message, 2: string, 3: string, 4: string}[]
-     */
+    /** @psalm-return array{0: bool, 1: Message, 2: string, 3: string, 4: string}[] */
     public static function providerSetChangePasswordMsg(): array
     {
         return [

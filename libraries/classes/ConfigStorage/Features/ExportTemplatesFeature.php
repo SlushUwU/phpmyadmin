@@ -7,20 +7,10 @@ namespace PhpMyAdmin\ConfigStorage\Features;
 use PhpMyAdmin\Dbal\DatabaseName;
 use PhpMyAdmin\Dbal\TableName;
 
-/**
- * @psalm-immutable
- */
+/** @psalm-immutable */
 final class ExportTemplatesFeature
 {
-    /** @var DatabaseName */
-    public $database;
-
-    /** @var TableName */
-    public $exportTemplates;
-
-    public function __construct(DatabaseName $database, TableName $exportTemplates)
+    public function __construct(public DatabaseName $database, public TableName $exportTemplates)
     {
-        $this->database = $database;
-        $this->exportTemplates = $exportTemplates;
     }
 }

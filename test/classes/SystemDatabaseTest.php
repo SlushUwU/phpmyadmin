@@ -10,17 +10,13 @@ use PhpMyAdmin\SystemColumn;
 use PhpMyAdmin\SystemDatabase;
 use PhpMyAdmin\Tests\Stubs\DummyResult;
 
-/**
- * @covers \PhpMyAdmin\SystemDatabase
- */
+/** @covers \PhpMyAdmin\SystemDatabase */
 class SystemDatabaseTest extends AbstractTestCase
 {
     /**
      * SystemDatabase instance
-     *
-     * @var SystemDatabase
      */
-    private $sysDb;
+    private SystemDatabase $sysDb;
 
     /**
      * Setup function for test cases
@@ -28,6 +24,7 @@ class SystemDatabaseTest extends AbstractTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
         /**
          * SET these to avoid undefine d index error
          */
@@ -97,8 +94,8 @@ class SystemDatabaseTest extends AbstractTestCase
                         'mimetype' => 'mimetype',
                         'transformation' => 'transformation',
                         'transformation_options' => 'transformation_options',
-                    ]
-                )
+                    ],
+                ),
             );
 
         $db = 'PMA_db';
@@ -111,7 +108,7 @@ class SystemDatabaseTest extends AbstractTestCase
             $resultStub,
             $column_map,
             $view_name,
-            $db
+            $db,
         );
 
         $sql = 'INSERT INTO `information_schema`.`column_info` '
@@ -141,7 +138,7 @@ class SystemDatabaseTest extends AbstractTestCase
                     'table' => 'meta2_table',
                     'name' => 'meta2_name',
                 ],
-            ]
+            ],
         );
 
         $sql_query = 'PMA_sql_query';
@@ -155,11 +152,11 @@ class SystemDatabaseTest extends AbstractTestCase
 
         $this->assertEquals(
             new SystemColumn('meta1_table', 'meta1_name', 'view_columns1'),
-            $column_map[0]
+            $column_map[0],
         );
         $this->assertEquals(
             new SystemColumn('meta2_table', 'meta2_name', 'view_columns2'),
-            $column_map[1]
+            $column_map[1],
         );
 
         $dummyDbi->assertAllQueriesConsumed();

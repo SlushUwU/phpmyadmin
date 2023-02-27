@@ -32,19 +32,19 @@ use function vsprintf;
 class Advisor
 {
     /** @var array */
-    private $variables;
+    private array $variables = [];
 
     /** @var array */
-    private $globals;
+    private array $globals = [];
 
     /**
      * @var array<int, array<string, string>>
      * @psalm-var list<RuleType>
      */
-    private $rules = [];
+    private array $rules = [];
 
     /** @var array{fired:array, notfired:array, unchecked:array, errors:array} */
-    private $runResult = [
+    private array $runResult = [
         'fired' => [],
         'notfired' => [],
         'unchecked' => [],
@@ -95,14 +95,14 @@ class Advisor
                 array $arguments,
                 int $value,
                 int $limes = 6,
-                int $comma = 0
+                int $comma = 0,
             ) => implode(' ', (array) Util::formatByteDown($value, $limes, $comma))
         );
         $this->expression->register(
             'fired',
             static function (): void {
             },
-            function (array $arguments, int $value) {
+            function (array $arguments, int|string $value) {
                 // Did matching rule fire?
                 foreach ($this->runResult['fired'] as $rule) {
                     if ($rule['id'] == $value) {
@@ -111,7 +111,7 @@ class Advisor
                 }
 
                 return '0';
-            }
+            },
         );
         /* Some global variables for advisor */
         $this->globals = [
@@ -156,17 +156,13 @@ class Advisor
         $this->rules = array_merge($genericRules, $extraRules);
     }
 
-    /**
-     * @return array{fired: array, notfired: array, unchecked: array, errors: array}
-     */
+    /** @return array{fired: array, notfired: array, unchecked: array, errors: array} */
     public function getRunResult(): array
     {
         return $this->runResult;
     }
 
-    /**
-     * @psalm-return array{fired:array, notfired:array, unchecked:array, errors:array}
-     */
+    /** @psalm-return array{fired:array, notfired:array, unchecked:array, errors:array} */
     public function run(): array
     {
         $this->setVariables();
@@ -186,7 +182,7 @@ class Advisor
     {
         $this->runResult['errors'][] = $description . ' ' . sprintf(
             __('Error when evaluating: %s'),
-            $exception->getMessage()
+            $exception->getMessage(),
         );
     }
 
@@ -213,9 +209,9 @@ class Advisor
                     $this->storeError(
                         sprintf(
                             __('Failed evaluating precondition for rule \'%s\'.'),
-                            $rule['name']
+                            $rule['name'],
                         ),
-                        $e
+                        $e,
                     );
                     continue;
                 }
@@ -233,9 +229,9 @@ class Advisor
                 $this->storeError(
                     sprintf(
                         __('Failed calculating value for rule \'%s\'.'),
-                        $rule['name']
+                        $rule['name'],
                     ),
-                    $e
+                    $e,
                 );
                 continue;
             }
@@ -252,9 +248,9 @@ class Advisor
                 $this->storeError(
                     sprintf(
                         __('Failed running test for rule \'%s\'.'),
-                        $rule['name']
+                        $rule['name'],
                     ),
-                    $e
+                    $e,
                 );
             }
         }
@@ -281,7 +277,7 @@ class Advisor
             } catch (Throwable $e) {
                 $this->storeError(
                     sprintf(__('Failed formatting string for rule \'%s\'.'), $rule['name']),
-                    $e
+                    $e,
                 );
 
                 return;
@@ -295,19 +291,19 @@ class Advisor
         $rule['recommendation'] = preg_replace_callback(
             '/\{([a-z_0-9]+)\}/Ui',
             fn (array $matches) => $this->replaceVariable($matches),
-            $rule['recommendation']
+            $rule['recommendation'],
         );
         $rule['issue'] = preg_replace_callback(
             '/\{([a-z_0-9]+)\}/Ui',
             fn (array $matches) => $this->replaceVariable($matches),
-            $rule['issue']
+            $rule['issue'],
         );
 
         // Replaces external Links with Core::linkURL() generated links
         $rule['recommendation'] = preg_replace_callback(
             '#href=("|\')(https?://[^"\']+)\1#i',
             fn (array $matches) => $this->replaceLinkURL($matches),
-            $rule['recommendation']
+            $rule['recommendation'],
         );
 
         $this->runResult[$type][] = $rule;
@@ -343,7 +339,7 @@ class Advisor
      *
      * @return mixed result of evaluated expression
      */
-    private function evaluateRuleExpression(string $expression)
+    private function evaluateRuleExpression(string $expression): mixed
     {
         return $this->expression->evaluate($expression, array_merge($this->variables, $this->globals));
     }

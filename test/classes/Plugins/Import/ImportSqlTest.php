@@ -9,13 +9,10 @@ use PhpMyAdmin\File;
 use PhpMyAdmin\Plugins\Import\ImportSql;
 use PhpMyAdmin\Tests\AbstractTestCase;
 
-/**
- * @covers \PhpMyAdmin\Plugins\Import\ImportSql
- */
+/** @covers \PhpMyAdmin\Plugins\Import\ImportSql */
 class ImportSqlTest extends AbstractTestCase
 {
-    /** @var ImportSql */
-    protected $object;
+    protected ImportSql $object;
 
     /**
      * Sets up the fixture, for example, opens a network connection.
@@ -24,6 +21,7 @@ class ImportSqlTest extends AbstractTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
         $GLOBALS['dbi'] = $this->createDatabaseInterface();
         $GLOBALS['server'] = 0;
         $GLOBALS['error'] = null;
@@ -59,6 +57,7 @@ class ImportSqlTest extends AbstractTestCase
     protected function tearDown(): void
     {
         parent::tearDown();
+
         unset($this->object);
     }
 
@@ -90,7 +89,7 @@ class ImportSqlTest extends AbstractTestCase
         $this->assertStringContainsString('CREATE TABLE IF NOT EXISTS `pma_bookmark`', $GLOBALS['sql_query']);
         $this->assertStringContainsString(
             'INSERT INTO `pma_bookmark` (`id`, `dbase`, `user`, `label`, `query`) VALUES',
-            $GLOBALS['sql_query']
+            $GLOBALS['sql_query'],
         );
 
         $this->assertTrue($GLOBALS['finished']);

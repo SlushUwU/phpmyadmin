@@ -24,8 +24,11 @@ class HeaderTest extends AbstractTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
         parent::setTheme();
+
         parent::setLanguage();
+
         $GLOBALS['dbi'] = $this->createDatabaseInterface();
 
         $GLOBALS['server'] = 0;
@@ -34,7 +37,9 @@ class HeaderTest extends AbstractTestCase
         $GLOBALS['server'] = 'server';
         $GLOBALS['db'] = 'db';
         $GLOBALS['table'] = '';
+
         parent::setGlobalConfig();
+
         $GLOBALS['cfg']['Servers'] = [];
         $GLOBALS['cfg']['Server']['DisableIS'] = false;
         $GLOBALS['cfg']['Server']['verbose'] = 'verbose host';
@@ -52,7 +57,7 @@ class HeaderTest extends AbstractTestCase
         $header->disable();
         $this->assertEquals(
             '',
-            $header->getDisplay()
+            $header->getDisplay(),
         );
     }
 
@@ -65,7 +70,7 @@ class HeaderTest extends AbstractTestCase
         $header = new Header();
         $this->assertStringContainsString(
             '<title>phpMyAdmin</title>',
-            $header->getDisplay()
+            $header->getDisplay(),
         );
     }
 
@@ -78,7 +83,7 @@ class HeaderTest extends AbstractTestCase
         $header->setBodyId('PMA_header_id');
         $this->assertStringContainsString(
             'PMA_header_id',
-            $header->getDisplay()
+            $header->getDisplay(),
         );
     }
 
@@ -90,7 +95,7 @@ class HeaderTest extends AbstractTestCase
         $header = new Header();
         $this->assertArrayHasKey(
             'common_query',
-            $header->getJsParams()
+            $header->getJsParams(),
         );
     }
 
@@ -99,7 +104,7 @@ class HeaderTest extends AbstractTestCase
         $header = new Header();
         $this->assertStringContainsString(
             'window.Navigation.update(window.CommonParams.setAll(',
-            $header->getJsParamsCode()
+            $header->getJsParamsCode(),
         );
     }
 
@@ -111,7 +116,7 @@ class HeaderTest extends AbstractTestCase
         $header = new Header();
         $this->assertStringContainsString(
             'phpmyadminmessage',
-            $header->getMessage()
+            $header->getMessage(),
         );
     }
 
@@ -129,13 +134,11 @@ class HeaderTest extends AbstractTestCase
     }
 
     /**
-     * @param string|bool $frameOptions
-     *
      * @covers \PhpMyAdmin\Core::getNoCacheHeaders
      * @dataProvider providerForTestGetHttpHeaders
      */
     public function testGetHttpHeaders(
-        $frameOptions,
+        string|bool $frameOptions,
         string $cspAllow,
         string $privateKey,
         string $publicKey,
@@ -143,7 +146,7 @@ class HeaderTest extends AbstractTestCase
         string|null $expectedFrameOptions,
         string $expectedCsp,
         string $expectedXCsp,
-        string $expectedWebKitCsp
+        string $expectedWebKitCsp,
     ): void {
         $header = new Header();
         $date = (string) gmdate(DATE_RFC1123);

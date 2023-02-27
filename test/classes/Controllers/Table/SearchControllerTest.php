@@ -20,22 +20,16 @@ use function hash;
 
 use const MYSQLI_TYPE_LONG;
 
-/**
- * @covers \PhpMyAdmin\Controllers\Table\SearchController
- */
+/** @covers \PhpMyAdmin\Controllers\Table\SearchController */
 class SearchControllerTest extends AbstractTestCase
 {
-    /** @var DatabaseInterface */
-    protected $dbi;
+    protected DatabaseInterface $dbi;
 
-    /** @var DbiDummy */
-    protected $dummyDbi;
+    protected DbiDummy $dummyDbi;
 
-    /** @var ResponseStub */
-    private $response;
+    private ResponseStub $response;
 
-    /** @var Template */
-    private $template;
+    private Template $template;
 
     /**
      * Setup function for test cases
@@ -43,7 +37,9 @@ class SearchControllerTest extends AbstractTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
         parent::setTheme();
+
         $this->dummyDbi = $this->createDbiDummy();
         $this->dbi = $this->createDatabaseInterface($this->dummyDbi);
         $GLOBALS['dbi'] = $this->dbi;
@@ -123,7 +119,7 @@ class SearchControllerTest extends AbstractTestCase
             $this->template,
             new Search($GLOBALS['dbi']),
             new Relation($GLOBALS['dbi']),
-            $GLOBALS['dbi']
+            $GLOBALS['dbi'],
         );
 
         $result = $ctrl->getColumnMinMax('column');
@@ -139,19 +135,21 @@ class SearchControllerTest extends AbstractTestCase
         $this->dbi = $this->createDatabaseInterface($this->dummyDbi);
         $GLOBALS['dbi'] = $this->dbi;
         $this->loadContainerBuilder();
+
         parent::loadDbiIntoContainerBuilder();
+
         parent::loadResponseIntoContainerBuilder();
 
         $_SESSION[' HMAC_secret '] = hash('sha1', 'test');
 
         $this->dummyDbi->addResult(
             'SHOW FULL COLUMNS FROM `PMA`.`PMA_BookMark`',
-            []
+            [],
         );
 
         $this->dummyDbi->addResult(
             'SHOW CREATE TABLE `PMA`.`PMA_BookMark`',
-            []
+            [],
         );
 
         $this->dummyDbi->addResult(
@@ -169,7 +167,7 @@ class SearchControllerTest extends AbstractTestCase
             [
                 new FieldMetadata(MYSQLI_TYPE_LONG, 0, (object) ['length' => 11]),
                 new FieldMetadata(MYSQLI_TYPE_LONG, 0, (object) ['length' => 11]),
-            ]
+            ],
         );
 
         $GLOBALS['containerBuilder']->setParameter('db', 'PMA');

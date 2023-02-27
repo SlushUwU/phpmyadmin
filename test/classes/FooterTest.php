@@ -11,16 +11,13 @@ use PhpMyAdmin\Template;
 
 use function json_encode;
 
-/**
- * @covers \PhpMyAdmin\Footer
- */
+/** @covers \PhpMyAdmin\Footer */
 class FooterTest extends AbstractTestCase
 {
     /** @var array store private attributes of PhpMyAdmin\Footer */
-    public $privates = [];
+    public array $privates = [];
 
-    /** @var Footer */
-    protected $object;
+    protected Footer $object;
 
     /**
      * Sets up the fixture, for example, opens a network connection.
@@ -29,9 +26,13 @@ class FooterTest extends AbstractTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
         parent::setLanguage();
+
         parent::setGlobalConfig();
+
         parent::setTheme();
+
         $GLOBALS['dbi'] = $this->createDatabaseInterface();
         $_SERVER['SCRIPT_NAME'] = 'index.php';
         $GLOBALS['PMA_PHP_SELF'] = 'index.php';
@@ -57,6 +58,7 @@ class FooterTest extends AbstractTestCase
     protected function tearDown(): void
     {
         parent::tearDown();
+
         unset($this->object);
     }
 
@@ -84,7 +86,7 @@ class FooterTest extends AbstractTestCase
         $this->assertEquals(
             '{"queries":[{"count":1,"time":0.2,"query":"SELECT * FROM `pma_bookmark` WHERE 1"},'
             . '{"count":1,"time":2.5,"query":"SELECT * FROM `db` WHERE 1"}]}',
-            $this->object->getDebugMessage()
+            $this->object->getDebugMessage(),
         );
     }
 
@@ -101,7 +103,7 @@ class FooterTest extends AbstractTestCase
         $this->callFunction($this->object, Footer::class, 'removeRecursion', [&$object]);
         $this->assertEquals(
             '{"child":{"parent":"***RECURSION***"},"childIterator":"***ITERATOR***"}',
-            json_encode($object)
+            json_encode($object),
         );
     }
 
@@ -114,7 +116,7 @@ class FooterTest extends AbstractTestCase
         $footer->disable();
         $this->assertEquals(
             '',
-            $footer->getDisplay()
+            $footer->getDisplay(),
         );
     }
 
@@ -130,7 +132,7 @@ class FooterTest extends AbstractTestCase
             $template->render('modals/function_confirm') . "\n"
             . $template->render('modals/add_index') . "\n"
             . $template->render('modals/page_settings') . "\n",
-            $footer->getDisplay()
+            $footer->getDisplay(),
         );
     }
 
@@ -142,7 +144,7 @@ class FooterTest extends AbstractTestCase
         $footer = new Footer();
         $this->assertStringContainsString(
             '<script data-cfasync="false" type="text/javascript">',
-            $footer->getScripts()->getDisplay()
+            $footer->getScripts()->getDisplay(),
         );
     }
 
@@ -156,7 +158,7 @@ class FooterTest extends AbstractTestCase
         $footer = new Footer();
         $this->assertStringContainsString(
             'Open new phpMyAdmin window',
-            $footer->getDisplay()
+            $footer->getDisplay(),
         );
     }
 
@@ -173,7 +175,7 @@ class FooterTest extends AbstractTestCase
             . $template->render('modals/add_index') . "\n"
             . $template->render('modals/page_settings')
             . "\n  </div>\n  </body>\n</html>\n",
-            $footer->getDisplay()
+            $footer->getDisplay(),
         );
     }
 }

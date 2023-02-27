@@ -22,12 +22,8 @@ use const NAN;
  */
 final class CBORDecoder
 {
-    /**
-     * @return mixed
-     *
-     * @throws WebAuthnException
-     */
-    public function decode(DataStream $stream)
+    /** @throws WebAuthnException */
+    public function decode(DataStream $stream): mixed
     {
         return $this->wellFormed($stream);
     }
@@ -35,11 +31,9 @@ final class CBORDecoder
     /**
      * @see https://www.rfc-editor.org/rfc/rfc7049#appendix-C
      *
-     * @return mixed
-     *
      * @throws WebAuthnException
      */
-    private function wellFormed(DataStream $stream)
+    private function wellFormed(DataStream $stream): mixed
     {
         // process initial bytes
         $initialByte = ord($stream->take(1));
@@ -112,17 +106,13 @@ final class CBORDecoder
         return -1 - $value;
     }
 
-    /**
-     * @throws WebAuthnException
-     */
+    /** @throws WebAuthnException */
     private function getByteString(DataStream $stream, int $value): string
     {
         return $stream->take($value);
     }
 
-    /**
-     * @throws WebAuthnException
-     */
+    /** @throws WebAuthnException */
     private function getTextString(DataStream $stream, int $value): string
     {
         return $stream->take($value);
@@ -160,23 +150,15 @@ final class CBORDecoder
         return $map;
     }
 
-    /**
-     * @return mixed
-     *
-     * @throws WebAuthnException
-     */
-    private function getTag(DataStream $stream)
+    /** @throws WebAuthnException */
+    private function getTag(DataStream $stream): mixed
     {
         // 1 embedded data item
         return $this->wellFormed($stream);
     }
 
-    /**
-     * @return mixed
-     *
-     * @throws WebAuthnException
-     */
-    private function getFloatNumberOrSimpleValue(DataStream $stream, int $value, int $additionalInformation)
+    /** @throws WebAuthnException */
+    private function getFloatNumberOrSimpleValue(DataStream $stream, int $value, int $additionalInformation): mixed
     {
         switch ($additionalInformation) {
             case 20:

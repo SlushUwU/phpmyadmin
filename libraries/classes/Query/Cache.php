@@ -16,7 +16,7 @@ use function is_array;
 class Cache
 {
     /** @var array Table data cache */
-    private $tableCache = [];
+    private array $tableCache = [];
 
     /**
      * Caches table data so Table does not require to issue
@@ -90,7 +90,7 @@ class Cache
      *
      * @return mixed cached value or default
      */
-    public function getCachedTableContent(array $contentPath, $default = null)
+    public function getCachedTableContent(array $contentPath, $default = null): mixed
     {
         return Util::getValueByKey($this->tableCache, $contentPath, $default);
     }

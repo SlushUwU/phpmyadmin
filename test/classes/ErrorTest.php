@@ -10,13 +10,10 @@ use function preg_match;
 
 use const DIRECTORY_SEPARATOR;
 
-/**
- * @covers \PhpMyAdmin\Error
- */
+/** @covers \PhpMyAdmin\Error */
 class ErrorTest extends AbstractTestCase
 {
-    /** @var Error */
-    protected $object;
+    protected Error $object;
 
     /**
      * Sets up the fixture, for example, opens a network connection.
@@ -25,6 +22,7 @@ class ErrorTest extends AbstractTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
         $this->object = new Error(2, 'Compile Error', 'error.txt', 15);
     }
 
@@ -35,6 +33,7 @@ class ErrorTest extends AbstractTestCase
     protected function tearDown(): void
     {
         parent::tearDown();
+
         unset($this->object);
     }
 
@@ -110,7 +109,7 @@ class ErrorTest extends AbstractTestCase
     {
         $this->assertEquals(
             1,
-            preg_match('/^([a-z0-9]*)$/', $this->object->getHash())
+            preg_match('/^([a-z0-9]*)$/', $this->object->getHash()),
         );
     }
 
@@ -120,8 +119,8 @@ class ErrorTest extends AbstractTestCase
     public function testGetBacktraceDisplay(): void
     {
         $this->assertStringContainsString(
-            'PHPUnit\Framework\TestResult->run(<Class:PhpMyAdmin\Tests\ErrorTest>)',
-            $this->object->getBacktraceDisplay()
+            'PHPUnit\Framework\TestRunner->run(<Class:PhpMyAdmin\Tests\ErrorTest>)',
+            $this->object->getBacktraceDisplay(),
         );
     }
 
@@ -135,11 +134,11 @@ class ErrorTest extends AbstractTestCase
             '<div class="alert alert-danger" role="alert"><p><strong>Warning</strong> in error.txt#15</p>'
             . '<img src="themes/dot.gif" title="" alt="" class="icon ic_s_error"> Compile Error'
             . '<p class="mt-3"><strong>Backtrace</strong></p><ol class="list-group"><li class="list-group-item">',
-            $actual
+            $actual,
         );
         $this->assertStringContainsString(
-            'PHPUnit\Framework\TestResult->run(<Class:PhpMyAdmin\Tests\ErrorTest>)</li><li class="list-group-item">',
-            $actual
+            'PHPUnit\Framework\TestRunner->run(<Class:PhpMyAdmin\Tests\ErrorTest>)</li><li class="list-group-item">',
+            $actual,
         );
         $this->assertStringEndsWith('</li></ol></div>' . "\n", $actual);
     }

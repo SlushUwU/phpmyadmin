@@ -27,13 +27,8 @@ class BrowseForeigners
     private int $repeatCells;
     private bool $showAll;
 
-    /** @var Template */
-    public $template;
-
-    public function __construct(Template $template)
+    public function __construct(public Template $template)
     {
-        $this->template = $template;
-
         $this->limitChars = (int) $GLOBALS['cfg']['LimitChars'];
         $this->maxRows = (int) $GLOBALS['cfg']['MaxRows'];
         $this->repeatCells = (int) $GLOBALS['cfg']['RepeatCells'];
@@ -60,7 +55,7 @@ class BrowseForeigners
         int $indexByKeyname,
         array $descriptions,
         int $indexByDescription,
-        string $currentValue
+        string $currentValue,
     ): array {
         $GLOBALS['theme'] ??= null;
 
@@ -160,7 +155,7 @@ class BrowseForeigners
         string $field,
         array $foreignData,
         string|null $fieldKey,
-        string $currentValue
+        string $currentValue,
     ): string {
         $gotoPage = $this->getHtmlForGotoPage($foreignData);
         $foreignShowAll = $this->template->render('table/browse_foreigners/show_all', [
@@ -249,7 +244,7 @@ class BrowseForeigners
                 $indexByKeyname,
                 $descriptions,
                 $indexByDescription,
-                $currentValue
+                $currentValue,
             );
             $output .= $html;
         }
@@ -308,7 +303,7 @@ class BrowseForeigners
                 5,
                 20,
                 10,
-                __('Page number:')
+                __('Page number:'),
             );
         }
 

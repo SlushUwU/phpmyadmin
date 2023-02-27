@@ -9,13 +9,10 @@ use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\AbstractTestCase;
 
-/**
- * @covers \PhpMyAdmin\Database\Search
- */
+/** @covers \PhpMyAdmin\Database\Search */
 class SearchTest extends AbstractTestCase
 {
-    /** @var Search */
-    protected $object;
+    protected Search $object;
 
     /**
      * Sets up the fixture, for example, opens a network connection.
@@ -59,6 +56,7 @@ class SearchTest extends AbstractTestCase
     protected function tearDown(): void
     {
         parent::tearDown();
+
         unset($this->object);
     }
 
@@ -82,8 +80,8 @@ class SearchTest extends AbstractTestCase
                 $this->object,
                 Search::class,
                 'getWhereClause',
-                ['table1']
-            )
+                ['table1'],
+            ),
         );
     }
 
@@ -142,8 +140,8 @@ class SearchTest extends AbstractTestCase
                 $this->object,
                 Search::class,
                 'getSearchSqls',
-                ['table1']
-            )
+                ['table1'],
+            ),
         );
     }
 
@@ -154,7 +152,7 @@ class SearchTest extends AbstractTestCase
     {
         $this->assertStringContainsString(
             'Search results for "<em></em>" :',
-            $this->object->getSearchResults()
+            $this->object->getSearchResults(),
         );
     }
 
@@ -169,7 +167,7 @@ class SearchTest extends AbstractTestCase
         $this->assertStringContainsString('<form', $main);
         $this->assertStringContainsString(
             '<button id="togglesearchformlink" class="btn btn-primary my-1"></button>',
-            $main
+            $main,
         );
         $this->assertStringContainsString('criteriaSearchType', $main);
 

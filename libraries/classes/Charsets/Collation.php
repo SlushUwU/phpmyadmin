@@ -74,7 +74,7 @@ final class Collation
         bool $isDefault,
         bool $isCompiled,
         int $sortLength,
-        string $padAttribute
+        string $padAttribute,
     ) {
         $this->name = $name;
         $this->charset = $charset;
@@ -86,9 +86,7 @@ final class Collation
         $this->description = $this->buildDescription();
     }
 
-    /**
-     * @param string[] $state State obtained from the database server
-     */
+    /** @param string[] $state State obtained from the database server */
     public static function fromServer(array $state): self
     {
         return new self(
@@ -98,7 +96,7 @@ final class Collation
             isset($state['Default']) && ($state['Default'] === 'Yes' || $state['Default'] === '1'),
             isset($state['Compiled']) && ($state['Compiled'] === 'Yes' || $state['Compiled'] === '1'),
             (int) ($state['Sortlen'] ?? 0),
-            $state['Pad_attribute'] ?? ''
+            $state['Pad_attribute'] ?? '',
         );
     }
 
@@ -233,9 +231,7 @@ final class Collation
         return $this->buildName($name, $variant, $suffixes);
     }
 
-    /**
-     * @param string[] $suffixes
-     */
+    /** @param string[] $suffixes */
     private function buildName(string $result, string|null $variant, array $suffixes): string
     {
         if ($variant !== null) {
@@ -306,7 +302,7 @@ final class Collation
         bool $unicode,
         bool $unknown,
         string $part,
-        string|null $variant
+        string|null $variant,
     ): array {
         switch ($part) {
             case 'binary':
@@ -427,7 +423,7 @@ final class Collation
         bool $unknown,
         string $part,
         string $name,
-        int $level
+        int $level,
     ): array {
         $found = true;
 

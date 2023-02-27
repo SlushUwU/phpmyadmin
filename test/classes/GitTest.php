@@ -25,14 +25,11 @@ use const DIRECTORY_SEPARATOR;
  */
 class GitTest extends AbstractTestCase
 {
-    /** @var Git */
-    protected $object;
+    protected Git $object;
 
-    /** @var string */
-    protected $testDir;
+    protected string $testDir;
 
-    /** @var string */
-    protected $cwd;
+    protected string $cwd;
 
     /**
      * Sets up the fixture, for example, opens a network connection.
@@ -41,7 +38,9 @@ class GitTest extends AbstractTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
         parent::setProxySettings();
+
         $this->object = new Git(true);
         $this->testDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'gittempdir_' . random_int(0, mt_getrandmax());
 
@@ -60,7 +59,9 @@ class GitTest extends AbstractTestCase
     {
         chdir((string) $this->cwd);
         rmdir($this->testDir);
+
         parent::tearDown();
+
         unset($this->object);
     }
 
@@ -88,7 +89,7 @@ class GitTest extends AbstractTestCase
     {
         $this->object = new Git(false);
         $this->assertFalse(
-            $this->object->isGitRevision($git_location)
+            $this->object->isGitRevision($git_location),
         );
     }
 
@@ -100,7 +101,7 @@ class GitTest extends AbstractTestCase
     public function testIsGitRevisionLocalGitDir(): void
     {
         $this->assertFalse(
-            $this->object->isGitRevision()
+            $this->object->isGitRevision(),
         );
 
         $this->assertFalse($this->object->hasGitInformation());
@@ -111,7 +112,7 @@ class GitTest extends AbstractTestCase
         mkdir('.git');
 
         $this->assertFalse(
-            $this->object->isGitRevision()
+            $this->object->isGitRevision(),
         );
 
         $this->assertFalse($this->object->hasGitInformation());
@@ -138,7 +139,7 @@ class GitTest extends AbstractTestCase
     {
         file_put_contents('.git', 'gitdir: ./.customgitdir');
         $this->assertFalse(
-            $this->object->isGitRevision()
+            $this->object->isGitRevision(),
         );
 
         $this->assertFalse($this->object->hasGitInformation());
@@ -158,7 +159,7 @@ class GitTest extends AbstractTestCase
         file_put_contents('.git', 'random data here');
 
         $this->assertFalse(
-            $this->object->isGitRevision()
+            $this->object->isGitRevision(),
         );
 
         $this->assertFalse($this->object->hasGitInformation());
@@ -193,7 +194,7 @@ class GitTest extends AbstractTestCase
             '# pack-refs with: peeled fully-peeled sorted' . "\n" .
             'c1f2ff2eb0c3fda741f859913fd589379f4e4a8f refs/tags/4.3.10' . "\n" .
             '^6f2e60343b0a324c65f2d1411bf4bd03e114fb98' . "\n" .
-            '17bf8b7309919f8ac593d7c563b31472780ee83b refs/remotes/origin/master' . "\n"
+            '17bf8b7309919f8ac593d7c563b31472780ee83b refs/remotes/origin/master' . "\n",
         );
         mkdir('.git/objects/pack', 0777, true);//default = 0777, recursive mode
 
@@ -309,7 +310,7 @@ class GitTest extends AbstractTestCase
             '# pack-refs with: peeled fully-peeled sorted' . "\n" .
             'c1f2ff2eb0c3fda741f859913fd589379f4e4a8f refs/tags/4.3.10' . "\n" .
             '^6f2e60343b0a324c65f2d1411bf4bd03e114fb98' . "\n" .
-            '17bf8b7309919f8ac593d7c563b31472780ee83b refs/remotes/origin/master' . "\n"
+            '17bf8b7309919f8ac593d7c563b31472780ee83b refs/remotes/origin/master' . "\n",
         );
         mkdir('.git/objects/info', 0777, true);
         file_put_contents(
@@ -318,7 +319,7 @@ class GitTest extends AbstractTestCase
             '  pack-.pack' . "\n" .
             "\n" .
             'P pack-420568bae521465fd11863bff155a2b2831023.pack' . "\n" .
-            "\n"
+            "\n",
         );
 
         $commit = $this->object->checkGitRevision();
@@ -464,7 +465,7 @@ class GitTest extends AbstractTestCase
                     'Signed-off-by: William Desportes <williamdes@wdes.fr>',
                     '',
                 ],
-            ]
+            ],
         );
 
         $this->assertSame([

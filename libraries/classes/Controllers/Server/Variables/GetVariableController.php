@@ -22,9 +22,7 @@ final class GetVariableController extends AbstractController
         parent::__construct($response, $template);
     }
 
-    /**
-     * @param array $params Request parameters
-     */
+    /** @param array $params Request parameters */
     public function __invoke(ServerRequest $request, array $params): void
     {
         if (! $this->response->isAjax()) {
@@ -38,7 +36,7 @@ final class GetVariableController extends AbstractController
         $varValue = $this->dbi->fetchSingleRow(
             'SHOW GLOBAL VARIABLES WHERE Variable_name=\''
             . $this->dbi->escapeString($params['name']) . '\';',
-            DatabaseInterface::FETCH_NUM
+            DatabaseInterface::FETCH_NUM,
         );
 
         $json = [

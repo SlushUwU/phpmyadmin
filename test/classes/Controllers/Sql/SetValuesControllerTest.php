@@ -10,28 +10,29 @@ use PhpMyAdmin\Http\ServerRequest;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\DbiDummy;
 
-/**
- * @covers \PhpMyAdmin\Controllers\Sql\SetValuesController
- */
+/** @covers \PhpMyAdmin\Controllers\Sql\SetValuesController */
 class SetValuesControllerTest extends AbstractTestCase
 {
-    /** @var DatabaseInterface */
-    protected $dbi;
+    protected DatabaseInterface $dbi;
 
-    /** @var DbiDummy */
-    protected $dummyDbi;
+    protected DbiDummy $dummyDbi;
 
     protected function setUp(): void
     {
         parent::setUp();
+
         $this->dummyDbi = $this->createDbiDummy();
         $this->dbi = $this->createDatabaseInterface($this->dummyDbi);
         $GLOBALS['dbi'] = $this->dbi;
+
         parent::loadContainerBuilder();
+
         parent::loadDbiIntoContainerBuilder();
+
         $GLOBALS['server'] = 1;
         $GLOBALS['text_dir'] = 'ltr';
         $GLOBALS['PMA_PHP_SELF'] = 'index.php';
+
         parent::loadResponseIntoContainerBuilder();
     }
 
@@ -61,7 +62,7 @@ class SetValuesControllerTest extends AbstractTestCase
 
         $this->assertSame(
             ['message' => 'Error in processing request'],
-            $this->getResponseJsonResult()
+            $this->getResponseJsonResult(),
         );
     }
 
@@ -86,7 +87,7 @@ class SetValuesControllerTest extends AbstractTestCase
                 'Key',
                 'Default',
                 'Extra',
-            ]
+            ],
         );
 
         $request = $this->createStub(ServerRequest::class);
@@ -120,7 +121,7 @@ class SetValuesControllerTest extends AbstractTestCase
                     . '      <option value=""></option>' . "\n"
                     . '  </select>' . "\n",
             ],
-            $this->getResponseJsonResult()
+            $this->getResponseJsonResult(),
         );
     }
 }

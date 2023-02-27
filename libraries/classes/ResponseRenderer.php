@@ -27,8 +27,7 @@ use const PHP_SAPI;
  */
 class ResponseRenderer
 {
-    /** @var ResponseRenderer|null */
-    private static $instance = null;
+    private static ResponseRenderer|null $instance = null;
 
     /**
      * Header instance
@@ -44,17 +43,15 @@ class ResponseRenderer
      *
      * @var array
      */
-    private $JSON;
+    private array $JSON;
     /**
      * PhpMyAdmin\Footer instance
      */
     protected Footer $footer;
     /**
      * Whether we are servicing an ajax request.
-     *
-     * @var bool
      */
-    protected $isAjax = false;
+    protected bool $isAjax = false;
     /**
      * Whether response object is disabled
      */
@@ -70,7 +67,7 @@ class ResponseRenderer
      *
      * @var array<int, string>
      */
-    protected static $httpStatusMessages = [
+    protected static array $httpStatusMessages = [
         // Informational
         100 => 'Continue',
         101 => 'Switching Protocols',
@@ -220,10 +217,8 @@ class ResponseRenderer
 
     /**
      * Returns a PhpMyAdmin\Header object
-     *
-     * @return Header
      */
-    public function getHeader()
+    public function getHeader(): Header
     {
         return $this->header;
     }
@@ -339,7 +334,7 @@ class ResponseRenderer
                         'table' => isset($GLOBALS['table']) && is_scalar($GLOBALS['table'])
                             ? (string) $GLOBALS['table'] : '',
                         'sql_query' => $query,
-                    ]
+                    ],
                 );
                 if (! empty($GLOBALS['focus_querywindow'])) {
                     $this->addJSON('_focusQuerywindow', $query);
@@ -376,7 +371,7 @@ class ResponseRenderer
     public function response(): void
     {
         $this->buffer->stop();
-        if (empty($this->HTML)) {
+        if ($this->HTML === '') {
             $this->HTML = $this->buffer->getContents();
         }
 

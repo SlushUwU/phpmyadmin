@@ -24,19 +24,15 @@ use PHPUnit\Framework\MockObject\MockObject;
 
 use function json_encode;
 
-/**
- * @covers \PhpMyAdmin\StorageEngine
- */
+/** @covers \PhpMyAdmin\StorageEngine */
 class StorageEngineTest extends AbstractTestCase
 {
-    /** @var DatabaseInterface */
-    protected $dbi;
+    protected DatabaseInterface $dbi;
 
-    /** @var DbiDummy */
-    protected $dummyDbi;
+    protected DbiDummy $dummyDbi;
 
-    /** @var StorageEngine|MockObject */
-    protected $object;
+    /** @var StorageEngine&MockObject */
+    protected StorageEngine $object;
 
     /**
      * Sets up the fixture, for example, opens a network connection.
@@ -45,13 +41,14 @@ class StorageEngineTest extends AbstractTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
         $this->dummyDbi = $this->createDbiDummy();
         $this->dbi = $this->createDatabaseInterface($this->dummyDbi);
         $GLOBALS['dbi'] = $this->dbi;
         $GLOBALS['server'] = 1;
         $this->object = $this->getMockForAbstractClass(
             StorageEngine::class,
-            ['dummy']
+            ['dummy'],
         );
     }
 
@@ -62,6 +59,7 @@ class StorageEngineTest extends AbstractTestCase
     protected function tearDown(): void
     {
         parent::tearDown();
+
         unset($this->object);
     }
 
@@ -94,7 +92,7 @@ class StorageEngineTest extends AbstractTestCase
                     'Comment' => 'Pbxt storage engine',
                 ],
             ],
-            $this->object->getStorageEngines()
+            $this->object->getStorageEngines(),
         );
     }
 
@@ -110,7 +108,7 @@ class StorageEngineTest extends AbstractTestCase
                     'is_default' => false,
                 ],
             ],
-            $actual
+            $actual,
         );
     }
 
@@ -198,16 +196,16 @@ class StorageEngineTest extends AbstractTestCase
     public function testIsValid(): void
     {
         $this->assertTrue(
-            $this->object->isValid('PBMS')
+            $this->object->isValid('PBMS'),
         );
         $this->assertTrue(
-            $this->object->isValid('dummy')
+            $this->object->isValid('dummy'),
         );
         $this->assertTrue(
-            $this->object->isValid('dummy2')
+            $this->object->isValid('dummy2'),
         );
         $this->assertFalse(
-            $this->object->isValid('invalid')
+            $this->object->isValid('invalid'),
         );
     }
 
@@ -218,7 +216,7 @@ class StorageEngineTest extends AbstractTestCase
     {
         $this->assertEquals(
             '',
-            $this->object->getPage('Foo')
+            $this->object->getPage('Foo'),
         );
     }
 
@@ -229,7 +227,7 @@ class StorageEngineTest extends AbstractTestCase
     {
         $this->assertEquals(
             [],
-            $this->object->getInfoPages()
+            $this->object->getInfoPages(),
         );
     }
 
@@ -240,7 +238,7 @@ class StorageEngineTest extends AbstractTestCase
     {
         $this->assertEquals(
             '',
-            $this->object->getVariablesLikePattern()
+            $this->object->getVariablesLikePattern(),
         );
     }
 
@@ -251,7 +249,7 @@ class StorageEngineTest extends AbstractTestCase
     {
         $this->assertEquals(
             'dummy-storage-engine',
-            $this->object->getMysqlHelpPage()
+            $this->object->getMysqlHelpPage(),
         );
     }
 
@@ -262,7 +260,7 @@ class StorageEngineTest extends AbstractTestCase
     {
         $this->assertEquals(
             [],
-            $this->object->getVariables()
+            $this->object->getVariables(),
         );
     }
 
@@ -273,25 +271,25 @@ class StorageEngineTest extends AbstractTestCase
     {
         $this->assertEquals(
             'dummy is available on this MySQL server.',
-            $this->object->getSupportInformationMessage()
+            $this->object->getSupportInformationMessage(),
         );
 
         $this->object->support = 1;
         $this->assertEquals(
             'dummy has been disabled for this MySQL server.',
-            $this->object->getSupportInformationMessage()
+            $this->object->getSupportInformationMessage(),
         );
 
         $this->object->support = 2;
         $this->assertEquals(
             'dummy is available on this MySQL server.',
-            $this->object->getSupportInformationMessage()
+            $this->object->getSupportInformationMessage(),
         );
 
         $this->object->support = 3;
         $this->assertEquals(
             'dummy is the default storage engine on this MySQL server.',
-            $this->object->getSupportInformationMessage()
+            $this->object->getSupportInformationMessage(),
         );
     }
 
@@ -302,7 +300,7 @@ class StorageEngineTest extends AbstractTestCase
     {
         $this->assertEquals(
             'dummy comment',
-            $this->object->getComment()
+            $this->object->getComment(),
         );
     }
 
@@ -313,7 +311,7 @@ class StorageEngineTest extends AbstractTestCase
     {
         $this->assertEquals(
             'dummy',
-            $this->object->getTitle()
+            $this->object->getTitle(),
         );
     }
 
@@ -327,7 +325,7 @@ class StorageEngineTest extends AbstractTestCase
                 0 => 12,
                 1 => 'B',
             ],
-            $this->object->resolveTypeSize(12)
+            $this->object->resolveTypeSize(12),
         );
     }
 

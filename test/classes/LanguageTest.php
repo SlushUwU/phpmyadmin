@@ -18,8 +18,7 @@ use function strtolower;
  */
 class LanguageTest extends AbstractTestCase
 {
-    /** @var LanguageManager */
-    private $manager;
+    private LanguageManager $manager;
 
     /**
      * Setup for Language tests.
@@ -27,6 +26,7 @@ class LanguageTest extends AbstractTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
         $loc = LOCALE_PATH . '/cs/LC_MESSAGES/phpmyadmin.mo';
         if (! is_readable($loc)) {
             $this->markTestSkipped('Missing compiled locales.');
@@ -38,6 +38,7 @@ class LanguageTest extends AbstractTestCase
     protected function tearDown(): void
     {
         parent::tearDown();
+
         // Ensure we have English locale after tests
         $lang = $this->manager->getLanguage('en');
         if ($lang === false) {
@@ -98,7 +99,7 @@ class LanguageTest extends AbstractTestCase
                 $lang->getCode(),
                 strtolower($lang->getEnglishName()),
                 'Maybe this language does not exist in LanguageManager class'
-                . ', see: https://github.com/phpmyadmin/phpmyadmin/issues/16300.'
+                . ', see: https://github.com/phpmyadmin/phpmyadmin/issues/16300.',
             );
         }
     }
@@ -163,7 +164,7 @@ class LanguageTest extends AbstractTestCase
         string $accept,
         string $agent,
         string $default,
-        string $expect
+        string $expect,
     ): void {
         if ($expect !== 'en' && ! file_exists(LOCALE_PATH . '/' . $expect . '/LC_MESSAGES/phpmyadmin.mo')) {
             // This could happen after removing incomplete .mo files.
@@ -248,7 +249,7 @@ class LanguageTest extends AbstractTestCase
 
         $this->assertEquals(
             $locale,
-            $this->manager->getCurrentLanguage()->getCode()
+            $this->manager->getCurrentLanguage()->getCode(),
         );
     }
 

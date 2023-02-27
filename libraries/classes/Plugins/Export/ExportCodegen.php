@@ -33,14 +33,12 @@ class ExportCodegen extends ExportPlugin
      *
      * @var array
      */
-    private $cgFormats;
+    private array $cgFormats = [];
 
     private const HANDLER_NHIBERNATE_CS = 0;
     private const HANDLER_NHIBERNATE_XML = 1;
 
-    /**
-     * @psalm-return non-empty-lowercase-string
-     */
+    /** @psalm-return non-empty-lowercase-string */
     public function getName(): string
     {
         return 'codegen';
@@ -77,7 +75,7 @@ class ExportCodegen extends ExportPlugin
         $generalOptions->addProperty($leaf);
         $leaf = new SelectPropertyItem(
             'format',
-            __('Format:')
+            __('Format:'),
         );
         $leaf->setValues($this->getCgFormats());
         $generalOptions->addProperty($leaf);
@@ -153,7 +151,7 @@ class ExportCodegen extends ExportPlugin
         $table,
         $errorUrl,
         $sqlQuery,
-        array $aliases = []
+        array $aliases = [],
     ): bool {
         $format = (int) $GLOBALS['codegen_format'];
 
@@ -176,7 +174,7 @@ class ExportCodegen extends ExportPlugin
      *
      * @return string identifier
      */
-    public static function cgMakeIdentifier($str, $ucfirst = true)
+    public static function cgMakeIdentifier($str, $ucfirst = true): string
     {
         // remove unsafe characters
         $str = (string) preg_replace('/[^\p{L}\p{Nl}_]/u', '', $str);
@@ -201,7 +199,7 @@ class ExportCodegen extends ExportPlugin
      *
      * @return string containing C# code lines, separated by "\n"
      */
-    private function handleNHibernateCSBody($db, $table, array $aliases = [])
+    private function handleNHibernateCSBody($db, $table, array $aliases = []): string
     {
         $db_alias = $db;
         $table_alias = $table;
@@ -211,8 +209,8 @@ class ExportCodegen extends ExportPlugin
             sprintf(
                 'DESC %s.%s',
                 Util::backquote($db),
-                Util::backquote($table)
-            )
+                Util::backquote($table),
+            ),
         );
 
         /** @var TableProperty[] $tableProperties */
@@ -282,7 +280,7 @@ class ExportCodegen extends ExportPlugin
                 . '        {' . "\n"
                 . '            get {return _#name#;}' . "\n"
                 . '            set {_#name#=value;}' . "\n"
-                . '        }'
+                . '        }',
             );
         }
 
@@ -306,8 +304,8 @@ class ExportCodegen extends ExportPlugin
     private function handleNHibernateXMLBody(
         $db,
         $table,
-        array $aliases = []
-    ) {
+        array $aliases = [],
+    ): string {
         $db_alias = $db;
         $table_alias = $table;
         $this->initAlias($aliases, $db_alias, $table_alias);
@@ -323,8 +321,8 @@ class ExportCodegen extends ExportPlugin
             sprintf(
                 'DESC %s.%s',
                 Util::backquote($db),
-                Util::backquote($table)
-            )
+                Util::backquote($table),
+            ),
         );
 
         while ($row = $result->fetchRow()) {
@@ -342,7 +340,7 @@ class ExportCodegen extends ExportPlugin
                     . ' not-null="#notNull#" unique="#unique#"'
                     . ' index="PRIMARY"/>' . "\n"
                     . '            <generator class="native" />' . "\n"
-                    . '        </id>'
+                    . '        </id>',
                 );
             } else {
                 $lines[] = $tableProperty->formatXml(
@@ -350,7 +348,7 @@ class ExportCodegen extends ExportPlugin
                     . ' type="#dotNetObjectType#">' . "\n"
                     . '            <column name="#name#" sql-type="#type#"'
                     . ' not-null="#notNull#" #indexName#/>' . "\n"
-                    . '        </property>'
+                    . '        </property>',
                 );
             }
         }
@@ -366,7 +364,7 @@ class ExportCodegen extends ExportPlugin
      *
      * @return array
      */
-    private function getCgFormats()
+    private function getCgFormats(): array
     {
         return $this->cgFormats;
     }

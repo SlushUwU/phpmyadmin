@@ -32,14 +32,10 @@ class ImportMediawiki extends ImportPlugin
 {
     /**
      * Whether to analyze tables
-     *
-     * @var bool
      */
-    private $analyze;
+    private bool $analyze = false;
 
-    /**
-     * @psalm-return non-empty-lowercase-string
-     */
+    /** @psalm-return non-empty-lowercase-string */
     public function getName(): string
     {
         return 'mediawiki';
@@ -272,7 +268,7 @@ class ImportMediawiki extends ImportPlugin
                     // If it's none of the above, then the current line has a bad
                     // format
                     $message = Message::error(
-                        __('Invalid format of mediawiki input on line: <br>%s.')
+                        __('Invalid format of mediawiki input on line: <br>%s.'),
                     );
                     $message->addParam($cur_buffer_line);
                     $GLOBALS['error'] = true;
@@ -404,7 +400,7 @@ class ImportMediawiki extends ImportPlugin
      *
      * @return string with replacements
      */
-    private function delimiterReplace($replace, $subject)
+    private function delimiterReplace($replace, $subject): string
     {
         // String that will be returned
         $cleaned = '';
@@ -490,7 +486,7 @@ class ImportMediawiki extends ImportPlugin
      *
      * @return array
      */
-    private function explodeMarkup($text)
+    private function explodeMarkup($text): array
     {
         $separator = '||';
         $placeholder = "\x00";
@@ -534,10 +530,8 @@ class ImportMediawiki extends ImportPlugin
      * Get cell
      *
      * @param string $cell Cell
-     *
-     * @return mixed
      */
-    private function getCellData($cell)
+    private function getCellData($cell): mixed
     {
         // A cell could contain both parameters and data
         $cell_data = explode('|', $cell, 2);

@@ -30,7 +30,7 @@ abstract class DownloadTransformationsPlugin extends TransformationsPlugin
             . ' use the first option to specify the filename, or use the second'
             . ' option as the name of a column which contains the filename. If'
             . ' you use the second option, you need to set the first option to'
-            . ' the empty string.'
+            . ' the empty string.',
         );
     }
 
@@ -40,10 +40,8 @@ abstract class DownloadTransformationsPlugin extends TransformationsPlugin
      * @param string             $buffer  text to be transformed
      * @param array              $options transformation options
      * @param FieldMetadata|null $meta    meta information
-     *
-     * @return string
      */
-    public function applyTransformation($buffer, array $options = [], FieldMetadata|null $meta = null)
+    public function applyTransformation($buffer, array $options = [], FieldMetadata|null $meta = null): string
     {
         $GLOBALS['row'] ??= null;
         $GLOBALS['fields_meta'] ??= null;
@@ -74,7 +72,7 @@ abstract class DownloadTransformationsPlugin extends TransformationsPlugin
             array_merge($options['wrapper_params'], [
                 'ct' => 'application/octet-stream',
                 'cn' => $cn,
-            ])
+            ]),
         );
         $link .= '" title="' . htmlspecialchars($cn);
         $link .= '" class="disableAjax">' . htmlspecialchars($cn);

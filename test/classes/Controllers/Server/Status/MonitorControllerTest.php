@@ -15,26 +15,25 @@ use PhpMyAdmin\Tests\Stubs\ResponseRenderer;
 
 use function __;
 
-/**
- * @covers \PhpMyAdmin\Controllers\Server\Status\MonitorController
- */
+/** @covers \PhpMyAdmin\Controllers\Server\Status\MonitorController */
 class MonitorControllerTest extends AbstractTestCase
 {
-    /** @var DatabaseInterface */
-    protected $dbi;
+    protected DatabaseInterface $dbi;
 
-    /** @var DbiDummy */
-    protected $dummyDbi;
+    protected DbiDummy $dummyDbi;
 
-    /** @var Data */
-    private $data;
+    private Data $data;
 
     protected function setUp(): void
     {
         parent::setUp();
+
         $GLOBALS['text_dir'] = 'ltr';
+
         parent::setGlobalConfig();
+
         parent::setTheme();
+
         $this->dummyDbi = $this->createDbiDummy();
         $this->dbi = $this->createDatabaseInterface($this->dummyDbi);
         $GLOBALS['dbi'] = $this->dbi;
@@ -57,7 +56,7 @@ class MonitorControllerTest extends AbstractTestCase
             $response,
             new Template(),
             $this->data,
-            $GLOBALS['dbi']
+            $GLOBALS['dbi'],
         );
 
         $this->dummyDbi->addSelectDb('mysql');
@@ -68,28 +67,28 @@ class MonitorControllerTest extends AbstractTestCase
         $this->assertStringContainsString('<div class="tabLinks row">', $html);
         $this->assertStringContainsString(
             __('Start Monitor'),
-            $html
+            $html,
         );
         $this->assertStringContainsString(
             __('Settings'),
-            $html
+            $html,
         );
         $this->assertStringContainsString(
             __('Done dragging (rearranging) charts'),
-            $html
+            $html,
         );
 
         $this->assertStringContainsString('<div class="popupContent settingsPopup">', $html);
         $this->assertStringContainsString('<a href="#settingsPopup" class="popupLink">', $html);
         $this->assertStringContainsString(
             __('Enable charts dragging'),
-            $html
+            $html,
         );
         $this->assertStringContainsString('<option>3</option>', $html);
 
         $this->assertStringContainsString(
             __('Monitor Instructions'),
-            $html
+            $html,
         );
         $this->assertStringContainsString('monitorInstructionsDialog', $html);
 

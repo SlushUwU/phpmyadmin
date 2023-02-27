@@ -51,7 +51,7 @@ final class TablePartitionDefinition
         $details = array_merge(
             $partitionParams,
             //Keep $_POST values, but only for keys that are in $partitionParams
-            array_intersect_key($_POST, $partitionParams)
+            array_intersect_key($_POST, $partitionParams),
         );
 
         $details['partition_count'] = self::extractPartitionCount('partition_count');
@@ -60,9 +60,7 @@ final class TablePartitionDefinition
         return $details;
     }
 
-    /**
-     * @param string $paramLabel Label searched in request
-     */
+    /** @param string $paramLabel Label searched in request */
     private static function extractPartitionCount(string $paramLabel): int
     {
         if (isset($_POST[$paramLabel]) && is_numeric($_POST[$paramLabel])) {

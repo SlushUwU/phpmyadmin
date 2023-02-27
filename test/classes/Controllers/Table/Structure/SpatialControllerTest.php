@@ -13,9 +13,7 @@ use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\ResponseRenderer;
 
-/**
- * @covers \PhpMyAdmin\Controllers\Table\Structure\SpatialController
- */
+/** @covers \PhpMyAdmin\Controllers\Table\Structure\SpatialController */
 class SpatialControllerTest extends AbstractTestCase
 {
     public function testAddSpatialKeyToSingleField(): void
@@ -133,7 +131,7 @@ class SpatialControllerTest extends AbstractTestCase
 
         $this->assertEquals(
             Message::error('#1210 - Incorrect arguments to SPATIAL INDEX'),
-            $GLOBALS['message']
+            $GLOBALS['message'],
         );
         /** @psalm-suppress TypeDoesNotContainType */
         $this->assertSame('ALTER TABLE `test_table` ADD SPATIAL(`test_field`);', $GLOBALS['sql_query']);

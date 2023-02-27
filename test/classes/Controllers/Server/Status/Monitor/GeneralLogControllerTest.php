@@ -14,26 +14,25 @@ use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\DbiDummy;
 use PhpMyAdmin\Tests\Stubs\ResponseRenderer;
 
-/**
- * @covers \PhpMyAdmin\Controllers\Server\Status\Monitor\GeneralLogController
- */
+/** @covers \PhpMyAdmin\Controllers\Server\Status\Monitor\GeneralLogController */
 class GeneralLogControllerTest extends AbstractTestCase
 {
-    /** @var DatabaseInterface */
-    protected $dbi;
+    protected DatabaseInterface $dbi;
 
-    /** @var DbiDummy */
-    protected $dummyDbi;
+    protected DbiDummy $dummyDbi;
 
-    /** @var Data */
-    private $data;
+    private Data $data;
 
     protected function setUp(): void
     {
         parent::setUp();
+
         $GLOBALS['text_dir'] = 'ltr';
+
         parent::setGlobalConfig();
+
         parent::setTheme();
+
         $this->dummyDbi = $this->createDbiDummy();
         $this->dbi = $this->createDatabaseInterface($this->dummyDbi);
         $GLOBALS['dbi'] = $this->dbi;
@@ -70,7 +69,7 @@ class GeneralLogControllerTest extends AbstractTestCase
             new Template(),
             $this->data,
             new Monitor($GLOBALS['dbi']),
-            $GLOBALS['dbi']
+            $GLOBALS['dbi'],
         );
 
         $request = $this->createStub(ServerRequest::class);

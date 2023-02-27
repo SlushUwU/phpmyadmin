@@ -14,23 +14,23 @@ use PhpMyAdmin\Tests\Stubs\ResponseRenderer;
 use PhpMyAdmin\Url;
 use PhpMyAdmin\Utils\SessionCache;
 
-/**
- * @covers \PhpMyAdmin\Controllers\Server\BinlogController
- */
+/** @covers \PhpMyAdmin\Controllers\Server\BinlogController */
 class BinlogControllerTest extends AbstractTestCase
 {
-    /** @var DatabaseInterface */
-    protected $dbi;
+    protected DatabaseInterface $dbi;
 
-    /** @var DbiDummy */
-    protected $dummyDbi;
+    protected DbiDummy $dummyDbi;
 
     protected function setUp(): void
     {
         parent::setUp();
+
         $GLOBALS['text_dir'] = 'ltr';
+
         parent::setGlobalConfig();
+
         parent::setTheme();
+
         $this->dummyDbi = $this->createDbiDummy();
         $this->dbi = $this->createDatabaseInterface($this->dummyDbi);
         $GLOBALS['dbi'] = $this->dbi;
@@ -73,7 +73,7 @@ class BinlogControllerTest extends AbstractTestCase
 
         $this->assertStringContainsString(
             '<table class="table table-striped table-hover align-middle" id="binlogTable">',
-            $actual
+            $actual,
         );
 
         $urlNavigation = Url::getFromRoute('/server/binlog') . '" data-post="log=index1&pos=3&'

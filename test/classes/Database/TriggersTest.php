@@ -9,13 +9,10 @@ use PhpMyAdmin\ResponseRenderer;
 use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\AbstractTestCase;
 
-/**
- * @covers \PhpMyAdmin\Database\Triggers
- */
+/** @covers \PhpMyAdmin\Database\Triggers */
 class TriggersTest extends AbstractTestCase
 {
-    /** @var Triggers */
-    private $triggers;
+    private Triggers $triggers;
 
     /**
      * Set up
@@ -23,9 +20,13 @@ class TriggersTest extends AbstractTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
         parent::setGlobalConfig();
+
         parent::setLanguage();
+
         parent::setTheme();
+
         $GLOBALS['dbi'] = $this->createDatabaseInterface();
         $GLOBALS['server'] = 0;
         $GLOBALS['cfg']['Server']['DisableIS'] = false;
@@ -36,7 +37,7 @@ class TriggersTest extends AbstractTestCase
         $this->triggers = new Triggers(
             $GLOBALS['dbi'],
             new Template(),
-            ResponseRenderer::getInstance()
+            ResponseRenderer::getInstance(),
         );
     }
 
@@ -126,7 +127,7 @@ class TriggersTest extends AbstractTestCase
         $GLOBALS['server'] = 1;
         $this->assertStringContainsString(
             $matcher,
-            $this->triggers->getEditorForm('pma_test', 'table', 'add', $data)
+            $this->triggers->getEditorForm('pma_test', 'table', 'add', $data),
         );
     }
 
@@ -172,7 +173,7 @@ class TriggersTest extends AbstractTestCase
         $GLOBALS['server'] = 1;
         $this->assertStringContainsString(
             $matcher,
-            $this->triggers->getEditorForm('pma_test', 'table', 'edit', $data)
+            $this->triggers->getEditorForm('pma_test', 'table', 'edit', $data),
         );
     }
 
@@ -218,7 +219,7 @@ class TriggersTest extends AbstractTestCase
         ResponseRenderer::getInstance()->setAjax(true);
         $this->assertStringContainsString(
             $matcher,
-            $this->triggers->getEditorForm('pma_test', 'table', 'edit', $data)
+            $this->triggers->getEditorForm('pma_test', 'table', 'edit', $data),
         );
         ResponseRenderer::getInstance()->setAjax(false);
     }
@@ -268,7 +269,7 @@ class TriggersTest extends AbstractTestCase
         string $table,
         string $definition,
         string $query,
-        int $num_err
+        int $num_err,
     ): void {
         $GLOBALS['errors'] = [];
 

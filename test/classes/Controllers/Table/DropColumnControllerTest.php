@@ -13,14 +13,13 @@ use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\ResponseRenderer;
 
-/**
- * @covers \PhpMyAdmin\Controllers\Table\DropColumnController
- */
+/** @covers \PhpMyAdmin\Controllers\Table\DropColumnController */
 class DropColumnControllerTest extends AbstractTestCase
 {
     protected function setUp(): void
     {
         parent::setUp();
+
         $GLOBALS['dbi'] = $this->createDatabaseInterface();
     }
 
@@ -48,7 +47,7 @@ class DropColumnControllerTest extends AbstractTestCase
             new Template(),
             $dbi,
             new FlashMessages(),
-            new RelationCleanup($dbi, new Relation($dbi))
+            new RelationCleanup($dbi, new Relation($dbi)),
         ))($this->createStub(ServerRequest::class));
 
         $this->assertArrayHasKey('flashMessages', $_SESSION);

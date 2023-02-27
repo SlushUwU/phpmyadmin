@@ -20,11 +20,9 @@ use const JSON_HEX_TAG;
  */
 class FormDisplayTemplate
 {
-    /** @var int */
-    public $group;
+    public int $group = 0;
 
-    /** @var Template */
-    public $template;
+    public Template $template;
 
     public function __construct(protected Config $config)
     {
@@ -64,7 +62,7 @@ class FormDisplayTemplate
         $value,
         $description = '',
         $valueIsDefault = true,
-        $opts = null
+        $opts = null,
     ): string {
         $isSetupScript = $this->config->get('is_setup');
         $optionIsDisabled = ! $isSetupScript && isset($opts['userprefs_allow']) && ! $opts['userprefs_allow'];

@@ -7,9 +7,7 @@ namespace PhpMyAdmin\Tests\Navigation\Nodes;
 use PhpMyAdmin\Navigation\Nodes\NodeTriggerContainer;
 use PhpMyAdmin\Tests\AbstractTestCase;
 
-/**
- * @covers \PhpMyAdmin\Navigation\Nodes\NodeTriggerContainer
- */
+/** @covers \PhpMyAdmin\Navigation\Nodes\NodeTriggerContainer */
 class NodeTriggerContainerTest extends AbstractTestCase
 {
     /**
@@ -18,6 +16,7 @@ class NodeTriggerContainerTest extends AbstractTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
         $GLOBALS['dbi'] = $this->createDatabaseInterface();
         $GLOBALS['server'] = 0;
     }
@@ -28,13 +27,12 @@ class NodeTriggerContainerTest extends AbstractTestCase
     public function testConstructor(): void
     {
         $parent = new NodeTriggerContainer();
-        $this->assertIsArray($parent->links);
         $this->assertEquals(
             [
                 'text' => ['route' => '/database/triggers', 'params' => ['db' => null, 'table' => null]],
                 'icon' => ['route' => '/database/triggers', 'params' => ['db' => null, 'table' => null]],
             ],
-            $parent->links
+            $parent->links,
         );
         $this->assertEquals('triggers', $parent->realName);
     }

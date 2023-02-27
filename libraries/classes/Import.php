@@ -52,21 +52,24 @@ class Import
     public const DECIMAL = 3;
     public const BIGINT = 4;
     public const GEOMETRY = 5;
+
     /* Decimal size defs */
     public const M = 0;
     public const D = 1;
     public const FULL = 2;
+
     /* Table array defs */
     public const TBL_NAME = 0;
     public const COL_NAMES = 1;
     public const ROWS = 2;
+
     /* Analysis array defs */
     public const TYPES = 0;
     public const SIZES = 1;
     public const FORMATTEDSQL = 2;
 
     /** @var string|null importRunBuffer */
-    private $importRunBuffer = null;
+    private string|null $importRunBuffer = null;
 
     public function __construct()
     {
@@ -215,7 +218,7 @@ class Import
 
         $GLOBALS['max_sql_len'] = max(
             $GLOBALS['max_sql_len'],
-            mb_strlen($this->importRunBuffer)
+            mb_strlen($this->importRunBuffer),
         );
         if (! $GLOBALS['sql_query_disabled']) {
             $GLOBALS['sql_query'] .= $this->importRunBuffer;
@@ -480,7 +483,7 @@ class Import
      */
     public function getColumnNumberFromName(string $name): int
     {
-        if (empty($name)) {
+        if ($name === '') {
             return 0;
         }
 
@@ -518,7 +521,7 @@ class Import
         return (int) substr(
             $lastCumulativeSize,
             0,
-            (int) strpos($lastCumulativeSize, ',')
+            (int) strpos($lastCumulativeSize, ','),
         );
     }
 
@@ -535,7 +538,7 @@ class Import
         return (int) substr(
             $lastCumulativeSize,
             strpos($lastCumulativeSize, ',') + 1,
-            strlen($lastCumulativeSize) - strpos($lastCumulativeSize, ',')
+            strlen($lastCumulativeSize) - strpos($lastCumulativeSize, ','),
         );
     }
 
@@ -579,7 +582,7 @@ class Import
         string|int $lastCumulativeSize,
         int|null $lastCumulativeType,
         int $currentCellType,
-        string $cell
+        string $cell,
     ): string|int {
         $currSize = mb_strlen($cell);
 
@@ -954,7 +957,7 @@ class Import
         array|null $analyses = null,
         array|null &$additionalSql = null,
         array|null $options = null,
-        array &$sqlData = []
+        array &$sqlData = [],
     ): void {
         $GLOBALS['import_notice'] ??= null;
 
@@ -1209,7 +1212,7 @@ class Import
 
         $message = '<br><br>';
         $message .= '<strong>' . __(
-            'The following structures have either been created or altered. Here you can:'
+            'The following structures have either been created or altered. Here you can:',
         ) . '</strong><br>';
         $message .= '<ul><li>' . __("View a structure's contents by clicking on its name.") . '</li>';
         $message .= '<li>' . __('Change any of its settings by clicking the corresponding "Options" link.') . '</li>';
@@ -1221,14 +1224,14 @@ class Import
             $dbUrl,
             sprintf(
                 __('Go to database: %s'),
-                htmlspecialchars(Util::backquote($dbName))
+                htmlspecialchars(Util::backquote($dbName)),
             ),
             htmlspecialchars($dbName),
             $dbOperationsUrl,
             sprintf(
                 __('Edit settings for %s'),
-                htmlspecialchars(Util::backquote($dbName))
-            )
+                htmlspecialchars(Util::backquote($dbName)),
+            ),
         );
 
         $message .= '<ul>';
@@ -1250,30 +1253,30 @@ class Import
             if (! $tableObj->isView()) {
                 $message .= sprintf(
                     '<li><a href="%s" title="%s">%s</a> (<a href="%s" title="%s">' . __(
-                        'Structure'
+                        'Structure',
                     ) . '</a>) (<a href="%s" title="%s">' . __('Options') . '</a>)</li>',
                     $tblUrl,
                     sprintf(
                         __('Go to table: %s'),
                         htmlspecialchars(
-                            Util::backquote($table[self::TBL_NAME])
-                        )
+                            Util::backquote($table[self::TBL_NAME]),
+                        ),
                     ),
                     htmlspecialchars($table[self::TBL_NAME]),
                     $tblStructUrl,
                     sprintf(
                         __('Structure of %s'),
                         htmlspecialchars(
-                            Util::backquote($table[self::TBL_NAME])
-                        )
+                            Util::backquote($table[self::TBL_NAME]),
+                        ),
                     ),
                     $tblOpsUrl,
                     sprintf(
                         __('Edit settings for %s'),
                         htmlspecialchars(
-                            Util::backquote($table[self::TBL_NAME])
-                        )
-                    )
+                            Util::backquote($table[self::TBL_NAME]),
+                        ),
+                    ),
                 );
             } else {
                 $message .= sprintf(
@@ -1282,10 +1285,10 @@ class Import
                     sprintf(
                         __('Go to view: %s'),
                         htmlspecialchars(
-                            Util::backquote($table[self::TBL_NAME])
-                        )
+                            Util::backquote($table[self::TBL_NAME]),
+                        ),
                     ),
-                    htmlspecialchars($table[self::TBL_NAME])
+                    htmlspecialchars($table[self::TBL_NAME]),
                 );
             }
         }
@@ -1307,10 +1310,10 @@ class Import
         $error = false;
         $errorMsg = __(
             'Only INSERT, UPDATE, DELETE and REPLACE '
-            . 'SQL queries containing transactional engine tables can be rolled back.'
+            . 'SQL queries containing transactional engine tables can be rolled back.',
         );
         foreach ($queries as $sqlQuery) {
-            if (empty($sqlQuery)) {
+            if ($sqlQuery === '') {
                 continue;
             }
 
@@ -1451,16 +1454,14 @@ class Import
         return $compressions;
     }
 
-    /**
-     * @param array $importList List of plugin instances.
-     */
+    /** @param array $importList List of plugin instances. */
     public static function getLocalFiles(array $importList): false|string
     {
         $fileListing = new FileListing();
 
         $extensions = '';
         foreach ($importList as $importPlugin) {
-            if (! empty($extensions)) {
+            if ($extensions !== '') {
                 $extensions .= '|';
             }
 
@@ -1476,7 +1477,7 @@ class Import
         return $fileListing->getFileSelectOptions(
             Util::userDir((string) ($GLOBALS['cfg']['UploadDir'] ?? '')),
             $matcher,
-            $active
+            $active,
         );
     }
 }

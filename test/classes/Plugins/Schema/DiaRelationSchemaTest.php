@@ -14,8 +14,7 @@ use PhpMyAdmin\Tests\AbstractTestCase;
  */
 class DiaRelationSchemaTest extends AbstractTestCase
 {
-    /** @var DiaRelationSchema */
-    protected $object;
+    protected DiaRelationSchema $object;
 
     /**
      * Sets up the fixture, for example, opens a network connection.
@@ -24,6 +23,7 @@ class DiaRelationSchemaTest extends AbstractTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
         $GLOBALS['dbi'] = $this->createDatabaseInterface();
         $_REQUEST['page_number'] = 33;
         $_REQUEST['dia_show_color'] = true;
@@ -51,6 +51,7 @@ class DiaRelationSchemaTest extends AbstractTestCase
     protected function tearDown(): void
     {
         parent::tearDown();
+
         unset($this->object);
     }
 

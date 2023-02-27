@@ -26,80 +26,64 @@ class Index
      *
      * @var array<string, array<string, array<string, Index>>>
      */
-    private static $registry = [];
+    private static array $registry = [];
 
     /** @var string The name of the schema */
-    private $schema = '';
+    private string $schema = '';
 
     /** @var string The name of the table */
-    private $table = '';
+    private string $table = '';
 
     /** @var string The name of the index */
-    private $name = '';
+    private string $name = '';
 
     /**
      * Columns in index
      *
      * @var array<string, IndexColumn>
      */
-    private $columns = [];
+    private array $columns = [];
 
     /**
      * The index method used (BTREE, HASH, RTREE).
-     *
-     * @var string
      */
-    private $type = '';
+    private string $type = '';
 
     /**
      * The index choice (PRIMARY, UNIQUE, INDEX, SPATIAL, FULLTEXT)
-     *
-     * @var string
      */
-    private $choice = '';
+    private string $choice = '';
 
     /**
      * Various remarks.
-     *
-     * @var string
      */
-    private $remarks = '';
+    private string $remarks = '';
 
     /**
      * Any comment provided for the index with a COMMENT attribute when the
      * index was created.
-     *
-     * @var string
      */
-    private $comment = '';
+    private string $comment = '';
 
     /** @var bool false if the index cannot contain duplicates, true if it can. */
     private bool $nonUnique = false;
 
     /**
      * Indicates how the key is packed. NULL if it is not.
-     *
-     * @var string
      */
-    private $packed = null;
+    private string|null $packed = null;
 
     /**
      * Block size for the index
-     *
-     * @var int
      */
-    private $keyBlockSize = 0;
+    private int $keyBlockSize = 0;
 
     /**
      * Parser option for the index
-     *
-     * @var string
      */
-    private $parser = '';
+    private string $parser = '';
 
-    /**
-     * @param array $params parameters
-     */
+    /** @param array $params parameters */
     public function __construct(array $params = [])
     {
         $this->set($params);
@@ -114,7 +98,7 @@ class Index
         DatabaseInterface $dbi,
         string $schema,
         string $table,
-        string $index_name = ''
+        string $index_name = '',
     ): Index {
         self::loadIndexes($dbi, $table, $schema);
         if (isset(self::$registry[$schema][$table][$index_name])) {
@@ -356,7 +340,7 @@ class Index
      *
      * @return int the number of the columns
      */
-    public function getColumnCount()
+    public function getColumnCount(): int
     {
         return count($this->columns);
     }
@@ -366,7 +350,7 @@ class Index
      *
      * @return string index comment
      */
-    public function getComment()
+    public function getComment(): string
     {
         return $this->comment;
     }
@@ -376,7 +360,7 @@ class Index
      *
      * @return string index remarks
      */
-    public function getRemarks()
+    public function getRemarks(): string
     {
         return $this->remarks;
     }
@@ -391,10 +375,8 @@ class Index
 
     /**
      * Return the parser
-     *
-     * @return string
      */
-    public function getParser()
+    public function getParser(): string
     {
         return $this->parser;
     }
@@ -404,7 +386,7 @@ class Index
      *
      * @return string concatenated remarks and comment
      */
-    public function getComments()
+    public function getComments(): string
     {
         $comments = $this->getRemarks();
         if (strlen($comments) > 0) {
@@ -421,7 +403,7 @@ class Index
      *
      * @return string index type
      */
-    public function getType()
+    public function getType(): string
     {
         return $this->type;
     }
@@ -431,7 +413,7 @@ class Index
      *
      * @return string index choice
      */
-    public function getChoice()
+    public function getChoice(): string
     {
         return $this->choice;
     }
@@ -441,7 +423,7 @@ class Index
      *
      * @return string[] index types
      */
-    public static function getIndexTypes()
+    public static function getIndexTypes(): array
     {
         return [
             'BTREE',
@@ -457,9 +439,9 @@ class Index
     /**
      * Returns how the index is packed
      *
-     * @return string how the index is packed
+     * @return string|null how the index is packed
      */
-    public function getPacked()
+    public function getPacked(): string|null
     {
         return $this->packed;
     }
@@ -467,10 +449,8 @@ class Index
     /**
      * Returns 'No' if the index is not packed,
      * how the index is packed if packed
-     *
-     * @return string
      */
-    public function isPacked()
+    public function isPacked(): string
     {
         if ($this->packed === null) {
             return __('No');
@@ -510,7 +490,7 @@ class Index
      *
      * @return string the name of the index
      */
-    public function getName()
+    public function getName(): string
     {
         return $this->name;
     }
@@ -530,7 +510,7 @@ class Index
      *
      * @return array<string, IndexColumn>
      */
-    public function getColumns()
+    public function getColumns(): array
     {
         return $this->columns;
     }
@@ -573,7 +553,7 @@ class Index
      *
      * @return string  Output HTML
      */
-    public static function findDuplicates($table, $schema)
+    public static function findDuplicates($table, $schema): string
     {
         $indexes = self::getFromTable($GLOBALS['dbi'], $table, $schema);
 
@@ -598,8 +578,8 @@ class Index
 
                 $message = Message::notice(
                     __(
-                        'The indexes %1$s and %2$s seem to be equal and one of them could possibly be removed.'
-                    )
+                        'The indexes %1$s and %2$s seem to be equal and one of them could possibly be removed.',
+                    ),
                 );
                 $message->addParam($each_index->getName());
                 $message->addParam($while_index->getName());

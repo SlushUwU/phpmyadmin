@@ -14,13 +14,10 @@ use function base64_encode;
 use function ob_get_clean;
 use function ob_start;
 
-/**
- * @covers \PhpMyAdmin\Plugins\Auth\AuthenticationHttp
- */
+/** @covers \PhpMyAdmin\Plugins\Auth\AuthenticationHttp */
 class AuthenticationHttpTest extends AbstractNetworkTestCase
 {
-    /** @var AuthenticationHttp */
-    protected $object;
+    protected AuthenticationHttp $object;
 
     /**
      * Configures global environment.
@@ -28,8 +25,11 @@ class AuthenticationHttpTest extends AbstractNetworkTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
         parent::setGlobalConfig();
+
         parent::setTheme();
+
         $GLOBALS['dbi'] = $this->createDatabaseInterface();
         $GLOBALS['cfg']['Servers'] = [];
         $GLOBALS['server'] = 0;
@@ -49,12 +49,11 @@ class AuthenticationHttpTest extends AbstractNetworkTestCase
     protected function tearDown(): void
     {
         parent::tearDown();
+
         unset($this->object);
     }
 
-    /**
-     * @param mixed[] ...$headers
-     */
+    /** @param mixed ...$headers */
     public function doMockResponse(int $set_minimal, int $body_id, int $set_title, ...$headers): void
     {
         $mockHeader = $this->getMockBuilder(Header::class)
@@ -64,7 +63,7 @@ class AuthenticationHttpTest extends AbstractNetworkTestCase
                     'setBodyId',
                     'setTitle',
                     'disableMenuAndConsole',
-                ]
+                ],
             )
             ->getMock();
 
@@ -96,7 +95,7 @@ class AuthenticationHttpTest extends AbstractNetworkTestCase
             $this->object->logOut();
         } else {
             $this->assertFalse(
-                $this->object->showLoginForm()
+                $this->object->showLoginForm(),
             );
         }
     }
@@ -110,7 +109,7 @@ class AuthenticationHttpTest extends AbstractNetworkTestCase
             0,
             0,
             0,
-            ['Location: https://example.com/logout']
+            ['Location: https://example.com/logout'],
         );
     }
 
@@ -125,7 +124,7 @@ class AuthenticationHttpTest extends AbstractNetworkTestCase
             1,
             ['WWW-Authenticate: Basic realm="phpMyAdmin verboseMessag"'],
             ['status: 401 Unauthorized'],
-            401
+            401,
         );
     }
 
@@ -140,7 +139,7 @@ class AuthenticationHttpTest extends AbstractNetworkTestCase
             1,
             ['WWW-Authenticate: Basic realm="phpMyAdmin hst"'],
             ['status: 401 Unauthorized'],
-            401
+            401,
         );
     }
 
@@ -155,7 +154,7 @@ class AuthenticationHttpTest extends AbstractNetworkTestCase
             1,
             ['WWW-Authenticate: Basic realm="realmmessage"'],
             ['status: 401 Unauthorized'],
-            401
+            401,
         );
     }
 
@@ -176,10 +175,10 @@ class AuthenticationHttpTest extends AbstractNetworkTestCase
         string $pass,
         string $userIndex,
         string $passIndex,
-        $expectedReturn,
+        string|bool $expectedReturn,
         string $expectedUser,
-        $expectedPass,
-        $old_usr = ''
+        string|bool $expectedPass,
+        string|bool $old_usr = '',
     ): void {
         $_SERVER[$userIndex] = $user;
         $_SERVER[$passIndex] = $pass;
@@ -188,7 +187,7 @@ class AuthenticationHttpTest extends AbstractNetworkTestCase
 
         $this->assertEquals(
             $expectedReturn,
-            $this->object->readCredentials()
+            $this->object->readCredentials(),
         );
 
         $this->assertEquals($expectedUser, $this->object->user);
@@ -266,7 +265,7 @@ class AuthenticationHttpTest extends AbstractNetworkTestCase
         $GLOBALS['cfg']['Server']['user'] = 'testUser';
 
         $this->assertTrue(
-            $this->object->storeCredentials()
+            $this->object->storeCredentials(),
         );
 
         $this->assertEquals('testUser', $GLOBALS['cfg']['Server']['user']);
@@ -292,7 +291,7 @@ class AuthenticationHttpTest extends AbstractNetworkTestCase
         ];
 
         $this->assertTrue(
-            $this->object->storeCredentials()
+            $this->object->storeCredentials(),
         );
 
         $this->assertEquals(
@@ -301,7 +300,7 @@ class AuthenticationHttpTest extends AbstractNetworkTestCase
                 'password' => 'testPass',
                 'host' => 'a',
             ],
-            $GLOBALS['cfg']['Server']
+            $GLOBALS['cfg']['Server'],
         );
 
         $this->assertEquals(2, $GLOBALS['server']);
@@ -322,7 +321,7 @@ class AuthenticationHttpTest extends AbstractNetworkTestCase
         ];
 
         $this->assertTrue(
-            $this->object->storeCredentials()
+            $this->object->storeCredentials(),
         );
 
         $this->assertEquals(
@@ -331,7 +330,7 @@ class AuthenticationHttpTest extends AbstractNetworkTestCase
                 'password' => 'testPass',
                 'host' => 'a',
             ],
-            $GLOBALS['cfg']['Server']
+            $GLOBALS['cfg']['Server'],
         );
 
         $this->assertEquals(3, $GLOBALS['server']);

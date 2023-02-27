@@ -10,13 +10,10 @@ use function time;
 
 use const PHP_INT_MAX;
 
-/**
- * @covers \PhpMyAdmin\Import
- */
+/** @covers \PhpMyAdmin\Import */
 class ImportTest extends AbstractTestCase
 {
-    /** @var Import $import */
-    private $import;
+    private Import $import;
 
     /**
      * Prepares environment for the test.
@@ -24,6 +21,7 @@ class ImportTest extends AbstractTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
         $GLOBALS['dbi'] = $this->createDatabaseInterface();
         $GLOBALS['server'] = 0;
         $GLOBALS['cfg']['ServerDefault'] = '';
@@ -87,7 +85,7 @@ class ImportTest extends AbstractTestCase
                 null,
                 null,
             ],
-            $this->import->lookForUse(null, null, null)
+            $this->import->lookForUse(null, null, null),
         );
 
         $this->assertEquals(
@@ -95,7 +93,7 @@ class ImportTest extends AbstractTestCase
                 'myDb',
                 null,
             ],
-            $this->import->lookForUse(null, 'myDb', null)
+            $this->import->lookForUse(null, 'myDb', null),
         );
 
         $this->assertEquals(
@@ -103,7 +101,7 @@ class ImportTest extends AbstractTestCase
                 'myDb',
                 true,
             ],
-            $this->import->lookForUse(null, 'myDb', true)
+            $this->import->lookForUse(null, 'myDb', true),
         );
 
         $this->assertEquals(
@@ -111,7 +109,7 @@ class ImportTest extends AbstractTestCase
                 'myDb',
                 true,
             ],
-            $this->import->lookForUse('select 1 from myTable', 'myDb', true)
+            $this->import->lookForUse('select 1 from myTable', 'myDb', true),
         );
 
         $this->assertEquals(
@@ -119,7 +117,7 @@ class ImportTest extends AbstractTestCase
                 'anotherDb',
                 true,
             ],
-            $this->import->lookForUse('use anotherDb', 'myDb', false)
+            $this->import->lookForUse('use anotherDb', 'myDb', false),
         );
 
         $this->assertEquals(
@@ -127,7 +125,7 @@ class ImportTest extends AbstractTestCase
                 'anotherDb',
                 true,
             ],
-            $this->import->lookForUse('use anotherDb', 'myDb', true)
+            $this->import->lookForUse('use anotherDb', 'myDb', true),
         );
 
         $this->assertEquals(
@@ -135,7 +133,7 @@ class ImportTest extends AbstractTestCase
                 'anotherDb',
                 true,
             ],
-            $this->import->lookForUse('use `anotherDb`;', 'myDb', true)
+            $this->import->lookForUse('use `anotherDb`;', 'myDb', true),
         );
     }
 

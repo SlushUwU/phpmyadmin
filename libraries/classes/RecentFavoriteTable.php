@@ -34,15 +34,12 @@ use const SORT_REGULAR;
  */
 class RecentFavoriteTable
 {
-    /** @var Template */
-    public $template;
-
     /**
      * Reference to session variable containing recently used or favorite tables.
      *
      * @var array
      */
-    private $tables;
+    private array $tables;
 
     /**
      * Defines type of action, Favorite or Recent table.
@@ -54,7 +51,7 @@ class RecentFavoriteTable
      *
      * @var array<string,RecentFavoriteTable>
      */
-    private static $instances = [];
+    private static array $instances = [];
 
     private Relation $relation;
 
@@ -63,10 +60,8 @@ class RecentFavoriteTable
      *
      * @param string $type the table type
      */
-    private function __construct(Template $template, string $type)
+    private function __construct(public Template $template, string $type)
     {
-        $this->template = $template;
-
         $this->relation = new Relation($GLOBALS['dbi']);
         $this->tableType = $type;
         $server_id = $GLOBALS['server'];
@@ -100,7 +95,7 @@ class RecentFavoriteTable
      *
      * @return array
      */
-    public function getTables()
+    public function getTables(): array
     {
         return $this->tables;
     }
@@ -133,7 +128,7 @@ class RecentFavoriteTable
      *
      * @return true|Message
      */
-    public function saveToDb()
+    public function saveToDb(): bool|Message
     {
         $username = $GLOBALS['cfg']['Server']['user'];
         $sql_query = ' REPLACE INTO ' . $this->getPmaTable() . ' (`username`, `tables`)'
@@ -157,7 +152,7 @@ class RecentFavoriteTable
             $message = Message::error($error_msg);
             $message->addMessage(
                 Message::rawError($GLOBALS['dbi']->getError(Connection::TYPE_CONTROL)),
-                '<br><br>'
+                '<br><br>',
             );
 
             return $message;
@@ -174,7 +169,7 @@ class RecentFavoriteTable
     {
         $max = max(
             $GLOBALS['cfg']['Num' . ucfirst($this->tableType) . 'Tables'],
-            0
+            0,
         );
         $trimmingOccurred = count($this->tables) > $max;
         while (count($this->tables) > $max) {
@@ -257,7 +252,7 @@ class RecentFavoriteTable
      *
      * @return true|Message True if success, Message if not
      */
-    public function add($db, $table)
+    public function add($db, $table): bool|Message
     {
         // If table does not exist, do not add._getPmaTable()
         if (! $GLOBALS['dbi']->getColumns($db, $table)) {
@@ -290,7 +285,7 @@ class RecentFavoriteTable
      * @return bool|Message True if invalid and removed, False if not invalid,
      * Message if error while removing
      */
-    public function removeIfInvalid($db, $table)
+    public function removeIfInvalid($db, $table): bool|Message
     {
         foreach ($this->tables as $tbl) {
             if ($tbl['db'] != $db || $tbl['table'] != $table) {
@@ -314,7 +309,7 @@ class RecentFavoriteTable
      *
      * @return true|Message True if success, Message if not
      */
-    public function remove($db, $table)
+    public function remove($db, $table): bool|Message
     {
         foreach ($this->tables as $key => $value) {
             if ($value['db'] != $db || $value['table'] != $table) {

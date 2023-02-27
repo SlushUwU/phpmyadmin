@@ -40,16 +40,14 @@ class Template
 {
     /**
      * Twig environment
-     *
-     * @var Environment
      */
-    protected static $twig;
+    protected static Environment $twig;
 
     public const TEMPLATES_FOLDER = ROOT_PATH . 'templates';
 
     public function __construct()
     {
-        if (static::$twig !== null) {
+        if (isset(static::$twig)) {
             return;
         }
 
@@ -123,9 +121,9 @@ class Template
             trigger_error(
                 sprintf(
                     __('Error while working with template cache: %s'),
-                    $e->getMessage()
+                    $e->getMessage(),
                 ),
-                E_USER_WARNING
+                E_USER_WARNING,
             );
         }
 

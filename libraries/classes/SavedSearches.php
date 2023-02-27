@@ -27,38 +27,28 @@ class SavedSearches
 {
     /**
      * Id
-     *
-     * @var int|null
      */
-    private $id = null;
+    private int|null $id = null;
 
     /**
      * Username
-     *
-     * @var string
      */
-    private $username = null;
+    private string $username = '';
 
     /**
      * DB name
-     *
-     * @var string
      */
-    private $dbname = null;
+    private string $dbname = '';
 
     /**
      * Saved search name
-     *
-     * @var string
      */
-    private $searchName = null;
+    private string $searchName = '';
 
     /**
      * Criterias
-     *
-     * @var array|null
      */
-    private $criterias = null;
+    private array|null $criterias = null;
 
     /**
      * Setter of id
@@ -67,10 +57,10 @@ class SavedSearches
      *
      * @return static
      */
-    public function setId($searchId)
+    public function setId($searchId): static
     {
         $searchId = (int) $searchId;
-        if (empty($searchId)) {
+        if ($searchId === 0) {
             $searchId = null;
         }
 
@@ -81,10 +71,8 @@ class SavedSearches
 
     /**
      * Getter of id
-     *
-     * @return int|null
      */
-    public function getId()
+    public function getId(): int|null
     {
         return $this->id;
     }
@@ -96,7 +84,7 @@ class SavedSearches
      *
      * @return static
      */
-    public function setSearchName($searchName)
+    public function setSearchName($searchName): static
     {
         $this->searchName = $searchName;
 
@@ -105,10 +93,8 @@ class SavedSearches
 
     /**
      * Getter of searchName
-     *
-     * @return string
      */
-    public function getSearchName()
+    public function getSearchName(): string
     {
         return $this->searchName;
     }
@@ -121,7 +107,7 @@ class SavedSearches
      *
      * @return static
      */
-    public function setCriterias(array|string $criterias, $json = false)
+    public function setCriterias(array|string $criterias, $json = false): static
     {
         if ($json === true && is_string($criterias)) {
             $this->criterias = json_decode($criterias, true);
@@ -158,7 +144,7 @@ class SavedSearches
         } else {
             $data['rows'] = min(
                 max(0, intval($data['rows'])),
-                100
+                100,
             );
         }
 
@@ -173,10 +159,8 @@ class SavedSearches
 
     /**
      * Getter for criterias
-     *
-     * @return array|null
      */
-    public function getCriterias()
+    public function getCriterias(): array|null
     {
         return $this->criterias;
     }
@@ -188,7 +172,7 @@ class SavedSearches
      *
      * @return static
      */
-    public function setUsername($username)
+    public function setUsername($username): static
     {
         $this->username = $username;
 
@@ -197,10 +181,8 @@ class SavedSearches
 
     /**
      * Getter for username
-     *
-     * @return string
      */
-    public function getUsername()
+    public function getUsername(): string
     {
         return $this->username;
     }
@@ -212,7 +194,7 @@ class SavedSearches
      *
      * @return static
      */
-    public function setDbname($dbname)
+    public function setDbname($dbname): static
     {
         $this->dbname = $dbname;
 
@@ -221,10 +203,8 @@ class SavedSearches
 
     /**
      * Getter for DB name
-     *
-     * @return string
      */
-    public function getDbname()
+    public function getDbname(): string
     {
         return $this->dbname;
     }
@@ -259,7 +239,7 @@ class SavedSearches
             ];
             $existingSearches = $this->getList($savedQueryByExampleSearchesFeature, $wheres);
 
-            if (! empty($existingSearches)) {
+            if ($existingSearches !== []) {
                 throw new SavedSearchesException(__('An entry with this name already exists.'));
             }
 
@@ -286,7 +266,7 @@ class SavedSearches
         ];
         $existingSearches = $this->getList($savedQueryByExampleSearchesFeature, $wheres);
 
-        if (! empty($existingSearches)) {
+        if ($existingSearches !== []) {
             throw new SavedSearchesException(__('An entry with this name already exists.'));
         }
 
@@ -358,8 +338,10 @@ class SavedSearches
      *
      * @return array List of saved searches or empty array on failure
      */
-    public function getList(SavedQueryByExampleSearchesFeature $savedQueryByExampleSearchesFeature, array $wheres = [])
-    {
+    public function getList(
+        SavedQueryByExampleSearchesFeature $savedQueryByExampleSearchesFeature,
+        array $wheres = [],
+    ): array {
         if ($this->getUsername() == null || $this->getDbname() == null) {
             return [];
         }

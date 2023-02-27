@@ -8,9 +8,7 @@ use Stringable;
 use Webmozart\Assert\Assert;
 use Webmozart\Assert\InvalidArgumentException;
 
-/**
- * @psalm-immutable
- */
+/** @psalm-immutable */
 final class TableName implements Stringable
 {
     /**
@@ -19,11 +17,8 @@ final class TableName implements Stringable
      */
     private const MAX_LENGTH = 64;
 
-    /**
-     * @var string
-     * @psalm-var non-empty-string
-     */
-    private $name;
+    /** @psalm-var non-empty-string */
+    private string $name;
 
     /**
      * @param mixed $name
@@ -63,9 +58,7 @@ final class TableName implements Stringable
         return new self($name);
     }
 
-    /**
-     * @param mixed $name
-     */
+    /** @param mixed $name */
     public static function tryFromValue($name): self|null
     {
         try {
@@ -75,17 +68,13 @@ final class TableName implements Stringable
         }
     }
 
-    /**
-     * @psalm-return non-empty-string
-     */
+    /** @psalm-return non-empty-string */
     public function getName(): string
     {
         return $this->name;
     }
 
-    /**
-     * @psalm-return non-empty-string
-     */
+    /** @psalm-return non-empty-string */
     public function __toString(): string
     {
         return $this->name;

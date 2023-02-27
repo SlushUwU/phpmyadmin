@@ -8,9 +8,7 @@ use PhpMyAdmin\Server\SysInfo\Base;
 use PhpMyAdmin\Server\SysInfo\SysInfo;
 use PhpMyAdmin\Tests\AbstractTestCase;
 
-/**
- * @covers \PhpMyAdmin\Server\SysInfo\SysInfo
- */
+/** @covers \PhpMyAdmin\Server\SysInfo\SysInfo */
 class SysInfoTest extends AbstractTestCase
 {
     /**
@@ -25,7 +23,7 @@ class SysInfoTest extends AbstractTestCase
     {
         $this->assertEquals(
             $expected,
-            SysInfo::getOs($os)
+            SysInfo::getOs($os),
         );
     }
 

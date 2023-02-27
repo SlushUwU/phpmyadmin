@@ -10,13 +10,10 @@ use ReflectionProperty;
 
 use function rawurlencode;
 
-/**
- * @covers \PhpMyAdmin\Scripts
- */
+/** @covers \PhpMyAdmin\Scripts */
 class ScriptsTest extends AbstractTestCase
 {
-    /** @var Scripts */
-    protected $object;
+    protected Scripts $object;
 
     /**
      * Sets up the fixture, for example, opens a network connection.
@@ -25,6 +22,7 @@ class ScriptsTest extends AbstractTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
         $this->object = new Scripts();
     }
 
@@ -35,6 +33,7 @@ class ScriptsTest extends AbstractTestCase
     protected function tearDown(): void
     {
         parent::tearDown();
+
         unset($this->object);
     }
 
@@ -50,17 +49,17 @@ class ScriptsTest extends AbstractTestCase
 
         $this->assertStringContainsString(
             'src="js/dist/common.js?v=' . rawurlencode(Version::VERSION) . '"',
-            $actual
+            $actual,
         );
         $this->assertStringContainsString(
             'window.AJAX.scriptHandler.add(\'vendor\/codemirror\/lib\/codemirror.js\', false);',
-            $actual
+            $actual,
         );
         $this->assertStringContainsString('window.AJAX.scriptHandler.add(\'common.js\', true);', $actual);
         $this->assertStringContainsString('window.AJAX.fireOnload(\'common.js\')', $actual);
         $this->assertStringNotContainsString(
             'window.AJAX.fireOnload(\'vendor\/codemirror\/lib\/codemirror.js\')',
-            $actual
+            $actual,
         );
     }
 
@@ -96,7 +95,7 @@ class ScriptsTest extends AbstractTestCase
                     'fire' => 1,
                 ],
             ],
-            $this->object->getFiles()
+            $this->object->getFiles(),
         );
     }
 

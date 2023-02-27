@@ -16,14 +16,13 @@ use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\ResponseRenderer;
 
-/**
- * @covers \PhpMyAdmin\Controllers\Table\ExportController
- */
+/** @covers \PhpMyAdmin\Controllers\Table\ExportController */
 class ExportControllerTest extends AbstractTestCase
 {
     protected function setUp(): void
     {
         parent::setUp();
+
         $this->loadContainerBuilder();
         $GLOBALS['dbi'] = $this->createDatabaseInterface();
     }
@@ -103,7 +102,7 @@ class ExportControllerTest extends AbstractTestCase
         (new ExportController(
             $response,
             $template,
-            new Options(new Relation($dbi), new TemplateModel($dbi))
+            new Options(new Relation($dbi), new TemplateModel($dbi)),
         ))($this->createStub(ServerRequest::class));
         $this->assertSame($expected, $response->getHTMLResult());
     }

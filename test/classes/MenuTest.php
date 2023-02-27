@@ -9,16 +9,12 @@ use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\Menu;
 use PhpMyAdmin\Tests\Stubs\DbiDummy;
 
-/**
- * @covers \PhpMyAdmin\Menu
- */
+/** @covers \PhpMyAdmin\Menu */
 class MenuTest extends AbstractTestCase
 {
-    /** @var DatabaseInterface */
-    protected $dbi;
+    protected DatabaseInterface $dbi;
 
-    /** @var DbiDummy */
-    protected $dummyDbi;
+    protected DbiDummy $dummyDbi;
 
     /**
      * Configures global environment.
@@ -26,7 +22,9 @@ class MenuTest extends AbstractTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
         parent::setTheme();
+
         $this->dummyDbi = $this->createDbiDummy();
         $this->dbi = $this->createDatabaseInterface($this->dummyDbi);
         $GLOBALS['dbi'] = $this->dbi;
@@ -48,7 +46,7 @@ class MenuTest extends AbstractTestCase
         $menu = new Menu($this->dbi, '', '');
         $this->assertStringContainsString(
             'floating_menubar',
-            $menu->getDisplay()
+            $menu->getDisplay(),
         );
     }
 
@@ -60,7 +58,7 @@ class MenuTest extends AbstractTestCase
         $menu = new Menu($this->dbi, 'pma_test', '');
         $this->assertStringContainsString(
             'floating_menubar',
-            $menu->getDisplay()
+            $menu->getDisplay(),
         );
     }
 
@@ -72,7 +70,7 @@ class MenuTest extends AbstractTestCase
         $menu = new Menu($this->dbi, 'pma_test', 'table1');
         $this->assertStringContainsString(
             'floating_menubar',
-            $menu->getDisplay()
+            $menu->getDisplay(),
         );
     }
 
@@ -85,7 +83,7 @@ class MenuTest extends AbstractTestCase
         $menu->setTable('table1');
         $this->assertStringContainsString(
             'table1',
-            $menu->getDisplay()
+            $menu->getDisplay(),
         );
     }
 }

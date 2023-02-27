@@ -15,9 +15,7 @@ use PhpMyAdmin\Transformations;
 
 use function json_encode;
 
-/**
- * @covers \PhpMyAdmin\Controllers\Normalization\ThirdNormalForm\NewTablesController
- */
+/** @covers \PhpMyAdmin\Controllers\Normalization\ThirdNormalForm\NewTablesController */
 class NewTablesControllerTest extends AbstractTestCase
 {
     public function testDefault(): void
@@ -63,7 +61,7 @@ class NewTablesControllerTest extends AbstractTestCase
         $controller = new NewTablesController(
             $response,
             $template,
-            new Normalization($dbi, new Relation($dbi), new Transformations(), $template)
+            new Normalization($dbi, new Relation($dbi), new Transformations(), $template),
         );
         $controller($request);
 

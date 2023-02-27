@@ -40,22 +40,17 @@ abstract class AuthenticationPlugin
 {
     /**
      * Username
-     *
-     * @var string
      */
-    public $user = '';
+    public string $user = '';
 
     /**
      * Password
-     *
-     * @var string
      */
-    public $password = '';
+    public string $password = '';
 
     protected IpAllowDeny $ipAllowDeny;
 
-    /** @var Template */
-    public $template;
+    public Template $template;
 
     public function __construct()
     {
@@ -146,17 +141,15 @@ abstract class AuthenticationPlugin
             /* Redirect to other authenticated server */
             $_SESSION['partial_logout'] = true;
             Core::sendHeaderLocation(
-                './index.php?route=/' . Url::getCommonRaw(['server' => $server], '&')
+                './index.php?route=/' . Url::getCommonRaw(['server' => $server], '&'),
             );
         }
     }
 
     /**
      * Returns URL for login form.
-     *
-     * @return string
      */
-    public function getLoginFormURL()
+    public function getLoginFormURL(): string
     {
         return './index.php?route=/';
     }
@@ -165,10 +158,8 @@ abstract class AuthenticationPlugin
      * Returns error message for failed authentication.
      *
      * @param string $failure String describing why authentication has failed
-     *
-     * @return string
      */
-    public function getErrorMessage($failure)
+    public function getErrorMessage($failure): string
     {
         if ($failure === 'empty-denied') {
             return __('Login without a password is forbidden by configuration (see AllowNoPassword)');
@@ -182,7 +173,7 @@ abstract class AuthenticationPlugin
             return sprintf(
                 __('You have been automatically logged out due to inactivity of %s seconds.'
                 . ' Once you log in again, you should be able to resume the work where you left off.'),
-                intval($GLOBALS['cfg']['LoginCookieValidity'])
+                intval($GLOBALS['cfg']['LoginCookieValidity']),
             );
         }
 
@@ -331,7 +322,7 @@ abstract class AuthenticationPlugin
 
         echo $this->template->render('login/header');
         echo Message::rawNotice(
-            __('You have enabled two factor authentication, please confirm your login.')
+            __('You have enabled two factor authentication, please confirm your login.'),
         )->getDisplay();
         echo $this->template->render('login/twofactor', [
             'form' => $twofactor->render(),

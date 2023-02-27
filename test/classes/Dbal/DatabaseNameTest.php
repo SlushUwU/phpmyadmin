@@ -16,9 +16,7 @@ use function str_repeat;
  */
 class DatabaseNameTest extends TestCase
 {
-    /**
-     * @dataProvider providerForTestValidNames
-     */
+    /** @dataProvider providerForTestValidNames */
     public function testValidName(string $validName): void
     {
         $name = DatabaseName::fromValue($validName);
@@ -26,9 +24,7 @@ class DatabaseNameTest extends TestCase
         $this->assertEquals($validName, (string) $name);
     }
 
-    /**
-     * @dataProvider providerForTestValidNames
-     */
+    /** @dataProvider providerForTestValidNames */
     public function testTryFromValueWithValidName(string $validName): void
     {
         $name = DatabaseName::tryFromValue($validName);
@@ -37,9 +33,7 @@ class DatabaseNameTest extends TestCase
         $this->assertEquals($validName, (string) $name);
     }
 
-    /**
-     * @return iterable<int, string[]>
-     */
+    /** @return iterable<int, string[]> */
     public static function providerForTestValidNames(): iterable
     {
         yield ['name'];
@@ -47,12 +41,8 @@ class DatabaseNameTest extends TestCase
         yield [str_repeat('a', 64)];
     }
 
-    /**
-     * @param mixed $name
-     *
-     * @dataProvider providerForTestInvalidNames
-     */
-    public function testInvalidNames($name, string $exceptionMessage): void
+    /** @dataProvider providerForTestInvalidNames */
+    public function testInvalidNames(mixed $name, string $exceptionMessage): void
     {
         $this->assertNull(DatabaseName::tryFromValue($name));
         $this->expectException(InvalidDatabaseName::class);

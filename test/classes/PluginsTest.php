@@ -9,16 +9,16 @@ use PhpMyAdmin\Export;
 use PhpMyAdmin\Plugins;
 use PhpMyAdmin\Transformations;
 
-/**
- * @covers \PhpMyAdmin\Plugins
- */
+/** @covers \PhpMyAdmin\Plugins */
 class PluginsTest extends AbstractTestCase
 {
     protected function setUp(): void
     {
         parent::setUp();
+
         $this->loadContainerBuilder();
         $GLOBALS['dbi'] = $this->createDatabaseInterface();
+
         parent::loadDbiIntoContainerBuilder();
     }
 
@@ -50,18 +50,17 @@ class PluginsTest extends AbstractTestCase
     }
 
     /**
-     * @param string|int|null $actualConfig
      * @psalm-param 'Export'|'Import'|'Schema' $section
      *
      * @dataProvider providerForTestGetDefault
      */
     public function testGetDefault(
         string $expected,
-        $actualConfig,
+        string|int|null $actualConfig,
         string|null $actualGet,
         string $section,
         string $option,
-        bool|null $timeoutPassed
+        bool|null $timeoutPassed,
     ): void {
         $_GET = [];
         $_REQUEST = [];
@@ -113,22 +112,22 @@ class PluginsTest extends AbstractTestCase
             new Plugins\Export\ExportJson(
                 new Relation($GLOBALS['dbi']),
                 new Export($GLOBALS['dbi']),
-                new Transformations()
+                new Transformations(),
             ),
             new Plugins\Export\ExportOds(
                 new Relation($GLOBALS['dbi']),
                 new Export($GLOBALS['dbi']),
-                new Transformations()
+                new Transformations(),
             ),
             new Plugins\Export\ExportSql(
                 new Relation($GLOBALS['dbi']),
                 new Export($GLOBALS['dbi']),
-                new Transformations()
+                new Transformations(),
             ),
             new Plugins\Export\ExportXml(
                 new Relation($GLOBALS['dbi']),
                 new Export($GLOBALS['dbi']),
-                new Transformations()
+                new Transformations(),
             ),
         ];
         $actual = Plugins::getChoice($exportList, 'xml');

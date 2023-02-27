@@ -6,9 +6,7 @@ namespace PhpMyAdmin\Tests;
 
 use PhpMyAdmin\Sanitize;
 
-/**
- * @covers \PhpMyAdmin\Sanitize
- */
+/** @covers \PhpMyAdmin\Sanitize */
 class SanitizeTest extends AbstractTestCase
 {
     /**
@@ -18,6 +16,7 @@ class SanitizeTest extends AbstractTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
         parent::setLanguage();
     }
 
@@ -28,7 +27,7 @@ class SanitizeTest extends AbstractTestCase
     {
         $this->assertEquals(
             '[a@javascript:alert(\'XSS\');@target]link</a>',
-            Sanitize::sanitizeMessage('[a@javascript:alert(\'XSS\');@target]link[/a]')
+            Sanitize::sanitizeMessage('[a@javascript:alert(\'XSS\');@target]link[/a]'),
         );
     }
 
@@ -43,7 +42,7 @@ class SanitizeTest extends AbstractTestCase
         unset($GLOBALS['lang']);
         $this->assertEquals(
             '<a href="index.php?route=/url&url=https%3A%2F%2Fwww.phpmyadmin.net%2F" target="target">link</a>',
-            Sanitize::sanitizeMessage('[a@https://www.phpmyadmin.net/@target]link[/a]')
+            Sanitize::sanitizeMessage('[a@https://www.phpmyadmin.net/@target]link[/a]'),
         );
 
         $GLOBALS['lang'] = $lang;
@@ -62,7 +61,7 @@ class SanitizeTest extends AbstractTestCase
         $this->assertEquals(
             '<a href="index.php?route=/url&url=https%3A%2F%2Fdocs.phpmyadmin.net%2Fen%2Flatest%2F'
                 . $expected . '" target="documentation">doclink</a>',
-            Sanitize::sanitizeMessage('[doc@' . $link . ']doclink[/doc]')
+            Sanitize::sanitizeMessage('[doc@' . $link . ']doclink[/doc]'),
         );
     }
 
@@ -100,7 +99,7 @@ class SanitizeTest extends AbstractTestCase
     {
         $this->assertEquals(
             '[a@./Documentation.html@INVALID9]doc</a>',
-            Sanitize::sanitizeMessage('[a@./Documentation.html@INVALID9]doc[/a]')
+            Sanitize::sanitizeMessage('[a@./Documentation.html@INVALID9]doc[/a]'),
         );
     }
 
@@ -111,7 +110,7 @@ class SanitizeTest extends AbstractTestCase
     {
         $this->assertEquals(
             '[a@./Documentation.html" onmouseover="alert(foo)"]doc</a>',
-            Sanitize::sanitizeMessage('[a@./Documentation.html" onmouseover="alert(foo)"]doc[/a]')
+            Sanitize::sanitizeMessage('[a@./Documentation.html" onmouseover="alert(foo)"]doc[/a]'),
         );
     }
 
@@ -124,8 +123,8 @@ class SanitizeTest extends AbstractTestCase
             '<a href="index.php?route=/url&url=https%3A%2F%2Fdocs.phpmyadmin.net%2F">doc</a>'
                 . '[a@javascript:alert(\'XSS\');@target]link</a>',
             Sanitize::sanitizeMessage(
-                '[a@https://docs.phpmyadmin.net/]doc[/a][a@javascript:alert(\'XSS\');@target]link[/a]'
-            )
+                '[a@https://docs.phpmyadmin.net/]doc[/a][a@javascript:alert(\'XSS\');@target]link[/a]',
+            ),
         );
     }
 
@@ -136,7 +135,7 @@ class SanitizeTest extends AbstractTestCase
     {
         $this->assertEquals(
             '&lt;div onclick=""&gt;',
-            Sanitize::sanitizeMessage('<div onclick="">')
+            Sanitize::sanitizeMessage('<div onclick="">'),
         );
     }
 
@@ -147,7 +146,7 @@ class SanitizeTest extends AbstractTestCase
     {
         $this->assertEquals(
             '<strong>strong</strong>',
-            Sanitize::sanitizeMessage('[strong]strong[/strong]')
+            Sanitize::sanitizeMessage('[strong]strong[/strong]'),
         );
     }
 
@@ -158,7 +157,7 @@ class SanitizeTest extends AbstractTestCase
     {
         $this->assertEquals(
             '&lt;strong&gt;strong&lt;/strong&gt;',
-            Sanitize::sanitizeMessage('[strong]strong[/strong]', true)
+            Sanitize::sanitizeMessage('[strong]strong[/strong]', true),
         );
     }
 
@@ -169,20 +168,20 @@ class SanitizeTest extends AbstractTestCase
     {
         $this->assertEquals(
             'File_name_123',
-            Sanitize::sanitizeFilename('File_name 123')
+            Sanitize::sanitizeFilename('File_name 123'),
         );
     }
 
     /**
      * Test for Sanitize::getJsValue
      *
-     * @param string          $key      Key
-     * @param string|bool|int $value    Value
-     * @param string          $expected Expected output
+     * @param string                   $key      Key
+     * @param string|bool|int|string[] $value    Value
+     * @param string                   $expected Expected output
      *
      * @dataProvider variables
      */
-    public function testGetJsValue(string $key, $value, string $expected): void
+    public function testGetJsValue(string $key, string|bool|int|array $value, string $expected): void
     {
         $this->assertEquals($expected, Sanitize::getJsValue($key, $value));
     }
@@ -386,7 +385,7 @@ class SanitizeTest extends AbstractTestCase
     {
         $this->assertSame(
             $expected,
-            Sanitize::checkLink($url, $http, $other)
+            Sanitize::checkLink($url, $http, $other),
         );
     }
 }

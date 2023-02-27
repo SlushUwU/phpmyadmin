@@ -13,9 +13,7 @@ use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\ResponseRenderer;
 use PhpMyAdmin\Transformations;
 
-/**
- * @covers \PhpMyAdmin\Controllers\Normalization\GetColumnsController
- */
+/** @covers \PhpMyAdmin\Controllers\Normalization\GetColumnsController */
 class GetColumnsControllerTest extends AbstractTestCase
 {
     public function testDefault(): void
@@ -34,14 +32,14 @@ class GetColumnsControllerTest extends AbstractTestCase
         $controller = new GetColumnsController(
             $response,
             $template,
-            new Normalization($dbi, new Relation($dbi), new Transformations(), $template)
+            new Normalization($dbi, new Relation($dbi), new Transformations(), $template),
         );
         $controller($this->createStub(ServerRequest::class));
 
         // phpcs:disable Generic.Files.LineLength.TooLong
         $this->assertSame(
             '<option selected disabled>Select one…</option><option value="no_such_col">No such column</option><option value="name">name [ varchar(20) ]</option>',
-            $response->getHTMLResult()
+            $response->getHTMLResult(),
         );
         // phpcs:enable
     }

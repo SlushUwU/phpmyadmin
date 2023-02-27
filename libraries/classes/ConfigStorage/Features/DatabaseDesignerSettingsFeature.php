@@ -7,20 +7,10 @@ namespace PhpMyAdmin\ConfigStorage\Features;
 use PhpMyAdmin\Dbal\DatabaseName;
 use PhpMyAdmin\Dbal\TableName;
 
-/**
- * @psalm-immutable
- */
+/** @psalm-immutable */
 final class DatabaseDesignerSettingsFeature
 {
-    /** @var DatabaseName */
-    public $database;
-
-    /** @var TableName */
-    public $designerSettings;
-
-    public function __construct(DatabaseName $database, TableName $designerSettings)
+    public function __construct(public DatabaseName $database, public TableName $designerSettings)
     {
-        $this->database = $database;
-        $this->designerSettings = $designerSettings;
     }
 }

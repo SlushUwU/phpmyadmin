@@ -23,6 +23,8 @@ use ReflectionMethod;
 use ReflectionProperty;
 use stdClass;
 
+use function bin2hex;
+
 use const MYSQLI_BLOB_FLAG;
 use const MYSQLI_TYPE_DATE;
 use const MYSQLI_TYPE_DATETIME;
@@ -38,8 +40,7 @@ use const MYSQLI_TYPE_TINY_BLOB;
  */
 class ExportOdsTest extends AbstractTestCase
 {
-    /** @var ExportOds */
-    protected $object;
+    protected ExportOds $object;
 
     /**
      * Configures global environment.
@@ -47,6 +48,7 @@ class ExportOdsTest extends AbstractTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
         $GLOBALS['dbi'] = $this->createDatabaseInterface();
         $GLOBALS['server'] = 0;
         $GLOBALS['output_kanji_conversion'] = false;
@@ -57,7 +59,7 @@ class ExportOdsTest extends AbstractTestCase
         $this->object = new ExportOds(
             new Relation($GLOBALS['dbi']),
             new Export($GLOBALS['dbi']),
-            new Transformations()
+            new Transformations(),
         );
     }
 
@@ -67,6 +69,7 @@ class ExportOdsTest extends AbstractTestCase
     protected function tearDown(): void
     {
         parent::tearDown();
+
         unset($this->object);
     }
 
@@ -82,26 +85,26 @@ class ExportOdsTest extends AbstractTestCase
 
         $this->assertEquals(
             'OpenDocument Spreadsheet',
-            $properties->getText()
+            $properties->getText(),
         );
 
         $this->assertEquals(
             'ods',
-            $properties->getExtension()
+            $properties->getExtension(),
         );
 
         $this->assertEquals(
             'application/vnd.oasis.opendocument.spreadsheet',
-            $properties->getMimeType()
+            $properties->getMimeType(),
         );
 
         $this->assertEquals(
             'Options',
-            $properties->getOptionsText()
+            $properties->getOptionsText(),
         );
 
         $this->assertTrue(
-            $properties->getForceFile()
+            $properties->getForceFile(),
         );
 
         $options = $properties->getOptions();
@@ -110,7 +113,7 @@ class ExportOdsTest extends AbstractTestCase
 
         $this->assertEquals(
             'Format Specific Options',
-            $options->getName()
+            $options->getName(),
         );
 
         $generalOptionsArray = $options->getProperties();
@@ -120,7 +123,7 @@ class ExportOdsTest extends AbstractTestCase
 
         $this->assertEquals(
             'general_opts',
-            $generalOptions->getName()
+            $generalOptions->getName(),
         );
 
         $generalProperties = $generalOptions->getProperties();
@@ -132,12 +135,12 @@ class ExportOdsTest extends AbstractTestCase
 
         $this->assertEquals(
             'null',
-            $property->getName()
+            $property->getName(),
         );
 
         $this->assertEquals(
             'Replace NULL with:',
-            $property->getText()
+            $property->getText(),
         );
 
         $property = $generalProperties->current();
@@ -147,12 +150,12 @@ class ExportOdsTest extends AbstractTestCase
 
         $this->assertEquals(
             'columns',
-            $property->getName()
+            $property->getName(),
         );
 
         $this->assertEquals(
             'Put columns names in the first row',
-            $property->getText()
+            $property->getText(),
         );
 
         $property = $generalProperties->current();
@@ -161,7 +164,7 @@ class ExportOdsTest extends AbstractTestCase
 
         $this->assertEquals(
             'structure_or_data',
-            $property->getName()
+            $property->getName(),
         );
     }
 
@@ -170,48 +173,40 @@ class ExportOdsTest extends AbstractTestCase
         $this->assertArrayHasKey('ods_buffer', $GLOBALS);
 
         $this->assertTrue(
-            $this->object->exportHeader()
+            $this->object->exportHeader(),
         );
     }
 
     public function testExportFooter(): void
     {
         $GLOBALS['ods_buffer'] = 'header';
-
-        $this->expectOutputRegex('/^504b.*636f6e74656e742e786d6c/');
-        $this->setOutputCallback('bin2hex');
-
-        $this->assertTrue(
-            $this->object->exportFooter()
-        );
-
+        $this->assertTrue($this->object->exportFooter());
+        $output = $this->getActualOutputForAssertion();
+        $this->assertMatchesRegularExpression('/^504b.*636f6e74656e742e786d6c/', bin2hex($output));
         $this->assertStringContainsString('header', $GLOBALS['ods_buffer']);
-
         $this->assertStringContainsString('</office:spreadsheet>', $GLOBALS['ods_buffer']);
-
         $this->assertStringContainsString('</office:body>', $GLOBALS['ods_buffer']);
-
         $this->assertStringContainsString('</office:document-content>', $GLOBALS['ods_buffer']);
     }
 
     public function testExportDBHeader(): void
     {
         $this->assertTrue(
-            $this->object->exportDBHeader('testDB')
+            $this->object->exportDBHeader('testDB'),
         );
     }
 
     public function testExportDBFooter(): void
     {
         $this->assertTrue(
-            $this->object->exportDBFooter('testDB')
+            $this->object->exportDBFooter('testDB'),
         );
     }
 
     public function testExportDBCreate(): void
     {
         $this->assertTrue(
-            $this->object->exportDBCreate('testDB', 'database')
+            $this->object->exportDBCreate('testDB', 'database'),
         );
     }
 
@@ -269,7 +264,7 @@ class ExportOdsTest extends AbstractTestCase
                     'a&b',
                     '<',
                 ],
-                []
+                [],
             );
 
         $GLOBALS['dbi'] = $dbi;
@@ -283,8 +278,8 @@ class ExportOdsTest extends AbstractTestCase
                 'db',
                 'table',
                 'example.com',
-                'SELECT'
-            )
+                'SELECT',
+            ),
         );
 
         $this->assertEquals(
@@ -304,7 +299,7 @@ class ExportOdsTest extends AbstractTestCase
             'office:value="a&b" ><text:p>a&amp;b</text:p></table:table-cell>' .
             '<table:table-cell office:value-type="string"><text:p>&lt;</text:p>' .
             '</table:table-cell></table:table-row></table:table>',
-            $GLOBALS['ods_buffer']
+            $GLOBALS['ods_buffer'],
         );
     }
 
@@ -356,8 +351,8 @@ class ExportOdsTest extends AbstractTestCase
                 'db',
                 'table',
                 'example.com',
-                'SELECT'
-            )
+                'SELECT',
+            ),
         );
 
         $this->assertEquals(
@@ -366,7 +361,7 @@ class ExportOdsTest extends AbstractTestCase
             '-cell><table:table-cell office:value-type="string"><text:p>' .
             'fnam/&lt;e2</text:p></table:table-cell></table:table-row>' .
             '</table:table>',
-            $GLOBALS['ods_buffer']
+            $GLOBALS['ods_buffer'],
         );
 
         // with no row count
@@ -408,13 +403,13 @@ class ExportOdsTest extends AbstractTestCase
                 'db',
                 'table',
                 'example.com',
-                'SELECT'
-            )
+                'SELECT',
+            ),
         );
 
         $this->assertEquals(
             '<table:table table:name="table"><table:table-row></table:table-row></table:table>',
-            $GLOBALS['ods_buffer']
+            $GLOBALS['ods_buffer'],
         );
     }
 }

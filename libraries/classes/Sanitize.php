@@ -99,7 +99,7 @@ class Sanitize
      *
      * @return string Replaced string
      */
-    public static function replaceBBLink(array $found)
+    public static function replaceBBLink(array $found): string
     {
         /* Check for valid link */
         if (! self::checkLink($found[1])) {
@@ -211,7 +211,7 @@ class Sanitize
         $message = (string) preg_replace_callback(
             $pattern,
             static fn (array $match) => self::replaceBBLink($match),
-            $message
+            $message,
         );
 
         /* Replace documentation links */
@@ -219,7 +219,7 @@ class Sanitize
             '/\[doc@([a-zA-Z0-9_-]+)(@([a-zA-Z0-9_-]*))?\]/',
             /** @param string[] $match */
             static fn (array $match): string => self::replaceDocLink($match),
-            $message
+            $message,
         );
 
         /* Possibly escape result */
@@ -244,7 +244,7 @@ class Sanitize
      *
      * @return string  the sanitized filename
      */
-    public static function sanitizeFilename($filename, $replaceDots = false)
+    public static function sanitizeFilename($filename, $replaceDots = false): string
     {
         $pattern = '/[^A-Za-z0-9_';
         // if we don't have to replace dots
@@ -267,7 +267,7 @@ class Sanitize
      *
      * @return string Javascript code.
      */
-    public static function getJsValue($key, $value)
+    public static function getJsValue($key, $value): string
     {
         return $key . ' = ' . json_encode($value, JSON_HEX_TAG) . ";\n";
     }
@@ -283,7 +283,7 @@ class Sanitize
         // and use type casting because the variables could have become
         // strings
         $keys = array_keys(
-            array_merge((array) $_REQUEST, (array) $_GET, (array) $_POST, (array) $_COOKIE)
+            array_merge((array) $_REQUEST, (array) $_GET, (array) $_POST, (array) $_COOKIE),
         );
 
         foreach ($keys as $key) {

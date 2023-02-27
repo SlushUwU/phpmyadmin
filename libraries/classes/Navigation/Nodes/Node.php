@@ -39,44 +39,44 @@ class Node
      * @var string A non-unique identifier for the node
      *             This may be trimmed when grouping nodes
      */
-    public $name = '';
+    public string $name = '';
     /**
      * @var string A non-unique identifier for the node
      *             This will never change after being assigned
      */
-    public $realName = '';
+    public string $realName = '';
     /** @var int May be one of CONTAINER or OBJECT */
-    public $type = self::OBJECT;
+    public int $type = self::OBJECT;
     /**
      * @var bool Whether this object has been created while grouping nodes
      *           Only relevant if the node is of type CONTAINER
      */
-    public $isGroup = false;
+    public bool $isGroup = false;
     /**
      * @var bool Whether to add a "display: none;" CSS
      *           rule to the node when rendering it
      */
-    public $visible = false;
+    public bool $visible = false;
     /**
      * @var Node|null A reference to the parent object of
      *           this node, NULL for the root node.
      */
-    public $parent = null;
+    public Node|null $parent = null;
     /**
      * @var Node[] An array of Node objects that are
      *             direct children of this node
      */
-    public $children = [];
+    public array $children = [];
     /**
-     * @var Mixed A string used to group nodes, or an array of strings
+     * @var mixed A string used to group nodes, or an array of strings
      *            Only relevant if the node is of type CONTAINER
      */
-    public $separator = '';
+    public mixed $separator = '';
     /**
      * @var int How many time to recursively apply the grouping function
      *          Only relevant if the node is of type CONTAINER
      */
-    public $separatorDepth = 1;
+    public int $separatorDepth = 1;
 
     /**
      * For the IMG tag, used when rendering the node.
@@ -84,7 +84,7 @@ class Node
      * @var array<string, string>
      * @psalm-var array{image: string, title: string}
      */
-    public $icon = ['image' => '', 'title' => ''];
+    public array $icon = ['image' => '', 'title' => ''];
 
     /**
      * An array of A tags, used when rendering the node.
@@ -97,35 +97,34 @@ class Node
      *   title?: string
      * }
      */
-    public $links = [
+    public array $links = [
         'text' => ['route' => '', 'params' => []],
         'icon' => ['route' => '', 'params' => []],
     ];
 
     /** @var string HTML title */
-    public $title;
+    public string $title = '';
     /** @var string Extra CSS classes for the node */
-    public $classes = '';
+    public string $classes = '';
     /** @var bool Whether this node is a link for creating new objects */
-    public $isNew = false;
+    public bool $isNew = false;
     /**
      * @var int The position for the pagination of
      *          the branch at the second level of the tree
      */
-    public $pos2 = 0;
+    public int $pos2 = 0;
     /**
      * @var int The position for the pagination of
      *          the branch at the third level of the tree
      */
-    public $pos3 = 0;
+    public int $pos3 = 0;
 
     protected Relation $relation;
 
     /** @var string $displayName  display name for the navigation tree */
-    public $displayName;
+    public string|null $displayName = null;
 
-    /** @var string|null */
-    public $urlParamName = null;
+    public string|null $urlParamName = null;
 
     /**
      * Initialises the class by setting the mandatory variables
@@ -237,10 +236,8 @@ class Node
      * Returns the actual parent of a node. If used twice on an index or columns
      * node, it will return the table and database nodes. The names of the returned
      * nodes can be used in SQL queries, etc...
-     *
-     * @return Node|false
      */
-    public function realParent()
+    public function realParent(): Node|false
     {
         $retval = $this->parents();
         if (count($retval) <= 0) {
@@ -337,7 +334,7 @@ class Node
         $vPath = [];
         $vPathClean = [];
         foreach ($this->parents(true, true, true) as $parent) {
-            $vPath[] = base64_encode((string) $parent->name);
+            $vPath[] = base64_encode($parent->name);
             $vPathClean[] = $parent->name;
         }
 
@@ -385,10 +382,8 @@ class Node
      * @param string $type         The type of item we are looking for
      *                             ('tables', 'views', etc)
      * @param string $searchClause A string used to filter the results of the query
-     *
-     * @return int
      */
-    public function getPresence($type = '', $searchClause = '')
+    public function getPresence($type = '', $searchClause = ''): int
     {
         if (! $GLOBALS['cfg']['NavigationTreeEnableGrouping'] || ! $GLOBALS['cfg']['ShowDatabasesNavigationAsTree']) {
             if (isset($GLOBALS['cfg']['Server']['DisableIS']) && ! $GLOBALS['cfg']['Server']['DisableIS']) {
@@ -494,7 +489,7 @@ class Node
      *
      * @return array array of databases
      */
-    private function getDatabasesToSearch($searchClause)
+    private function getDatabasesToSearch($searchClause): array
     {
         $databases = [];
         if (! empty($searchClause)) {
@@ -518,10 +513,8 @@ class Node
      *
      * @param string $columnName   Column name of the column having database names
      * @param string $searchClause A string used to filter the results of the query
-     *
-     * @return string
      */
-    private function getWhereClause($columnName, $searchClause = '')
+    private function getWhereClause($columnName, $searchClause = ''): string
     {
         $whereClause = 'WHERE TRUE ';
         if (! empty($searchClause)) {
@@ -622,7 +615,7 @@ class Node
      *
      * @return array|null array containing the count of hidden elements for each database
      */
-    public function getNavigationHidingData()
+    public function getNavigationHidingData(): array|null
     {
         $navigationItemsHidingFeature = $this->relation->getRelationParameters()->navigationItemsHidingFeature;
         if ($navigationItemsHidingFeature !== null) {
@@ -645,7 +638,7 @@ class Node
      *
      * @return array
      */
-    private function getDataFromInfoSchema(int $pos, string $searchClause)
+    private function getDataFromInfoSchema(int $pos, string $searchClause): array
     {
         $maxItems = $GLOBALS['cfg']['FirstLevelNavigationItems'];
         if (! $GLOBALS['cfg']['NavigationTreeEnableGrouping'] || ! $GLOBALS['cfg']['ShowDatabasesNavigationAsTree']) {
@@ -653,7 +646,7 @@ class Node
                 'SELECT `SCHEMA_NAME` FROM `INFORMATION_SCHEMA`.`SCHEMATA` %sORDER BY `SCHEMA_NAME` LIMIT %d, %d',
                 $this->getWhereClause('SCHEMA_NAME', $searchClause),
                 $pos,
-                $maxItems
+                $maxItems,
             );
 
             return $GLOBALS['dbi']->fetchResult($query);
@@ -670,7 +663,7 @@ class Node
             $GLOBALS['dbi']->escapeString($dbSeparator),
             $this->getWhereClause('SCHEMA_NAME', $searchClause),
             $pos,
-            $maxItems
+            $maxItems,
         );
 
         return $GLOBALS['dbi']->fetchResult($query);
@@ -682,13 +675,13 @@ class Node
      *
      * @return array
      */
-    private function getDataFromShowDatabases(int $pos, string $searchClause)
+    private function getDataFromShowDatabases(int $pos, string $searchClause): array
     {
         $maxItems = $GLOBALS['cfg']['FirstLevelNavigationItems'];
         if (! $GLOBALS['cfg']['NavigationTreeEnableGrouping'] || ! $GLOBALS['cfg']['ShowDatabasesNavigationAsTree']) {
             $handle = $GLOBALS['dbi']->tryQuery(sprintf(
                 'SHOW DATABASES %s',
-                $this->getWhereClause('Database', $searchClause)
+                $this->getWhereClause('Database', $searchClause),
             ));
             if ($handle === false) {
                 return [];
@@ -715,7 +708,7 @@ class Node
         $dbSeparator = $GLOBALS['cfg']['NavigationTreeDbSeparator'];
         $handle = $GLOBALS['dbi']->tryQuery(sprintf(
             'SHOW DATABASES %s',
-            $this->getWhereClause('Database', $searchClause)
+            $this->getWhereClause('Database', $searchClause),
         ));
         $prefixes = [];
         if ($handle !== false) {
@@ -741,14 +734,14 @@ class Node
             $subClauses[] = sprintf(
                 ' LOCATE(\'%1$s%2$s\', CONCAT(`Database`, \'%2$s\')) = 1 ',
                 $GLOBALS['dbi']->escapeString((string) $prefix),
-                $dbSeparator
+                $dbSeparator,
             );
         }
 
         $query = sprintf(
             'SHOW DATABASES %sAND (%s)',
             $this->getWhereClause('Database', $searchClause),
-            implode('OR', $subClauses)
+            implode('OR', $subClauses),
         );
 
         return $GLOBALS['dbi']->fetchResult($query);
@@ -760,7 +753,7 @@ class Node
      *
      * @return array
      */
-    private function getDataFromShowDatabasesLike(int $pos, string $searchClause)
+    private function getDataFromShowDatabasesLike(int $pos, string $searchClause): array
     {
         $maxItems = $GLOBALS['cfg']['FirstLevelNavigationItems'];
         if (! $GLOBALS['cfg']['NavigationTreeEnableGrouping'] || ! $GLOBALS['cfg']['ShowDatabasesNavigationAsTree']) {

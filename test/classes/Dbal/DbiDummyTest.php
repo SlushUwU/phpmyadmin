@@ -10,16 +10,12 @@ use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\DbiDummy;
 use PhpMyAdmin\Tests\Stubs\DummyResult;
 
-/**
- * @coversNothing
- */
+/** @coversNothing */
 class DbiDummyTest extends AbstractTestCase
 {
-    /** @var DatabaseInterface */
-    protected $dbi;
+    protected DatabaseInterface $dbi;
 
-    /** @var DbiDummy */
-    protected $dummyDbi;
+    protected DbiDummy $dummyDbi;
 
     /**
      * Configures test parameters.
@@ -27,6 +23,7 @@ class DbiDummyTest extends AbstractTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
         $this->dummyDbi = $this->createDbiDummy();
         $this->dbi = $this->createDatabaseInterface($this->dummyDbi);
         $GLOBALS['dbi'] = $this->dbi;
@@ -108,7 +105,7 @@ class DbiDummyTest extends AbstractTestCase
         $GLOBALS['server'] = 1;
         $this->assertEquals(
             $expected,
-            Utilities::formatError($number, $message)
+            Utilities::formatError($number, $message),
         );
     }
 
@@ -144,11 +141,11 @@ class DbiDummyTest extends AbstractTestCase
     {
         $this->assertEquals(
             'a',
-            $this->dbi->escapeString('a')
+            $this->dbi->escapeString('a'),
         );
         $this->assertEquals(
             'a\\\'',
-            $this->dbi->escapeString('a\'')
+            $this->dbi->escapeString('a\''),
         );
     }
 }

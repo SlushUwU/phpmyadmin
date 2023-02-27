@@ -9,13 +9,10 @@ use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\Tests\Stubs\DummyResult;
 use PhpMyAdmin\Transformations;
 
-/**
- * @covers \PhpMyAdmin\Transformations
- */
+/** @covers \PhpMyAdmin\Transformations */
 class TransformationsTest extends AbstractTestCase
 {
-    /** @var Transformations */
-    private $transformations;
+    private Transformations $transformations;
 
     /**
      * Set up global environment.
@@ -23,6 +20,7 @@ class TransformationsTest extends AbstractTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
         $GLOBALS['dbi'] = $this->createDatabaseInterface();
         $GLOBALS['table'] = 'table';
         $GLOBALS['db'] = 'db';
@@ -55,7 +53,7 @@ class TransformationsTest extends AbstractTestCase
     {
         $this->assertEquals(
             $expected,
-            $this->transformations->getOptions($input)
+            $this->transformations->getOptions($input),
         );
     }
 
@@ -187,7 +185,7 @@ class TransformationsTest extends AbstractTestCase
                     'Text_Plain_Substring.php',
                 ],
             ],
-            $this->transformations->getAvailableMimeTypes()
+            $this->transformations->getAvailableMimeTypes(),
         );
     }
 
@@ -222,7 +220,7 @@ class TransformationsTest extends AbstractTestCase
                     'input_transformation_options' => '',
                 ],
             ],
-            $this->transformations->getMime('pma_test', 'table1')
+            $this->transformations->getMime('pma_test', 'table1'),
         );
     }
 
@@ -274,7 +272,7 @@ class TransformationsTest extends AbstractTestCase
     {
         $this->assertEquals(
             $expected,
-            $this->transformations->fixUpMime($value)
+            $this->transformations->fixUpMime($value),
         );
     }
 
@@ -316,7 +314,7 @@ class TransformationsTest extends AbstractTestCase
     {
         $this->assertEquals(
             $expectedDescription,
-            $this->transformations->getDescription($file)
+            $this->transformations->getDescription($file),
         );
     }
 
@@ -350,7 +348,7 @@ class TransformationsTest extends AbstractTestCase
     {
         $this->assertEquals(
             $expectedName,
-            $this->transformations->getName($file)
+            $this->transformations->getName($file),
         );
     }
 

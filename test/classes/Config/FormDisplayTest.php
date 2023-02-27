@@ -15,13 +15,10 @@ use ReflectionProperty;
 use function function_exists;
 use function gettype;
 
-/**
- * @covers \PhpMyAdmin\Config\FormDisplay
- */
+/** @covers \PhpMyAdmin\Config\FormDisplay */
 class FormDisplayTest extends AbstractTestCase
 {
-    /** @var FormDisplay */
-    protected $object;
+    protected FormDisplay $object;
 
     /**
      * Configures global environment.
@@ -29,8 +26,11 @@ class FormDisplayTest extends AbstractTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
         parent::setTheme();
+
         parent::setGlobalConfig();
+
         $GLOBALS['server'] = 0;
         $this->object = new FormDisplay(new ConfigFile());
         Form::resetGroupCounter();
@@ -42,6 +42,7 @@ class FormDisplayTest extends AbstractTestCase
     protected function tearDown(): void
     {
         parent::tearDown();
+
         unset($this->object);
     }
 
@@ -76,7 +77,7 @@ class FormDisplayTest extends AbstractTestCase
                 'Servers/2/test' => 'Servers/1/test',
                 'Servers/2/:group:end:0' => 'Servers/1/:group:end:0',
             ],
-            $attrSystemPaths->getValue($this->object)
+            $attrSystemPaths->getValue($this->object),
         );
 
         $attrTranslatedPaths = $reflection->getProperty('translatedPaths');
@@ -86,7 +87,7 @@ class FormDisplayTest extends AbstractTestCase
                 'Servers/2/test' => 'Servers-2-test',
                 'Servers/2/:group:end:0' => 'Servers-2-:group:end:0',
             ],
-            $attrTranslatedPaths->getValue($this->object)
+            $attrTranslatedPaths->getValue($this->object),
         );
     }
 
@@ -98,7 +99,7 @@ class FormDisplayTest extends AbstractTestCase
     public function testProcess(): void
     {
         $this->assertFalse(
-            $this->object->process(true, true)
+            $this->object->process(true, true),
         );
 
         $this->object = $this->getMockBuilder(FormDisplay::class)
@@ -115,13 +116,13 @@ class FormDisplayTest extends AbstractTestCase
             ->will($this->returnValue(true));
 
         $this->assertTrue(
-            $this->object->process(false, false)
+            $this->object->process(false, false),
         );
 
         $attrForms->setValue($this->object, []);
 
         $this->assertFalse(
-            $this->object->process(false, false)
+            $this->object->process(false, false),
         );
     }
 
@@ -205,7 +206,7 @@ class FormDisplayTest extends AbstractTestCase
                     '1' => ['test' => 'localhost'],
                 ],
             ],
-            $_SESSION['ConfigFile0']
+            $_SESSION['ConfigFile0'],
         );
     }
 
@@ -224,8 +225,8 @@ class FormDisplayTest extends AbstractTestCase
                 [
                     &$value,
                     $arr,
-                ]
-            )
+                ],
+            ),
         );
 
         $arr = ['' => 'foobar'];
@@ -236,12 +237,12 @@ class FormDisplayTest extends AbstractTestCase
                 [
                     &$value,
                     $arr,
-                ]
-            )
+                ],
+            ),
         );
         $this->assertEquals(
             'string',
-            gettype($value)
+            gettype($value),
         );
 
         $arr = [0 => 'foobar'];
@@ -252,8 +253,8 @@ class FormDisplayTest extends AbstractTestCase
                 [
                     &$value,
                     $arr,
-                ]
-            )
+                ],
+            ),
         );
 
         $arr = ['1' => 'foobar'];
@@ -264,8 +265,8 @@ class FormDisplayTest extends AbstractTestCase
                 [
                     &$value,
                     $arr,
-                ]
-            )
+                ],
+            ),
         );
     }
 
@@ -277,7 +278,7 @@ class FormDisplayTest extends AbstractTestCase
         $attrErrors = new ReflectionProperty(FormDisplay::class, 'errors');
 
         $this->assertFalse(
-            $this->object->hasErrors()
+            $this->object->hasErrors(),
         );
 
         $attrErrors->setValue(
@@ -285,11 +286,11 @@ class FormDisplayTest extends AbstractTestCase
             [
                 1,
                 2,
-            ]
+            ],
         );
 
         $this->assertTrue(
-            $this->object->hasErrors()
+            $this->object->hasErrors(),
         );
     }
 
@@ -301,17 +302,17 @@ class FormDisplayTest extends AbstractTestCase
         $this->assertEquals(
             'index.php?route=/url&url='
             . 'https%3A%2F%2Fdocs.phpmyadmin.net%2Fen%2Flatest%2Fconfig.html%23cfg_Servers_3_test_2_',
-            $this->object->getDocLink('Servers/3/test/2/')
+            $this->object->getDocLink('Servers/3/test/2/'),
         );
 
         $this->assertEquals(
             '',
-            $this->object->getDocLink('Import')
+            $this->object->getDocLink('Import'),
         );
 
         $this->assertEquals(
             '',
-            $this->object->getDocLink('Export')
+            $this->object->getDocLink('Export'),
         );
     }
 
@@ -324,12 +325,12 @@ class FormDisplayTest extends AbstractTestCase
 
         $this->assertEquals(
             'Servers_',
-            $method->invoke($this->object, 'Servers/1/')
+            $method->invoke($this->object, 'Servers/1/'),
         );
 
         $this->assertEquals(
             'Servers_23_',
-            $method->invoke($this->object, 'Servers/1/23/')
+            $method->invoke($this->object, 'Servers/1/23/'),
         );
     }
 
@@ -345,7 +346,7 @@ class FormDisplayTest extends AbstractTestCase
         $method->invoke($this->object, null);
         $this->assertEquals(
             [],
-            $attrUserprefs->getValue($this->object)
+            $attrUserprefs->getValue($this->object),
         );
     }
 
@@ -371,7 +372,7 @@ class FormDisplayTest extends AbstractTestCase
             [
                 'RecodingEngine',
                 &$opts,
-            ]
+            ],
         );
 
         $expect['comment'] = '';
@@ -395,7 +396,7 @@ class FormDisplayTest extends AbstractTestCase
             [
                 'ZipDump',
                 &$opts,
-            ]
+            ],
         );
 
         $comment = '';
@@ -417,7 +418,7 @@ class FormDisplayTest extends AbstractTestCase
             [
                 'GZipDump',
                 &$opts,
-            ]
+            ],
         );
 
         $comment = '';
@@ -439,7 +440,7 @@ class FormDisplayTest extends AbstractTestCase
             [
                 'BZipDump',
                 &$opts,
-            ]
+            ],
         );
 
         $comment = '';
@@ -467,7 +468,7 @@ class FormDisplayTest extends AbstractTestCase
             [
                 'MaxDbList',
                 &$opts,
-            ]
+            ],
         );
 
         $this->assertEquals('maximum 10', $opts['comment']);
@@ -477,7 +478,7 @@ class FormDisplayTest extends AbstractTestCase
             [
                 'MaxTableList',
                 &$opts,
-            ]
+            ],
         );
 
         $this->assertEquals('maximum 10', $opts['comment']);
@@ -487,7 +488,7 @@ class FormDisplayTest extends AbstractTestCase
             [
                 'QueryHistoryMax',
                 &$opts,
-            ]
+            ],
         );
 
         $this->assertEquals('maximum 10', $opts['comment']);

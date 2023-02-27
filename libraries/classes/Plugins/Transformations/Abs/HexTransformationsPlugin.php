@@ -28,7 +28,7 @@ abstract class HexTransformationsPlugin extends TransformationsPlugin
         return __(
             'Displays hexadecimal representation of data. Optional first'
             . ' parameter specifies how often space will be added (defaults'
-            . ' to 2 nibbles).'
+            . ' to 2 nibbles).',
         );
     }
 
@@ -38,10 +38,8 @@ abstract class HexTransformationsPlugin extends TransformationsPlugin
      * @param string             $buffer  text to be transformed
      * @param array              $options transformation options
      * @param FieldMetadata|null $meta    meta information
-     *
-     * @return string
      */
-    public function applyTransformation($buffer, array $options = [], FieldMetadata|null $meta = null)
+    public function applyTransformation($buffer, array $options = [], FieldMetadata|null $meta = null): string
     {
         // possibly use a global transform and feed it with special options
         $cfg = $GLOBALS['cfg'];

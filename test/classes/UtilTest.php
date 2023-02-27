@@ -44,9 +44,7 @@ const FIELD_TYPE_INTEGER = 1;
 const FIELD_TYPE_VARCHAR = 253;
 const FIELD_TYPE_UNKNOWN = -1;
 
-/**
- * @covers \PhpMyAdmin\Util
- */
+/** @covers \PhpMyAdmin\Util */
 class UtilTest extends AbstractTestCase
 {
     /**
@@ -66,7 +64,7 @@ class UtilTest extends AbstractTestCase
                 'mbstring',
                 'sodium',
             ],
-            Util::listPHPExtensions()
+            Util::listPHPExtensions(),
         );
     }
 
@@ -197,7 +195,7 @@ class UtilTest extends AbstractTestCase
                     '`table`.`field12`' => '= b\'0001\'',
                 ],
             ],
-            $actual
+            $actual,
         );
     }
 
@@ -215,7 +213,7 @@ class UtilTest extends AbstractTestCase
         $actual = Util::getUniqueCondition(1, $meta, [str_repeat('*', 1001)]);
         $this->assertEquals(
             ['CHAR_LENGTH(`table`.`field`)  = 1001', false, ['`table`.`field`' => ' = 1001']],
-            $actual
+            $actual,
         );
     }
 
@@ -399,13 +397,13 @@ class UtilTest extends AbstractTestCase
     {
         $this->assertStringContainsString(
             '<select class="pageselector ajax" name="pma" >',
-            Util::pageselector('pma', 3)
+            Util::pageselector('pma', 3),
         );
 
         // If pageNow > nbTotalPage, show the pageNow number to avoid confusion
         $this->assertStringContainsString(
             '<option selected="selected" style="font-weight: bold" value="297">100</option>',
-            Util::pageselector('pma', 3, 100, 50)
+            Util::pageselector('pma', 3, 100, 50),
         );
     }
 
@@ -421,7 +419,7 @@ class UtilTest extends AbstractTestCase
     {
         $this->assertEquals(
             $expected,
-            Util::getCharsetQueryPart($collation)
+            Util::getCharsetQueryPart($collation),
         );
     }
 
@@ -466,14 +464,14 @@ class UtilTest extends AbstractTestCase
         SessionCache::set('mysql_cur_user', 'mysql');
         $this->assertEquals(
             'mysql',
-            $_SESSION['cache']['server_server']['mysql_cur_user']
+            $_SESSION['cache']['server_server']['mysql_cur_user'],
         );
 
         Util::clearUserCache();
         $this->assertArrayNotHasKey('is_superuser', $_SESSION['cache']['server_server']);
         $this->assertArrayNotHasKey(
             'mysql_cur_user',
-            $_SESSION['cache']['server_server']
+            $_SESSION['cache']['server_server'],
         );
     }
 
@@ -489,7 +487,7 @@ class UtilTest extends AbstractTestCase
     {
         $this->assertEquals(
             $val,
-            Util::convertBitDefaultValue($bit)
+            Util::convertBitDefaultValue($bit),
         );
     }
 
@@ -547,6 +545,7 @@ class UtilTest extends AbstractTestCase
     public function testExpandUserString(string $in, string $out): void
     {
         parent::setGlobalConfig();
+
         $GLOBALS['cfg'] = [
             'Server' => [
                 'host' => 'host&',
@@ -558,15 +557,15 @@ class UtilTest extends AbstractTestCase
 
         $this->assertEquals(
             $out,
-            Util::expandUserString($in)
+            Util::expandUserString($in),
         );
 
         $this->assertEquals(
             htmlspecialchars($out),
             Util::expandUserString(
                 $in,
-                'htmlspecialchars'
-            )
+                'htmlspecialchars',
+            ),
         );
     }
 
@@ -619,7 +618,7 @@ class UtilTest extends AbstractTestCase
 
         $this->assertEquals(
             $out,
-            Util::extractColumnSpec($in)
+            Util::extractColumnSpec($in),
         );
     }
 
@@ -775,11 +774,11 @@ class UtilTest extends AbstractTestCase
      *
      * @dataProvider providerExtractValueFromFormattedSize
      */
-    public function testExtractValueFromFormattedSize($size, $expected): void
+    public function testExtractValueFromFormattedSize(int|string $size, int|float $expected): void
     {
         $this->assertEquals(
             $expected,
-            Util::extractValueFromFormattedSize($size)
+            Util::extractValueFromFormattedSize($size),
         );
     }
 
@@ -825,7 +824,7 @@ class UtilTest extends AbstractTestCase
      *
      * @dataProvider providerFormatByteDown
      */
-    public function testFormatByteDown($a, int $b, int $c, array $e): void
+    public function testFormatByteDown(float|int|string $a, int $b, int $c, array $e): void
     {
         $result = Util::formatByteDown($a, $b, $c);
         $this->assertIsArray($result);
@@ -1014,16 +1013,16 @@ class UtilTest extends AbstractTestCase
      * @param int              $c Number of decimals to retain
      * @param string           $d Expected value
      */
-    private function assertFormatNumber($a, int $b, int $c, string $d): void
+    private function assertFormatNumber(float|int|string $a, int $b, int $c, string $d): void
     {
         $this->assertEquals(
             $d,
-            (string) Util::formatNumber(
+            Util::formatNumber(
                 $a,
                 $b,
                 $c,
-                false
-            )
+                false,
+            ),
         );
     }
 
@@ -1037,7 +1036,7 @@ class UtilTest extends AbstractTestCase
      *
      * @dataProvider providerFormatNumber
      */
-    public function testFormatNumber($a, int $b, int $c, string $d): void
+    public function testFormatNumber(float|int|string $a, int $b, int $c, string $d): void
     {
         $this->assertFormatNumber($a, $b, $c, $d);
 
@@ -1202,17 +1201,17 @@ class UtilTest extends AbstractTestCase
     /**
      * Test for Util::getFormattedMaximumUploadSize
      *
-     * @param int|float $size Size (float on some cpu architectures)
-     * @param string    $unit Unit
-     * @param string    $res  Result
+     * @param int|float|string $size Size (float on some cpu architectures)
+     * @param string           $unit Unit
+     * @param string           $res  Result
      *
      * @dataProvider providerGetFormattedMaximumUploadSize
      */
-    public function testGetFormattedMaximumUploadSize($size, string $unit, string $res): void
+    public function testGetFormattedMaximumUploadSize(int|float|string $size, string $unit, string $res): void
     {
         $this->assertEquals(
             '(' . __('Max: ') . $res . $unit . ')',
-            Util::getFormattedMaximumUploadSize($size)
+            Util::getFormattedMaximumUploadSize($size),
         );
     }
 
@@ -1291,7 +1290,7 @@ class UtilTest extends AbstractTestCase
     {
         $this->assertEquals(
             $result,
-            Util::getTitleForTarget($target)
+            Util::getTitleForTarget($target),
         );
     }
 
@@ -1344,6 +1343,7 @@ class UtilTest extends AbstractTestCase
     public function testLocalisedDate(int $a, string $b, string $e, string $tz, string $locale): void
     {
         parent::setLanguage();
+
         // A test case for #15830 could be added for using the php setlocale on a Windows CI
         // See https://github.com/phpmyadmin/phpmyadmin/issues/15830
         _setlocale(LC_ALL, $locale);
@@ -1352,7 +1352,7 @@ class UtilTest extends AbstractTestCase
 
         $this->assertEquals(
             $e,
-            Util::localisedDate($a, $b)
+            Util::localisedDate($a, $b),
         );
 
         date_default_timezone_set($tmpTimezone);
@@ -1486,7 +1486,7 @@ class UtilTest extends AbstractTestCase
 
         $this->assertEquals(
             $e,
-            Util::timespanFormat($a)
+            Util::timespanFormat($a),
         );
 
         date_default_timezone_set($tmpTimezone);
@@ -1524,7 +1524,7 @@ class UtilTest extends AbstractTestCase
     {
         $this->assertEquals(
             $e,
-            Util::printableBitValue($a, $b)
+            Util::printableBitValue($a, $b),
         );
     }
 
@@ -1561,7 +1561,7 @@ class UtilTest extends AbstractTestCase
     {
         $this->assertEquals(
             $expected,
-            Util::unQuote($param)
+            Util::unQuote($param),
         );
     }
 
@@ -1604,7 +1604,7 @@ class UtilTest extends AbstractTestCase
     {
         $this->assertEquals(
             $expected,
-            Util::unQuote($param, '"')
+            Util::unQuote($param, '"'),
         );
     }
 
@@ -1635,9 +1635,7 @@ class UtilTest extends AbstractTestCase
         ];
     }
 
-    /**
-     * @dataProvider providerForTestBackquote
-     */
+    /** @dataProvider providerForTestBackquote */
     public function testBackquote(string|null $entry, string $expectedNoneOutput, string $expectedMssqlOutput): void
     {
         $this->assertSame($expectedNoneOutput, Util::backquote($entry));
@@ -1647,9 +1645,7 @@ class UtilTest extends AbstractTestCase
         $this->assertSame($expectedMssqlOutput, Util::backquoteCompat($entry, 'MSSQL'));
     }
 
-    /**
-     * @return array<int|string, string|null>[]
-     */
+    /** @return array<int|string, string|null>[] */
     public static function providerForTestBackquote(): array
     {
         return [
@@ -1700,12 +1696,12 @@ class UtilTest extends AbstractTestCase
             if ($type & Token::FLAG_KEYWORD_RESERVED) {
                 $this->assertEquals(
                     '`' . $keyword . '`',
-                    Util::backquoteCompat($keyword, 'NONE', false)
+                    Util::backquoteCompat($keyword, 'NONE', false),
                 );
             } else {
                 $this->assertEquals(
                     $keyword,
-                    Util::backquoteCompat($keyword, 'NONE', false)
+                    Util::backquoteCompat($keyword, 'NONE', false),
                 );
             }
         }
@@ -1757,7 +1753,7 @@ class UtilTest extends AbstractTestCase
     {
         $this->assertEquals(
             $e,
-            Util::duplicateFirstNewline($a)
+            Util::duplicateFirstNewline($a),
         );
     }
 
@@ -1793,7 +1789,7 @@ class UtilTest extends AbstractTestCase
         $no_support_types = [];
         $this->assertEquals(
             $no_support_types,
-            Util::unsupportedDatatypes()
+            Util::unsupportedDatatypes(),
         );
     }
 
@@ -1813,7 +1809,7 @@ class UtilTest extends AbstractTestCase
      *
      * @dataProvider providerIsInteger
      */
-    public function testIsInteger(bool $expected, $input): void
+    public function testIsInteger(bool $expected, mixed $input): void
     {
         $isInteger = Util::isInteger($input);
         $this->assertEquals($expected, $isInteger);
@@ -2096,9 +2092,7 @@ SQL;
         $dbiDummy->assertAllQueriesConsumed();
     }
 
-    /**
-     * @return array[]
-     */
+    /** @return array[] */
     public static function dataProviderScriptNames(): array
     {
         // target
@@ -2258,15 +2252,13 @@ SQL;
         ];
     }
 
-    /**
-     * @dataProvider dataProviderScriptNames
-     */
+    /** @dataProvider dataProviderScriptNames */
     public function testGetScriptNameForOption(string $target, string $location, string $finalLink): void
     {
         $GLOBALS['lang'] = 'en';
         $this->assertSame(
             $finalLink,
-            Util::getScriptNameForOption($target, $location)
+            Util::getScriptNameForOption($target, $location),
         );
     }
 
@@ -2290,9 +2282,7 @@ SQL;
         $this->assertFalse(Util::showText('ActionLinksMode'));
     }
 
-    /**
-     * @dataProvider providerForTestGetMySQLDocuURL
-     */
+    /** @dataProvider providerForTestGetMySQLDocuURL */
     public function testGetMySQLDocuURL(string $link, string $anchor, string $version, string $expected): void
     {
         $GLOBALS['dbi'] = $this->createDatabaseInterface();
@@ -2352,15 +2342,15 @@ SQL;
     {
         $this->assertSame(
             'index.php?route=/url&url=https%3A%2F%2Fmariadb.com%2Fkb%2Fen%2Fdocumentation%2F',
-            Util::getDocuURL(true)
+            Util::getDocuURL(true),
         );
         $this->assertSame(
             'index.php?route=/url&url=https%3A%2F%2Fdev.mysql.com%2Fdoc%2Frefman%2F5.5%2Fen%2Findex.html',
-            Util::getDocuURL(false)
+            Util::getDocuURL(false),
         );
         $this->assertSame(
             'index.php?route=/url&url=https%3A%2F%2Fdev.mysql.com%2Fdoc%2Frefman%2F5.5%2Fen%2Findex.html',
-            Util::getDocuURL()
+            Util::getDocuURL(),
         );
     }
 
@@ -2509,9 +2499,7 @@ SQL;
         ];
     }
 
-    /**
-     * @dataProvider providerForTestGetLowerCaseNames
-     */
+    /** @dataProvider providerForTestGetLowerCaseNames */
     public function testGetCollateForIS(string $lowerCaseTableNames, string $expected): void
     {
         $dbiDummy = $this->createDbiDummy();
@@ -2521,9 +2509,7 @@ SQL;
         $dbiDummy->assertAllQueriesConsumed();
     }
 
-    /**
-     * @return iterable<string, array{string, string}>
-     */
+    /** @return iterable<string, array{string, string}> */
     public static function providerForTestGetLowerCaseNames(): iterable
     {
         yield 'lower_case_table_names=0' => ['0', 'COLLATE utf8_bin'];

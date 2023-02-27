@@ -29,9 +29,7 @@ use function str_repeat;
  */
 class ExportMediawiki extends ExportPlugin
 {
-    /**
-     * @psalm-return non-empty-lowercase-string
-     */
+    /** @psalm-return non-empty-lowercase-string */
     public function getName(): string
     {
         return 'mediawiki';
@@ -53,13 +51,13 @@ class ExportMediawiki extends ExportPlugin
         // general options main group
         $generalOptions = new OptionsPropertyMainGroup(
             'general_opts',
-            __('Dump table')
+            __('Dump table'),
         );
 
         // what to dump (structure/data/both)
         $subgroup = new OptionsPropertySubgroup(
             'dump_table',
-            __('Dump table')
+            __('Dump table'),
         );
         $leaf = new RadioPropertyItem('structure_or_data');
         $leaf->setValues(
@@ -67,7 +65,7 @@ class ExportMediawiki extends ExportPlugin
                 'structure' => __('structure'),
                 'data' => __('data'),
                 'structure_and_data' => __('structure and data'),
-            ]
+            ],
         );
         $subgroup->setSubgroupHeader($leaf);
         $generalOptions->addProperty($subgroup);
@@ -75,14 +73,14 @@ class ExportMediawiki extends ExportPlugin
         // export table name
         $leaf = new BoolPropertyItem(
             'caption',
-            __('Export table names')
+            __('Export table names'),
         );
         $generalOptions->addProperty($leaf);
 
         // export table headers
         $leaf = new BoolPropertyItem(
             'headers',
-            __('Export table headers')
+            __('Export table headers'),
         );
         $generalOptions->addProperty($leaf);
         //add the main group to the root group
@@ -173,7 +171,7 @@ class ExportMediawiki extends ExportPlugin
         $do_comments = false,
         $do_mime = false,
         $dates = false,
-        array $aliases = []
+        array $aliases = [],
     ): bool {
         $db_alias = $db;
         $table_alias = $table;
@@ -188,7 +186,7 @@ class ExportMediawiki extends ExportPlugin
             // Print structure comment
             $output = $this->exportComment(
                 'Table structure for '
-                . Util::backquote($table_alias)
+                . Util::backquote($table_alias),
             );
 
             // Begin the table construction
@@ -260,7 +258,7 @@ class ExportMediawiki extends ExportPlugin
         $table,
         $errorUrl,
         $sqlQuery,
-        array $aliases = []
+        array $aliases = [],
     ): bool {
         $db_alias = $db;
         $table_alias = $table;
@@ -270,7 +268,7 @@ class ExportMediawiki extends ExportPlugin
         $output = $this->exportComment(
             $table_alias != ''
                 ? 'Table data for ' . Util::backquote($table_alias)
-                : 'Query results'
+                : 'Query results',
         );
 
         // Begin the table construction
@@ -309,7 +307,7 @@ class ExportMediawiki extends ExportPlugin
         $result = $GLOBALS['dbi']->query(
             $sqlQuery,
             Connection::TYPE_USER,
-            DatabaseInterface::QUERY_UNBUFFERED
+            DatabaseInterface::QUERY_UNBUFFERED,
         );
         $fields_cnt = $result->numFields();
 
@@ -351,7 +349,7 @@ class ExportMediawiki extends ExportPlugin
      *
      * @return string The formatted comment
      */
-    private function exportComment($text = '')
+    private function exportComment($text = ''): string
     {
         // see https://www.mediawiki.org/wiki/Help:Formatting
         $comment = $this->exportCRLF();
@@ -367,7 +365,7 @@ class ExportMediawiki extends ExportPlugin
      *
      * @return string CRLF
      */
-    private function exportCRLF()
+    private function exportCRLF(): string
     {
         // The CRLF expected by the mediawiki format is "\n"
         return "\n";

@@ -16,20 +16,17 @@ use ReflectionClass;
 
 use function json_encode;
 
-/**
- * @covers \PhpMyAdmin\Controllers\Database\Structure\FavoriteTableController
- */
+/** @covers \PhpMyAdmin\Controllers\Database\Structure\FavoriteTableController */
 class FavoriteTableControllerTest extends AbstractTestCase
 {
-    /** @var DatabaseInterface */
-    protected $dbi;
+    protected DatabaseInterface $dbi;
 
-    /** @var DbiDummy */
-    protected $dummyDbi;
+    protected DbiDummy $dummyDbi;
 
     protected function setUp(): void
     {
         parent::setUp();
+
         $this->dummyDbi = $this->createDbiDummy();
         $this->dbi = $this->createDatabaseInterface($this->dummyDbi);
         $GLOBALS['dbi'] = $this->dbi;
@@ -55,7 +52,7 @@ class FavoriteTableControllerTest extends AbstractTestCase
         $controller = new FavoriteTableController(
             new ResponseStub(),
             new Template(),
-            new Relation($this->dbi)
+            new Relation($this->dbi),
         );
 
         // The user hash for test

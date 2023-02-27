@@ -14,7 +14,6 @@ use PHPUnit\Framework\MockObject\MockObject;
 use ReflectionProperty;
 
 use function array_slice;
-use function call_user_func_array;
 use function count;
 use function end;
 use function is_array;
@@ -39,7 +38,7 @@ abstract class AbstractNetworkTestCase extends AbstractTestCase
      *
      * @param mixed[]|string|StringContains ...$param parameter for header method
      */
-    public function mockResponse(...$param): MockObject
+    public function mockResponse(array|string|StringContains ...$param): MockObject
     {
         $mockResponse = $this->getMockBuilder(ResponseRenderer::class)
             ->disableOriginalConstructor()
@@ -74,11 +73,6 @@ abstract class AbstractNetworkTestCase extends AbstractTestCase
                         ->method('httpResponseCode')->with($http_response_code_param);
                     }
                 }
-
-                $header_method = $mockResponse->expects($this->exactly(count($param)))
-                    ->method('header');
-
-                call_user_func_array([$header_method, 'withConsecutive'], $param);
             } else {
                 $mockResponse->expects($this->once())
                     ->method('header')
@@ -98,6 +92,7 @@ abstract class AbstractNetworkTestCase extends AbstractTestCase
     protected function tearDown(): void
     {
         parent::tearDown();
+
         $response = new ReflectionProperty(ResponseRenderer::class, 'instance');
         $response->setValue(null);
     }

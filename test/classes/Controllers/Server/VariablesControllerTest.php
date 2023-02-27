@@ -23,16 +23,17 @@ use function __;
 use function htmlspecialchars;
 use function str_replace;
 
-/**
- * @covers \PhpMyAdmin\Controllers\Server\VariablesController
- */
+/** @covers \PhpMyAdmin\Controllers\Server\VariablesController */
 class VariablesControllerTest extends AbstractTestCase
 {
     protected function setUp(): void
     {
         parent::setUp();
+
         parent::setGlobalConfig();
+
         parent::setLanguage();
+
         parent::setTheme();
 
         $GLOBALS['text_dir'] = 'ltr';
@@ -103,24 +104,24 @@ class VariablesControllerTest extends AbstractTestCase
 
         $this->assertStringContainsString(
             Generator::getIcon('b_save', __('Save')),
-            $html
+            $html,
         );
         $this->assertStringContainsString(
             Generator::getIcon('b_close', __('Cancel')),
-            $html
+            $html,
         );
         $this->assertStringContainsString('<div class="card-header">' . __('Filters') . '</div>', $html);
         $this->assertStringContainsString(
             __('Containing the word:'),
-            $html
+            $html,
         );
         $this->assertStringContainsString(
             __('Variable'),
-            $html
+            $html,
         );
         $this->assertStringContainsString(
             __('Value'),
-            $html
+            $html,
         );
 
         $name = 'auto_increment_increment';
@@ -160,7 +161,7 @@ class VariablesControllerTest extends AbstractTestCase
             $controller,
             VariablesController::class,
             'formatVariable',
-            $args
+            $args,
         );
 
         $this->assertEquals('<abbr title="3">3 B</abbr>', $formattedValue);
@@ -175,7 +176,7 @@ class VariablesControllerTest extends AbstractTestCase
             $controller,
             VariablesController::class,
             'formatVariable',
-            $args
+            $args,
         );
         $this->assertEquals('3', $formattedValue);
         $this->assertFalse($isHtmlFormatted);
@@ -189,7 +190,7 @@ class VariablesControllerTest extends AbstractTestCase
             $controller,
             VariablesController::class,
             'formatVariable',
-            $args
+            $args,
         );
         $this->assertEquals('value', $formattedValue);
         $this->assertFalse($isHtmlFormatted);
@@ -222,7 +223,7 @@ class VariablesControllerTest extends AbstractTestCase
             $controller,
             VariablesController::class,
             'formatVariable',
-            $args
+            $args,
         );
 
         $this->assertEquals('<abbr title="3">3 B</abbr>', $formattedValue);
@@ -237,7 +238,7 @@ class VariablesControllerTest extends AbstractTestCase
             $controller,
             VariablesController::class,
             'formatVariable',
-            $args
+            $args,
         );
         $this->assertEquals('3', $formattedValue);
         $this->assertFalse($isHtmlFormatted);
@@ -251,7 +252,7 @@ class VariablesControllerTest extends AbstractTestCase
             $controller,
             VariablesController::class,
             'formatVariable',
-            $args
+            $args,
         );
         $this->assertEquals('value', $formattedValue);
         $this->assertFalse($isHtmlFormatted);
@@ -279,7 +280,7 @@ class VariablesControllerTest extends AbstractTestCase
             $controller,
             VariablesController::class,
             'formatVariable',
-            $args
+            $args,
         );
 
         $this->assertEquals('3', $formattedValue);

@@ -29,6 +29,7 @@ class NodeColumn extends Node
         $this->displayName = $this->getDisplayName($item);
 
         parent::__construct($item['name'], $type, $isGroup);
+
         $this->icon = ['image' => $this->getColumnIcon($item['key']), 'title' => __('Column')];
         $this->links = [
             'text' => [
@@ -67,7 +68,7 @@ class NodeColumn extends Node
      *
      * @return string Display name for navigation tree
      */
-    private function getDisplayName($item)
+    private function getDisplayName($item): string
     {
         $retval = $item['name'];
         $flag = 0;
@@ -92,7 +93,7 @@ class NodeColumn extends Node
      *
      * @return string truncated value
      */
-    private function getTruncateValue($key, $value)
+    private function getTruncateValue($key, $value): string
     {
         if ($key === 'default' && strlen($value) > 6) {
             return substr($value, 0, 6) . '...';

@@ -44,14 +44,12 @@ class ErrorHandler
      *
      * @var Error[]
      */
-    protected $errors = [];
+    protected array $errors = [];
 
     /**
      * Hide location of errors
-     *
-     * @var bool
      */
-    protected $hideLocation = false;
+    protected bool $hideLocation = false;
 
     /**
      * Initial error reporting state
@@ -100,7 +98,7 @@ class ErrorHandler
                     0,
                     __('Too many error messages, some are not displayed.'),
                     __FILE__,
-                    __LINE__
+                    __LINE__,
                 );
                 $_SESSION['errors'][$error->getHash()] = $error;
                 break;
@@ -191,7 +189,7 @@ class ErrorHandler
         int $errno,
         string $errstr,
         string $errfile,
-        int $errline
+        int $errline,
     ): bool {
         if (Util::isErrorReportingAvailable()) {
             /**
@@ -238,7 +236,7 @@ class ErrorHandler
             $exception::class . ': ' . $exception->getMessage(),
             (int) $exception->getCode(),
             $exception->getFile(),
-            $exception->getLine()
+            $exception->getLine(),
         );
     }
 
@@ -264,7 +262,7 @@ class ErrorHandler
         int $errno,
         string $errfile,
         int $errline,
-        bool $escape = true
+        bool $escape = true,
     ): void {
         if ($escape) {
             $errstr = htmlspecialchars($errstr);

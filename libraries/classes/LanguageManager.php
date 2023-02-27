@@ -38,7 +38,7 @@ class LanguageManager
      * @var array<string, string[]>
      * @psalm-var array<string, array{non-empty-string, non-empty-string, string, non-empty-string, string}>
      */
-    private static $languageData = [
+    private static array $languageData = [
         'af' => [
             'af',
             'Afrikaans',
@@ -709,29 +709,23 @@ class LanguageManager
     ];
 
     /** @var array */
-    private $availableLocales;
+    private array $availableLocales = [];
 
     /** @var Language[] */
-    private $availableLanguages = [];
+    private array $availableLanguages = [];
 
-    /** @var bool */
-    private $langFailedConfig = false;
+    private bool $langFailedConfig = false;
 
-    /** @var bool */
-    private $langFailedCookie = false;
+    private bool $langFailedCookie = false;
 
-    /** @var bool */
-    private $langFailedRequest = false;
+    private bool $langFailedRequest = false;
 
-    /** @var LanguageManager */
-    private static $instance;
+    private static LanguageManager|null $instance = null;
 
     /**
      * Returns LanguageManager singleton
-     *
-     * @return LanguageManager
      */
-    public static function getInstance()
+    public static function getInstance(): LanguageManager
     {
         if (self::$instance === null) {
             self::$instance = new LanguageManager();
@@ -745,7 +739,7 @@ class LanguageManager
      *
      * @return array
      */
-    public function listLocaleDir()
+    public function listLocaleDir(): array
     {
         $result = ['en'];
 
@@ -784,7 +778,7 @@ class LanguageManager
      *
      * @return array of strings
      */
-    public function availableLocales()
+    public function availableLocales(): array
     {
         if (! $this->availableLocales) {
             if (! isset($GLOBALS['config']) || empty($GLOBALS['config']->get('FilterLanguages'))) {
@@ -792,7 +786,7 @@ class LanguageManager
             } else {
                 $this->availableLocales = preg_grep(
                     '@' . $GLOBALS['config']->get('FilterLanguages') . '@',
-                    $this->listLocaleDir()
+                    $this->listLocaleDir(),
                 );
             }
         }
@@ -813,7 +807,7 @@ class LanguageManager
      *
      * @return Language[] array of Language objects
      */
-    public function availableLanguages()
+    public function availableLanguages(): array
     {
         if (! $this->availableLanguages) {
             $this->availableLanguages = [];
@@ -829,7 +823,7 @@ class LanguageManager
                         ucfirst($lang),
                         ucfirst($lang),
                         $lang,
-                        ''
+                        '',
                     );
                 }
             }
@@ -844,7 +838,7 @@ class LanguageManager
      *
      * @return Language[] array of Language objects
      */
-    public function sortedLanguages()
+    public function sortedLanguages(): array
     {
         $this->availableLanguages();
         uasort($this->availableLanguages, static fn (Language $a, Language $b) => $a->cmp($b));
@@ -875,7 +869,7 @@ class LanguageManager
      *
      * @return Language Language object
      */
-    public function getCurrentLanguage()
+    public function getCurrentLanguage(): Language
     {
         return $this->availableLanguages[strtolower($GLOBALS['lang'])];
     }
@@ -883,10 +877,8 @@ class LanguageManager
     /**
      * Activates language based on configuration, user preferences or
      * browser
-     *
-     * @return Language
      */
-    public function selectLanguage()
+    public function selectLanguage(): Language
     {
         // check forced language
         if (! empty($GLOBALS['config']->get('Lang'))) {
@@ -945,7 +937,7 @@ class LanguageManager
 
         // try to find out user's language by checking its HTTP_USER_AGENT variable
         $user_agent = Core::getenv('HTTP_USER_AGENT');
-        if (! empty($user_agent)) {
+        if ($user_agent !== '') {
             foreach ($langs as $language) {
                 if ($language->matchesUserAgent($user_agent)) {
                     return $language;
@@ -975,7 +967,7 @@ class LanguageManager
 
         trigger_error(
             __('Ignoring unsupported language code.'),
-            E_USER_ERROR
+            E_USER_ERROR,
         );
     }
 }

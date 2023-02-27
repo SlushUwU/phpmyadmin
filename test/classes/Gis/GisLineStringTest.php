@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Gis;
 
+use PhpMyAdmin\Gis\GisGeometry;
 use PhpMyAdmin\Gis\GisLineString;
 use PhpMyAdmin\Gis\ScaleData;
 use PhpMyAdmin\Image\ImageWrapper;
@@ -16,8 +17,7 @@ use TCPDF;
  */
 class GisLineStringTest extends GisGeomTestCase
 {
-    /** @var    GisLineString */
-    protected $object;
+    protected GisGeometry $object;
 
     /**
      * Sets up the fixture, for example, opens a network connection.
@@ -26,6 +26,7 @@ class GisLineStringTest extends GisGeomTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
         $this->object = GisLineString::singleton();
     }
 
@@ -36,6 +37,7 @@ class GisLineStringTest extends GisGeomTestCase
     protected function tearDown(): void
     {
         parent::tearDown();
+
         unset($this->object);
     }
 
@@ -111,35 +113,25 @@ class GisLineStringTest extends GisGeomTestCase
      */
     public static function providerForTestGenerateParams(): array
     {
-        $temp = [
-            'LINESTRING' => [
-                'no_of_points' => 2,
-                0 => [
-                    'x' => '5.02',
-                    'y' => '8.45',
-                ],
-                1 => [
-                    'x' => '6.14',
-                    'y' => '0.15',
-                ],
-            ],
-        ];
-        $temp1 = $temp;
-        $temp1['gis_type'] = 'LINESTRING';
-
         return [
             [
                 "'LINESTRING(5.02 8.45,6.14 0.15)',124",
-                null,
                 [
                     'srid' => 124,
-                    0 => $temp,
+                    0 => [
+                        'LINESTRING' => [
+                            'no_of_points' => 2,
+                            0 => [
+                                'x' => 5.02,
+                                'y' => 8.45,
+                            ],
+                            1 => [
+                                'x' => 6.14,
+                                'y' => 0.15,
+                            ],
+                        ],
+                    ],
                 ],
-            ],
-            [
-                'LINESTRING(5.02 8.45,6.14 0.15)',
-                2,
-                [2 => $temp1],
             ],
         ];
     }
@@ -159,9 +151,7 @@ class GisLineStringTest extends GisGeomTestCase
         ];
     }
 
-    /**
-     * @requires extension gd
-     */
+    /** @requires extension gd */
     public function testPrepareRowAsPng(): void
     {
         $image = ImageWrapper::create(200, 124, ['red' => 229, 'green' => 229, 'blue' => 229]);
@@ -171,7 +161,7 @@ class GisLineStringTest extends GisGeomTestCase
             'image',
             [176, 46, 224],
             ['x' => -18, 'y' => 14, 'scale' => 1.71, 'height' => 124],
-            $image
+            $image,
         );
         $this->assertEquals(200, $return->width());
         $this->assertEquals(124, $return->height());
@@ -197,7 +187,7 @@ class GisLineStringTest extends GisGeomTestCase
         string $label,
         array $color,
         array $scale_data,
-        TCPDF $pdf
+        TCPDF $pdf,
     ): void {
         $return = $this->object->prepareRowAsPdf($spatial, $label, $color, $scale_data, $pdf);
 
@@ -220,6 +210,7 @@ class GisLineStringTest extends GisGeomTestCase
                 'pdf',
                 [176, 46, 224],
                 ['x' => 7, 'y' => 3, 'scale' => 3.15, 'height' => 297],
+
                 parent::createEmptyPdf('LINESTRING'),
             ],
         ];
@@ -241,7 +232,7 @@ class GisLineStringTest extends GisGeomTestCase
         string $label,
         array $color,
         array $scaleData,
-        string $output
+        string $output,
     ): void {
         $svg = $this->object->prepareRowAsSvg($spatial, $label, $color, $scaleData);
         $this->assertEquals($output, $svg);
@@ -290,7 +281,7 @@ class GisLineStringTest extends GisGeomTestCase
         string $label,
         array $color,
         array $scale_data,
-        string $output
+        string $output,
     ): void {
         $ol = $this->object->prepareRowAsOl($spatial, $srid, $label, $color, $scale_data);
         $this->assertEquals($output, $ol);

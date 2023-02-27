@@ -8,9 +8,7 @@ use PhpMyAdmin\Mime;
 
 use function chr;
 
-/**
- * @covers \PhpMyAdmin\Mime
- */
+/** @covers \PhpMyAdmin\Mime */
 class MimeTest extends AbstractTestCase
 {
     /**
@@ -25,7 +23,7 @@ class MimeTest extends AbstractTestCase
     {
         $this->assertEquals(
             Mime::detect($test),
-            $output
+            $output,
         );
     }
 

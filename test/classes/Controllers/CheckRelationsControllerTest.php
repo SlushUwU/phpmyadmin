@@ -13,20 +13,17 @@ use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\DbiDummy;
 use PhpMyAdmin\Tests\Stubs\ResponseRenderer;
 
-/**
- * @covers \PhpMyAdmin\Controllers\CheckRelationsController
- */
+/** @covers \PhpMyAdmin\Controllers\CheckRelationsController */
 class CheckRelationsControllerTest extends AbstractTestCase
 {
-    /** @var DatabaseInterface */
-    protected $dbi;
+    protected DatabaseInterface $dbi;
 
-    /** @var DbiDummy */
-    protected $dummyDbi;
+    protected DbiDummy $dummyDbi;
 
     protected function setUp(): void
     {
         parent::setUp();
+
         $GLOBALS['dbi'] = $this->createDatabaseInterface();
         $this->dummyDbi = $this->createDbiDummy();
         $this->dbi = $this->createDatabaseInterface($this->dummyDbi);
@@ -57,11 +54,11 @@ class CheckRelationsControllerTest extends AbstractTestCase
         $this->assertStringContainsString('phpMyAdmin configuration storage', $actual);
         $this->assertStringContainsString(
             'Configuration of pmadb…      <span class="text-danger"><strong>not OK</strong></span>',
-            $actual
+            $actual,
         );
         $this->assertStringContainsString(
             'Create</a> a database named \'phpmyadmin\' and setup the phpMyAdmin configuration storage there.',
-            $actual
+            $actual,
         );
     }
 }

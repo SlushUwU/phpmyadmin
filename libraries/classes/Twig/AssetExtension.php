@@ -10,10 +10,8 @@ use Twig\TwigFunction;
 
 final class AssetExtension extends AbstractExtension
 {
-    /**
-     * @return TwigFunction[]
-     */
-    public function getFunctions()
+    /** @return TwigFunction[] */
+    public function getFunctions(): array
     {
         return [
             new TwigFunction('image', $this->getImagePath(...)),

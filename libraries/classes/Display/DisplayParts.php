@@ -4,58 +4,23 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Display;
 
-/**
- * @psalm-immutable
- */
+/** @psalm-immutable */
 final class DisplayParts
 {
     public const NO_DELETE = 0;
     public const DELETE_ROW = 1;
     public const KILL_PROCESS = 2;
 
-    /** @var bool */
-    public $hasEditLink;
-
-    /**
-     * @var int
-     * @psalm-var self::NO_DELETE|self::DELETE_ROW|self::KILL_PROCESS
-     */
-    public $deleteLink;
-
-    /** @var bool */
-    public $hasSortLink;
-
-    /** @var bool */
-    public $hasNavigationBar;
-
-    /** @var bool */
-    public $hasBookmarkForm;
-
-    /** @var bool */
-    public $hasTextButton;
-
-    /** @var bool */
-    public $hasPrintLink;
-
-    /**
-     * @psalm-param self::NO_DELETE|self::DELETE_ROW|self::KILL_PROCESS $deleteLink
-     */
+    /** @psalm-param self::NO_DELETE|self::DELETE_ROW|self::KILL_PROCESS $deleteLink */
     private function __construct(
-        bool $hasEditLink,
-        int $deleteLink,
-        bool $hasSortLink,
-        bool $hasNavigationBar,
-        bool $hasBookmarkForm,
-        bool $hasTextButton,
-        bool $hasPrintLink
+        public bool $hasEditLink,
+        public int $deleteLink,
+        public bool $hasSortLink,
+        public bool $hasNavigationBar,
+        public bool $hasBookmarkForm,
+        public bool $hasTextButton,
+        public bool $hasPrintLink,
     ) {
-        $this->hasEditLink = $hasEditLink;
-        $this->deleteLink = $deleteLink;
-        $this->hasSortLink = $hasSortLink;
-        $this->hasNavigationBar = $hasNavigationBar;
-        $this->hasBookmarkForm = $hasBookmarkForm;
-        $this->hasTextButton = $hasTextButton;
-        $this->hasPrintLink = $hasPrintLink;
     }
 
     /**
@@ -79,7 +44,7 @@ final class DisplayParts
             $parts['hasNavigationBar'] ?? false,
             $parts['hasBookmarkForm'] ?? false,
             $parts['hasTextButton'] ?? false,
-            $parts['hasPrintLink'] ?? false
+            $parts['hasPrintLink'] ?? false,
         );
     }
 
@@ -104,7 +69,7 @@ final class DisplayParts
             $parts['hasNavigationBar'] ?? $this->hasNavigationBar,
             $parts['hasBookmarkForm'] ?? $this->hasBookmarkForm,
             $parts['hasTextButton'] ?? $this->hasTextButton,
-            $parts['hasPrintLink'] ?? $this->hasPrintLink
+            $parts['hasPrintLink'] ?? $this->hasPrintLink,
         );
     }
 }

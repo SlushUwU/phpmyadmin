@@ -10,13 +10,10 @@ use PhpMyAdmin\ResponseRenderer;
 use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\AbstractTestCase;
 
-/**
- * @covers \PhpMyAdmin\Database\Events
- */
+/** @covers \PhpMyAdmin\Database\Events */
 class EventsTest extends AbstractTestCase
 {
-    /** @var Events */
-    private $events;
+    private Events $events;
 
     /**
      * Set up
@@ -24,9 +21,13 @@ class EventsTest extends AbstractTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
         parent::setGlobalConfig();
+
         parent::setLanguage();
+
         parent::setTheme();
+
         $GLOBALS['dbi'] = $this->createDatabaseInterface();
         $GLOBALS['text_dir'] = 'ltr';
         $GLOBALS['server'] = 0;
@@ -38,7 +39,7 @@ class EventsTest extends AbstractTestCase
         $this->events = new Events(
             $GLOBALS['dbi'],
             new Template(),
-            ResponseRenderer::getInstance()
+            ResponseRenderer::getInstance(),
         );
     }
 
@@ -154,7 +155,7 @@ class EventsTest extends AbstractTestCase
         ResponseRenderer::getInstance()->setAjax(false);
         $this->assertStringContainsString(
             $matcher,
-            $this->events->getEditorForm('add', 'change', $data)
+            $this->events->getEditorForm('add', 'change', $data),
         );
     }
 
@@ -209,7 +210,7 @@ class EventsTest extends AbstractTestCase
         ResponseRenderer::getInstance()->setAjax(false);
         $this->assertStringContainsString(
             $matcher,
-            $this->events->getEditorForm('edit', 'change', $data)
+            $this->events->getEditorForm('edit', 'change', $data),
         );
     }
 
@@ -264,7 +265,7 @@ class EventsTest extends AbstractTestCase
         ResponseRenderer::getInstance()->setAjax(true);
         $this->assertStringContainsString(
             $matcher,
-            $this->events->getEditorForm('edit', 'change', $data)
+            $this->events->getEditorForm('edit', 'change', $data),
         );
         ResponseRenderer::getInstance()->setAjax(false);
     }

@@ -74,6 +74,7 @@ class AuthenticationConfig extends AuthenticationPlugin
     public function showFailure($failure): void
     {
         parent::showFailure($failure);
+
         $conn_error = $GLOBALS['dbi']->getError();
         if (! $conn_error) {
             $conn_error = __('Cannot connect: invalid settings.');
@@ -105,10 +106,10 @@ class AuthenticationConfig extends AuthenticationPlugin
                     __(
                         'You probably did not create a configuration file.'
                         . ' You might want to use the %1$ssetup script%2$s to'
-                        . ' create one.'
+                        . ' create one.',
                     ),
                     '<a href="setup/">',
-                    '</a>'
+                    '</a>',
                 ) , '</p>' , "\n";
             } elseif (
                 ! isset($GLOBALS['errno'])
@@ -128,9 +129,9 @@ class AuthenticationConfig extends AuthenticationPlugin
                         . ' server rejected the connection. You should check the'
                         . ' host, username and password in your configuration and'
                         . ' make sure that they correspond to the information given'
-                        . ' by the administrator of the MySQL server.'
+                        . ' by the administrator of the MySQL server.',
                     ),
-                    E_USER_WARNING
+                    E_USER_WARNING,
                 );
             }
 

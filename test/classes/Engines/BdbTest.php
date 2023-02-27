@@ -9,13 +9,10 @@ use PhpMyAdmin\Tests\AbstractTestCase;
 
 use function __;
 
-/**
- * @covers \PhpMyAdmin\Engines\Bdb
- */
+/** @covers \PhpMyAdmin\Engines\Bdb */
 class BdbTest extends AbstractTestCase
 {
-    /** @var Bdb */
-    protected $object;
+    protected Bdb $object;
 
     /**
      * Sets up the fixture, for example, opens a network connection.
@@ -24,6 +21,7 @@ class BdbTest extends AbstractTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
         $GLOBALS['dbi'] = $this->createDatabaseInterface();
         $GLOBALS['server'] = 0;
         $this->object = new Bdb('bdb');
@@ -36,6 +34,7 @@ class BdbTest extends AbstractTestCase
     protected function tearDown(): void
     {
         parent::tearDown();
+
         unset($this->object);
     }
 
@@ -64,7 +63,7 @@ class BdbTest extends AbstractTestCase
                 'bdb_no_sync' => [],
                 'skip_sync_bdb_logs' => [],
                 'sync_bdb_logs' => [],
-            ]
+            ],
         );
     }
 
@@ -75,7 +74,7 @@ class BdbTest extends AbstractTestCase
     {
         $this->assertEquals(
             $this->object->getVariablesLikePattern(),
-            '%bdb%'
+            '%bdb%',
         );
     }
 
@@ -86,7 +85,7 @@ class BdbTest extends AbstractTestCase
     {
         $this->assertEquals(
             $this->object->getMysqlHelpPage(),
-            'bdb'
+            'bdb',
         );
     }
 }

@@ -13,26 +13,25 @@ use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\ResponseRenderer;
 use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
 
-/**
- * @covers \PhpMyAdmin\Controllers\Server\Status\AdvisorController
- */
+/** @covers \PhpMyAdmin\Controllers\Server\Status\AdvisorController */
 class AdvisorControllerTest extends AbstractTestCase
 {
-    /** @var ResponseRenderer */
-    private $response;
+    private ResponseRenderer $response;
 
-    /** @var Template */
-    private $template;
+    private Template $template;
 
-    /** @var Data */
-    private $data;
+    private Data $data;
 
     protected function setUp(): void
     {
         parent::setUp();
+
         $GLOBALS['text_dir'] = 'ltr';
+
         parent::setGlobalConfig();
+
         parent::setTheme();
+
         $GLOBALS['dbi'] = $this->createDatabaseInterface();
 
         $GLOBALS['server'] = 1;
@@ -53,7 +52,7 @@ class AdvisorControllerTest extends AbstractTestCase
             $this->response,
             $this->template,
             $this->data,
-            new Advisor($GLOBALS['dbi'], new ExpressionLanguage())
+            new Advisor($GLOBALS['dbi'], new ExpressionLanguage()),
         );
 
         $controller($this->createStub(ServerRequest::class));
@@ -64,7 +63,7 @@ class AdvisorControllerTest extends AbstractTestCase
 
         $this->assertSame(
             $expected,
-            $this->response->getHTMLResult()
+            $this->response->getHTMLResult(),
         );
     }
 
@@ -106,7 +105,7 @@ class AdvisorControllerTest extends AbstractTestCase
 
         $this->assertSame(
             $expected,
-            $this->response->getHTMLResult()
+            $this->response->getHTMLResult(),
         );
     }
 }

@@ -18,9 +18,7 @@ use function array_merge;
 use const MYSQLI_TYPE_GEOMETRY;
 use const MYSQLI_TYPE_VAR_STRING;
 
-/**
- * @covers \PhpMyAdmin\Controllers\Table\GisVisualizationController
- */
+/** @covers \PhpMyAdmin\Controllers\Table\GisVisualizationController */
 class GisVisualizationControllerTest extends AbstractTestCase
 {
     public function testGisVisualizationController(): void
@@ -46,13 +44,13 @@ class GisVisualizationControllerTest extends AbstractTestCase
             [
                 new FieldMetadata(MYSQLI_TYPE_VAR_STRING, 0, (object) []),
                 new FieldMetadata(MYSQLI_TYPE_GEOMETRY, 0, (object) []),
-            ]
+            ],
         );
         $dummyDbi->addResult(
             'SELECT ST_ASTEXT(`shape`) AS `shape`, ST_SRID(`shape`) AS `srid`'
             . ' FROM (SELECT * FROM `gis_all`) AS `temp_gis` LIMIT 0, 25',
             [['POINT(100 250)', '0']],
-            ['shape', 'srid']
+            ['shape', 'srid'],
         );
         $dbi = $this->createDatabaseInterface($dummyDbi);
         $GLOBALS['dbi'] = $dbi;

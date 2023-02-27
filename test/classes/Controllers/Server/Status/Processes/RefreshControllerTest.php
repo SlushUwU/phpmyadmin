@@ -16,20 +16,20 @@ use PhpMyAdmin\Url;
 use function __;
 use function htmlspecialchars;
 
-/**
- * @covers \PhpMyAdmin\Controllers\Server\Status\Processes\RefreshController
- */
+/** @covers \PhpMyAdmin\Controllers\Server\Status\Processes\RefreshController */
 class RefreshControllerTest extends AbstractTestCase
 {
-    /** @var Data */
-    private $data;
+    private Data $data;
 
     protected function setUp(): void
     {
         parent::setUp();
+
         $GLOBALS['dbi'] = $this->createDatabaseInterface();
         $GLOBALS['text_dir'] = 'ltr';
+
         parent::setGlobalConfig();
+
         parent::setTheme();
 
         $GLOBALS['server'] = 1;
@@ -63,7 +63,7 @@ class RefreshControllerTest extends AbstractTestCase
             $response,
             new Template(),
             $this->data,
-            new Processes($GLOBALS['dbi'])
+            new Processes($GLOBALS['dbi']),
         );
 
         $request = $this->createStub(ServerRequest::class);
@@ -87,31 +87,31 @@ class RefreshControllerTest extends AbstractTestCase
         $this->assertStringContainsString('ajax kill_process', $html);
         $this->assertStringContainsString(
             __('Kill'),
-            $html
+            $html,
         );
 
         //validate 2: $process['User']
         $this->assertStringContainsString(
             htmlspecialchars($process['User']),
-            $html
+            $html,
         );
 
         //validate 3: $process['Host']
         $this->assertStringContainsString(
             htmlspecialchars($process['Host']),
-            $html
+            $html,
         );
 
         //validate 4: $process['db']
         $this->assertStringContainsString(
             $process['Db'],
-            $html
+            $html,
         );
 
         //validate 5: $process['Command']
         $this->assertStringContainsString(
             htmlspecialchars($process['Command']),
-            $html
+            $html,
         );
 
         //validate 6: $process['Time']

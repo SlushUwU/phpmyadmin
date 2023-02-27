@@ -8,13 +8,10 @@ use PhpMyAdmin\Template;
 use PhpMyAdmin\Twig\Extensions\Node\TransNode;
 use Twig\Error\LoaderError;
 
-/**
- * @covers \PhpMyAdmin\Template
- */
+/** @covers \PhpMyAdmin\Template */
 class TemplateTest extends AbstractTestCase
 {
-    /** @var Template */
-    protected $template;
+    protected Template $template;
 
     /**
      * Sets up the fixture.
@@ -22,6 +19,7 @@ class TemplateTest extends AbstractTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
         $this->template = new Template();
     }
 
@@ -85,7 +83,7 @@ class TemplateTest extends AbstractTestCase
     {
         $this->assertEquals(
             $value,
-            $this->template->render($templateFile, [$key => $value])
+            $this->template->render($templateFile, [$key => $value]),
         );
     }
 
@@ -126,7 +124,7 @@ class TemplateTest extends AbstractTestCase
     {
         $this->assertEquals(
             $expectedResult,
-            $this->template->render($templateFile)
+            $this->template->render($templateFile),
         );
     }
 
@@ -158,7 +156,7 @@ class TemplateTest extends AbstractTestCase
     {
         $this->assertEquals(
             $expectedResult,
-            $this->template->render($templateFile, $renderParams)
+            $this->template->render($templateFile, $renderParams),
         );
     }
 

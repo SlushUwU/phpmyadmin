@@ -21,24 +21,16 @@ class Console
 {
     /**
      * Whether to display anything
-     *
-     * @var bool
      */
-    private $isEnabled = true;
+    private bool $isEnabled = true;
 
     /**
      * Whether we are servicing an ajax request.
-     *
-     * @var bool
      */
-    private $isAjax = false;
+    private bool $isAjax = false;
 
-    /** @var Template */
-    public $template;
-
-    public function __construct(private Relation $relation, Template $template)
+    public function __construct(private Relation $relation, public Template $template)
     {
-        $this->template = $template;
     }
 
     /**
@@ -79,9 +71,9 @@ class Console
                 _ngettext(
                     'Showing %1$d bookmark (both private and shared)',
                     'Showing %1$d bookmarks (both private and shared)',
-                    $count_bookmarks
+                    $count_bookmarks,
                 ),
-                $count_bookmarks
+                $count_bookmarks,
             );
         } else {
             $welcomeMessage = __('No bookmarks');

@@ -14,20 +14,17 @@ use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\DbiDummy;
 use PhpMyAdmin\Tests\Stubs\ResponseRenderer;
 
-/**
- * @covers \PhpMyAdmin\Controllers\Export\Template\UpdateController
- */
+/** @covers \PhpMyAdmin\Controllers\Export\Template\UpdateController */
 class UpdateControllerTest extends AbstractTestCase
 {
-    /** @var DatabaseInterface */
-    protected $dbi;
+    protected DatabaseInterface $dbi;
 
-    /** @var DbiDummy */
-    protected $dummyDbi;
+    protected DbiDummy $dummyDbi;
 
     protected function setUp(): void
     {
         parent::setUp();
+
         $this->dummyDbi = $this->createDbiDummy();
         $this->dbi = $this->createDatabaseInterface($this->dummyDbi);
         $GLOBALS['dbi'] = $this->dbi;
@@ -52,7 +49,7 @@ class UpdateControllerTest extends AbstractTestCase
             $response,
             new Template(),
             new TemplateModel($this->dbi),
-            new Relation($this->dbi)
+            new Relation($this->dbi),
         ))($request);
 
         $this->assertTrue($response->hasSuccessState());

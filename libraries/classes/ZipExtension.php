@@ -111,7 +111,7 @@ class ZipExtension
         }
 
         /* Couldn't find any files that matched $specific_entry */
-        if (empty($fileData)) {
+        if ($fileData === '' || $fileData === false) {
             $errorMessage = __('Error in ZIP archive:')
                 . ' Could not find "' . $specificEntry . '"';
         }
@@ -211,9 +211,9 @@ class ZipExtension
      * @param array|string $name name of the file/files in the archive
      * @param int          $time the current timestamp
      *
-     * @return string|bool the ZIP file contents, or false if there was an error.
+     * @return string|false the ZIP file contents, or false if there was an error.
      */
-    public function createFile(array|string $data, array|string $name, $time = 0): string|bool
+    public function createFile(array|string $data, array|string $name, $time = 0): string|false
     {
         $datasec = []; // Array to store compressed data
         $ctrlDir = []; // Central directory

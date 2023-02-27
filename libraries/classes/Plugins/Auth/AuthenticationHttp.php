@@ -88,8 +88,8 @@ class AuthenticationHttp extends AuthenticationPlugin
         $response->addHTML('<h3>');
         $response->addHTML(
             Message::error(
-                __('Wrong username/password. Access denied.')
-            )->getDisplay()
+                __('Wrong username/password. Access denied.'),
+            )->getDisplay(),
         );
         $response->addHTML('</h3>');
 
@@ -138,7 +138,7 @@ class AuthenticationHttp extends AuthenticationPlugin
             $this->password = $GLOBALS['PHP_AUTH_PW'];
         }
 
-        if (empty($this->password)) {
+        if ($this->password === '') {
             if (Core::getenv('PHP_AUTH_PW')) {
                 $this->password = Core::getenv('PHP_AUTH_PW');
             } elseif (Core::getenv('REMOTE_PASSWORD')) {
@@ -148,11 +148,6 @@ class AuthenticationHttp extends AuthenticationPlugin
                 // WebSite Professional
                 $this->password = Core::getenv('AUTH_PASSWORD');
             }
-        }
-
-        // Sanitize empty password login
-        if ($this->password === null) {
-            $this->password = '';
         }
 
         // Avoid showing the password in phpinfo()'s output
@@ -196,6 +191,7 @@ class AuthenticationHttp extends AuthenticationPlugin
     public function showFailure($failure): void
     {
         parent::showFailure($failure);
+
         $error = $GLOBALS['dbi']->getError();
         if ($error && $GLOBALS['errno'] != 1045) {
             echo $this->template->render('error/generic', [
@@ -214,10 +210,8 @@ class AuthenticationHttp extends AuthenticationPlugin
 
     /**
      * Returns URL for login form.
-     *
-     * @return string
      */
-    public function getLoginFormURL()
+    public function getLoginFormURL(): string
     {
         return './index.php?route=/&old_usr=' . $this->user;
     }

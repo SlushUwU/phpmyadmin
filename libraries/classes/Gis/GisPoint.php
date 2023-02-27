@@ -21,8 +21,7 @@ use function trim;
  */
 class GisPoint extends GisGeometry
 {
-    /** @var self */
-    private static $instance;
+    private static self $instance;
 
     /**
      * A private constructor; prevents direct creation of object.
@@ -36,7 +35,7 @@ class GisPoint extends GisGeometry
      *
      * @return GisPoint the singleton
      */
-    public static function singleton()
+    public static function singleton(): GisPoint
     {
         if (! isset(self::$instance)) {
             self::$instance = new GisPoint();
@@ -73,7 +72,7 @@ class GisPoint extends GisGeometry
         string $label,
         array $color,
         array $scale_data,
-        ImageWrapper $image
+        ImageWrapper $image,
     ): ImageWrapper {
         // allocate colors
         $black = $image->colorAllocate(0, 0, 0);
@@ -92,7 +91,7 @@ class GisPoint extends GisGeometry
                 7,
                 0,
                 360,
-                $point_color
+                $point_color,
             );
             // print label if applicable
             if ($label !== '') {
@@ -101,7 +100,7 @@ class GisPoint extends GisGeometry
                     (int) round($points_arr[0][0]),
                     (int) round($points_arr[0][1]),
                     $label,
-                    $black
+                    $black,
                 );
             }
         }
@@ -125,8 +124,8 @@ class GisPoint extends GisGeometry
         string $label,
         array $color,
         array $scale_data,
-        $pdf
-    ) {
+        $pdf,
+    ): TCPDF {
         $line = [
             'width' => 1.25,
             'color' => $color,
@@ -160,7 +159,7 @@ class GisPoint extends GisGeometry
      *
      * @return string the code related to a row in the GIS dataset
      */
-    public function prepareRowAsSvg($spatial, string $label, array $color, array $scale_data)
+    public function prepareRowAsSvg($spatial, string $label, array $color, array $scale_data): string
     {
         $point_options = [
             'name' => $label,
@@ -206,8 +205,8 @@ class GisPoint extends GisGeometry
         int $srid,
         string $label,
         array $color,
-        array $scale_data
-    ) {
+        array $scale_data,
+    ): string {
         $fill_style = ['color' => 'white'];
         $stroke_style = [
             'color' => $color,
@@ -262,7 +261,7 @@ class GisPoint extends GisGeometry
      *
      * @return string WKT with the set of parameters passed by the GIS editor
      */
-    public function generateWkt(array $gis_data, $index, $empty = '')
+    public function generateWkt(array $gis_data, $index, $empty = ''): string
     {
         return 'POINT('
         . (isset($gis_data[$index]['POINT']['x'])
@@ -281,40 +280,28 @@ class GisPoint extends GisGeometry
      *
      * @return string the WKT for the data from ESRI shape files
      */
-    public function getShape(array $row_data)
+    public function getShape(array $row_data): string
     {
         return 'POINT(' . ($row_data['x'] ?? '')
         . ' ' . ($row_data['y'] ?? '') . ')';
     }
 
     /**
-     * Generate parameters for the GIS data editor from the value of the GIS column.
+     * Generate coordinate parameters for the GIS data editor from the value of the GIS column.
      *
-     * @param string $value of the GIS column
-     * @param int    $index of the geometry
+     * @param string $wkt Value of the GIS column
      *
-     * @return array params for the GIS data editor from the value of the GIS column
+     * @return array Coordinate params for the GIS data editor from the value of the GIS column
      */
-    public function generateParams($value, $index = -1)
+    protected function getCoordinateParams(string $wkt): array
     {
-        $params = [];
-        if ($index == -1) {
-            $index = 0;
-            $data = GisGeometry::generateParams($value);
-            $params['srid'] = $data['srid'];
-            $wkt = $data['wkt'];
-        } else {
-            $params[$index]['gis_type'] = 'POINT';
-            $wkt = $value;
-        }
-
         // Trim to remove leading 'POINT(' and trailing ')'
-        $point = mb_substr($wkt, 6, -1);
-        $points_arr = $this->extractPoints($point, null);
+        $wkt_point = mb_substr($wkt, 6, -1);
+        $points = $this->extractPoints($wkt_point, null);
 
-        $params[$index]['POINT']['x'] = $points_arr[0][0];
-        $params[$index]['POINT']['y'] = $points_arr[0][1];
-
-        return $params;
+        return [
+            'x' => $points[0][0],
+            'y' => $points[0][1],
+        ];
     }
 }

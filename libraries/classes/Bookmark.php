@@ -27,34 +27,24 @@ class Bookmark
 {
     /**
      * ID of the bookmark
-     *
-     * @var int
      */
-    private $id;
+    private int $id = 0;
     /**
      * Database the bookmark belongs to
-     *
-     * @var string
      */
-    private $database;
+    private string $database = '';
     /**
      * The user to whom the bookmark belongs, empty for public bookmarks
-     *
-     * @var string
      */
-    private $currentUser;
+    private string $currentUser = '';
     /**
      * Label of the bookmark
-     *
-     * @var string
      */
-    private $label;
+    private string $label = '';
     /**
      * SQL query that is bookmarked
-     *
-     * @var string
      */
-    private $query;
+    private string $query = '';
 
     public function __construct(private DatabaseInterface $dbi, private Relation $relation)
     {
@@ -191,7 +181,7 @@ class Bookmark
     public static function createBookmark(
         DatabaseInterface $dbi,
         array $bkm_fields,
-        bool $all_users = false
+        bool $all_users = false,
     ): Bookmark|false {
         if (
             ! (isset($bkm_fields['bkm_sql_query'], $bkm_fields['bkm_label'])
@@ -210,9 +200,7 @@ class Bookmark
         return $bookmark;
     }
 
-    /**
-     * @param array $row Resource used to build the bookmark
-     */
+    /** @param array $row Resource used to build the bookmark */
     protected static function createFromRow(DatabaseInterface $dbi, array $row): Bookmark
     {
         $bookmark = new Bookmark($dbi, new Relation($dbi));
@@ -237,7 +225,7 @@ class Bookmark
         BookmarkFeature $bookmarkFeature,
         DatabaseInterface $dbi,
         string $user,
-        string|false $db = false
+        string|false $db = false,
     ): array {
         $query = 'SELECT * FROM ' . Util::backquote($bookmarkFeature->database)
             . '.' . Util::backquote($bookmarkFeature->bookmark)
@@ -253,7 +241,7 @@ class Bookmark
             $query,
             null,
             null,
-            Connection::TYPE_CONTROL
+            Connection::TYPE_CONTROL,
         );
 
         $bookmarks = [];
@@ -284,7 +272,7 @@ class Bookmark
         int|string $id,
         string $id_field = 'id',
         bool $action_bookmark_all = false,
-        bool $exact_user_match = false
+        bool $exact_user_match = false,
     ): self|null {
         $relation = new Relation($dbi);
         $bookmarkFeature = $relation->getRelationParameters()->bookmarkFeature;

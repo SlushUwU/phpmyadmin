@@ -26,9 +26,7 @@ use function str_replace;
  */
 class ExportYaml extends ExportPlugin
 {
-    /**
-     * @psalm-return non-empty-lowercase-string
-     */
+    /** @psalm-return non-empty-lowercase-string */
     public function getName(): string
     {
         return 'yaml';
@@ -129,7 +127,7 @@ class ExportYaml extends ExportPlugin
         $table,
         $errorUrl,
         $sqlQuery,
-        array $aliases = []
+        array $aliases = [],
     ): bool {
         $db_alias = $db;
         $table_alias = $table;
@@ -137,7 +135,7 @@ class ExportYaml extends ExportPlugin
         $result = $GLOBALS['dbi']->query(
             $sqlQuery,
             Connection::TYPE_USER,
-            DatabaseInterface::QUERY_UNBUFFERED
+            DatabaseInterface::QUERY_UNBUFFERED,
         );
 
         $columns_cnt = $result->numFields();
@@ -194,7 +192,7 @@ class ExportYaml extends ExportPlugin
                         '\n',
                         '\r',
                     ],
-                    $record[$i]
+                    $record[$i],
                 );
                 $buffer .= '  ' . $columns[$i] . ': "' . $record[$i] . '"' . "\n";
             }

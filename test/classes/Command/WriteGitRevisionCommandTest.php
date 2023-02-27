@@ -11,13 +11,10 @@ use Symfony\Component\Console\Command\Command;
 use function class_exists;
 use function sprintf;
 
-/**
- * @covers \PhpMyAdmin\Command\WriteGitRevisionCommand
- */
+/** @covers \PhpMyAdmin\Command\WriteGitRevisionCommand */
 class WriteGitRevisionCommandTest extends AbstractTestCase
 {
-    /** @var WriteGitRevisionCommand */
-    private $command;
+    private WriteGitRevisionCommand $command;
 
     public function testGetGeneratedClassValidVersion(): void
     {
@@ -42,7 +39,7 @@ class WriteGitRevisionCommandTest extends AbstractTestCase
             [
                 'https://github.com/phpmyadmin/phpmyadmin/commit/%s',
                 'https://github.com/phpmyadmin/phpmyadmin/tree/%s',
-            ]
+            ],
         );
         $template = <<<'PHP'
 <?php
@@ -68,9 +65,9 @@ PHP;
                 'RELEASE_5_1_0-638-g1c018e2a6c',
                 'https://github.com/phpmyadmin/phpmyadmin/commit/1c018e2a6c6d518c4a2dde059e49f33af67c4636',
                 'cli-rev-info',
-                'https://github.com/phpmyadmin/phpmyadmin/tree/cli-rev-info'
+                'https://github.com/phpmyadmin/phpmyadmin/tree/cli-rev-info',
             ),
-            $output
+            $output,
         );
     }
 }

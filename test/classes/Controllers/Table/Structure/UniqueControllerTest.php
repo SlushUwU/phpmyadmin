@@ -13,9 +13,7 @@ use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\ResponseRenderer;
 
-/**
- * @covers \PhpMyAdmin\Controllers\Table\Structure\UniqueController
- */
+/** @covers \PhpMyAdmin\Controllers\Table\Structure\UniqueController */
 class UniqueControllerTest extends AbstractTestCase
 {
     public function testAddUniqueKeyToSingleField(): void
@@ -133,7 +131,7 @@ class UniqueControllerTest extends AbstractTestCase
 
         $this->assertEquals(
             Message::error('#1062 - Duplicate entry &#039;2&#039; for key &#039;test_field&#039;'),
-            $GLOBALS['message']
+            $GLOBALS['message'],
         );
         /** @psalm-suppress TypeDoesNotContainType */
         $this->assertSame('ALTER TABLE `test_table` ADD UNIQUE(`test_field`);', $GLOBALS['sql_query']);

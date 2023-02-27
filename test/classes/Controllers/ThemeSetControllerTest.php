@@ -12,14 +12,13 @@ use PhpMyAdmin\Tests\Stubs\ResponseRenderer;
 use PhpMyAdmin\ThemeManager;
 use PhpMyAdmin\UserPreferences;
 
-/**
- * @covers \PhpMyAdmin\Controllers\ThemeSetController
- */
+/** @covers \PhpMyAdmin\Controllers\ThemeSetController */
 class ThemeSetControllerTest extends AbstractTestCase
 {
     protected function setUp(): void
     {
         parent::setUp();
+
         $GLOBALS['dbi'] = $this->createDatabaseInterface();
     }
 
@@ -54,7 +53,7 @@ class ThemeSetControllerTest extends AbstractTestCase
      * @preserveGlobalState disabled
      * @dataProvider providerForTestWithoutTheme
      */
-    public function testWithoutTheme(bool $hasThemes, $themeName): void
+    public function testWithoutTheme(bool $hasThemes, array|string|null $themeName): void
     {
         $GLOBALS['cfg']['ThemeManager'] = $hasThemes;
 

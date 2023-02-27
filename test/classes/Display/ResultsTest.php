@@ -41,19 +41,14 @@ use const MYSQLI_TYPE_STRING;
 use const MYSQLI_TYPE_TIME;
 use const MYSQLI_TYPE_TIMESTAMP;
 
-/**
- * @covers \PhpMyAdmin\Display\Results
- */
+/** @covers \PhpMyAdmin\Display\Results */
 class ResultsTest extends AbstractTestCase
 {
-    /** @var DatabaseInterface */
-    protected $dbi;
+    protected DatabaseInterface $dbi;
 
-    /** @var DbiDummy */
-    protected $dummyDbi;
+    protected DbiDummy $dummyDbi;
 
-    /** @var DisplayResults */
-    protected $object;
+    protected DisplayResults $object;
 
     /**
      * Sets up the fixture, for example, opens a network connection.
@@ -62,8 +57,11 @@ class ResultsTest extends AbstractTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
         parent::setLanguage();
+
         parent::setGlobalConfig();
+
         $this->dummyDbi = $this->createDbiDummy();
         $this->dbi = $this->createDatabaseInterface($this->dummyDbi);
         $GLOBALS['dbi'] = $this->dbi;
@@ -85,6 +83,7 @@ class ResultsTest extends AbstractTestCase
     protected function tearDown(): void
     {
         parent::tearDown();
+
         unset($this->object);
     }
 
@@ -98,8 +97,8 @@ class ResultsTest extends AbstractTestCase
                 $this->object,
                 DisplayResults::class,
                 'isSelect',
-                [StatementInfo::fromArray(Query::getAll('SELECT * FROM pma'))]
-            )
+                [StatementInfo::fromArray(Query::getAll('SELECT * FROM pma'))],
+            ),
         );
     }
 
@@ -111,8 +110,8 @@ class ResultsTest extends AbstractTestCase
                 $this->object,
                 DisplayResults::class,
                 'getClassForDateTimeRelatedFields',
-                [new FieldMetadata(MYSQLI_TYPE_TIMESTAMP, 0, (object) [])]
-            )
+                [new FieldMetadata(MYSQLI_TYPE_TIMESTAMP, 0, (object) [])],
+            ),
         );
     }
 
@@ -124,8 +123,8 @@ class ResultsTest extends AbstractTestCase
                 $this->object,
                 DisplayResults::class,
                 'getClassForDateTimeRelatedFields',
-                [new FieldMetadata(MYSQLI_TYPE_DATE, 0, (object) [])]
-            )
+                [new FieldMetadata(MYSQLI_TYPE_DATE, 0, (object) [])],
+            ),
         );
     }
 
@@ -137,8 +136,8 @@ class ResultsTest extends AbstractTestCase
                 $this->object,
                 DisplayResults::class,
                 'getClassForDateTimeRelatedFields',
-                [new FieldMetadata(MYSQLI_TYPE_STRING, 0, (object) [])]
-            )
+                [new FieldMetadata(MYSQLI_TYPE_STRING, 0, (object) [])],
+            ),
         );
     }
 
@@ -157,8 +156,8 @@ class ResultsTest extends AbstractTestCase
                 $this->object,
                 DisplayResults::class,
                 'getOffsets',
-                []
-            )
+                [],
+            ),
         );
     }
 
@@ -178,8 +177,8 @@ class ResultsTest extends AbstractTestCase
                 $this->object,
                 DisplayResults::class,
                 'getOffsets',
-                []
-            )
+                [],
+            ),
         );
     }
 
@@ -237,7 +236,7 @@ class ResultsTest extends AbstractTestCase
         string $column_value,
         array $row_info,
         string $field_name,
-        string $output
+        string $output,
     ): void {
         $specialSchemaLinks = [
             'information_schema' => [
@@ -286,8 +285,8 @@ class ResultsTest extends AbstractTestCase
                     $specialSchemaLinks[$db][$table][$field_name],
                     $column_value,
                     $row_info,
-                ]
-            )
+                ],
+            ),
         );
     }
 
@@ -354,7 +353,7 @@ class ResultsTest extends AbstractTestCase
         int $fields_count,
         array $row,
         array $col_order,
-        array $output
+        array $output,
     ): void {
         $this->object->properties['fields_meta'] = $fields_meta;
         $this->object->properties['fields_cnt'] = $fields_count;
@@ -368,8 +367,8 @@ class ResultsTest extends AbstractTestCase
                 [
                     $row,
                     $col_order,
-                ]
-            )
+                ],
+            ),
         );
     }
 
@@ -380,7 +379,7 @@ class ResultsTest extends AbstractTestCase
             $this->object,
             DisplayResults::class,
             'setHighlightedColumnGlobalField',
-            [StatementInfo::fromArray(Query::getAll($query))]
+            [StatementInfo::fromArray(Query::getAll($query))],
         );
 
         $this->assertEquals([
@@ -461,8 +460,8 @@ class ResultsTest extends AbstractTestCase
                 $this->object,
                 DisplayResults::class,
                 'getPartialText',
-                [$str]
-            )
+                [$str],
+            ),
         );
     }
 
@@ -574,11 +573,11 @@ class ResultsTest extends AbstractTestCase
         string $category,
         string|null $content,
         TransformationsPlugin|null $transformation_plugin,
-        $transform_options,
+        array|object $transform_options,
         object $meta,
         array $url_params,
         bool|null $is_truncated,
-        string $output
+        string $output,
     ): void {
         $_SESSION['tmpval']['display_binary'] = $display_binary;
         $_SESSION['tmpval']['display_blob'] = $display_blob;
@@ -597,8 +596,8 @@ class ResultsTest extends AbstractTestCase
                     $meta,
                     $url_params,
                     &$is_truncated,
-                ]
-            )
+                ],
+            ),
         );
     }
 
@@ -765,7 +764,7 @@ class ResultsTest extends AbstractTestCase
         bool $condition_field,
         TransformationsPlugin|null $transformation_plugin,
         array $transform_options,
-        string $output
+        string $output,
     ): void {
         $_SESSION['tmpval']['display_binary'] = true;
         $_SESSION['tmpval']['display_blob'] = false;
@@ -789,8 +788,8 @@ class ResultsTest extends AbstractTestCase
                     $transformation_plugin,
                     $transform_options,
                     $statementInfo,
-                ]
-            )
+                ],
+            ),
         );
     }
 
@@ -855,7 +854,7 @@ class ResultsTest extends AbstractTestCase
                         'mimetype' => '',
                         'transformation' => 'output/text_plain_bool2text.php',
                     ],
-                ]
+                ],
             );
 
         $GLOBALS['dbi'] = $dbi;
@@ -880,7 +879,7 @@ class ResultsTest extends AbstractTestCase
                 false,
                 $query,
                 StatementInfo::fromArray(Query::getAll($query)),
-            ]
+            ],
         );
 
         // Dateformat
@@ -958,15 +957,13 @@ class ResultsTest extends AbstractTestCase
         ];
     }
 
-    /**
-     * @dataProvider dataProviderGetSortOrderHiddenInputs
-     */
+    /** @dataProvider dataProviderGetSortOrderHiddenInputs */
     public function testGetSortOrderHiddenInputs(
         string $sqlAdd,
         string $sqlRemove,
         array $urlParams,
         string $colName,
-        string $urlParamsRemove
+        string $urlParamsRemove,
     ): void {
         $output = $this->callFunction(
             $this->object,
@@ -975,39 +972,37 @@ class ResultsTest extends AbstractTestCase
             [
                 $urlParams,
                 $colName,
-            ]
+            ],
         );
         $out = urldecode(htmlspecialchars_decode($output));
         $this->assertStringContainsString(
             'name="url-remove-order" value="index.php?route=/sql&sql_query=' . $sqlRemove,
             $out,
-            'The remove query should be found'
+            'The remove query should be found',
         );
 
         $this->assertStringContainsString(
             'name="url-add-order" value="index.php?route=/sql&sql_query=' . $sqlAdd,
             $out,
-            'The add query should be found'
+            'The add query should be found',
         );
 
         $firstLine = explode("\n", $out)[0] ?? '';
         $this->assertStringContainsString(
             'url-remove-order',
             $firstLine,
-            'The first line should contain url-remove-order input'
+            'The first line should contain url-remove-order input',
         );
         $this->assertStringNotContainsString(
             'url-add-order',
             $firstLine,
-            'The first line should contain NOT url-add-order input'
+            'The first line should contain NOT url-add-order input',
         );
 
         $this->assertStringContainsString($urlParamsRemove, $firstLine, 'The first line should contain the URL params');
     }
 
-    /**
-     * @see https://github.com/phpmyadmin/phpmyadmin/issues/16836
-     */
+    /** @see https://github.com/phpmyadmin/phpmyadmin/issues/16836 */
     public function testBuildValueDisplayNoTrainlingSpaces(): void
     {
         $output = $this->callFunction(
@@ -1018,7 +1013,7 @@ class ResultsTest extends AbstractTestCase
                 'my_class',
                 false,
                 '  special value  ',
-            ]
+            ],
         );
         $this->assertSame('<td class="text-start my_class">  special value  </td>' . "\n", $output);
         $output = $this->callFunction(
@@ -1029,7 +1024,7 @@ class ResultsTest extends AbstractTestCase
                 'my_class',
                 false,
                 '0x11e6ac0cfb1e8bf3bf48b827ebdafb0b',
-            ]
+            ],
         );
         $this->assertSame('<td class="text-start my_class">0x11e6ac0cfb1e8bf3bf48b827ebdafb0b</td>' . "\n", $output);
         $output = $this->callFunction(
@@ -1040,11 +1035,11 @@ class ResultsTest extends AbstractTestCase
                 'my_class',
                 true,// condition mode
                 '0x11e6ac0cfb1e8bf3bf48b827ebdafb0b',
-            ]
+            ],
         );
         $this->assertSame(
             '<td class="text-start my_class condition">0x11e6ac0cfb1e8bf3bf48b827ebdafb0b</td>' . "\n",
-            $output
+            $output,
         );
     }
 
@@ -1070,15 +1065,13 @@ class ResultsTest extends AbstractTestCase
         $this->assertSame('P', $_SESSION['tmpval']['pftext']);
     }
 
-    /**
-     * @dataProvider providerSetConfigParamsForDisplayTable
-     */
+    /** @dataProvider providerSetConfigParamsForDisplayTable */
     public function testSetConfigParamsForDisplayTable(
         array $session,
         array $get,
         array $post,
         array $request,
-        array $expected
+        array $expected,
     ): void {
         $_SESSION = $session;
         $_GET = $get;
@@ -1322,7 +1315,7 @@ class ResultsTest extends AbstractTestCase
             new FieldMetadata(
                 MYSQLI_TYPE_DECIMAL,
                 MYSQLI_PRI_KEY_FLAG | MYSQLI_NUM_FLAG | MYSQLI_NOT_NULL_FLAG,
-                (object) ['name' => 'id']
+                (object) ['name' => 'id'],
             ),
             new FieldMetadata(MYSQLI_TYPE_STRING, MYSQLI_NOT_NULL_FLAG, (object) ['name' => 'name']),
             new FieldMetadata(MYSQLI_TYPE_DATETIME, MYSQLI_NOT_NULL_FLAG, (object) ['name' => 'datetimefield']),
@@ -1345,7 +1338,7 @@ class ResultsTest extends AbstractTestCase
             null,
             null,
             true,
-            false
+            false,
         );
 
         $_SESSION = ['tmpval' => [], ' PMA_token ' => 'token'];
@@ -1472,7 +1465,7 @@ class ResultsTest extends AbstractTestCase
             'sql_query_message' => Generator::getMessage(
                 Message::success('Showing rows 0 -  2 (3 total, Query took 1.2340 seconds.)'),
                 $query,
-                'success'
+                'success',
             ),
             'navigation' => [
                 'page_selector' => '',
@@ -1602,7 +1595,7 @@ class ResultsTest extends AbstractTestCase
             new FieldMetadata(
                 MYSQLI_TYPE_LONG,
                 MYSQLI_NUM_FLAG | MYSQLI_NOT_NULL_FLAG,
-                (object) ['name' => 'Rows']
+                (object) ['name' => 'Rows'],
             ),
             new FieldMetadata(MYSQLI_TYPE_STRING, MYSQLI_NOT_NULL_FLAG, (object) ['name' => 'name']),
         ];
@@ -1626,7 +1619,7 @@ class ResultsTest extends AbstractTestCase
             null,
             null,
             true,
-            true
+            true,
         );
 
         $_SESSION = ['tmpval' => [], ' PMA_token ' => 'token'];
@@ -1728,7 +1721,7 @@ class ResultsTest extends AbstractTestCase
             'sql_query_message' => Generator::getMessage(
                 Message::success('Showing rows 0 -  1 (2 total, Query took 1.2340 seconds.)'),
                 $query,
-                'success'
+                'success',
             ),
             'navigation' => [
                 'page_selector' => '',
@@ -1806,10 +1799,8 @@ class ResultsTest extends AbstractTestCase
         $this->assertEquals($tableTemplate, $actual);
     }
 
-    /**
-     * @return array[]
-     */
-    public function dataProviderSortOrder(): array
+    /** @return array<string, array{string, string, int}> */
+    public static function dataProviderSortOrder(): array
     {
         return [
             'Default date' => [
@@ -1890,13 +1881,11 @@ class ResultsTest extends AbstractTestCase
         ];
     }
 
-    /**
-     * @dataProvider dataProviderSortOrder
-     */
+    /** @dataProvider dataProviderSortOrder */
     public function testGetSingleAndMultiSortUrls(
         string $orderSetting,
         string $querySortDirection,
-        int $metaType
+        int $metaType,
     ): void {
         $GLOBALS['cfg']['Order'] = $orderSetting;
 
@@ -1911,7 +1900,7 @@ class ResultsTest extends AbstractTestCase
                 'FoundedIn',
                 ['ASC'], // sortDirection,
                 new FieldMetadata($metaType, 0, (object) []),
-            ]
+            ],
         );
 
         $this->assertSame([
@@ -1931,7 +1920,7 @@ class ResultsTest extends AbstractTestCase
                 'Code2',
                 ['ASC'], // sortDirection,
                 new FieldMetadata($metaType, 0, (object) []),
-            ]
+            ],
         );
 
         $this->assertSame([
@@ -1958,7 +1947,7 @@ class ResultsTest extends AbstractTestCase
                 'Code2',
                 ['DESC', 'ASC', 'ASC'], // sortDirection,
                 new FieldMetadata($metaType, 0, (object) []),
-            ]
+            ],
         );
 
         $this->assertSame([

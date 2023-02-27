@@ -15,20 +15,17 @@ use PhpMyAdmin\Tests\Stubs\DbiDummy;
 use PhpMyAdmin\Tests\Stubs\ResponseRenderer;
 use PhpMyAdmin\Tracking;
 
-/**
- * @covers \PhpMyAdmin\Controllers\Table\TrackingController
- */
+/** @covers \PhpMyAdmin\Controllers\Table\TrackingController */
 class TrackingControllerTest extends AbstractTestCase
 {
-    /** @var DatabaseInterface */
-    protected $dbi;
+    protected DatabaseInterface $dbi;
 
-    /** @var DbiDummy */
-    protected $dummyDbi;
+    protected DbiDummy $dummyDbi;
 
     protected function setUp(): void
     {
         parent::setUp();
+
         $this->dummyDbi = $this->createDbiDummy();
         $this->dbi = $this->createDatabaseInterface($this->dummyDbi);
         $GLOBALS['dbi'] = $this->dbi;
@@ -51,7 +48,7 @@ class TrackingControllerTest extends AbstractTestCase
         (new TrackingController(
             $response,
             $template,
-            new Tracking(new SqlQueryForm($template, $this->dbi), $template, new Relation($this->dbi), $this->dbi)
+            new Tracking(new SqlQueryForm($template, $this->dbi), $template, new Relation($this->dbi), $this->dbi),
         ))($this->createStub(ServerRequest::class));
 
         $main = $template->render('table/tracking/main', [

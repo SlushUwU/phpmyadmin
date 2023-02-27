@@ -15,20 +15,17 @@ use PhpMyAdmin\Tests\Stubs\ResponseRenderer as ResponseStub;
 use PhpMyAdmin\Transformations;
 use ReflectionClass;
 
-/**
- * @covers \PhpMyAdmin\Controllers\Table\Structure\ChangeController
- */
+/** @covers \PhpMyAdmin\Controllers\Table\Structure\ChangeController */
 class ChangeControllerTest extends AbstractTestCase
 {
-    /** @var DatabaseInterface */
-    protected $dbi;
+    protected DatabaseInterface $dbi;
 
-    /** @var DbiDummy */
-    protected $dummyDbi;
+    protected DbiDummy $dummyDbi;
 
     protected function setUp(): void
     {
         parent::setUp();
+
         $this->dummyDbi = $this->createDbiDummy();
         $this->dbi = $this->createDatabaseInterface($this->dummyDbi);
         $GLOBALS['dbi'] = $this->dbi;
@@ -53,7 +50,7 @@ class ChangeControllerTest extends AbstractTestCase
             $response,
             new Template(),
             $this->dbi,
-            new ColumnsDefinition($this->dbi, new Relation($this->dbi), new Transformations())
+            new ColumnsDefinition($this->dbi, new Relation($this->dbi), new Transformations()),
         );
 
         $method->invokeArgs($ctrl, [[$_REQUEST['field']]]);
@@ -67,7 +64,7 @@ class ChangeControllerTest extends AbstractTestCase
             . '    title="Column"' . "\n"
             . '    size="10"' . "\n"
             . '    value="_id">' . "\n",
-            $actual
+            $actual,
         );
         $this->assertStringContainsString('id="enumEditorModal"', $actual);
     }

@@ -29,7 +29,7 @@ class Replication
      *
      * @return string the extracted part
      */
-    public function extractDbOrTable($string, $what = 'db')
+    public function extractDbOrTable($string, $what = 'db'): string
     {
         $list = explode('.', $string);
         if ($what === 'db') {
@@ -89,7 +89,7 @@ class Replication
         array $pos,
         bool $stop,
         bool $start,
-        int $connectionType
+        int $connectionType,
     ): ResultInterface|false {
         if ($stop) {
             $this->replicaControl('STOP', null, $connectionType);
@@ -103,7 +103,7 @@ class Replication
             'MASTER_PASSWORD=' . $this->dbi->quoteString($password) . ',' .
             'MASTER_LOG_FILE=' . $this->dbi->quoteString($pos['File']) . ',' .
             'MASTER_LOG_POS=' . $pos['Position'] . ';',
-            $connectionType
+            $connectionType,
         );
 
         if ($start) {
@@ -127,7 +127,7 @@ class Replication
         $password,
         $host = null,
         $port = null,
-        $socket = null
+        $socket = null,
     ): Connection|null {
         $server = [];
         $server['user'] = $user;
@@ -155,7 +155,7 @@ class Replication
         $data = $this->dbi->fetchResult('SHOW MASTER STATUS', null, null, $connectionType);
         $output = [];
 
-        if (! empty($data)) {
+        if ($data !== []) {
             $output['File'] = $data[0]['File'];
             $output['Position'] = $data[0]['Position'];
         }

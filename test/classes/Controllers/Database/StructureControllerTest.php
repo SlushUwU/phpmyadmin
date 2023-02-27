@@ -16,22 +16,16 @@ use PhpMyAdmin\Tests\Stubs\ResponseRenderer as ResponseStub;
 use ReflectionClass;
 use ReflectionException;
 
-/**
- * @covers \PhpMyAdmin\Controllers\Database\StructureController
- */
+/** @covers \PhpMyAdmin\Controllers\Database\StructureController */
 class StructureControllerTest extends AbstractTestCase
 {
-    /** @var ResponseStub */
-    private $response;
+    private ResponseStub $response;
 
-    /** @var Relation */
-    private $relation;
+    private Relation $relation;
 
-    /** @var Replication */
-    private $replication;
+    private Replication $replication;
 
-    /** @var Template */
-    private $template;
+    private Template $template;
 
     /**
      * Prepares environment for the test.
@@ -39,7 +33,9 @@ class StructureControllerTest extends AbstractTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
         parent::setTheme();
+
         $GLOBALS['text_dir'] = 'ltr';
         $GLOBALS['server'] = 1;
         $GLOBALS['cfg']['Server']['DisableIS'] = false;
@@ -82,7 +78,7 @@ class StructureControllerTest extends AbstractTestCase
             $this->template,
             $this->relation,
             $this->replication,
-            $GLOBALS['dbi']
+            $GLOBALS['dbi'],
         );
         // Showing statistics
         $property = $class->getProperty('isShowStats');
@@ -101,7 +97,7 @@ class StructureControllerTest extends AbstractTestCase
             [
                 $currentTable,
                 10,
-            ]
+            ],
         );
 
         $this->assertTrue($currentTable['COUNTED']);
@@ -114,7 +110,7 @@ class StructureControllerTest extends AbstractTestCase
             [
                 $currentTable,
                 10,
-            ]
+            ],
         );
 
         $this->assertFalse($currentTable['COUNTED']);
@@ -125,7 +121,7 @@ class StructureControllerTest extends AbstractTestCase
             $this->template,
             $this->relation,
             $this->replication,
-            $GLOBALS['dbi']
+            $GLOBALS['dbi'],
         );
 
         $currentTable['ENGINE'] = 'InnoDB';
@@ -152,7 +148,7 @@ class StructureControllerTest extends AbstractTestCase
             $this->template,
             $this->relation,
             $this->replication,
-            $GLOBALS['dbi']
+            $GLOBALS['dbi'],
         );
         // Showing statistics
         $property = $class->getProperty('isShowStats');
@@ -176,7 +172,7 @@ class StructureControllerTest extends AbstractTestCase
                 0,
                 0,
                 0,
-            ]
+            ],
         );
         $this->assertEquals(6, $currentTable['Rows']);
         $this->assertEquals(16384, $sumSize);
@@ -193,7 +189,7 @@ class StructureControllerTest extends AbstractTestCase
                 0,
                 0,
                 0,
-            ]
+            ],
         );
         $this->assertEquals(0, $overheadSize);
 
@@ -202,7 +198,7 @@ class StructureControllerTest extends AbstractTestCase
             $this->template,
             $this->relation,
             $this->replication,
-            $GLOBALS['dbi']
+            $GLOBALS['dbi'],
         );
         [$currentTable, , , , , , $sumSize] = $method->invokeArgs(
             $controller,
@@ -214,7 +210,7 @@ class StructureControllerTest extends AbstractTestCase
                 0,
                 0,
                 0,
-            ]
+            ],
         );
         $this->assertEquals(0, $sumSize);
 
@@ -223,7 +219,7 @@ class StructureControllerTest extends AbstractTestCase
             $this->template,
             $this->relation,
             $this->replication,
-            $GLOBALS['dbi']
+            $GLOBALS['dbi'],
         );
         [$currentTable] = $method->invokeArgs(
             $controller,
@@ -235,7 +231,7 @@ class StructureControllerTest extends AbstractTestCase
                 0,
                 0,
                 0,
-            ]
+            ],
         );
         $this->assertArrayNotHasKey('Row', $currentTable);
     }
@@ -253,24 +249,24 @@ class StructureControllerTest extends AbstractTestCase
             $this->template,
             $this->relation,
             $this->replication,
-            $GLOBALS['dbi']
+            $GLOBALS['dbi'],
         );
 
         // When parameter $db is empty
         $this->assertFalse(
-            $method->invokeArgs($controller, [[], 'table'])
+            $method->invokeArgs($controller, [[], 'table']),
         );
 
         // Correct parameter
         $tables = ['db.table'];
         $this->assertTrue(
-            $method->invokeArgs($controller, [$tables, 'table'])
+            $method->invokeArgs($controller, [$tables, 'table']),
         );
 
         // Table not in database
         $tables = ['db.tab1e'];
         $this->assertFalse(
-            $method->invokeArgs($controller, [$tables, 'table'])
+            $method->invokeArgs($controller, [$tables, 'table']),
         );
     }
 
@@ -287,7 +283,7 @@ class StructureControllerTest extends AbstractTestCase
             $this->template,
             $this->relation,
             $this->replication,
-            $GLOBALS['dbi']
+            $GLOBALS['dbi'],
         );
 
         $_SESSION['tmpval']['favoriteTables'][$GLOBALS['server']] = [
@@ -298,17 +294,15 @@ class StructureControllerTest extends AbstractTestCase
         ];
 
         $this->assertFalse(
-            $method->invokeArgs($controller, [''])
+            $method->invokeArgs($controller, ['']),
         );
 
         $this->assertTrue(
-            $method->invokeArgs($controller, ['table'])
+            $method->invokeArgs($controller, ['table']),
         );
     }
 
-    /**
-     * @throws ReflectionException
-     */
+    /** @throws ReflectionException */
     public function testDisplayTableList(): void
     {
         $class = new ReflectionClass(StructureController::class);
@@ -319,7 +313,7 @@ class StructureControllerTest extends AbstractTestCase
             $this->template,
             $this->relation,
             $this->replication,
-            $GLOBALS['dbi']
+            $GLOBALS['dbi'],
         );
         // Showing statistics
         $class = new ReflectionClass(StructureController::class);
@@ -365,7 +359,9 @@ class StructureControllerTest extends AbstractTestCase
     public function testGetValuesForMroongaTable(): void
     {
         parent::loadContainerBuilder();
+
         parent::loadDbiIntoContainerBuilder();
+
         $GLOBALS['db'] = 'testdb';
         $GLOBALS['table'] = 'mytable';
 
@@ -389,8 +385,8 @@ class StructureControllerTest extends AbstractTestCase
                 [
                     [],
                     0,
-                ]
-            )
+                ],
+            ),
         );
 
         // Enable stats
@@ -399,7 +395,7 @@ class StructureControllerTest extends AbstractTestCase
             $structureController,
             StructureController::class,
             'getDatabaseInfo',
-            [$this->createStub(ServerRequest::class)]
+            [$this->createStub(ServerRequest::class)],
         );
 
         $this->assertSame(
@@ -422,8 +418,8 @@ class StructureControllerTest extends AbstractTestCase
                         'Index_length' => 60,
                     ],
                     0,
-                ]
-            )
+                ],
+            ),
         );
 
         $this->assertSame(
@@ -446,8 +442,8 @@ class StructureControllerTest extends AbstractTestCase
                         'Index_length' => 60,
                     ],
                     75,
-                ]
-            )
+                ],
+            ),
         );
     }
 }

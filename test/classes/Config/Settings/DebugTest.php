@@ -10,13 +10,11 @@ use PHPUnit\Framework\TestCase;
 use function array_keys;
 use function array_merge;
 
-/**
- * @covers \PhpMyAdmin\Config\Settings\Debug
- */
+/** @covers \PhpMyAdmin\Config\Settings\Debug */
 class DebugTest extends TestCase
 {
     /** @var array<string, bool> */
-    private $defaultValues = ['sql' => false, 'sqllog' => false, 'demo' => false, 'simple2fa' => false];
+    private array $defaultValues = ['sql' => false, 'sqllog' => false, 'demo' => false, 'simple2fa' => false];
 
     /**
      * @param mixed[][] $values

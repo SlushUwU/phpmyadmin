@@ -26,35 +26,25 @@ use function rawurldecode;
  */
 class ExportRelationSchema
 {
-    /** @var bool */
-    protected $showColor = false;
+    protected bool $showColor = false;
 
-    /** @var bool */
-    protected $tableDimension = false;
+    protected bool $tableDimension = false;
 
-    /** @var bool */
-    protected $sameWide = false;
+    protected bool $sameWide = false;
 
-    /** @var bool */
-    protected $showKeys = false;
+    protected bool $showKeys = false;
 
-    /** @var string */
-    protected $orientation = 'L';
+    protected string $orientation = 'L';
 
-    /** @var string */
-    protected $paper = 'A4';
+    protected string $paper = 'A4';
 
-    /** @var int */
-    protected $pageNumber = 0;
+    protected int $pageNumber = 0;
 
-    /** @var bool */
-    protected $offline = false;
+    protected bool $offline = false;
 
     protected Relation $relation;
 
-    /**
-     * @param T $diagram
-     */
+    /** @param T $diagram */
     public function __construct(protected DatabaseName $db, protected $diagram)
     {
         $this->setPageNumber((int) $_REQUEST['page_number']);
@@ -77,7 +67,7 @@ class ExportRelationSchema
      *
      * @return int schema page number
      */
-    public function getPageNumber()
+    public function getPageNumber(): int
     {
         return $this->pageNumber;
     }
@@ -169,7 +159,7 @@ class ExportRelationSchema
      *
      * @return string orientation
      */
-    public function getOrientation()
+    public function getOrientation(): string
     {
         return $this->orientation;
     }
@@ -189,7 +179,7 @@ class ExportRelationSchema
      *
      * @return string paper size
      */
-    public function getPaper()
+    public function getPaper(): string
     {
         return $this->paper;
     }

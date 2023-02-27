@@ -14,22 +14,21 @@ use PhpMyAdmin\Tests\Stubs\ResponseRenderer;
 
 use function __;
 
-/**
- * @covers \PhpMyAdmin\Controllers\Server\DatabasesController
- */
+/** @covers \PhpMyAdmin\Controllers\Server\DatabasesController */
 class DatabasesControllerTest extends AbstractTestCase
 {
-    /** @var DatabaseInterface */
-    protected $dbi;
+    protected DatabaseInterface $dbi;
 
-    /** @var DbiDummy */
-    protected $dummyDbi;
+    protected DbiDummy $dummyDbi;
 
     protected function setUp(): void
     {
         parent::setUp();
+
         parent::setGlobalConfig();
+
         parent::setTheme();
+
         $this->dummyDbi = $this->createDbiDummy();
         $this->dbi = $this->createDatabaseInterface($this->dummyDbi);
         $GLOBALS['dbi'] = $this->dbi;
@@ -52,13 +51,13 @@ class DatabasesControllerTest extends AbstractTestCase
         $controller = new DatabasesController(
             $response,
             $template,
-            $GLOBALS['dbi']
+            $GLOBALS['dbi'],
         );
 
         $this->dummyDbi->addResult(
             'SELECT `SCHEMA_NAME` FROM `INFORMATION_SCHEMA`.`SCHEMATA`',
             [['sakila'], ['employees']],
-            ['SCHEMA_NAME']
+            ['SCHEMA_NAME'],
         );
         $this->dummyDbi->addSelectDb('mysql');
         $controller($this->createStub(ServerRequest::class));
@@ -86,7 +85,7 @@ class DatabasesControllerTest extends AbstractTestCase
         $controller = new DatabasesController(
             $response,
             $template,
-            $GLOBALS['dbi']
+            $GLOBALS['dbi'],
         );
 
         $GLOBALS['cfg']['ShowCreateDb'] = true;

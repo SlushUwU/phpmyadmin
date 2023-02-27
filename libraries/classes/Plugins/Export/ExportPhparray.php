@@ -28,9 +28,7 @@ use function var_export;
  */
 class ExportPhparray extends ExportPlugin
 {
-    /**
-     * @psalm-return non-empty-lowercase-string
-     */
+    /** @psalm-return non-empty-lowercase-string */
     public function getName(): string
     {
         return 'phparray';
@@ -67,10 +65,8 @@ class ExportPhparray extends ExportPlugin
      * Removes end of comment from a string
      *
      * @param string $string String to replace
-     *
-     * @return string
      */
-    public function commentString($string)
+    public function commentString($string): string
     {
         return strtr($string, '*/', '-');
     }
@@ -85,7 +81,7 @@ class ExportPhparray extends ExportPlugin
             . '/**' . "\n"
             . ' * Export to PHP Array plugin for PHPMyAdmin' . "\n"
             . ' * @version ' . Version::VERSION . "\n"
-            . ' */' . "\n\n"
+            . ' */' . "\n\n",
         );
 
         return true;
@@ -114,7 +110,7 @@ class ExportPhparray extends ExportPlugin
         $this->export->outputHandler(
             '/**' . "\n"
             . ' * Database ' . $this->commentString(Util::backquote($dbAlias))
-            . "\n" . ' */' . "\n"
+            . "\n" . ' */' . "\n",
         );
 
         return true;
@@ -156,7 +152,7 @@ class ExportPhparray extends ExportPlugin
         $table,
         $errorUrl,
         $sqlQuery,
-        array $aliases = []
+        array $aliases = [],
     ): bool {
         $db_alias = $db;
         $table_alias = $table;
@@ -165,7 +161,7 @@ class ExportPhparray extends ExportPlugin
         $result = $GLOBALS['dbi']->query(
             $sqlQuery,
             Connection::TYPE_USER,
-            DatabaseInterface::QUERY_UNBUFFERED
+            DatabaseInterface::QUERY_UNBUFFERED,
         );
 
         $columns_cnt = $result->numFields();

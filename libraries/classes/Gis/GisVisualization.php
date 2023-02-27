@@ -36,13 +36,12 @@ use const PNG_ALL_FILTERS;
 class GisVisualization
 {
     /** @var array   Raw data for the visualization */
-    private $data;
+    private array $data;
 
-    /** @var string */
-    private $modifiedSql;
+    private string $modifiedSql = '';
 
     /** @var array   Set of default settings values are here. */
-    private $settings = [
+    private array $settings = [
         // Array of colors to be used for GIS visualizations.
         'colors' => [
             [176, 46, 224],
@@ -71,14 +70,14 @@ class GisVisualization
     ];
 
     /** @var array   Options that the user has specified. */
-    private $userSpecifiedSettings = null;
+    private array $userSpecifiedSettings;
 
     /**
      * Returns the settings array
      *
      * @return array the settings array
      */
-    public function getSettings()
+    public function getSettings(): array
     {
         return $this->settings;
     }
@@ -90,10 +89,8 @@ class GisVisualization
      * @param array  $options   Users specified options
      * @param int    $row       number of rows
      * @param int    $pos       start position
-     *
-     * @return GisVisualization
      */
-    public static function get($sql_query, array $options, $row, $pos)
+    public static function get($sql_query, array $options, $row, $pos): GisVisualization
     {
         return new GisVisualization($sql_query, $options, $row, $pos);
     }
@@ -104,10 +101,8 @@ class GisVisualization
      * @param array $data    Raw data, if set, parameters other than $options will be
      *                       ignored
      * @param array $options Users specified options
-     *
-     * @return GisVisualization
      */
-    public static function getByData(array $data, array $options)
+    public static function getByData(array $data, array $options): GisVisualization
     {
         return new GisVisualization(null, $options, null, null, $data);
     }
@@ -164,7 +159,7 @@ class GisVisualization
      *
      * @return string the modified sql query.
      */
-    private function modifySqlQuery($sql_query, $rows, $pos)
+    private function modifySqlQuery($sql_query, $rows, $pos): string
     {
         $isMariaDb = $this->userSpecifiedSettings['isMariaDB'] === true;
         $modified_query = 'SELECT ';
@@ -238,10 +233,6 @@ class GisVisualization
      */
     private function handleOptions(): void
     {
-        if ($this->userSpecifiedSettings === null) {
-            return;
-        }
-
         $this->settings = array_merge($this->settings, $this->userSpecifiedSettings);
     }
 
@@ -253,7 +244,7 @@ class GisVisualization
      *
      * @return string the sanitized file name
      */
-    private function sanitizeName($file_name, $ext)
+    private function sanitizeName($file_name, $ext): string
     {
         $file_name = Sanitize::sanitizeFilename($file_name);
 
@@ -287,7 +278,7 @@ class GisVisualization
      *
      * @return string the generated image resource
      */
-    private function svg()
+    private function svg(): string
     {
         $this->init();
 
@@ -312,7 +303,7 @@ class GisVisualization
      *
      * @return string the visualization as a SVG
      */
-    public function asSVG()
+    public function asSVG(): string
     {
         return $this->svg();
     }
@@ -341,7 +332,7 @@ class GisVisualization
         $image = ImageWrapper::create(
             $this->settings['width'],
             $this->settings['height'],
-            ['red' => 229, 'green' => 229, 'blue' => 229]
+            ['red' => 229, 'green' => 229, 'blue' => 229],
         );
         if ($image === null) {
             return null;
@@ -359,7 +350,7 @@ class GisVisualization
      *
      * @return string the visualization as a PNG
      */
-    public function asPng()
+    public function asPng(): string
     {
         $image = $this->png();
         if ($image === null) {
@@ -400,7 +391,7 @@ class GisVisualization
      *
      * @todo Should return JSON to avoid eval() in gis_data_editor.js
      */
-    public function asOl()
+    public function asOl(): string
     {
         $this->init();
         $scale_data = $this->scaleDataSet($this->data);
@@ -475,7 +466,7 @@ class GisVisualization
      *
      * @return string File
      */
-    public function toImage($format)
+    public function toImage($format): string
     {
         if ($format === 'svg') {
             return $this->asSVG();
@@ -516,7 +507,7 @@ class GisVisualization
      *
      * @return array an array containing the scale, x and y offsets
      */
-    private function scaleDataSet(array $data)
+    private function scaleDataSet(array $data): array
     {
         $min_max = null;
         $border = 15;
@@ -593,8 +584,8 @@ class GisVisualization
         array $data,
         array $scale_data,
         $format,
-        ImageWrapper|TCPDF|string|false $results
-    ) {
+        ImageWrapper|TCPDF|string|false $results,
+    ): mixed {
         /** @var int[][] $colors */
         $colors = $this->settings['colors'];
         $color_index = 0;
@@ -627,7 +618,7 @@ class GisVisualization
                     $row[$this->settings['spatialColumn']],
                     $label,
                     $color,
-                    $scale_data
+                    $scale_data,
                 );
             } elseif ($format === 'png') {
                 $results = $gis_obj->prepareRowAsPng(
@@ -635,7 +626,7 @@ class GisVisualization
                     $label,
                     $color,
                     $scale_data,
-                    $results
+                    $results,
                 );
             } elseif ($format === 'pdf' && $results instanceof TCPDF) {
                 $results = $gis_obj->prepareRowAsPdf(
@@ -643,7 +634,7 @@ class GisVisualization
                     $label,
                     $color,
                     $scale_data,
-                    $results
+                    $results,
                 );
             } elseif ($format === 'ol') {
                 $results .= $gis_obj->prepareRowAsOl(
@@ -651,7 +642,7 @@ class GisVisualization
                     (int) $row['srid'],
                     $label,
                     $color,
-                    $scale_data
+                    $scale_data,
                 );
             }
 

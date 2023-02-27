@@ -17,12 +17,12 @@ use function unlink;
  */
 class ZipExtensionTest extends AbstractTestCase
 {
-    /** @var ZipExtension */
-    private $zipExtension;
+    private ZipExtension $zipExtension;
 
     protected function setUp(): void
     {
         parent::setUp();
+
         $this->zipExtension = new ZipExtension(new ZipArchive());
     }
 
@@ -40,7 +40,7 @@ class ZipExtensionTest extends AbstractTestCase
     {
         $this->assertEquals(
             $this->zipExtension->getContents($file, $specific_entry),
-            $output
+            $output,
         );
     }
 
@@ -88,11 +88,11 @@ class ZipExtensionTest extends AbstractTestCase
      *
      * @dataProvider provideTestFindFile
      */
-    public function testFindFile(string $file, string $file_regexp, $output): void
+    public function testFindFile(string $file, string $file_regexp, string|bool $output): void
     {
         $this->assertEquals(
             $this->zipExtension->findFile($file, $file_regexp),
-            $output
+            $output,
         );
     }
 
@@ -125,7 +125,7 @@ class ZipExtensionTest extends AbstractTestCase
     {
         $this->assertEquals(
             $this->zipExtension->getNumberOfFiles('./test/test_data/test.zip'),
-            1
+            1,
         );
     }
 
@@ -137,15 +137,15 @@ class ZipExtensionTest extends AbstractTestCase
         $this->assertFalse(
             $this->zipExtension->extract(
                 './test/test_data/test.zip',
-                'wrongName'
-            )
+                'wrongName',
+            ),
         );
         $this->assertEquals(
             "TEST FILE\n",
             $this->zipExtension->extract(
                 './test/test_data/test.zip',
-                'test.file'
-            )
+                'test.file',
+            ),
         );
     }
 
@@ -155,8 +155,8 @@ class ZipExtensionTest extends AbstractTestCase
     public function testCreateSingleFile(): void
     {
         $file = $this->zipExtension->createFile('Test content', 'test.txt');
-        $this->assertNotEmpty($file);
         $this->assertIsString($file);
+        $this->assertNotEmpty($file);
 
         $tmp = tempnam('./', 'zip-test');
         $this->assertNotFalse($tmp);
@@ -164,7 +164,7 @@ class ZipExtensionTest extends AbstractTestCase
 
         $zip = new ZipArchive();
         $this->assertTrue(
-            $zip->open($tmp)
+            $zip->open($tmp),
         );
 
         $this->assertEquals(0, $zip->locateName('test.txt'));
@@ -184,8 +184,8 @@ class ZipExtensionTest extends AbstractTestCase
                 [
                     'name1.txt',
                     'name2.txt',
-                ]
-            )
+                ],
+            ),
         );
     }
 
@@ -202,10 +202,10 @@ class ZipExtensionTest extends AbstractTestCase
             [
                 'name1.txt',
                 'name2.txt',
-            ]
+            ],
         );
-        $this->assertNotEmpty($file);
         $this->assertIsString($file);
+        $this->assertNotEmpty($file);
 
         $tmp = tempnam('./', 'zip-test');
         $this->assertNotFalse($tmp);
@@ -213,7 +213,7 @@ class ZipExtensionTest extends AbstractTestCase
 
         $zip = new ZipArchive();
         $this->assertTrue(
-            $zip->open($tmp)
+            $zip->open($tmp),
         );
 
         $this->assertEquals(0, $zip->locateName('name1.txt'));

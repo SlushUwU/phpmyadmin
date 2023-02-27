@@ -34,10 +34,8 @@ class CentralColumns
 {
     /**
      * Current user
-     *
-     * @var string
      */
-    private $user;
+    private string $user;
 
     /**
      * Number of rows displayed when browsing a result set
@@ -46,10 +44,8 @@ class CentralColumns
 
     /**
      * Which editor should be used for CHAR/VARCHAR fields
-     *
-     * @var string
      */
-    private $charEditing;
+    private string $charEditing;
 
     /**
      * Disable use of INFORMATION_SCHEMA
@@ -58,8 +54,7 @@ class CentralColumns
 
     private Relation $relation;
 
-    /** @var Template */
-    public $template;
+    public Template $template;
 
     public function __construct(private DatabaseInterface $dbi)
     {
@@ -77,7 +72,7 @@ class CentralColumns
      *
      * @return array|bool the central_columns parameters for the current user
      */
-    public function getParams()
+    public function getParams(): array|bool
     {
         static $cfgCentralColumns = null;
 
@@ -179,7 +174,7 @@ class CentralColumns
     private function findExistingColNames(
         string $db,
         string $cols,
-        bool $allFields = false
+        bool $allFields = false,
     ): array {
         $cfgCentralColumns = $this->getParams();
         if (! is_array($cfgCentralColumns)) {
@@ -220,7 +215,7 @@ class CentralColumns
         string $column,
         array $def,
         string $db,
-        string $central_list_table
+        string $central_list_table,
     ): string {
         $type = '';
         $length = 0;
@@ -269,12 +264,12 @@ class CentralColumns
     public function syncUniqueColumns(
         array $field_select,
         bool $isTable = true,
-        string|null $table = null
-    ) {
+        string|null $table = null,
+    ): bool|Message {
         $cfgCentralColumns = $this->getParams();
         if (! is_array($cfgCentralColumns)) {
             return Message::error(
-                __('The configuration storage is not ready for the central list of columns feature.')
+                __('The configuration storage is not ready for the central list of columns feature.'),
             );
         }
 
@@ -332,15 +327,15 @@ class CentralColumns
             $message = Message::notice(
                 sprintf(
                     __(
-                        'Could not add %1$s as they already exist in central list!'
+                        'Could not add %1$s as they already exist in central list!',
                     ),
-                    htmlspecialchars($existingCols)
-                )
+                    htmlspecialchars($existingCols),
+                ),
             );
             $message->addMessage(
                 Message::notice(
-                    'Please remove them first from central list if you want to update above columns'
-                )
+                    'Please remove them first from central list if you want to update above columns',
+                ),
             );
         }
 
@@ -349,7 +344,7 @@ class CentralColumns
             if (! $this->dbi->tryQuery($query, Connection::TYPE_CONTROL)) {
                 $message = Message::error(__('Could not add columns!'));
                 $message->addMessage(
-                    Message::rawError($this->dbi->getError(Connection::TYPE_CONTROL))
+                    Message::rawError($this->dbi->getError(Connection::TYPE_CONTROL)),
                 );
                 break;
             }
@@ -373,12 +368,12 @@ class CentralColumns
     public function deleteColumnsFromList(
         string $database,
         array $field_select,
-        bool $isTable = true
-    ) {
+        bool $isTable = true,
+    ): bool|Message {
         $cfgCentralColumns = $this->getParams();
         if (! is_array($cfgCentralColumns)) {
             return Message::error(
-                __('The configuration storage is not ready for the central list of columns feature.')
+                __('The configuration storage is not ready for the central list of columns feature.'),
             );
         }
 
@@ -430,10 +425,10 @@ class CentralColumns
             $message = Message::notice(
                 sprintf(
                     __(
-                        'Couldn\'t remove Column(s) %1$s as they don\'t exist in central columns list!'
+                        'Couldn\'t remove Column(s) %1$s as they don\'t exist in central columns list!',
                     ),
-                    htmlspecialchars($colNotExist)
-                )
+                    htmlspecialchars($colNotExist),
+                ),
             );
         }
 
@@ -446,7 +441,7 @@ class CentralColumns
             $message = Message::error(__('Could not remove columns!'));
             $message->addHtml('<br>' . htmlspecialchars($cols) . '<br>');
             $message->addMessage(
-                Message::rawError($this->dbi->getError(Connection::TYPE_CONTROL))
+                Message::rawError($this->dbi->getError(Connection::TYPE_CONTROL)),
             );
         }
 
@@ -464,8 +459,8 @@ class CentralColumns
      */
     public function makeConsistentWithList(
         string $db,
-        array $selected_tables
-    ) {
+        array $selected_tables,
+    ): bool|Message {
         $message = true;
         foreach ($selected_tables as $table) {
             $query = 'ALTER TABLE ' . Util::backquote($table);
@@ -536,7 +531,7 @@ class CentralColumns
     public function getFromTable(
         string $db,
         string $table,
-        bool $allFields = false
+        bool $allFields = false,
     ): array {
         $cfgCentralColumns = $this->getParams();
         if ($cfgCentralColumns === false || $cfgCentralColumns === []) {
@@ -581,12 +576,12 @@ class CentralColumns
         int $col_isNull,
         string $collation,
         string $col_extra,
-        string $col_default
-    ) {
+        string $col_default,
+    ): bool|Message {
         $cfgCentralColumns = $this->getParams();
         if (! is_array($cfgCentralColumns)) {
             return Message::error(
-                __('The configuration storage is not ready for the central list of columns feature.')
+                __('The configuration storage is not ready for the central list of columns feature.'),
             );
         }
 
@@ -634,7 +629,7 @@ class CentralColumns
      *
      * @return true|Message
      */
-    public function updateMultipleColumn(array $params)
+    public function updateMultipleColumn(array $params): bool|Message
     {
         $columnDefault = $params['field_default_type'];
         $columnIsNull = [];
@@ -660,7 +655,7 @@ class CentralColumns
                 $columnIsNull[$i],
                 $params['field_collation'][$i],
                 $columnExtra[$i],
-                $columnDefault[$i]
+                $columnDefault[$i],
             );
             if (! is_bool($message)) {
                 return $message;
@@ -863,9 +858,7 @@ class CentralColumns
         return -1;
     }
 
-    /**
-     * @return string[]
-     */
+    /** @return string[] */
     public function getColumnsNotInCentralList(string $db, string $table): array
     {
         $existingColumns = $this->getFromTable($db, $table);
@@ -890,7 +883,7 @@ class CentralColumns
         string $db,
         int $total_rows,
         int $pos,
-        string $text_dir
+        string $text_dir,
     ): array {
         $max_rows = $this->maxRows;
         $attribute_types = $this->dbi->types->getAttributes();
@@ -901,7 +894,7 @@ class CentralColumns
             'pos',
             $this->maxRows,
             $tn_pageNow,
-            $tn_nbTotalPage
+            $tn_nbTotalPage,
         ) : '';
         $this->dbi->selectDb($db);
         $tables = $this->dbi->getTables($db);

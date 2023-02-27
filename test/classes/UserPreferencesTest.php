@@ -16,9 +16,7 @@ use PhpMyAdmin\UserPreferences;
 use function json_encode;
 use function time;
 
-/**
- * @covers \PhpMyAdmin\UserPreferences
- */
+/** @covers \PhpMyAdmin\UserPreferences */
 class UserPreferencesTest extends AbstractNetworkTestCase
 {
     /**
@@ -27,6 +25,7 @@ class UserPreferencesTest extends AbstractNetworkTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
         $GLOBALS['dbi'] = $this->createDatabaseInterface();
         $GLOBALS['server'] = 0;
         $GLOBALS['text_dir'] = 'ltr';
@@ -54,7 +53,7 @@ class UserPreferencesTest extends AbstractNetworkTestCase
                     1 => ['hide_db' => 'testval123'],
                 ],
             ],
-            $_SESSION['ConfigFile' . $GLOBALS['server']]
+            $_SESSION['ConfigFile' . $GLOBALS['server']],
         );
     }
 
@@ -75,14 +74,14 @@ class UserPreferencesTest extends AbstractNetworkTestCase
 
         $this->assertEquals(
             [],
-            $result['config_data']
+            $result['config_data'],
         );
 
         $this->assertEqualsWithDelta(
             time(),
             $result['mtime'],
             2,
-            ''
+            '',
         );
 
         $this->assertEquals('session', $result['type']);
@@ -111,8 +110,8 @@ class UserPreferencesTest extends AbstractNetworkTestCase
                     [
                         'ts' => '123',
                         'config_data' => json_encode([1, 2]),
-                    ]
-                )
+                    ],
+                ),
             );
         $dbi->expects($this->any())
             ->method('quoteString')
@@ -132,7 +131,7 @@ class UserPreferencesTest extends AbstractNetworkTestCase
                 'mtime' => 123,
                 'type' => 'db',
             ],
-            $result
+            $result,
         );
     }
 
@@ -157,7 +156,7 @@ class UserPreferencesTest extends AbstractNetworkTestCase
 
         $this->assertEquals(
             [1],
-            $_SESSION['userconfig']['db']
+            $_SESSION['userconfig']['db'],
         );
 
         /* TODO: This breaks sometimes as there might be time difference! */
@@ -165,7 +164,7 @@ class UserPreferencesTest extends AbstractNetworkTestCase
             time(),
             $_SESSION['userconfig']['ts'],
             2,
-            ''
+            '',
         );
 
         $assert = true;
@@ -197,7 +196,7 @@ class UserPreferencesTest extends AbstractNetworkTestCase
         $dbi->expects($this->once())
             ->method('fetchValue')
             ->with($query1, 0, Connection::TYPE_CONTROL)
-            ->will($this->returnValue(true));
+            ->will($this->returnValue('1'));
 
         $dbi->expects($this->once())
             ->method('tryQuery')
@@ -253,7 +252,7 @@ class UserPreferencesTest extends AbstractNetworkTestCase
         $this->assertEquals(
             'Could not save configuration<br><br>err1'
             . '<br><br>The phpMyAdmin configuration storage database could not be accessed.',
-            $result->getMessage()
+            $result->getMessage(),
         );
     }
 
@@ -276,14 +275,14 @@ class UserPreferencesTest extends AbstractNetworkTestCase
                 'ErrorHandler/gather' => false,
                 'Servers/foobar' => '123',
                 'Server/hide_db' => true,
-            ]
+            ],
         );
 
         $this->assertEquals(
             [
                 'Server' => ['hide_db' => 1],
             ],
-            $result
+            $result,
         );
     }
 
@@ -296,14 +295,14 @@ class UserPreferencesTest extends AbstractNetworkTestCase
 
         $userPreferences = new UserPreferences($GLOBALS['dbi']);
         $result = $userPreferences->apply(
-            ['DBG/sql' => true]
+            ['DBG/sql' => true],
         );
 
         $this->assertEquals(
             [
                 'DBG' => ['sql' => true],
             ],
-            $result
+            $result,
         );
     }
 
@@ -327,15 +326,15 @@ class UserPreferencesTest extends AbstractNetworkTestCase
 
         $userPreferences = new UserPreferences($GLOBALS['dbi']);
         $this->assertTrue(
-            $userPreferences->persistOption('Server/hide_db', 'val', 'val')
+            $userPreferences->persistOption('Server/hide_db', 'val', 'val'),
         );
 
         $this->assertTrue(
-            $userPreferences->persistOption('Server/hide_db', 'val2', 'val')
+            $userPreferences->persistOption('Server/hide_db', 'val2', 'val'),
         );
 
         $this->assertTrue(
-            $userPreferences->persistOption('Server/hide_db2', 'val', 'val')
+            $userPreferences->persistOption('Server/hide_db2', 'val', 'val'),
         );
     }
 
@@ -357,7 +356,7 @@ class UserPreferencesTest extends AbstractNetworkTestCase
         $userPreferences->redirect(
             'file.html',
             ['a' => 'b'],
-            'h ash'
+            'h ash',
         );
     }
 
@@ -372,7 +371,7 @@ class UserPreferencesTest extends AbstractNetworkTestCase
         $userPreferences = new UserPreferences($GLOBALS['dbi']);
         $this->assertEquals(
             '',
-            $userPreferences->autoloadGetHeader()
+            $userPreferences->autoloadGetHeader(),
         );
 
         $this->assertTrue($_SESSION['userprefs_autoload']);
@@ -384,7 +383,7 @@ class UserPreferencesTest extends AbstractNetworkTestCase
 
         $this->assertStringContainsString(
             '<form action="' . Url::getFromRoute('/preferences/manage') . '" method="post" class="disableAjax">',
-            $result
+            $result,
         );
 
         $this->assertStringContainsString('<input type="hidden" name="token" value="token"', $result);

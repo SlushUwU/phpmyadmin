@@ -21,9 +21,7 @@ use function strtr;
 
 use const ENT_QUOTES;
 
-/**
- * @covers \PhpMyAdmin\Core
- */
+/** @covers \PhpMyAdmin\Core */
 class CoreTest extends AbstractNetworkTestCase
 {
     /**
@@ -32,8 +30,11 @@ class CoreTest extends AbstractNetworkTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
         parent::setTheme();
+
         parent::setLanguage();
+
         $GLOBALS['dbi'] = $this->createDatabaseInterface();
 
         $GLOBALS['server'] = 0;
@@ -76,72 +77,72 @@ class CoreTest extends AbstractNetworkTestCase
 
         $this->assertEquals(
             Core::arrayRead('int', $arr),
-            $arr['int']
+            $arr['int'],
         );
 
         $this->assertEquals(
             Core::arrayRead('str', $arr),
-            $arr['str']
+            $arr['str'],
         );
 
         $this->assertEquals(
             Core::arrayRead('arr/0', $arr),
-            $arr['arr'][0]
+            $arr['arr'][0],
         );
 
         $this->assertEquals(
             Core::arrayRead('arr/1', $arr),
-            $arr['arr'][1]
+            $arr['arr'][1],
         );
 
         $this->assertEquals(
             Core::arrayRead('arr/2', $arr),
-            $arr['arr'][2]
+            $arr['arr'][2],
         );
 
         $this->assertEquals(
             Core::arrayRead('sarr/arr1/0', $arr),
-            $arr['sarr']['arr1'][0]
+            $arr['sarr']['arr1'][0],
         );
 
         $this->assertEquals(
             Core::arrayRead('sarr/arr1/1', $arr),
-            $arr['sarr']['arr1'][1]
+            $arr['sarr']['arr1'][1],
         );
 
         $this->assertEquals(
             Core::arrayRead('sarr/arr1/2', $arr),
-            $arr['sarr']['arr1'][2]
+            $arr['sarr']['arr1'][2],
         );
 
         $this->assertEquals(
             Core::arrayRead('sarr/0/0', $arr),
-            $arr['sarr'][0][0]
+            $arr['sarr'][0][0],
         );
 
         $this->assertEquals(
             Core::arrayRead('sarr/0/1', $arr),
-            $arr['sarr'][0][1]
+            $arr['sarr'][0][1],
         );
 
         $this->assertEquals(
             Core::arrayRead('sarr/0/1/2', $arr),
-            $arr['sarr'][0][1][2]
+            $arr['sarr'][0][1][2],
         );
 
         $this->assertEquals(
             Core::arrayRead('sarr/not_exiting/1', $arr),
-            null
+            null,
         );
 
         $this->assertEquals(
             Core::arrayRead('sarr/not_exiting/1', $arr, 0),
-            0
+            0,
         );
 
         $this->assertEquals(
             Core::arrayRead('sarr/not_exiting/1', $arr, 'default_val'),
-            'default_val'
+            'default_val',
         );
     }
 
@@ -292,14 +293,14 @@ class CoreTest extends AbstractNetworkTestCase
     /**
      * Test for Core::checkPageValidity
      *
-     * @param string|null $page      Page
-     * @param array       $allowList Allow list
-     * @param bool        $include   whether the page is going to be included
-     * @param bool        $expected  Expected value
+     * @param string $page      Page
+     * @param array  $allowList Allow list
+     * @param bool   $include   whether the page is going to be included
+     * @param bool   $expected  Expected value
      *
      * @dataProvider providerTestGotoNowhere
      */
-    public function testGotoNowhere(string|null $page, array $allowList, bool $include, bool $expected): void
+    public function testGotoNowhere(string $page, array $allowList, bool $include, bool $expected): void
     {
         $this->assertSame($expected, Core::checkPageValidity($page, $allowList, $include));
     }
@@ -313,13 +314,13 @@ class CoreTest extends AbstractNetworkTestCase
     {
         return [
             [
-                null,
+                '',
                 [],
                 false,
                 false,
             ],
             [
-                null,
+                '',
                 [],
                 true,
                 false,
@@ -446,7 +447,7 @@ class CoreTest extends AbstractNetworkTestCase
         $this->assertEquals(
             Core::getPHPDocLink('function'),
             'index.php?route=/url&url=https%3A%2F%2Fwww.php.net%2Fmanual%2F'
-            . $lang . '%2Ffunction'
+            . $lang . '%2Ffunction',
         );
     }
 
@@ -513,7 +514,9 @@ class CoreTest extends AbstractNetworkTestCase
     public function testSendHeaderLocationWithoutSidWithoutIis(): void
     {
         $GLOBALS['server'] = 0;
+
         parent::setGlobalConfig();
+
         $GLOBALS['config']->set('PMA_IS_IIS', null);
 
         $testUri = 'https://example.com/test.php';
@@ -528,7 +531,9 @@ class CoreTest extends AbstractNetworkTestCase
     public function testSendHeaderLocationIisLongUri(): void
     {
         $GLOBALS['server'] = 0;
+
         parent::setGlobalConfig();
+
         $GLOBALS['config']->set('PMA_IS_IIS', true);
 
         // over 600 chars
@@ -570,15 +575,13 @@ class CoreTest extends AbstractNetworkTestCase
         Core::sendHeaderLocation($testUri);
     }
 
-    /**
-     * @dataProvider provideTestIsAllowedDomain
-     */
+    /** @dataProvider provideTestIsAllowedDomain */
     public function testIsAllowedDomain(string $url, bool $expected): void
     {
         $_SERVER['SERVER_NAME'] = 'server.local';
         $this->assertEquals(
             $expected,
-            Core::isAllowedDomain($url)
+            Core::isAllowedDomain($url),
         );
     }
 
@@ -624,11 +627,11 @@ class CoreTest extends AbstractNetworkTestCase
      *
      * @dataProvider provideTestSafeUnserialize
      */
-    public function testSafeUnserialize(string $data, $expected): void
+    public function testSafeUnserialize(string $data, mixed $expected): void
     {
         $this->assertEquals(
             $expected,
-            Core::safeUnserialize($data)
+            Core::safeUnserialize($data),
         );
     }
 
@@ -700,7 +703,7 @@ class CoreTest extends AbstractNetworkTestCase
     {
         $this->assertEquals(
             $expected,
-            Core::sanitizeMySQLHost($host)
+            Core::sanitizeMySQLHost($host),
         );
     }
 
@@ -738,15 +741,15 @@ class CoreTest extends AbstractNetworkTestCase
     {
         $this->assertEquals(
             Core::securePath('../../../etc/passwd'),
-            './././etc/passwd'
+            './././etc/passwd',
         );
         $this->assertEquals(
             Core::securePath('/var/www/../phpmyadmin'),
-            '/var/www/./phpmyadmin'
+            '/var/www/./phpmyadmin',
         );
         $this->assertEquals(
             Core::securePath('./path/with..dots/../../file..php'),
-            './path/with.dots/././file.php'
+            './path/with.dots/././file.php',
         );
     }
 
@@ -911,7 +914,7 @@ class CoreTest extends AbstractNetworkTestCase
      */
     public function testPopulateRequestWithEncryptedQueryParamsWithInvalidParam(
         array $encrypted,
-        array $decrypted
+        array $decrypted,
     ): void {
         $_SESSION = [];
         $GLOBALS['config']->set('URLQueryEncryption', true);
@@ -932,9 +935,7 @@ class CoreTest extends AbstractNetworkTestCase
         $this->assertEquals($decrypted, $_REQUEST);
     }
 
-    /**
-     * @return array<int, array<int, array<string, string|mixed[]>>>
-     */
+    /** @return array<int, array<int, array<string, string|mixed[]>>> */
     public static function providerForTestPopulateRequestWithEncryptedQueryParamsWithInvalidParam(): array
     {
         return [

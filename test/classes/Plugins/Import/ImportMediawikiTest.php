@@ -11,13 +11,10 @@ use PhpMyAdmin\Tests\AbstractTestCase;
 
 use function __;
 
-/**
- * @covers \PhpMyAdmin\Plugins\Import\ImportMediawiki
- */
+/** @covers \PhpMyAdmin\Plugins\Import\ImportMediawiki */
 class ImportMediawikiTest extends AbstractTestCase
 {
-    /** @var ImportMediawiki */
-    protected $object;
+    protected ImportMediawiki $object;
 
     /**
      * Sets up the fixture, for example, opens a network connection.
@@ -26,6 +23,7 @@ class ImportMediawikiTest extends AbstractTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
         $GLOBALS['dbi'] = $this->createDatabaseInterface();
         $GLOBALS['server'] = 0;
         $GLOBALS['error'] = null;
@@ -62,6 +60,7 @@ class ImportMediawikiTest extends AbstractTestCase
     protected function tearDown(): void
     {
         parent::tearDown();
+
         unset($this->object);
     }
 
@@ -75,20 +74,20 @@ class ImportMediawikiTest extends AbstractTestCase
         $properties = $this->object->getProperties();
         $this->assertEquals(
             __('MediaWiki Table'),
-            $properties->getText()
+            $properties->getText(),
         );
         $this->assertEquals(
             'txt',
-            $properties->getExtension()
+            $properties->getExtension(),
         );
         $this->assertEquals(
             'text/plain',
-            $properties->getMimeType()
+            $properties->getMimeType(),
         );
         $this->assertNull($properties->getOptions());
         $this->assertEquals(
             __('Options'),
-            $properties->getOptionsText()
+            $properties->getOptionsText(),
         );
     }
 
@@ -129,7 +128,7 @@ class ImportMediawikiTest extends AbstractTestCase
         //asset that all databases and tables are imported
         $this->assertStringContainsString(
             'The following structures have either been created or altered.',
-            $GLOBALS['import_notice']
+            $GLOBALS['import_notice'],
         );
         $this->assertStringContainsString('Go to database: `mediawiki_DB`', $GLOBALS['import_notice']);
         $this->assertStringContainsString('Edit settings for `mediawiki_DB`', $GLOBALS['import_notice']);

@@ -12,19 +12,15 @@ use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\ResponseRenderer;
 
-/**
- * @covers \PhpMyAdmin\Controllers\Table\Partition\RebuildController
- */
+/** @covers \PhpMyAdmin\Controllers\Table\Partition\RebuildController */
 class RebuildControllerTest extends AbstractTestCase
 {
-    /**
-     * @dataProvider providerForTestInvalidDatabaseAndTable
-     */
+    /** @dataProvider providerForTestInvalidDatabaseAndTable */
     public function testInvalidDatabaseAndTable(
         string|null $partition,
         string|null $db,
         string|null $table,
-        string $message
+        string $message,
     ): void {
         $request = $this->createStub(ServerRequest::class);
         $request->method('getParsedBodyParam')->willReturnMap([['partition_name', null, $partition]]);
@@ -39,9 +35,7 @@ class RebuildControllerTest extends AbstractTestCase
         $this->assertSame(Message::error($message)->getDisplay(), $response->getHTMLResult());
     }
 
-    /**
-     * @return array<int, array{string|null, string|null, string|null, non-empty-string}>
-     */
+    /** @return array<int, array{string|null, string|null, string|null, non-empty-string}> */
     public static function providerForTestInvalidDatabaseAndTable(): iterable
     {
         return [

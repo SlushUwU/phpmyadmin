@@ -13,9 +13,7 @@ use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\ResponseRenderer;
 use PhpMyAdmin\Transformations;
 
-/**
- * @covers \PhpMyAdmin\Controllers\Normalization\AddNewPrimaryController
- */
+/** @covers \PhpMyAdmin\Controllers\Normalization\AddNewPrimaryController */
 class AddNewPrimaryControllerTest extends AbstractTestCase
 {
     public function testDefault(): void
@@ -35,7 +33,7 @@ class AddNewPrimaryControllerTest extends AbstractTestCase
         $controller = new AddNewPrimaryController(
             $response,
             $template,
-            new Normalization($dbi, new Relation($dbi), new Transformations(), $template)
+            new Normalization($dbi, new Relation($dbi), new Transformations(), $template),
         );
         $controller($this->createStub(ServerRequest::class));
 

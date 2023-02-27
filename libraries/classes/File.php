@@ -51,41 +51,36 @@ use const UPLOAD_ERR_PARTIAL;
  */
 class File
 {
-    /** @var string the temporary file name */
-    protected $name = null;
+    /** @var string|null the temporary file name */
+    protected string|null $name = null;
 
-    /** @var string the content */
-    protected $content = null;
+    protected string|null $content = null;
 
     /** @var Message|null the error message */
-    protected $errorMessage = null;
+    protected Message|null $errorMessage = null;
 
     /** @var bool whether the file is temporary or not */
-    protected $isTemp = false;
+    protected bool $isTemp = false;
 
-    /** @var string type of compression */
-    protected $compression = null;
+    protected string|null $compression = null;
 
-    /** @var int */
-    protected $offset = 0;
+    protected int $offset = 0;
 
     /** @var int size of chunk to read with every step */
-    protected $chunkSize = 32768;
+    protected int $chunkSize = 32768;
 
     /** @var resource|null file handle */
     protected $handle = null;
 
     /** @var bool whether to decompress content before returning */
-    protected $decompress = false;
+    protected bool $decompress = false;
 
     /** @var string charset of file */
-    protected $charset = null;
+    protected string $charset = '';
 
     private ZipExtension $zipExtension;
 
-    /**
-     * @param bool|string $name file name or false
-     */
+    /** @param bool|string $name file name or false */
     public function __construct($name = false)
     {
         if ($name && is_string($name)) {
@@ -243,7 +238,7 @@ class File
      */
     public function setUploadedFromTblChangeRequest(
         string $key,
-        string $rownumber
+        string $rownumber,
     ): bool {
         if (
             ! isset($_FILES['fields_upload'])
@@ -262,17 +257,17 @@ class File
                 break;
             case UPLOAD_ERR_INI_SIZE:
                 $this->errorMessage = Message::error(__(
-                    'The uploaded file exceeds the upload_max_filesize directive in php.ini.'
+                    'The uploaded file exceeds the upload_max_filesize directive in php.ini.',
                 ));
                 break;
             case UPLOAD_ERR_FORM_SIZE:
                 $this->errorMessage = Message::error(__(
-                    'The uploaded file exceeds the MAX_FILE_SIZE directive that was specified in the HTML form.'
+                    'The uploaded file exceeds the MAX_FILE_SIZE directive that was specified in the HTML form.',
                 ));
                 break;
             case UPLOAD_ERR_PARTIAL:
                 $this->errorMessage = Message::error(__(
-                    'The uploaded file was only partially uploaded.'
+                    'The uploaded file was only partially uploaded.',
                 ));
                 break;
             case UPLOAD_ERR_NO_TMP_DIR:
@@ -319,7 +314,7 @@ class File
     public function fetchUploadedFromTblChangeRequestMultiple(
         array $file,
         string $rownumber,
-        string $key
+        string $key,
     ): array {
         return [
             'name' => $file['name']['multi_edit'][$rownumber][$key],
@@ -338,7 +333,7 @@ class File
      */
     public function setSelectedFromTblChangeRequest(
         string $key,
-        string|null $rownumber = null
+        string|null $rownumber = null,
     ): bool {
         if (
             ! empty($_REQUEST['fields_uploadlocal']['multi_edit'][$rownumber][$key])
@@ -413,7 +408,7 @@ class File
         }
 
         $this->setName(
-            Util::userDir($GLOBALS['cfg']['UploadDir']) . Core::securePath($name)
+            Util::userDir($GLOBALS['cfg']['UploadDir']) . Core::securePath($name),
         );
         if (@is_link((string) $this->getName())) {
             $this->errorMessage = Message::error(__('File is a symbolic link'));
@@ -459,7 +454,7 @@ class File
         if ($tmp_subdir === null) {
             // cannot create directory or access, point user to FAQ 1.11
             $this->errorMessage = Message::error(__(
-                'Error moving the uploaded file, see [doc@faq1-11]FAQ 1.11[/doc].'
+                'Error moving the uploaded file, see [doc@faq1-11]FAQ 1.11[/doc].',
             ));
 
             return false;
@@ -467,7 +462,7 @@ class File
 
         $new_file_to_upload = (string) tempnam(
             $tmp_subdir,
-            basename((string) $this->getName())
+            basename((string) $this->getName()),
         );
 
         // suppress warnings from being displayed, but not from being logged
@@ -475,7 +470,7 @@ class File
         ob_start();
         $move_uploaded_file_result = move_uploaded_file(
             (string) $this->getName(),
-            $new_file_to_upload
+            $new_file_to_upload,
         );
         ob_end_clean();
         if (! $move_uploaded_file_result) {
@@ -567,9 +562,9 @@ class File
             __(
                 'You attempted to load file with unsupported compression (%s). '
                 . 'Either support for it is not implemented or disabled by your '
-                . 'configuration.'
+                . 'configuration.',
             ),
-            $this->getCompression()
+            $this->getCompression(),
         ));
     }
 
@@ -654,7 +649,7 @@ class File
             return feof($this->handle);
         }
 
-        return $this->offset == strlen($this->content);
+        return $this->offset == strlen($this->content ?? '');
     }
 
     /**
@@ -681,7 +676,7 @@ class File
     public function read(int $size): string
     {
         if ($this->compression === 'application/zip') {
-            $result = mb_strcut($this->content, $this->offset, $size);
+            $result = mb_strcut($this->content ?? '', $this->offset, $size);
             $this->offset += strlen($result);
 
             return $result;
@@ -773,6 +768,6 @@ class File
      */
     public function getContentLength(): int
     {
-        return strlen($this->content);
+        return strlen($this->content ?? '');
     }
 }

@@ -29,7 +29,7 @@ class Charsets
      *
      * @var array<string, string>
      */
-    public static $mysqlCharsetMap = [
+    public static array $mysqlCharsetMap = [
         'big5' => 'big5',
         'cp-866' => 'cp866',
         'euc-jp' => 'ujis',
@@ -57,16 +57,14 @@ class Charsets
 
     /**
      * The charset for the server
-     *
-     * @var Charset|null
      */
-    private static $serverCharset = null;
+    private static Charset|null $serverCharset = null;
 
     /** @var array<string, Charset> */
-    private static $charsets = [];
+    private static array $charsets = [];
 
     /** @var array<string, array<string, Collation>> */
-    private static $collations = [];
+    private static array $collations = [];
 
     /**
      * Loads charset data from the server
@@ -172,7 +170,7 @@ class Charsets
                 [
                     'Charset' => __('Unknown'),
                     'Description' => __('Unknown'),
-                ]
+                ],
             );
         }
 
@@ -208,15 +206,15 @@ class Charsets
     }
 
     /**
-     * @param bool        $disableIs Disable use of INFORMATION_SCHEMA
-     * @param string|null $name      Collation name
+     * @param bool   $disableIs Disable use of INFORMATION_SCHEMA
+     * @param string $name      Collation name
      */
     public static function findCollationByName(
         DatabaseInterface $dbi,
         bool $disableIs,
-        string|null $name
+        string $name,
     ): Collation|null {
-        $charset = explode('_', $name ?? '')[0];
+        $charset = explode('_', $name)[0];
         $collations = self::getCollations($dbi, $disableIs);
 
         return $collations[$charset][$name] ?? null;

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Gis;
 
+use PhpMyAdmin\Gis\GisGeometry;
 use PhpMyAdmin\Gis\GisMultiLineString;
 use PhpMyAdmin\Gis\ScaleData;
 use PhpMyAdmin\Image\ImageWrapper;
@@ -16,8 +17,7 @@ use TCPDF;
  */
 class GisMultiLineStringTest extends GisGeomTestCase
 {
-    /** @var    GisMultiLineString */
-    protected $object;
+    protected GisGeometry $object;
 
     /**
      * Sets up the fixture, for example, opens a network connection.
@@ -26,6 +26,7 @@ class GisMultiLineStringTest extends GisGeomTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
         $this->object = GisMultiLineString::singleton();
     }
 
@@ -36,6 +37,7 @@ class GisMultiLineStringTest extends GisGeomTestCase
     protected function tearDown(): void
     {
         parent::tearDown();
+
         unset($this->object);
     }
 
@@ -167,7 +169,7 @@ class GisMultiLineStringTest extends GisGeomTestCase
 
         $this->assertEquals(
             'MULTILINESTRING((5.02 8.45,6.14 0.15),(1.23 4.25,9.15 0.47))',
-            $this->object->getShape($row_data)
+            $this->object->getShape($row_data),
         );
     }
 
@@ -178,50 +180,39 @@ class GisMultiLineStringTest extends GisGeomTestCase
      */
     public static function providerForTestGenerateParams(): array
     {
-        $temp = [
-            'MULTILINESTRING' => [
-                'no_of_lines' => 2,
-                0 => [
-                    'no_of_points' => 2,
-                    0 => [
-                        'x' => 5.02,
-                        'y' => 8.45,
-                    ],
-                    1 => [
-                        'x' => 6.14,
-                        'y' => 0.15,
-                    ],
-                ],
-                1 => [
-                    'no_of_points' => 2,
-                    0 => [
-                        'x' => 1.23,
-                        'y' => 4.25,
-                    ],
-                    1 => [
-                        'x' => 9.15,
-                        'y' => 0.47,
-                    ],
-                ],
-            ],
-        ];
-
-        $temp1 = $temp;
-        $temp1['gis_type'] = 'MULTILINESTRING';
-
         return [
             [
                 "'MULTILINESTRING((5.02 8.45,6.14 0.15),(1.23 4.25,9.15 0.47))',124",
-                null,
                 [
                     'srid' => 124,
-                    0 => $temp,
+                    0 => [
+                        'MULTILINESTRING' => [
+                            'no_of_lines' => 2,
+                            0 => [
+                                'no_of_points' => 2,
+                                0 => [
+                                    'x' => 5.02,
+                                    'y' => 8.45,
+                                ],
+                                1 => [
+                                    'x' => 6.14,
+                                    'y' => 0.15,
+                                ],
+                            ],
+                            1 => [
+                                'no_of_points' => 2,
+                                0 => [
+                                    'x' => 1.23,
+                                    'y' => 4.25,
+                                ],
+                                1 => [
+                                    'x' => 9.15,
+                                    'y' => 0.47,
+                                ],
+                            ],
+                        ],
+                    ],
                 ],
-            ],
-            [
-                'MULTILINESTRING((5.02 8.45,6.14 0.15),(1.23 4.25,9.15 0.47))',
-                2,
-                [2 => $temp1],
             ],
         ];
     }
@@ -241,9 +232,7 @@ class GisMultiLineStringTest extends GisGeomTestCase
         ];
     }
 
-    /**
-     * @requires extension gd
-     */
+    /** @requires extension gd */
     public function testPrepareRowAsPng(): void
     {
         $image = ImageWrapper::create(200, 124, ['red' => 229, 'green' => 229, 'blue' => 229]);
@@ -253,7 +242,7 @@ class GisMultiLineStringTest extends GisGeomTestCase
             'image',
             [176, 46, 224],
             ['x' => 3, 'y' => -16, 'scale' => 1.06, 'height' => 124],
-            $image
+            $image,
         );
         $this->assertEquals(200, $return->width());
         $this->assertEquals(124, $return->height());
@@ -279,7 +268,7 @@ class GisMultiLineStringTest extends GisGeomTestCase
         string $label,
         array $color,
         array $scale_data,
-        TCPDF $pdf
+        TCPDF $pdf,
     ): void {
         $return = $this->object->prepareRowAsPdf($spatial, $label, $color, $scale_data, $pdf);
 
@@ -302,6 +291,7 @@ class GisMultiLineStringTest extends GisGeomTestCase
                 'pdf',
                 [176, 46, 224],
                 ['x' => 4, 'y' => -90, 'scale' => 1.12, 'height' => 297],
+
                 parent::createEmptyPdf('MULTILINESTRING'),
             ],
         ];
@@ -323,7 +313,7 @@ class GisMultiLineStringTest extends GisGeomTestCase
         string $label,
         array $color,
         array $scaleData,
-        string $output
+        string $output,
     ): void {
         $svg = $this->object->prepareRowAsSvg($spatial, $label, $color, $scaleData);
         $this->assertEquals($output, $svg);
@@ -374,7 +364,7 @@ class GisMultiLineStringTest extends GisGeomTestCase
         string $label,
         array $color,
         array $scale_data,
-        string $output
+        string $output,
     ): void {
         $ol = $this->object->prepareRowAsOl($spatial, $srid, $label, $color, $scale_data);
         $this->assertEquals($output, $ol);

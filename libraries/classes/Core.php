@@ -116,7 +116,7 @@ class Core
     public static function warnMissingExtension(
         string $extension,
         bool $fatal = false,
-        string $extra = ''
+        string $extra = '',
     ): void {
         $GLOBALS['errorHandler'] ??= null;
 
@@ -198,13 +198,13 @@ class Core
      * @param array  $allowList allow list to check page against
      * @param bool   $include   whether the page is going to be included
      */
-    public static function checkPageValidity($page, array $allowList = [], $include = false): bool
+    public static function checkPageValidity(string $page, array $allowList = [], $include = false): bool
     {
-        if (empty($allowList)) {
+        if ($allowList === []) {
             $allowList = ['index.php'];
         }
 
-        if (empty($page)) {
+        if ($page === '') {
             return false;
         }
 
@@ -219,7 +219,7 @@ class Core
         $_page = mb_substr(
             $page,
             0,
-            (int) mb_strpos($page . '?', '?')
+            (int) mb_strpos($page . '?', '?'),
         );
         if (in_array($_page, $allowList)) {
             return true;
@@ -229,7 +229,7 @@ class Core
         $_page = mb_substr(
             $_page,
             0,
-            (int) mb_strpos($_page . '?', '?')
+            (int) mb_strpos($_page . '?', '?'),
         );
 
         return in_array($_page, $allowList);
@@ -332,9 +332,7 @@ class Core
         return $headers;
     }
 
-    /**
-     * @return array<string, string>
-     */
+    /** @return array<string, string> */
     public static function getNoCacheHeaders(): array
     {
         $headers = [];
@@ -370,7 +368,7 @@ class Core
         string $filename,
         string $mimetype,
         int $length = 0,
-        bool $no_cache = true
+        bool $no_cache = true,
     ): void {
         $headers = [];
 
@@ -380,7 +378,7 @@ class Core
 
         /* Replace all possibly dangerous chars in filename */
         $filename = Sanitize::sanitizeFilename($filename);
-        if (! empty($filename)) {
+        if ($filename !== '') {
             $headers['Content-Description'] = 'File Transfer';
             $headers['Content-Disposition'] = 'attachment; filename="' . $filename . '"';
         }
@@ -414,7 +412,7 @@ class Core
      *
      * @return array|mixed|null array element or $default
      */
-    public static function arrayRead(string $path, array $array, $default = null)
+    public static function arrayRead(string $path, array $array, $default = null): mixed
     {
         $keys = explode('/', $path);
         $value =& $array;
@@ -600,7 +598,7 @@ class Core
     public static function previewSQL(array|string $query_data): void
     {
         $retval = '<div class="preview_sql">';
-        if (empty($query_data)) {
+        if ($query_data === '' || $query_data === []) {
             $retval .= __('No change');
         } elseif (is_array($query_data)) {
             foreach ($query_data as $query) {
@@ -626,12 +624,10 @@ class Core
             $empty = true;
             array_walk_recursive(
                 $value,
-                /**
-                 * @param mixed $item
-                 */
+                /** @param mixed $item */
                 static function ($item) use (&$empty): void {
                     $empty = $empty && empty($item);
-                }
+                },
             );
 
             return $empty;
@@ -740,10 +736,8 @@ class Core
      * It does not unserialize data containing objects
      *
      * @param string $data Data to unserialize
-     *
-     * @return mixed|null
      */
-    public static function safeUnserialize(string $data)
+    public static function safeUnserialize(string $data): mixed
     {
         /* validate serialized data */
         $length = strlen($data);
@@ -827,10 +821,8 @@ class Core
      * Sign the sql query using hmac using the session token
      *
      * @param string $sqlQuery The sql query
-     *
-     * @return string
      */
-    public static function signSqlQuery($sqlQuery)
+    public static function signSqlQuery($sqlQuery): string
     {
         $secret = $_SESSION[' HMAC_secret '] ?? '';
 

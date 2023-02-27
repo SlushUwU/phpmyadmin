@@ -31,9 +31,10 @@ final class MoveColumnsController extends AbstractController
     public function __construct(
         ResponseRenderer $response,
         Template $template,
-        private DatabaseInterface $dbi
+        private DatabaseInterface $dbi,
     ) {
         parent::__construct($response, $template);
+
         $this->tableObj = $this->dbi->getTable($GLOBALS['db'], $GLOBALS['table']);
     }
 
@@ -117,13 +118,12 @@ final class MoveColumnsController extends AbstractController
                 $data['Null'] === 'YES' ? 'YES' : 'NO',
                 $default_type,
                 $current_timestamp ? '' : $data['Default'],
-                isset($data['Extra']) && $data['Extra'] !== '' ? $data['Extra']
-                        : false,
+                $data['Extra'] ?? '',
                 isset($data['COLUMN_COMMENT']) && $data['COLUMN_COMMENT'] !== ''
                         ? $data['COLUMN_COMMENT'] : false,
                 $data['Virtuality'],
                 $data['Expression'],
-                $i === 0 ? '-first' : $column_names[$i - 1]
+                $i === 0 ? '-first' : $column_names[$i - 1],
             );
             // update current column_names array, first delete old position
             for ($j = 0, $ll = count($column_names); $j < $ll; $j++) {
@@ -148,13 +148,13 @@ final class MoveColumnsController extends AbstractController
         $sql_query = sprintf(
             'ALTER TABLE %s %s',
             Util::backquote($GLOBALS['table']),
-            implode(', ', $changes)
+            implode(', ', $changes),
         );
 
         if (isset($_REQUEST['preview_sql'])) { // preview sql
             $this->response->addJSON(
                 'sql_data',
-                $this->template->render('preview_sql', ['query_data' => $sql_query])
+                $this->template->render('preview_sql', ['query_data' => $sql_query]),
             );
 
             return;
@@ -170,7 +170,7 @@ final class MoveColumnsController extends AbstractController
         }
 
         $message = Message::success(
-            __('The columns have been moved successfully.')
+            __('The columns have been moved successfully.'),
         );
         $this->response->addJSON('message', $message);
         $this->response->addJSON('columns', $column_names);

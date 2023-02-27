@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Gis;
 
+use PhpMyAdmin\Gis\GisGeometry;
 use PhpMyAdmin\Gis\GisPoint;
 use PhpMyAdmin\Gis\ScaleData;
 use PhpMyAdmin\Image\ImageWrapper;
@@ -18,8 +19,7 @@ use function file_exists;
  */
 class GisPointTest extends GisGeomTestCase
 {
-    /** @var    GisPoint */
-    protected $object;
+    protected GisGeometry $object;
 
     /**
      * Sets up the fixture, for example, opens a network connection.
@@ -28,6 +28,7 @@ class GisPointTest extends GisGeomTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
         $this->object = GisPoint::singleton();
     }
 
@@ -38,6 +39,7 @@ class GisPointTest extends GisGeomTestCase
     protected function tearDown(): void
     {
         parent::tearDown();
+
         unset($this->object);
     }
 
@@ -137,26 +139,12 @@ class GisPointTest extends GisGeomTestCase
         return [
             [
                 "'POINT(5.02 8.45)',124",
-                null,
                 [
                     'srid' => 124,
                     0 => [
                         'POINT' => [
-                            'x' => '5.02',
-                            'y' => '8.45',
-                        ],
-                    ],
-                ],
-            ],
-            [
-                'POINT(5.02 8.45)',
-                2,
-                [
-                    2 => [
-                        'gis_type' => 'POINT',
-                        'POINT' => [
-                            'x' => '5.02',
-                            'y' => '8.45',
+                            'x' => 5.02,
+                            'y' => 8.45,
                         ],
                     ],
                 ],
@@ -179,9 +167,7 @@ class GisPointTest extends GisGeomTestCase
         ];
     }
 
-    /**
-     * @requires extension gd
-     */
+    /** @requires extension gd */
     public function testPrepareRowAsPng(): void
     {
         $image = ImageWrapper::create(200, 124, ['red' => 229, 'green' => 229, 'blue' => 229]);
@@ -191,7 +177,7 @@ class GisPointTest extends GisGeomTestCase
             'image',
             [176, 46, 224],
             ['x' => -88, 'y' => -27, 'scale' => 1, 'height' => 124],
-            $image
+            $image,
         );
         $this->assertEquals(200, $return->width());
         $this->assertEquals(124, $return->height());
@@ -217,7 +203,7 @@ class GisPointTest extends GisGeomTestCase
         string $label,
         array $color,
         array $scale_data,
-        TCPDF $pdf
+        TCPDF $pdf,
     ): void {
         $return = $this->object->prepareRowAsPdf($spatial, $label, $color, $scale_data, $pdf);
 
@@ -242,6 +228,7 @@ class GisPointTest extends GisGeomTestCase
                 'pdf',
                 [176, 46, 224],
                 ['x' => -93, 'y' => -114, 'scale' => 1, 'height' => 297],
+
                 parent::createEmptyPdf('POINT'),
             ],
         ];
@@ -263,7 +250,7 @@ class GisPointTest extends GisGeomTestCase
         string $label,
         array $color,
         array $scaleData,
-        string $output
+        string $output,
     ): void {
         $svg = $this->object->prepareRowAsSvg($spatial, $label, $color, $scaleData);
         $this->assertEquals($output, $svg);
@@ -310,7 +297,7 @@ class GisPointTest extends GisGeomTestCase
         string $label,
         array $color,
         array $scale_data,
-        string $output
+        string $output,
     ): void {
         $ol = $this->object->prepareRowAsOl($spatial, $srid, $label, $color, $scale_data);
         $this->assertEquals($output, $ol);

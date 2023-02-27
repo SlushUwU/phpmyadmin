@@ -36,9 +36,7 @@ class ExportOdt extends ExportPlugin
         $GLOBALS['odt_buffer'] = '';
     }
 
-    /**
-     * @psalm-return non-empty-lowercase-string
-     */
+    /** @psalm-return non-empty-lowercase-string */
     public function getName(): string
     {
         return 'odt';
@@ -68,7 +66,7 @@ class ExportOdt extends ExportPlugin
         // what to dump (structure/data/both) main group
         $dumpWhat = new OptionsPropertyMainGroup(
             'general_opts',
-            __('Dump table')
+            __('Dump table'),
         );
         // create primary items and add them to the group
         $leaf = new RadioPropertyItem('structure_or_data');
@@ -77,7 +75,7 @@ class ExportOdt extends ExportPlugin
                 'structure' => __('structure'),
                 'data' => __('data'),
                 'structure_and_data' => __('structure and data'),
-            ]
+            ],
         );
         $dumpWhat->addProperty($leaf);
         // add the main group to the root group
@@ -87,7 +85,7 @@ class ExportOdt extends ExportPlugin
         if (! $hide_structure) {
             $structureOptions = new OptionsPropertyMainGroup(
                 'structure',
-                __('Object creation options')
+                __('Object creation options'),
             );
             $structureOptions->setForce('data');
             $relationParameters = $this->relation->getRelationParameters();
@@ -95,20 +93,20 @@ class ExportOdt extends ExportPlugin
             if ($relationParameters->relationFeature !== null) {
                 $leaf = new BoolPropertyItem(
                     'relation',
-                    __('Display foreign key relationships')
+                    __('Display foreign key relationships'),
                 );
                 $structureOptions->addProperty($leaf);
             }
 
             $leaf = new BoolPropertyItem(
                 'comments',
-                __('Display comments')
+                __('Display comments'),
             );
             $structureOptions->addProperty($leaf);
             if ($relationParameters->browserTransformationFeature !== null) {
                 $leaf = new BoolPropertyItem(
                     'mime',
-                    __('Display media types')
+                    __('Display media types'),
                 );
                 $structureOptions->addProperty($leaf);
             }
@@ -120,18 +118,18 @@ class ExportOdt extends ExportPlugin
         // data options main group
         $dataOptions = new OptionsPropertyMainGroup(
             'data',
-            __('Data dump options')
+            __('Data dump options'),
         );
         $dataOptions->setForce('structure');
         // create primary items and add them to the group
         $leaf = new BoolPropertyItem(
             'columns',
-            __('Put columns names in the first row')
+            __('Put columns names in the first row'),
         );
         $dataOptions->addProperty($leaf);
         $leaf = new TextPropertyItem(
             'null',
-            __('Replace NULL with:')
+            __('Replace NULL with:'),
         );
         $dataOptions->addProperty($leaf);
         // add the main group to the root group
@@ -166,7 +164,7 @@ class ExportOdt extends ExportPlugin
 
         return $this->export->outputHandler(OpenDocument::create(
             'application/vnd.oasis.opendocument.text',
-            $GLOBALS['odt_buffer']
+            $GLOBALS['odt_buffer'],
         ));
     }
 
@@ -226,7 +224,7 @@ class ExportOdt extends ExportPlugin
         $table,
         $errorUrl,
         $sqlQuery,
-        array $aliases = []
+        array $aliases = [],
     ): bool {
         $GLOBALS['what'] ??= null;
 
@@ -237,7 +235,7 @@ class ExportOdt extends ExportPlugin
         $result = $GLOBALS['dbi']->query(
             $sqlQuery,
             Connection::TYPE_USER,
-            DatabaseInterface::QUERY_UNBUFFERED
+            DatabaseInterface::QUERY_UNBUFFERED,
         );
         $fields_cnt = $result->numFields();
         /** @var FieldMetadata[] $fieldsMeta */
@@ -344,7 +342,7 @@ class ExportOdt extends ExportPlugin
      *
      * @return string resulting definition
      */
-    public function getTableDefStandIn($db, $view, $aliases = [])
+    public function getTableDefStandIn($db, $view, $aliases = []): string
     {
         $db_alias = $db;
         $view_alias = $view;
@@ -423,7 +421,7 @@ class ExportOdt extends ExportPlugin
         $show_dates = false,
         $add_semicolon = true,
         $view = false,
-        array $aliases = []
+        array $aliases = [],
     ): bool {
         $db_alias = $db;
         $table_alias = $table;
@@ -440,7 +438,7 @@ class ExportOdt extends ExportPlugin
         [$res_rel, $have_rel] = $this->relation->getRelationsAndStatus(
             $do_relation && $relationParameters->relationFeature !== null,
             $db,
-            $table
+            $table,
         );
         /**
          * Displays the table structure
@@ -547,7 +545,7 @@ class ExportOdt extends ExportPlugin
                     $GLOBALS['odt_buffer'] .= '<table:table-cell office:value-type="string">'
                         . '<text:p>'
                         . htmlspecialchars(
-                            str_replace('_', '/', $mime_map[$field_name]['mimetype'])
+                            str_replace('_', '/', $mime_map[$field_name]['mimetype']),
                         )
                         . '</text:p>'
                         . '</table:table-cell>';
@@ -572,10 +570,8 @@ class ExportOdt extends ExportPlugin
      * @param string $db      database name
      * @param string $table   table name
      * @param array  $aliases Aliases of db/table/columns
-     *
-     * @return string
      */
-    protected function getTriggers($db, $table, array $aliases = [])
+    protected function getTriggers($db, $table, array $aliases = []): string
     {
         $db_alias = $db;
         $table_alias = $table;
@@ -660,7 +656,7 @@ class ExportOdt extends ExportPlugin
         $do_comments = false,
         $do_mime = false,
         $dates = false,
-        array $aliases = []
+        array $aliases = [],
     ): bool {
         $db_alias = $db;
         $table_alias = $table;
@@ -682,7 +678,7 @@ class ExportOdt extends ExportPlugin
                     $dates,
                     true,
                     false,
-                    $aliases
+                    $aliases,
                 );
                 break;
             case 'triggers':
@@ -713,7 +709,7 @@ class ExportOdt extends ExportPlugin
                     $dates,
                     true,
                     true,
-                    $aliases
+                    $aliases,
                 );
                 break;
             case 'stand_in':
@@ -737,7 +733,7 @@ class ExportOdt extends ExportPlugin
      *
      * @return string Formatted column definition
      */
-    protected function formatOneColumnDefinition($column, $col_as = '')
+    protected function formatOneColumnDefinition($column, $col_as = ''): string
     {
         if (empty($col_as)) {
             $col_as = $column['Field'];

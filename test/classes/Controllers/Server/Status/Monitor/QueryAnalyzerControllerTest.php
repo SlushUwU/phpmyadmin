@@ -14,14 +14,13 @@ use PhpMyAdmin\Tests\Stubs\DbiDummy;
 use PhpMyAdmin\Tests\Stubs\ResponseRenderer;
 use PhpMyAdmin\Utils\SessionCache;
 
-/**
- * @covers \PhpMyAdmin\Controllers\Server\Status\Monitor\QueryAnalyzerController
- */
+/** @covers \PhpMyAdmin\Controllers\Server\Status\Monitor\QueryAnalyzerController */
 class QueryAnalyzerControllerTest extends AbstractTestCase
 {
     protected function setUp(): void
     {
         parent::setUp();
+
         $GLOBALS['dbi'] = $this->createDatabaseInterface();
     }
 
@@ -61,11 +60,11 @@ class QueryAnalyzerControllerTest extends AbstractTestCase
         $this->assertEquals('cached_affected_rows', $ret['message']['affectedRows']);
         $this->assertEquals(
             [],
-            $ret['message']['profiling']
+            $ret['message']['profiling'],
         );
         $this->assertEquals(
             [$value],
-            $ret['message']['explain']
+            $ret['message']['explain'],
         );
     }
 }

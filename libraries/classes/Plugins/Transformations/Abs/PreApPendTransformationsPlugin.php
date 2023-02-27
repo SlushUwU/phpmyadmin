@@ -26,7 +26,7 @@ abstract class PreApPendTransformationsPlugin extends TransformationsPlugin
         return __(
             'Prepends and/or Appends text to a string. First option is text'
             . ' to be prepended, second is appended (enclosed in single'
-            . ' quotes, default empty string).'
+            . ' quotes, default empty string).',
         );
     }
 
@@ -36,10 +36,8 @@ abstract class PreApPendTransformationsPlugin extends TransformationsPlugin
      * @param string             $buffer  text to be transformed
      * @param array              $options transformation options
      * @param FieldMetadata|null $meta    meta information
-     *
-     * @return string
      */
-    public function applyTransformation($buffer, array $options = [], FieldMetadata|null $meta = null)
+    public function applyTransformation($buffer, array $options = [], FieldMetadata|null $meta = null): string
     {
         $cfg = $GLOBALS['cfg'];
         $options = $this->getOptions($options, $cfg['DefaultTransformations']['PreApPend']);

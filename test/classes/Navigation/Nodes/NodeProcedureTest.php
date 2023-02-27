@@ -7,9 +7,7 @@ namespace PhpMyAdmin\Tests\Navigation\Nodes;
 use PhpMyAdmin\Navigation\Nodes\NodeProcedure;
 use PhpMyAdmin\Tests\AbstractTestCase;
 
-/**
- * @covers \PhpMyAdmin\Navigation\Nodes\NodeProcedure
- */
+/** @covers \PhpMyAdmin\Navigation\Nodes\NodeProcedure */
 class NodeProcedureTest extends AbstractTestCase
 {
     /**
@@ -18,6 +16,7 @@ class NodeProcedureTest extends AbstractTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
         $GLOBALS['dbi'] = $this->createDatabaseInterface();
         $GLOBALS['server'] = 0;
     }
@@ -28,7 +27,6 @@ class NodeProcedureTest extends AbstractTestCase
     public function testConstructor(): void
     {
         $parent = new NodeProcedure('default');
-        $this->assertIsArray($parent->links);
         $this->assertEquals(
             [
                 'text' => [
@@ -40,7 +38,7 @@ class NodeProcedureTest extends AbstractTestCase
                     'params' => ['item_type' => 'PROCEDURE', 'execute_dialog' => 1, 'db' => null, 'item_name' => null],
                 ],
             ],
-            $parent->links
+            $parent->links,
         );
     }
 }

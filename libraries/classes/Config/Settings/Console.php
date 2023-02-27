@@ -8,56 +8,34 @@ use function in_array;
 
 // phpcs:disable Squiz.NamingConventions.ValidVariableName.MemberNotCamelCaps
 
-/**
- * @psalm-immutable
- */
+/** @psalm-immutable */
 final class Console
 {
-    /** @var bool */
-    public $StartHistory;
+    public bool $StartHistory;
 
-    /** @var bool */
-    public $AlwaysExpand;
+    public bool $AlwaysExpand;
 
-    /** @var bool */
-    public $CurrentQuery;
+    public bool $CurrentQuery;
 
-    /** @var bool */
-    public $EnterExecutes;
+    public bool $EnterExecutes;
 
-    /** @var bool */
-    public $DarkTheme;
+    public bool $DarkTheme;
 
-    /**
-     * @var string
-     * @psalm-var 'info'|'show'|'collapse'
-     */
-    public $Mode;
+    /** @psalm-var 'info'|'show'|'collapse' */
+    public string $Mode;
 
-    /**
-     * @var int
-     * @psalm-var positive-int
-     */
-    public $Height;
+    /** @psalm-var positive-int */
+    public int $Height;
 
-    /** @var bool */
-    public $GroupQueries;
+    public bool $GroupQueries;
 
-    /**
-     * @var string
-     * @psalm-var 'exec'|'time'|'count'
-     */
-    public $OrderBy;
+    /** @psalm-var 'exec'|'time'|'count' */
+    public string $OrderBy;
 
-    /**
-     * @var string
-     * @psalm-var 'asc'|'desc'
-     */
-    public $Order;
+    /** @psalm-var 'asc'|'desc' */
+    public string $Order;
 
-    /**
-     * @param mixed[] $console
-     */
+    /** @param mixed[] $console */
     public function __construct(array $console = [])
     {
         $this->StartHistory = $this->setStartHistory($console);
@@ -72,9 +50,7 @@ final class Console
         $this->Order = $this->setOrder($console);
     }
 
-    /**
-     * @param mixed[] $console
-     */
+    /** @param mixed[] $console */
     private function setStartHistory(array $console): bool
     {
         if (isset($console['StartHistory'])) {
@@ -84,9 +60,7 @@ final class Console
         return false;
     }
 
-    /**
-     * @param mixed[] $console
-     */
+    /** @param mixed[] $console */
     private function setAlwaysExpand(array $console): bool
     {
         if (isset($console['AlwaysExpand'])) {
@@ -96,9 +70,7 @@ final class Console
         return false;
     }
 
-    /**
-     * @param mixed[] $console
-     */
+    /** @param mixed[] $console */
     private function setCurrentQuery(array $console): bool
     {
         if (isset($console['CurrentQuery'])) {
@@ -108,9 +80,7 @@ final class Console
         return true;
     }
 
-    /**
-     * @param mixed[] $console
-     */
+    /** @param mixed[] $console */
     private function setEnterExecutes(array $console): bool
     {
         if (isset($console['EnterExecutes'])) {
@@ -120,9 +90,7 @@ final class Console
         return false;
     }
 
-    /**
-     * @param mixed[] $console
-     */
+    /** @param mixed[] $console */
     private function setDarkTheme(array $console): bool
     {
         if (isset($console['DarkTheme'])) {
@@ -163,9 +131,7 @@ final class Console
         return 92;
     }
 
-    /**
-     * @param mixed[] $console
-     */
+    /** @param mixed[] $console */
     private function setGroupQueries(array $console): bool
     {
         if (isset($console['GroupQueries'])) {

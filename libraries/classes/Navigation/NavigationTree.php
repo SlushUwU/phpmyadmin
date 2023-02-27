@@ -83,61 +83,59 @@ class NavigationTree
      *            This does not include nodes created after the grouping
      *            of nodes has been performed
      */
-    private $aPath = [];
+    private array $aPath = [];
     /**
      * @var array The virtual paths to all expanded nodes in the tree
      *            This includes nodes created after the grouping of
      *            nodes has been performed
      */
-    private $vPath = [];
+    private array $vPath = [];
     /**
      * @var int Position in the list of databases,
      *          used for pagination
      */
-    private $pos = 0;
+    private int $pos = 0;
     /**
      * @var string[] The names of the type of items that are being paginated on
      *               the second level of the navigation tree. These may be
      *               tables, views, functions, procedures or events.
      */
-    private $pos2Name = [];
+    private array $pos2Name = [];
     /**
      * @var int[] The positions of nodes in the lists of tables, views,
      *            routines or events used for pagination
      */
-    private $pos2Value = [];
+    private array $pos2Value = [];
     /**
      * @var string[] The names of the type of items that are being paginated
      *               on the second level of the navigation tree.
      *               These may be columns or indexes
      */
-    private $pos3Name = [];
+    private array $pos3Name = [];
     /**
      * @var int[] The positions of nodes in the lists of columns or indexes
      *            used for pagination
      */
-    private $pos3Value = [];
+    private array $pos3Value = [];
     /**
      * @var string The search clause to use in SQL queries for
      *             fetching databases
      *             Used by the asynchronous fast filter
      */
-    private $searchClause = '';
+    private string $searchClause = '';
     /**
      * @var string The search clause to use in SQL queries for
      *             fetching nodes
      *             Used by the asynchronous fast filter
      */
-    private $searchClause2 = '';
+    private string $searchClause2 = '';
     /**
      * @var bool Whether a warning was raised for large item groups
      *           which can affect performance.
      */
-    private $largeGroupWarning = false;
+    private bool $largeGroupWarning = false;
 
-    /**
-     * @param Template $template
-     */
+    /** @param Template $template */
     public function __construct(private $template, private DatabaseInterface $dbi)
     {
         $checkUserPrivileges = new CheckUserPrivileges($this->dbi);
@@ -216,13 +214,11 @@ class NavigationTree
      */
     private function getNavigationDbPos(): int
     {
-        if (strlen($GLOBALS['db'] ?? '') === 0) {
+        if (($GLOBALS['db'] ?? '') === '') {
             return 0;
         }
 
-        /**
-         * @todo describe a scenario where this code is executed
-         */
+        /** @todo describe a scenario where this code is executed */
         if (! $GLOBALS['cfg']['Server']['DisableIS']) {
             $query = 'SELECT (COUNT(DB_first_level) DIV %d) * %d ';
             $query .= 'from ( ';
@@ -239,8 +235,8 @@ class NavigationTree
                     (int) $GLOBALS['cfg']['FirstLevelNavigationItems'],
                     (int) $GLOBALS['cfg']['FirstLevelNavigationItems'],
                     $this->dbi->quoteString($GLOBALS['cfg']['NavigationTreeDbSeparator']),
-                    $this->dbi->quoteString($GLOBALS['db'])
-                )
+                    $this->dbi->quoteString($GLOBALS['db']),
+                ),
             );
         }
 
@@ -339,7 +335,7 @@ class NavigationTree
                 $this->pos2Name[$key] ?? '',
                 $this->pos2Value[$key] ?? 0,
                 $this->pos3Name[$key] ?? '',
-                $this->pos3Value[$key] ?? 0
+                $this->pos3Value[$key] ?? 0,
             );
         }
 
@@ -678,7 +674,7 @@ class NavigationTree
             foreach ($node->children as $child) {
                 $prefixPos = false;
                 foreach ($separators as $separator) {
-                    $sepPos = mb_strpos((string) $child->name, $separator);
+                    $sepPos = mb_strpos($child->name, $separator);
                     if (
                         $sepPos === false
                         || $sepPos === mb_strlen($child->name)
@@ -753,9 +749,9 @@ class NavigationTree
                     __(
                         'There are large item groups in navigation panel which '
                         . 'may affect the performance. Consider disabling item '
-                        . 'grouping in the navigation panel.'
+                        . 'grouping in the navigation panel.',
                     ),
-                    E_USER_WARNING
+                    E_USER_WARNING,
                 );
                 $this->largeGroupWarning = true;
             }
@@ -766,7 +762,7 @@ class NavigationTree
                 // FIXME: this could be more efficient
                 foreach ($node->children as $child) {
                     $keySeparatorLength = mb_strlen((string) $key) + $separatorLength;
-                    $nameSubstring = mb_substr((string) $child->name, 0, $keySeparatorLength);
+                    $nameSubstring = mb_substr($child->name, 0, $keySeparatorLength);
                     if (
                         ($nameSubstring !== $key . $separator && $child->name !== $key)
                         || $child->type != Node::OBJECT
@@ -778,8 +774,8 @@ class NavigationTree
                         $child::class,
                         mb_substr(
                             $child->name,
-                            $keySeparatorLength
-                        )
+                            $keySeparatorLength,
+                        ),
                     );
                     if ($child instanceof NodeDatabase && $child->getHiddenCount() > 0) {
                         $newChild->setHiddenCount($child->getHiddenCount());
@@ -820,7 +816,7 @@ class NavigationTree
                 $groups[$key] = new Node(
                     htmlspecialchars((string) $key),
                     Node::CONTAINER,
-                    true
+                    true,
                 );
                 $groups[$key]->separator = $node->separator;
                 $groups[$key]->separatorDepth = $node->separatorDepth - 1;
@@ -923,10 +919,10 @@ class NavigationTree
             }
         }
 
-        $hasSearchClause = ! empty($this->searchClause) || ! empty($this->searchClause2);
+        $hasSearchClause = $this->searchClause !== '' || $this->searchClause2 !== '';
         if ($hasSearchClause && ! is_bool($node)) {
             $results = 0;
-            if (! empty($this->searchClause2)) {
+            if ($this->searchClause2 !== '') {
                 if (is_object($node->realParent())) {
                     $results = $node->realParent()
                         ->getPresence($node->realName, $this->searchClause2);
@@ -939,9 +935,9 @@ class NavigationTree
                 _ngettext(
                     '%s result found',
                     '%s results found',
-                    $results
+                    $results,
                 ),
-                $results
+                $results,
             );
             ResponseRenderer::getInstance()
                 ->addJSON('results', $results);
@@ -949,7 +945,7 @@ class NavigationTree
 
         if ($node !== false) {
             return $this->template->render('navigation/tree/path', [
-                'has_search_results' => ! empty($this->searchClause) || ! empty($this->searchClause2),
+                'has_search_results' => $this->searchClause !== '' || $this->searchClause2 !== '',
                 'list_content' => $listContent ?? '',
                 'is_tree' => $GLOBALS['cfg']['ShowDatabasesNavigationAsTree'],
                 'parent_name' => $parentName ?? '',
@@ -1012,9 +1008,7 @@ class NavigationTree
         return $match;
     }
 
-    /**
-     * @param Node[] $children
-     */
+    /** @param Node[] $children */
     private function renderNodes(array $children, bool $hasFirstClass = true): string
     {
         $nodes = '';
@@ -1072,7 +1066,7 @@ class NavigationTree
             // if node name itself is in sterile, then allow
             $nodeIsGroup = $node->isGroup
                 || (! in_array($parentName, $sterile) && ! $node->isNew)
-                || (in_array($node->realName, $sterile) && ! empty($node->children));
+                || (in_array($node->realName, $sterile) && $node->children !== []);
             if ($nodeIsGroup) {
                 $match = $this->findTreeMatch($this->vPath, $paths['vPath_clean']);
                 $linkClasses = $node->getCssClasses($match);
@@ -1111,7 +1105,7 @@ class NavigationTree
                     'route' => $node->links['icon']['route'],
                     'params' => array_merge(
                         $node->links['icon']['params'],
-                        array_intersect_key($args, $node->links['icon']['params'])
+                        array_intersect_key($args, $node->links['icon']['params']),
                     ),
                     'is_ajax' => $linkHasAjaxClass,
                     'image' => $node->icon['image'],
@@ -1123,7 +1117,7 @@ class NavigationTree
                         'route' => $node->links['second_icon']['route'],
                         'params' => array_merge(
                             $node->links['second_icon']['params'],
-                            array_intersect_key($args, $node->links['second_icon']['params'])
+                            array_intersect_key($args, $node->links['second_icon']['params']),
                         ),
                         'is_ajax' => $linkHasAjaxClass,
                         'image' => $node->secondIcon['image'],
@@ -1135,10 +1129,10 @@ class NavigationTree
                     'route' => $node->links['text']['route'],
                     'params' => array_merge(
                         $node->links['text']['params'],
-                        array_intersect_key($args, $node->links['text']['params'])
+                        array_intersect_key($args, $node->links['text']['params']),
                     ),
                     'is_ajax' => $linkHasAjaxClass,
-                    'title' => $node->links['title'] ?? $node->title ?? '',
+                    'title' => $node->links['title'] ?? $node->title,
                 ];
             }
 
@@ -1162,7 +1156,7 @@ class NavigationTree
             $buffer .= $this->renderNode($children[$i], $children[$i]->classes . $extraClass);
         }
 
-        if (! empty($buffer)) {
+        if ($buffer !== '') {
             $recursiveHtml = $this->fastFilterHtml($node);
             $recursiveHtml .= $this->getPageSelector($node);
             $recursiveHtml .= $buffer;
@@ -1210,7 +1204,7 @@ class NavigationTree
             'frame_navigation',
             $GLOBALS['cfg']['FirstLevelNavigationItems'],
             'pos',
-            ['dbselector']
+            ['dbselector'],
         );
 
         $children = $this->tree->children;
@@ -1335,7 +1329,7 @@ class NavigationTree
             '#',
             __('Collapse all'),
             's_collapseall',
-            'pma_navigation_collapse'
+            'pma_navigation_collapse',
         );
         $syncImage = 's_unlink';
         $title = __('Link with main panel');
@@ -1370,7 +1364,7 @@ class NavigationTree
                 'frame_navigation',
                 $GLOBALS['cfg']['FirstLevelNavigationItems'],
                 'pos',
-                ['dbselector']
+                ['dbselector'],
             );
         } else {
             if ($node->type == Node::CONTAINER && ! $node->isGroup) {
@@ -1402,7 +1396,7 @@ class NavigationTree
                     Url::getFromRoute('/navigation'),
                     'frame_navigation',
                     $GLOBALS['cfg']['MaxNavigationItems'],
-                    'pos' . $level . '_value'
+                    'pos' . $level . '_value',
                 );
             }
         }

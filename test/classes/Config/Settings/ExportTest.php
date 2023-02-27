@@ -10,13 +10,11 @@ use PHPUnit\Framework\TestCase;
 use function array_keys;
 use function array_merge;
 
-/**
- * @covers \PhpMyAdmin\Config\Settings\Export
- */
+/** @covers \PhpMyAdmin\Config\Settings\Export */
 class ExportTest extends TestCase
 {
     /** @var array<string, bool|int|string> */
-    private $defaultValues = [
+    private array $defaultValues = [
         'format' => 'sql',
         'method' => 'quick',
         'compression' => 'none',

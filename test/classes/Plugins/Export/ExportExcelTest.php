@@ -25,8 +25,7 @@ use ReflectionProperty;
  */
 class ExportExcelTest extends AbstractTestCase
 {
-    /** @var ExportExcel */
-    protected $object;
+    protected ExportExcel $object;
 
     /**
      * Configures global environment.
@@ -34,12 +33,13 @@ class ExportExcelTest extends AbstractTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
         $GLOBALS['dbi'] = $this->createDatabaseInterface();
         $GLOBALS['server'] = 0;
         $this->object = new ExportExcel(
             new Relation($GLOBALS['dbi']),
             new Export($GLOBALS['dbi']),
-            new Transformations()
+            new Transformations(),
         );
     }
 
@@ -49,6 +49,7 @@ class ExportExcelTest extends AbstractTestCase
     protected function tearDown(): void
     {
         parent::tearDown();
+
         unset($this->object);
     }
 
@@ -64,22 +65,22 @@ class ExportExcelTest extends AbstractTestCase
 
         $this->assertEquals(
             'CSV for MS Excel',
-            $properties->getText()
+            $properties->getText(),
         );
 
         $this->assertEquals(
             'csv',
-            $properties->getExtension()
+            $properties->getExtension(),
         );
 
         $this->assertEquals(
             'text/comma-separated-values',
-            $properties->getMimeType()
+            $properties->getMimeType(),
         );
 
         $this->assertEquals(
             'Options',
-            $properties->getOptionsText()
+            $properties->getOptionsText(),
         );
 
         $options = $properties->getOptions();
@@ -88,7 +89,7 @@ class ExportExcelTest extends AbstractTestCase
 
         $this->assertEquals(
             'Format Specific Options',
-            $options->getName()
+            $options->getName(),
         );
 
         $generalOptionsArray = $options->getProperties();
@@ -98,7 +99,7 @@ class ExportExcelTest extends AbstractTestCase
 
         $this->assertEquals(
             'general_opts',
-            $generalOptions->getName()
+            $generalOptions->getName(),
         );
 
         $generalProperties = $generalOptions->getProperties();
@@ -110,12 +111,12 @@ class ExportExcelTest extends AbstractTestCase
 
         $this->assertEquals(
             'null',
-            $property->getName()
+            $property->getName(),
         );
 
         $this->assertEquals(
             'Replace NULL with:',
-            $property->getText()
+            $property->getText(),
         );
 
         $property = $generalProperties->current();
@@ -125,12 +126,12 @@ class ExportExcelTest extends AbstractTestCase
 
         $this->assertEquals(
             'removeCRLF',
-            $property->getName()
+            $property->getName(),
         );
 
         $this->assertEquals(
             'Remove carriage return/line feed characters within columns',
-            $property->getText()
+            $property->getText(),
         );
 
         $property = $generalProperties->current();
@@ -140,12 +141,12 @@ class ExportExcelTest extends AbstractTestCase
 
         $this->assertEquals(
             'columns',
-            $property->getName()
+            $property->getName(),
         );
 
         $this->assertEquals(
             'Put columns names in the first row',
-            $property->getText()
+            $property->getText(),
         );
 
         $property = $generalProperties->current();
@@ -155,7 +156,7 @@ class ExportExcelTest extends AbstractTestCase
 
         $this->assertEquals(
             'edition',
-            $property->getName()
+            $property->getName(),
         );
 
         $this->assertEquals(
@@ -164,12 +165,12 @@ class ExportExcelTest extends AbstractTestCase
                 'mac_excel2003' => 'Excel 2003 / Macintosh',
                 'mac_excel2008' => 'Excel 2008 / Macintosh',
             ],
-            $property->getValues()
+            $property->getValues(),
         );
 
         $this->assertEquals(
             'Excel edition:',
-            $property->getText()
+            $property->getText(),
         );
 
         $property = $generalProperties->current();
@@ -178,7 +179,7 @@ class ExportExcelTest extends AbstractTestCase
 
         $this->assertEquals(
             'structure_or_data',
-            $property->getName()
+            $property->getName(),
         );
     }
 }

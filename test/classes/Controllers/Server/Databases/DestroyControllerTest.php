@@ -16,14 +16,13 @@ use PhpMyAdmin\Transformations;
 
 use function __;
 
-/**
- * @covers \PhpMyAdmin\Controllers\Server\Databases\DestroyController
- */
+/** @covers \PhpMyAdmin\Controllers\Server\Databases\DestroyController */
 class DestroyControllerTest extends AbstractTestCase
 {
     protected function setUp(): void
     {
         parent::setUp();
+
         $GLOBALS['dbi'] = $this->createDatabaseInterface();
     }
 
@@ -47,7 +46,7 @@ class DestroyControllerTest extends AbstractTestCase
             new Template(),
             $dbi,
             new Transformations(),
-            new RelationCleanup($dbi, new Relation($dbi))
+            new RelationCleanup($dbi, new Relation($dbi)),
         );
 
         $controller($this->createStub(ServerRequest::class));

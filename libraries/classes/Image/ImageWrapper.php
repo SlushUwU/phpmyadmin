@@ -85,7 +85,7 @@ final class ImageWrapper
         int $height,
         int $startAngle,
         int $endAngle,
-        int $color
+        int $color,
     ): bool {
         return imagearc($this->image, $centerX, $centerY, $width, $height, $startAngle, $endAngle, $color);
     }
@@ -104,7 +104,7 @@ final class ImageWrapper
         int $destinationWidth,
         int $destinationHeight,
         int $sourceWidth,
-        int $sourceHeight
+        int $sourceHeight,
     ): bool {
         return imagecopyresampled(
             $this->image,
@@ -116,7 +116,7 @@ final class ImageWrapper
             $destinationWidth,
             $destinationHeight,
             $sourceWidth,
-            $sourceHeight
+            $sourceHeight,
         );
     }
 
@@ -131,9 +131,7 @@ final class ImageWrapper
         return imagesy($this->image);
     }
 
-    /**
-     * @param resource|string|null $file
-     */
+    /** @param resource|string|null $file */
     public function jpeg($file = null, int $quality = -1): bool
     {
         if (! function_exists('imagejpeg')) {
@@ -148,9 +146,7 @@ final class ImageWrapper
         return imageline($this->image, $x1, $y1, $x2, $y2, $color);
     }
 
-    /**
-     * @param resource|string|null $file
-     */
+    /** @param resource|string|null $file */
     public function png($file = null, int $quality = -1, int $filters = -1): bool
     {
         if (! function_exists('imagepng')) {

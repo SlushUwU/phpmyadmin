@@ -13,9 +13,7 @@ use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\ResponseRenderer;
 use PhpMyAdmin\Transformations;
 
-/**
- * @covers \PhpMyAdmin\Controllers\Normalization\SecondNormalForm\FirstStepController
- */
+/** @covers \PhpMyAdmin\Controllers\Normalization\SecondNormalForm\FirstStepController */
 class FirstStepControllerTest extends AbstractTestCase
 {
     public function testDefault(): void
@@ -31,7 +29,7 @@ class FirstStepControllerTest extends AbstractTestCase
         $controller = new FirstStepController(
             $response,
             $template,
-            new Normalization($dbi, new Relation($dbi), new Transformations(), $template)
+            new Normalization($dbi, new Relation($dbi), new Transformations(), $template),
         );
         $controller($this->createStub(ServerRequest::class));
 

@@ -15,14 +15,11 @@ namespace PhpMyAdmin\Plugins\Schema\Eps;
  */
 class Eps
 {
-    /** @var string */
-    public $font = 'Arial';
+    public string $font = 'Arial';
 
-    /** @var int */
-    public $fontSize = 12;
+    public int $fontSize = 12;
 
-    /** @var string */
-    public $stringCommands;
+    public string $stringCommands;
 
     /**
      * Upon instantiation This starts writing the EPS Document.
@@ -110,7 +107,7 @@ class Eps
      *
      * @return string return the font name e.g Arial
      */
-    public function getFont()
+    public function getFont(): string
     {
         return $this->font;
     }
@@ -146,7 +143,7 @@ class Eps
         $y_from = 0,
         $x_to = 0,
         $y_to = 0,
-        $lineWidth = 0
+        $lineWidth = 0,
     ): void {
         $this->stringCommands .= $lineWidth . " setlinewidth  \n";
         $this->stringCommands .= $x_from . ' ' . $y_from . " moveto \n";

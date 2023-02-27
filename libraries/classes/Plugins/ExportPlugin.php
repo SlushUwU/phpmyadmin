@@ -28,15 +28,11 @@ abstract class ExportPlugin implements Plugin
      */
     protected ExportPluginProperties $properties;
 
-    /** @var Relation */
-    public $relation;
-
     final public function __construct(
-        Relation $relation,
+        public Relation $relation,
         protected Export $export,
-        protected Transformations $transformations
+        protected Transformations $transformations,
     ) {
-        $this->relation = $relation;
         $this->init();
         $this->properties = $this->setProperties();
     }
@@ -89,7 +85,7 @@ abstract class ExportPlugin implements Plugin
         $table,
         $errorUrl,
         $sqlQuery,
-        array $aliases = []
+        array $aliases = [],
     ): bool;
 
     /**
@@ -159,7 +155,7 @@ abstract class ExportPlugin implements Plugin
         $comments = false,
         $mime = false,
         $dates = false,
-        array $aliases = []
+        array $aliases = [],
     ): bool {
         return true;
     }
@@ -174,7 +170,7 @@ abstract class ExportPlugin implements Plugin
     public function exportMetadata(
         $db,
         string|array $tables,
-        array $metadataTypes
+        array $metadataTypes,
     ): bool {
         return true;
     }
@@ -188,7 +184,7 @@ abstract class ExportPlugin implements Plugin
      *
      * @return string resulting definition
      */
-    public function getTableDefStandIn($db, $view, $aliases = [])
+    public function getTableDefStandIn($db, $view, $aliases = []): string
     {
         return '';
     }
@@ -201,7 +197,7 @@ abstract class ExportPlugin implements Plugin
      *
      * @return string Formatted triggers list
      */
-    protected function getTriggers($db, $table)
+    protected function getTriggers($db, $table): string
     {
         return '';
     }
@@ -267,9 +263,9 @@ abstract class ExportPlugin implements Plugin
      *
      * @return string alias of the identifier if found or ''
      */
-    public function getAlias(array $aliases, $id, $type = 'dbtblcol', $db = '', $tbl = '')
+    public function getAlias(array $aliases, $id, $type = 'dbtblcol', $db = '', $tbl = ''): string
     {
-        if (! empty($db) && isset($aliases[$db])) {
+        if ($db !== '' && isset($aliases[$db])) {
             $aliases = [
                 $db => $aliases[$db],
             ];
@@ -286,7 +282,7 @@ abstract class ExportPlugin implements Plugin
                 continue;
             }
 
-            if (! empty($tbl) && isset($db['tables'][$tbl])) {
+            if ($tbl !== '' && isset($db['tables'][$tbl])) {
                 $db['tables'] = [
                     $tbl => $db['tables'][$tbl],
                 ];
@@ -333,8 +329,8 @@ abstract class ExportPlugin implements Plugin
         array $foreigners,
         $fieldName,
         $db,
-        array $aliases = []
-    ) {
+        array $aliases = [],
+    ): string {
         $foreigner = $this->relation->searchColumnInForeigners($foreigners, $fieldName);
         if ($foreigner) {
             $ftable = $foreigner['foreign_table'];

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Command;
 
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -16,13 +17,10 @@ use function sprintf;
 use function str_replace;
 use function trim;
 
+#[AsCommand(name: 'write-revision-info', description: 'Write Git revision.')]
 class WriteGitRevisionCommand extends Command
 {
-    /** @var string|null */
-    protected static $defaultName = 'write-revision-info';
-
-    /** @var string */
-    private static $generatedClassTemplate = <<<'PHP'
+    private static string $generatedClassTemplate = <<<'PHP'
 <?php
 
 declare(strict_types=1);
@@ -43,20 +41,19 @@ PHP;
 
     protected function configure(): void
     {
-        $this->setDescription('Write Git revision');
         $this->addOption(
             'remote-commit-url',
             null,
             InputOption::VALUE_OPTIONAL,
             'The remote URL to a commit',
-            'https://github.com/phpmyadmin/phpmyadmin/commit/%s'
+            'https://github.com/phpmyadmin/phpmyadmin/commit/%s',
         );
         $this->addOption(
             'remote-branch-url',
             null,
             InputOption::VALUE_OPTIONAL,
             'The remote URL to a branch',
-            'https://github.com/phpmyadmin/phpmyadmin/tree/%s'
+            'https://github.com/phpmyadmin/phpmyadmin/tree/%s',
         );
         $this->setHelp('This command generates the revision-info.php file from Git data.');
     }
@@ -108,7 +105,7 @@ PHP;
             trim($revisionText),
             sprintf($commitUrlFormat, trim($commitHash)),
             trim($branchName),
-            sprintf($branchUrlFormat, $branchName)
+            sprintf($branchUrlFormat, $branchName),
         );
     }
 

@@ -61,7 +61,7 @@ class DbiDummy implements DbiExtension
      *     'pos'?: int
      * }[]
      */
-    private $filoQueries = [];
+    private array $filoQueries = [];
 
     /**
      * First in, last out queries
@@ -70,7 +70,7 @@ class DbiDummy implements DbiExtension
      *
      * @var string[]
      */
-    private $fifoDatabasesToSelect = [];
+    private array $fifoDatabasesToSelect = [];
 
     /**
      * @var array
@@ -82,13 +82,13 @@ class DbiDummy implements DbiExtension
      *     'pos'?: int
      * }[]
      */
-    private $dummyQueries = [];
+    private array $dummyQueries = [];
 
     /**
      * @var string[]
      * @psalm-var non-empty-string[]
      */
-    private $fifoErrorCodes = [];
+    private array $fifoErrorCodes = [];
 
     public const OFFSET_GLOBAL = 1000;
 
@@ -131,17 +131,13 @@ class DbiDummy implements DbiExtension
         return $this->fifoErrorCodes !== [];
     }
 
-    /**
-     * @return string[]
-     */
+    /** @return string[] */
     public function getUnUsedDatabaseSelects(): array
     {
         return $this->fifoDatabasesToSelect;
     }
 
-    /**
-     * @return array[]
-     */
+    /** @return array[] */
     public function getUnUsedQueries(): array
     {
         $unUsed = [];
@@ -161,10 +157,7 @@ class DbiDummy implements DbiExtension
         Assert::assertSame([], $this->getUnUsedQueries(), 'Some queries where not used!');
     }
 
-    /**
-     * @return false|int|null
-     */
-    private function findFiloQuery(string $query)
+    private function findFiloQuery(string $query): false|int|null
     {
         for ($i = 0, $nb = count($this->filoQueries); $i < $nb; $i++) {
             if ($this->filoQueries[$i]['query'] !== $query) {
@@ -226,10 +219,8 @@ class DbiDummy implements DbiExtension
      * Run the multi query and output the results
      *
      * @param string $query multi query statement to execute
-     *
-     * @return bool
      */
-    public function realMultiQuery(Connection $connection, $query)
+    public function realMultiQuery(Connection $connection, $query): bool
     {
         return false;
     }
@@ -239,7 +230,7 @@ class DbiDummy implements DbiExtension
      *
      * @param int $result MySQL result
      */
-    public function fetchAny($result): array|null
+    public function fetchAny(int $result): array|null
     {
         $query_data = &$this->getQueryData($result);
         if ($query_data['pos'] >= count((array) $query_data['result'])) {
@@ -257,7 +248,7 @@ class DbiDummy implements DbiExtension
      *
      * @param int $result MySQL result
      */
-    public function fetchAssoc($result): array|null
+    public function fetchAssoc(int $result): array|null
     {
         $data = $this->fetchAny($result);
         $query_data = $this->getQueryData($result);
@@ -278,7 +269,7 @@ class DbiDummy implements DbiExtension
      *
      * @param int $result MySQL result
      */
-    public function fetchRow($result): array|null
+    public function fetchRow(int $result): array|null
     {
         return $this->fetchAny($result);
     }
@@ -289,7 +280,7 @@ class DbiDummy implements DbiExtension
      * @param int $result database result
      * @param int $offset offset to seek
      */
-    public function dataSeek($result, $offset): bool
+    public function dataSeek(int $result, int $offset): bool
     {
         $query_data = &$this->getQueryData($result);
         if ($offset > count($query_data['result'])) {
@@ -332,7 +323,7 @@ class DbiDummy implements DbiExtension
      *
      * @return string type of connection used
      */
-    public function getHostInfo(Connection $connection)
+    public function getHostInfo(Connection $connection): string
     {
         return '';
     }
@@ -342,7 +333,7 @@ class DbiDummy implements DbiExtension
      *
      * @return int version of the MySQL protocol used
      */
-    public function getProtoInfo(Connection $connection)
+    public function getProtoInfo(Connection $connection): int
     {
         return -1;
     }
@@ -352,7 +343,7 @@ class DbiDummy implements DbiExtension
      *
      * @return string MySQL client library version
      */
-    public function getClientInfo()
+    public function getClientInfo(): string
     {
         return 'libmysql - mysqlnd x.x.x-dev (phpMyAdmin tests)';
     }
@@ -376,10 +367,9 @@ class DbiDummy implements DbiExtension
      *
      * @param int|bool $result MySQL result
      *
-     * @return string|int
      * @psalm-return int|numeric-string
      */
-    public function numRows($result)
+    public function numRows(int|bool $result): string|int
     {
         if (is_bool($result)) {
             return 0;
@@ -407,7 +397,7 @@ class DbiDummy implements DbiExtension
      *
      * @return FieldMetadata[] meta info for fields in $result
      */
-    public function getFieldsMeta($result): array
+    public function getFieldsMeta(int $result): array
     {
         $query_data = $this->getQueryData($result);
         /** @var FieldMetadata[] $metadata */
@@ -435,7 +425,7 @@ class DbiDummy implements DbiExtension
      *
      * @return int  field count
      */
-    public function numFields($result)
+    public function numFields(int $result): int
     {
         $query_data = $this->getQueryData($result);
 
@@ -449,7 +439,7 @@ class DbiDummy implements DbiExtension
      *
      * @return string a MySQL escaped string
      */
-    public function escapeString(Connection $connection, $string)
+    public function escapeString(Connection $connection, $string): string
     {
         return addslashes($string);
     }
@@ -468,7 +458,7 @@ class DbiDummy implements DbiExtension
      * @param object[]   $metadata The result metadata
      * @phpstan-param array<int, array<int, array{string: string}|bool|int|string|null>|bool>|bool $result
      */
-    public function addResult(string $query, $result, array $columns = [], array $metadata = []): void
+    public function addResult(string $query, array|bool $result, array $columns = [], array $metadata = []): void
     {
         $this->filoQueries[] = [
             'query' => $query,
@@ -513,11 +503,13 @@ class DbiDummy implements DbiExtension
      *
      * @return array
      */
-    private function &getQueryData($result): array
+    private function &getQueryData(object|int $result): array
     {
         if (! is_int($result)) {
+            $return = [];
+
             // This never happens
-            return [];
+            return $return;
         }
 
         if ($result >= self::OFFSET_GLOBAL) {

@@ -22,8 +22,7 @@ use function trim;
  */
 class GisLineString extends GisGeometry
 {
-    /** @var self */
-    private static $instance;
+    private static self $instance;
 
     /**
      * A private constructor; prevents direct creation of object.
@@ -37,7 +36,7 @@ class GisLineString extends GisGeometry
      *
      * @return GisLineString the singleton
      */
-    public static function singleton()
+    public static function singleton(): GisLineString
     {
         if (! isset(self::$instance)) {
             self::$instance = new GisLineString();
@@ -74,7 +73,7 @@ class GisLineString extends GisGeometry
         string $label,
         array $color,
         array $scale_data,
-        ImageWrapper $image
+        ImageWrapper $image,
     ): ImageWrapper {
         // allocate colors
         $black = $image->colorAllocate(0, 0, 0);
@@ -92,7 +91,7 @@ class GisLineString extends GisGeometry
                     (int) round($temp_point[1]),
                     (int) round($point[0]),
                     (int) round($point[1]),
-                    $line_color
+                    $line_color,
                 );
             }
 
@@ -106,7 +105,7 @@ class GisLineString extends GisGeometry
                 (int) round($points_arr[1][0]),
                 (int) round($points_arr[1][1]),
                 $label,
-                $black
+                $black,
             );
         }
 
@@ -124,7 +123,7 @@ class GisLineString extends GisGeometry
      *
      * @return TCPDF the modified TCPDF instance
      */
-    public function prepareRowAsPdf($spatial, string $label, array $color, array $scale_data, $pdf)
+    public function prepareRowAsPdf($spatial, string $label, array $color, array $scale_data, $pdf): TCPDF
     {
         $line = [
             'width' => 1.5,
@@ -164,7 +163,7 @@ class GisLineString extends GisGeometry
      *
      * @return string the code related to a row in the GIS dataset
      */
-    public function prepareRowAsSvg($spatial, string $label, array $color, array $scale_data)
+    public function prepareRowAsSvg($spatial, string $label, array $color, array $scale_data): string
     {
         $line_options = [
             'name' => $label,
@@ -206,7 +205,7 @@ class GisLineString extends GisGeometry
      *
      * @return string JavaScript related to a row in the GIS dataset
      */
-    public function prepareRowAsOl($spatial, int $srid, string $label, array $color, array $scale_data)
+    public function prepareRowAsOl($spatial, int $srid, string $label, array $color, array $scale_data): string
     {
         $stroke_style = [
             'color' => $color,
@@ -247,7 +246,7 @@ class GisLineString extends GisGeometry
      *
      * @return string WKT with the set of parameters passed by the GIS editor
      */
-    public function generateWkt(array $gis_data, $index, $empty = '')
+    public function generateWkt(array $gis_data, $index, $empty = ''): string
     {
         $no_of_points = $gis_data[$index]['LINESTRING']['no_of_points'] ?? 2;
         if ($no_of_points < 2) {
@@ -270,37 +269,27 @@ class GisLineString extends GisGeometry
     }
 
     /**
-     * Generate parameters for the GIS data editor from the value of the GIS column.
+     * Generate coordinate parameters for the GIS data editor from the value of the GIS column.
      *
-     * @param string $value of the GIS column
-     * @param int    $index of the geometry
+     * @param string $wkt Value of the GIS column
      *
-     * @return array params for the GIS data editor from the value of the GIS column
+     * @return array Coordinate params for the GIS data editor from the value of the GIS column
      */
-    public function generateParams($value, $index = -1)
+    protected function getCoordinateParams(string $wkt): array
     {
-        $params = [];
-        if ($index == -1) {
-            $index = 0;
-            $data = GisGeometry::generateParams($value);
-            $params['srid'] = $data['srid'];
-            $wkt = $data['wkt'];
-        } else {
-            $params[$index]['gis_type'] = 'LINESTRING';
-            $wkt = $value;
-        }
-
         // Trim to remove leading 'LINESTRING(' and trailing ')'
         $linestring = mb_substr($wkt, 11, -1);
         $points_arr = $this->extractPoints($linestring, null);
 
         $no_of_points = count($points_arr);
-        $params[$index]['LINESTRING']['no_of_points'] = $no_of_points;
+        $coords = ['no_of_points' => $no_of_points];
         for ($i = 0; $i < $no_of_points; $i++) {
-            $params[$index]['LINESTRING'][$i]['x'] = $points_arr[$i][0];
-            $params[$index]['LINESTRING'][$i]['y'] = $points_arr[$i][1];
+            $coords[$i] = [
+                'x' => $points_arr[$i][0],
+                'y' => $points_arr[$i][1],
+            ];
         }
 
-        return $params;
+        return $coords;
     }
 }

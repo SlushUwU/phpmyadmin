@@ -9,17 +9,13 @@ use PhpMyAdmin\Tests\Selenium\TestBase;
 use function sleep;
 use function str_replace;
 
-/**
- * @coversNothing
- */
+/** @coversNothing */
 class ProceduresTest extends TestBase
 {
     /**
      * The sql_mode before tests
-     *
-     * @var string
      */
-    private $originalSqlMode = '';
+    private string $originalSqlMode = '';
 
     /**
      * Setup the browser environment to run the selenium test case
@@ -27,6 +23,7 @@ class ProceduresTest extends TestBase
     protected function setUp(): void
     {
         parent::setUp();
+
         if ($this->originalSqlMode === '') {
             $this->originalSqlMode = $this->getSqlMode();
             $this->dbQuery(
@@ -34,8 +31,8 @@ class ProceduresTest extends TestBase
                 str_replace(
                     'STRICT_TRANS_TABLES',
                     '',
-                    $this->originalSqlMode
-                ) . "';"
+                    $this->originalSqlMode,
+                ) . "';",
             );
         }
 
@@ -46,7 +43,7 @@ class ProceduresTest extends TestBase
             . ' `name` varchar(20) NOT NULL,'
             . ' `datetimefield` datetime NOT NULL,'
             . ' PRIMARY KEY (`id`)'
-            . ');'
+            . ');',
         );
 
         $this->login();
@@ -74,7 +71,7 @@ class ProceduresTest extends TestBase
                 $this->assertTrue($this->isElementPresent('className', 'table_results'));
                 $sqlMode = $this->getCellByTableClass('table_results', 1, 1);
                 $this->assertNotEmpty($sqlMode);
-            }
+            },
         );
 
         return $sqlMode;
@@ -89,7 +86,7 @@ class ProceduresTest extends TestBase
             $this->dbQuery("SET GLOBAL sql_mode = '" . $this->originalSqlMode . "';");
             $this->assertEquals(
                 $this->originalSqlMode,
-                $this->getSqlMode()
+                $this->getSqlMode(),
             );
         }
 
@@ -105,7 +102,7 @@ class ProceduresTest extends TestBase
             'USE `' . $this->databaseName . '`;'
             . 'CREATE PROCEDURE `test_procedure`(IN `inp` VARCHAR(20), OUT `outp` INT)'
             . ' NOT DETERMINISTIC READS SQL DATA SQL SECURITY DEFINER SELECT char_'
-            . 'length(inp) + count(*) FROM test_table INTO outp'
+            . 'length(inp) + count(*) FROM test_table INTO outp',
         );
     }
 
@@ -128,7 +125,7 @@ class ProceduresTest extends TestBase
         $this->byName('item_param_name[0]')->sendKeys('inp');
         $this->selectByLabel(
             $this->byName('item_param_type[0]'),
-            'VARCHAR'
+            'VARCHAR',
         );
         $this->byName('item_param_length[0]')->sendKeys('20');
 
@@ -136,7 +133,7 @@ class ProceduresTest extends TestBase
 
         $this->selectByLabel(
             $this->byName('item_param_dir[1]'),
-            'OUT'
+            'OUT',
         );
         $ele = $this->waitForElement('name', 'item_param_name[1]');
         $ele->sendKeys('outp');
@@ -146,14 +143,14 @@ class ProceduresTest extends TestBase
 
         $this->selectByLabel(
             $this->byName('item_sqldataaccess'),
-            'READS SQL DATA'
+            'READS SQL DATA',
         );
 
         $this->byCssSelector('div.ui-dialog-buttonset button:nth-child(1)')->click();
 
         $this->waitForElement(
             'xpath',
-            '//div[@class=\'alert alert-success\' and contains(., \'Routine `test_procedure` has been created\')]'
+            '//div[@class=\'alert alert-success\' and contains(., \'Routine `test_procedure` has been created\')]',
         );
 
         $this->dbQuery(
@@ -161,7 +158,7 @@ class ProceduresTest extends TestBase
             function (): void {
                 $this->assertTrue($this->isElementPresent('className', 'table_results'));
                 $this->assertEquals($this->databaseName, $this->getCellByTableClass('table_results', 1, 1));
-            }
+            },
         );
 
         $this->executeProcedure('test_procedure', 14);
@@ -189,7 +186,7 @@ class ProceduresTest extends TestBase
 
         $this->waitForElement(
             'xpath',
-            '//div[@class=\'alert alert-success\' and contains(., \'Routine `test_procedure` has been modified\')]'
+            '//div[@class=\'alert alert-success\' and contains(., \'Routine `test_procedure` has been modified\')]',
         );
 
         $this->executeProcedure('test_procedure', 14);
@@ -217,7 +214,7 @@ class ProceduresTest extends TestBase
             "SHOW PROCEDURE STATUS WHERE Db='" . $this->databaseName . "'",
             function (): void {
                 $this->assertFalse($this->isElementPresent('className', 'table_results'));
-            }
+            },
         );
     }
 

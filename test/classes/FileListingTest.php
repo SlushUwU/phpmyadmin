@@ -12,17 +12,15 @@ use function is_bool;
 
 use const TEST_PATH;
 
-/**
- * @covers \PhpMyAdmin\FileListing
- */
+/** @covers \PhpMyAdmin\FileListing */
 class FileListingTest extends AbstractTestCase
 {
-    /** @var FileListing $fileListing */
-    private $fileListing;
+    private FileListing $fileListing;
 
     protected function setUp(): void
     {
         parent::setUp();
+
         $this->fileListing = new FileListing();
     }
 
@@ -42,7 +40,7 @@ class FileListingTest extends AbstractTestCase
                 'one.txt',
                 'two.md',
             ],
-            array_values($dirContent)
+            array_values($dirContent),
         );
     }
 
@@ -61,7 +59,7 @@ class FileListingTest extends AbstractTestCase
 
         $this->assertSame(
             $expectedHtmlWithoutActive,
-            $this->fileListing->getFileSelectOptions($fixturesDir)
+            $this->fileListing->getFileSelectOptions($fixturesDir),
         );
 
         $expectedHtmlWithActive = '  <option value="one.txt">' . "\n"
@@ -73,7 +71,7 @@ class FileListingTest extends AbstractTestCase
 
         $this->assertSame(
             $expectedHtmlWithActive,
-            $this->fileListing->getFileSelectOptions($fixturesDir, '', 'two.md')
+            $this->fileListing->getFileSelectOptions($fixturesDir, '', 'two.md'),
         );
 
         $expectedFilteredHtml = '  <option value="one.txt">' . "\n"
@@ -82,7 +80,7 @@ class FileListingTest extends AbstractTestCase
 
         $this->assertSame(
             $expectedFilteredHtml,
-            $this->fileListing->getFileSelectOptions($fixturesDir, '/.*\.txt/')
+            $this->fileListing->getFileSelectOptions($fixturesDir, '/.*\.txt/'),
         );
     }
 
@@ -94,9 +92,7 @@ class FileListingTest extends AbstractTestCase
         $this->assertEmpty($this->fileListing->supportedDecompressions());
     }
 
-    /**
-     * @requires extension bz2 1
-     */
+    /** @requires extension bz2 1 */
     public function testSupportedDecompressionsFull(): void
     {
         $GLOBALS['cfg']['ZipDump'] = true;

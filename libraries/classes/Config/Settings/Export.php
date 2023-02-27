@@ -14,467 +14,296 @@ use function in_array;
  */
 final class Export
 {
-    /**
-     * @var string
-     * @psalm-var 'codegen'|'csv'|'excel'|'htmlexcel'|'htmlword'|'latex'|'ods'|'odt'|'pdf'|'sql'|'texytext'|'xml'|'yaml'
-     */
-    public $format;
+    /** @psalm-var 'codegen'|'csv'|'excel'|'htmlexcel'|'htmlword'|'latex'|'ods'|'odt'|'pdf'|'sql'|'texytext'|'xml'|'yaml' */
+    public string $format;
 
-    /**
-     * @var string
-     * @psalm-var 'quick'|'custom'|'custom-no-form'
-     */
-    public $method;
+    /** @psalm-var 'quick'|'custom'|'custom-no-form' */
+    public string $method;
 
-    /**
-     * @var string
-     * @psalm-var 'none'|'zip'|'gzip'
-     */
-    public $compression;
+    /** @psalm-var 'none'|'zip'|'gzip' */
+    public string $compression;
 
     /**
      * Whether to LOCK TABLES before exporting
-     *
-     * @var bool
      */
-    public $lock_tables;
+    public bool $lock_tables;
 
     /**
      * Whether to export databases/tables as separate files
-     *
-     * @var bool
      */
-    public $as_separate_files;
+    public bool $as_separate_files;
 
-    /** @var bool */
-    public $asfile;
+    public bool $asfile;
 
-    /** @var string */
-    public $charset;
+    public string $charset;
 
-    /** @var bool */
-    public $onserver;
+    public bool $onserver;
 
-    /** @var bool */
-    public $onserver_overwrite;
+    public bool $onserver_overwrite;
 
-    /** @var bool */
-    public $quick_export_onserver;
+    public bool $quick_export_onserver;
 
-    /** @var bool */
-    public $quick_export_onserver_overwrite;
+    public bool $quick_export_onserver_overwrite;
 
-    /** @var bool */
-    public $remember_file_template;
+    public bool $remember_file_template;
 
-    /** @var string */
-    public $file_template_table;
+    public string $file_template_table;
 
-    /** @var string */
-    public $file_template_database;
+    public string $file_template_database;
 
-    /** @var string */
-    public $file_template_server;
+    public string $file_template_server;
 
-    /**
-     * @var string
-     * @psalm-var StructureOrDataType
-     */
-    public $codegen_structure_or_data;
+    /** @psalm-var StructureOrDataType */
+    public string $codegen_structure_or_data;
 
-    /**
-     * @var int
-     * @psalm-var 0|1
-     */
-    public $codegen_format;
+    /** @psalm-var 0|1 */
+    public int $codegen_format;
 
-    /** @var bool */
-    public $ods_columns;
+    public bool $ods_columns;
 
-    /** @var string */
-    public $ods_null;
+    public string $ods_null;
 
-    /**
-     * @var string
-     * @psalm-var StructureOrDataType
-     */
-    public $odt_structure_or_data;
+    /** @psalm-var StructureOrDataType */
+    public string $odt_structure_or_data;
 
-    /** @var bool */
-    public $odt_columns;
+    public bool $odt_columns;
 
-    /** @var bool */
-    public $odt_relation;
+    public bool $odt_relation;
 
-    /** @var bool */
-    public $odt_comments;
+    public bool $odt_comments;
 
-    /** @var bool */
-    public $odt_mime;
+    public bool $odt_mime;
 
-    /** @var string */
-    public $odt_null;
+    public string $odt_null;
 
-    /**
-     * @var string
-     * @psalm-var StructureOrDataType
-     */
-    public $htmlword_structure_or_data;
+    /** @psalm-var StructureOrDataType */
+    public string $htmlword_structure_or_data;
 
-    /** @var bool */
-    public $htmlword_columns;
+    public bool $htmlword_columns;
 
-    /** @var string */
-    public $htmlword_null;
+    public string $htmlword_null;
 
-    /**
-     * @var string
-     * @psalm-var StructureOrDataType
-     */
-    public $texytext_structure_or_data;
+    /** @psalm-var StructureOrDataType */
+    public string $texytext_structure_or_data;
 
-    /** @var bool */
-    public $texytext_columns;
+    public bool $texytext_columns;
 
-    /** @var string */
-    public $texytext_null;
+    public string $texytext_null;
 
-    /** @var bool */
-    public $csv_columns;
+    public bool $csv_columns;
 
-    /**
-     * @var string
-     * @psalm-var StructureOrDataType
-     */
-    public $csv_structure_or_data;
+    /** @psalm-var StructureOrDataType */
+    public string $csv_structure_or_data;
 
-    /** @var string */
-    public $csv_null;
+    public string $csv_null;
 
-    /** @var string */
-    public $csv_separator;
+    public string $csv_separator;
 
-    /** @var string */
-    public $csv_enclosed;
+    public string $csv_enclosed;
 
-    /** @var string */
-    public $csv_escaped;
+    public string $csv_escaped;
 
-    /** @var string */
-    public $csv_terminated;
+    public string $csv_terminated;
 
-    /** @var bool */
-    public $csv_removeCRLF;
+    public bool $csv_removeCRLF;
 
-    /** @var bool */
-    public $excel_columns;
+    public bool $excel_columns;
 
-    /** @var string */
-    public $excel_null;
+    public string $excel_null;
 
-    /**
-     * @var string
-     * @psalm-var 'win'|'mac_excel2003'|'mac_excel2008'
-     */
-    public $excel_edition;
+    /** @psalm-var 'win'|'mac_excel2003'|'mac_excel2008' */
+    public string $excel_edition;
 
-    /** @var bool */
-    public $excel_removeCRLF;
+    public bool $excel_removeCRLF;
 
-    /**
-     * @var string
-     * @psalm-var StructureOrDataType
-     */
-    public $excel_structure_or_data;
+    /** @psalm-var StructureOrDataType */
+    public string $excel_structure_or_data;
 
-    /**
-     * @var string
-     * @psalm-var StructureOrDataType
-     */
-    public $latex_structure_or_data;
+    /** @psalm-var StructureOrDataType */
+    public string $latex_structure_or_data;
 
-    /** @var bool */
-    public $latex_columns;
+    public bool $latex_columns;
 
-    /** @var bool */
-    public $latex_relation;
+    public bool $latex_relation;
 
-    /** @var bool */
-    public $latex_comments;
+    public bool $latex_comments;
 
-    /** @var bool */
-    public $latex_mime;
+    public bool $latex_mime;
 
-    /** @var string */
-    public $latex_null;
+    public string $latex_null;
 
-    /** @var bool */
-    public $latex_caption;
+    public bool $latex_caption;
 
-    /** @var string */
-    public $latex_structure_caption;
+    public string $latex_structure_caption;
 
-    /** @var string */
-    public $latex_structure_continued_caption;
+    public string $latex_structure_continued_caption;
 
-    /** @var string */
-    public $latex_data_caption;
+    public string $latex_data_caption;
 
-    /** @var string */
-    public $latex_data_continued_caption;
+    public string $latex_data_continued_caption;
 
-    /** @var string */
-    public $latex_data_label;
+    public string $latex_data_label;
 
-    /** @var string */
-    public $latex_structure_label;
+    public string $latex_structure_label;
 
-    /**
-     * @var string
-     * @psalm-var StructureOrDataType
-     */
-    public $mediawiki_structure_or_data;
+    /** @psalm-var StructureOrDataType */
+    public string $mediawiki_structure_or_data;
 
-    /** @var bool */
-    public $mediawiki_caption;
+    public bool $mediawiki_caption;
 
-    /** @var bool */
-    public $mediawiki_headers;
+    public bool $mediawiki_headers;
 
-    /**
-     * @var string
-     * @psalm-var StructureOrDataType
-     */
-    public $ods_structure_or_data;
+    /** @psalm-var StructureOrDataType */
+    public string $ods_structure_or_data;
 
-    /**
-     * @var string
-     * @psalm-var StructureOrDataType
-     */
-    public $pdf_structure_or_data;
+    /** @psalm-var StructureOrDataType */
+    public string $pdf_structure_or_data;
 
-    /**
-     * @var string
-     * @psalm-var StructureOrDataType
-     */
-    public $phparray_structure_or_data;
+    /** @psalm-var StructureOrDataType */
+    public string $phparray_structure_or_data;
 
-    /**
-     * @var string
-     * @psalm-var StructureOrDataType
-     */
-    public $json_structure_or_data;
+    /** @psalm-var StructureOrDataType */
+    public string $json_structure_or_data;
 
-    /** @var bool */
-    public $json_pretty_print;
+    public bool $json_pretty_print;
 
-    /** @var bool */
-    public $json_unicode;
+    public bool $json_unicode;
 
-    /**
-     * @var string
-     * @psalm-var StructureOrDataType
-     */
-    public $sql_structure_or_data;
+    /** @psalm-var StructureOrDataType */
+    public string $sql_structure_or_data;
 
-    /**
-     * @var string
-     * @psalm-var 'NONE'|'ANSI'|'DB2'|'MAXDB'|'MYSQL323'|'MYSQL40'|'MSSQL'|'ORACLE'|'TRADITIONAL'
-     */
-    public $sql_compatibility;
+    /** @psalm-var 'NONE'|'ANSI'|'DB2'|'MAXDB'|'MYSQL323'|'MYSQL40'|'MSSQL'|'ORACLE'|'TRADITIONAL' */
+    public string $sql_compatibility;
 
     /**
      * Whether to include comments in SQL export.
-     *
-     * @var bool
      */
-    public $sql_include_comments;
+    public bool $sql_include_comments;
 
-    /** @var bool */
-    public $sql_disable_fk;
+    public bool $sql_disable_fk;
 
-    /** @var bool */
-    public $sql_views_as_tables;
+    public bool $sql_views_as_tables;
 
-    /** @var bool */
-    public $sql_metadata;
+    public bool $sql_metadata;
 
-    /** @var bool */
-    public $sql_use_transaction;
+    public bool $sql_use_transaction;
 
-    /** @var bool */
-    public $sql_create_database;
+    public bool $sql_create_database;
 
-    /** @var bool */
-    public $sql_drop_database;
+    public bool $sql_drop_database;
 
-    /** @var bool */
-    public $sql_drop_table;
+    public bool $sql_drop_table;
 
     /**
      * true by default for correct behavior when dealing with exporting
      * of VIEWs and the stand-in table
-     *
-     * @var bool
      */
-    public $sql_if_not_exists;
+    public bool $sql_if_not_exists;
 
-    /** @var bool */
-    public $sql_view_current_user;
+    public bool $sql_view_current_user;
 
-    /** @var bool */
-    public $sql_or_replace_view;
+    public bool $sql_or_replace_view;
 
-    /** @var bool */
-    public $sql_procedure_function;
+    public bool $sql_procedure_function;
 
-    /** @var bool */
-    public $sql_create_table;
+    public bool $sql_create_table;
 
-    /** @var bool */
-    public $sql_create_view;
+    public bool $sql_create_view;
 
-    /** @var bool */
-    public $sql_create_trigger;
+    public bool $sql_create_trigger;
 
-    /** @var bool */
-    public $sql_auto_increment;
+    public bool $sql_auto_increment;
 
-    /** @var bool */
-    public $sql_backquotes;
+    public bool $sql_backquotes;
 
-    /** @var bool */
-    public $sql_dates;
+    public bool $sql_dates;
 
-    /** @var bool */
-    public $sql_relation;
+    public bool $sql_relation;
 
-    /** @var bool */
-    public $sql_truncate;
+    public bool $sql_truncate;
 
-    /** @var bool */
-    public $sql_delayed;
+    public bool $sql_delayed;
 
-    /** @var bool */
-    public $sql_ignore;
+    public bool $sql_ignore;
 
     /**
      * Export time in UTC.
-     *
-     * @var bool
      */
-    public $sql_utc_time;
+    public bool $sql_utc_time;
 
-    /** @var bool */
-    public $sql_hex_for_binary;
+    public bool $sql_hex_for_binary;
 
-    /**
-     * @var string
-     * @psalm-var 'INSERT'|'UPDATE'|'REPLACE'
-     */
-    public $sql_type;
+    /** @psalm-var 'INSERT'|'UPDATE'|'REPLACE' */
+    public string $sql_type;
 
-    /**
-     * @var int
-     * @psalm-var 0|positive-int
-     */
-    public $sql_max_query_size;
+    /** @psalm-var 0|positive-int */
+    public int $sql_max_query_size;
 
-    /** @var bool */
-    public $sql_mime;
+    public bool $sql_mime;
 
     /**
      * \n is replaced by new line
-     *
-     * @var string
      */
-    public $sql_header_comment;
+    public string $sql_header_comment;
 
     /**
      * Whether to use complete inserts, extended inserts, both, or neither
      *
-     * @var string
      * @psalm-var 'complete'|'extended'|'both'|'none'
      */
-    public $sql_insert_syntax;
+    public string $sql_insert_syntax;
 
-    /** @var string */
-    public $pdf_report_title;
+    public string $pdf_report_title;
 
-    /**
-     * @var string
-     * @psalm-var StructureOrDataType
-     */
-    public $xml_structure_or_data;
+    /** @psalm-var StructureOrDataType */
+    public string $xml_structure_or_data;
 
     /**
      * Export schema for each structure
-     *
-     * @var bool
      */
-    public $xml_export_struc;
+    public bool $xml_export_struc;
 
     /**
      * Export events
-     *
-     * @var bool
      */
-    public $xml_export_events;
+    public bool $xml_export_events;
 
     /**
      * Export functions
-     *
-     * @var bool
      */
-    public $xml_export_functions;
+    public bool $xml_export_functions;
 
     /**
      * Export procedures
-     *
-     * @var bool
      */
-    public $xml_export_procedures;
+    public bool $xml_export_procedures;
 
     /**
      * Export schema for each table
-     *
-     * @var bool
      */
-    public $xml_export_tables;
+    public bool $xml_export_tables;
 
     /**
      * Export triggers
-     *
-     * @var bool
      */
-    public $xml_export_triggers;
+    public bool $xml_export_triggers;
 
     /**
      * Export views
-     *
-     * @var bool
      */
-    public $xml_export_views;
+    public bool $xml_export_views;
 
     /**
      * Export contents data
-     *
-     * @var bool
      */
-    public $xml_export_contents;
+    public bool $xml_export_contents;
 
-    /**
-     * @var string
-     * @psalm-var StructureOrDataType
-     */
-    public $yaml_structure_or_data;
+    /** @psalm-var StructureOrDataType */
+    public string $yaml_structure_or_data;
 
-    /** @var bool */
-    public $remove_definer_from_definitions;
+    public bool $remove_definer_from_definitions;
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     public function __construct(array $export = [])
     {
         $this->format = $this->setFormat($export);
@@ -645,9 +474,7 @@ final class Export
         return $export['compression'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setLockTables(array $export): bool
     {
         if (! isset($export['lock_tables'])) {
@@ -657,9 +484,7 @@ final class Export
         return (bool) $export['lock_tables'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setAsSeparateFiles(array $export): bool
     {
         if (! isset($export['as_separate_files'])) {
@@ -669,9 +494,7 @@ final class Export
         return (bool) $export['as_separate_files'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setAsFile(array $export): bool
     {
         if (! isset($export['asfile'])) {
@@ -681,9 +504,7 @@ final class Export
         return (bool) $export['asfile'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setCharset(array $export): string
     {
         if (! isset($export['charset'])) {
@@ -693,9 +514,7 @@ final class Export
         return (string) $export['charset'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setOnServer(array $export): bool
     {
         if (! isset($export['onserver'])) {
@@ -705,9 +524,7 @@ final class Export
         return (bool) $export['onserver'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setOnServerOverwrite(array $export): bool
     {
         if (! isset($export['onserver_overwrite'])) {
@@ -717,9 +534,7 @@ final class Export
         return (bool) $export['onserver_overwrite'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setQuickExportOnServer(array $export): bool
     {
         if (! isset($export['quick_export_onserver'])) {
@@ -729,9 +544,7 @@ final class Export
         return (bool) $export['quick_export_onserver'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setQuickExportOnServerOverwrite(array $export): bool
     {
         if (! isset($export['quick_export_onserver_overwrite'])) {
@@ -741,9 +554,7 @@ final class Export
         return (bool) $export['quick_export_onserver_overwrite'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setRememberFileTemplate(array $export): bool
     {
         if (! isset($export['remember_file_template'])) {
@@ -753,9 +564,7 @@ final class Export
         return (bool) $export['remember_file_template'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setFileTemplateTable(array $export): string
     {
         if (! isset($export['file_template_table'])) {
@@ -765,9 +574,7 @@ final class Export
         return (string) $export['file_template_table'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setFileTemplateDatabase(array $export): string
     {
         if (! isset($export['file_template_database'])) {
@@ -777,9 +584,7 @@ final class Export
         return (string) $export['file_template_database'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setFileTemplateServer(array $export): string
     {
         if (! isset($export['file_template_server'])) {
@@ -822,9 +627,7 @@ final class Export
         return $codegenFormat === 1 ? 1 : 0;
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setOdsColumns(array $export): bool
     {
         if (! isset($export['ods_columns'])) {
@@ -834,9 +637,7 @@ final class Export
         return (bool) $export['ods_columns'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setOdsNull(array $export): string
     {
         if (! isset($export['ods_null'])) {
@@ -863,9 +664,7 @@ final class Export
         return $export['odt_structure_or_data'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setOdtColumns(array $export): bool
     {
         if (! isset($export['odt_columns'])) {
@@ -875,9 +674,7 @@ final class Export
         return (bool) $export['odt_columns'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setOdtRelation(array $export): bool
     {
         if (! isset($export['odt_relation'])) {
@@ -887,9 +684,7 @@ final class Export
         return (bool) $export['odt_relation'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setOdtComments(array $export): bool
     {
         if (! isset($export['odt_comments'])) {
@@ -899,9 +694,7 @@ final class Export
         return (bool) $export['odt_comments'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setOdtMime(array $export): bool
     {
         if (! isset($export['odt_mime'])) {
@@ -911,9 +704,7 @@ final class Export
         return (bool) $export['odt_mime'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setOdtNull(array $export): string
     {
         if (! isset($export['odt_null'])) {
@@ -940,9 +731,7 @@ final class Export
         return $export['htmlword_structure_or_data'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setHtmlwordColumns(array $export): bool
     {
         if (! isset($export['htmlword_columns'])) {
@@ -952,9 +741,7 @@ final class Export
         return (bool) $export['htmlword_columns'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setHtmlwordNull(array $export): string
     {
         if (! isset($export['htmlword_null'])) {
@@ -981,9 +768,7 @@ final class Export
         return $export['texytext_structure_or_data'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setTexytextColumns(array $export): bool
     {
         if (! isset($export['texytext_columns'])) {
@@ -993,9 +778,7 @@ final class Export
         return (bool) $export['texytext_columns'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setTexytextNull(array $export): string
     {
         if (! isset($export['texytext_null'])) {
@@ -1005,9 +788,7 @@ final class Export
         return (string) $export['texytext_null'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setCsvColumns(array $export): bool
     {
         if (! isset($export['csv_columns'])) {
@@ -1034,9 +815,7 @@ final class Export
         return $export['csv_structure_or_data'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setCsvNull(array $export): string
     {
         if (! isset($export['csv_null'])) {
@@ -1046,9 +825,7 @@ final class Export
         return (string) $export['csv_null'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setCsvSeparator(array $export): string
     {
         if (! isset($export['csv_separator'])) {
@@ -1058,9 +835,7 @@ final class Export
         return (string) $export['csv_separator'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setCsvEnclosed(array $export): string
     {
         if (! isset($export['csv_enclosed'])) {
@@ -1070,9 +845,7 @@ final class Export
         return (string) $export['csv_enclosed'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setCsvEscaped(array $export): string
     {
         if (! isset($export['csv_escaped'])) {
@@ -1082,9 +855,7 @@ final class Export
         return (string) $export['csv_escaped'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setCsvTerminated(array $export): string
     {
         if (! isset($export['csv_terminated'])) {
@@ -1094,9 +865,7 @@ final class Export
         return (string) $export['csv_terminated'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setCsvRemoveCRLF(array $export): bool
     {
         if (! isset($export['csv_removeCRLF'])) {
@@ -1106,9 +875,7 @@ final class Export
         return (bool) $export['csv_removeCRLF'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setExcelColumns(array $export): bool
     {
         if (! isset($export['excel_columns'])) {
@@ -1118,9 +885,7 @@ final class Export
         return (bool) $export['excel_columns'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setExcelNull(array $export): string
     {
         if (! isset($export['excel_null'])) {
@@ -1147,9 +912,7 @@ final class Export
         return $export['excel_edition'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setExcelRemoveCRLF(array $export): bool
     {
         if (! isset($export['excel_removeCRLF'])) {
@@ -1193,9 +956,7 @@ final class Export
         return $export['latex_structure_or_data'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setLatexColumns(array $export): bool
     {
         if (! isset($export['latex_columns'])) {
@@ -1205,9 +966,7 @@ final class Export
         return (bool) $export['latex_columns'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setLatexRelation(array $export): bool
     {
         if (! isset($export['latex_relation'])) {
@@ -1217,9 +976,7 @@ final class Export
         return (bool) $export['latex_relation'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setLatexComments(array $export): bool
     {
         if (! isset($export['latex_comments'])) {
@@ -1229,9 +986,7 @@ final class Export
         return (bool) $export['latex_comments'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setLatexMime(array $export): bool
     {
         if (! isset($export['latex_mime'])) {
@@ -1241,9 +996,7 @@ final class Export
         return (bool) $export['latex_mime'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setLatexNull(array $export): string
     {
         if (! isset($export['latex_null'])) {
@@ -1253,9 +1006,7 @@ final class Export
         return (string) $export['latex_null'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setLatexCaption(array $export): bool
     {
         if (! isset($export['latex_caption'])) {
@@ -1265,9 +1016,7 @@ final class Export
         return (bool) $export['latex_caption'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setLatexStructureCaption(array $export): string
     {
         if (! isset($export['latex_structure_caption'])) {
@@ -1277,9 +1026,7 @@ final class Export
         return (string) $export['latex_structure_caption'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setLatexStructureContinuedCaption(array $export): string
     {
         if (! isset($export['latex_structure_continued_caption'])) {
@@ -1289,9 +1036,7 @@ final class Export
         return (string) $export['latex_structure_continued_caption'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setLatexDataCaption(array $export): string
     {
         if (! isset($export['latex_data_caption'])) {
@@ -1301,9 +1046,7 @@ final class Export
         return (string) $export['latex_data_caption'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setLatexDataContinuedCaption(array $export): string
     {
         if (! isset($export['latex_data_continued_caption'])) {
@@ -1313,9 +1056,7 @@ final class Export
         return (string) $export['latex_data_continued_caption'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setLatexDataLabel(array $export): string
     {
         if (! isset($export['latex_data_label'])) {
@@ -1325,9 +1066,7 @@ final class Export
         return (string) $export['latex_data_label'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setLatexStructureLabel(array $export): string
     {
         if (! isset($export['latex_structure_label'])) {
@@ -1354,9 +1093,7 @@ final class Export
         return $export['mediawiki_structure_or_data'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setMediawikiCaption(array $export): bool
     {
         if (! isset($export['mediawiki_caption'])) {
@@ -1366,9 +1103,7 @@ final class Export
         return (bool) $export['mediawiki_caption'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setMediawikiHeaders(array $export): bool
     {
         if (! isset($export['mediawiki_headers'])) {
@@ -1446,9 +1181,7 @@ final class Export
         return $export['json_structure_or_data'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setJsonPrettyPrint(array $export): bool
     {
         if (! isset($export['json_pretty_print'])) {
@@ -1458,9 +1191,7 @@ final class Export
         return (bool) $export['json_pretty_print'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setJsonUnicode(array $export): bool
     {
         if (! isset($export['json_unicode'])) {
@@ -1512,9 +1243,7 @@ final class Export
         return $export['sql_compatibility'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setSqlIncludeComments(array $export): bool
     {
         if (! isset($export['sql_include_comments'])) {
@@ -1524,9 +1253,7 @@ final class Export
         return (bool) $export['sql_include_comments'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setSqlDisableFk(array $export): bool
     {
         if (! isset($export['sql_disable_fk'])) {
@@ -1536,9 +1263,7 @@ final class Export
         return (bool) $export['sql_disable_fk'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setSqlViewsAsTables(array $export): bool
     {
         if (! isset($export['sql_views_as_tables'])) {
@@ -1548,9 +1273,7 @@ final class Export
         return (bool) $export['sql_views_as_tables'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setSqlMetadata(array $export): bool
     {
         if (! isset($export['sql_metadata'])) {
@@ -1560,9 +1283,7 @@ final class Export
         return (bool) $export['sql_metadata'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setSqlUseTransaction(array $export): bool
     {
         if (! isset($export['sql_use_transaction'])) {
@@ -1572,9 +1293,7 @@ final class Export
         return (bool) $export['sql_use_transaction'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setSqlCreateDatabase(array $export): bool
     {
         if (! isset($export['sql_create_database'])) {
@@ -1584,9 +1303,7 @@ final class Export
         return (bool) $export['sql_create_database'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setSqlDropDatabase(array $export): bool
     {
         if (! isset($export['sql_drop_database'])) {
@@ -1596,9 +1313,7 @@ final class Export
         return (bool) $export['sql_drop_database'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setSqlDropTable(array $export): bool
     {
         if (! isset($export['sql_drop_table'])) {
@@ -1608,9 +1323,7 @@ final class Export
         return (bool) $export['sql_drop_table'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setSqlIfNotExists(array $export): bool
     {
         if (! isset($export['sql_if_not_exists'])) {
@@ -1620,9 +1333,7 @@ final class Export
         return (bool) $export['sql_if_not_exists'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setSqlViewCurrentUser(array $export): bool
     {
         if (! isset($export['sql_view_current_user'])) {
@@ -1632,9 +1343,7 @@ final class Export
         return (bool) $export['sql_view_current_user'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setSqlOrReplaceView(array $export): bool
     {
         if (! isset($export['sql_or_replace_view'])) {
@@ -1644,9 +1353,7 @@ final class Export
         return (bool) $export['sql_or_replace_view'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setSqlProcedureFunction(array $export): bool
     {
         if (! isset($export['sql_procedure_function'])) {
@@ -1656,9 +1363,7 @@ final class Export
         return (bool) $export['sql_procedure_function'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setSqlCreateTable(array $export): bool
     {
         if (! isset($export['sql_create_table'])) {
@@ -1668,9 +1373,7 @@ final class Export
         return (bool) $export['sql_create_table'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setSqlCreateView(array $export): bool
     {
         if (! isset($export['sql_create_view'])) {
@@ -1680,9 +1383,7 @@ final class Export
         return (bool) $export['sql_create_view'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setSqlCreateTrigger(array $export): bool
     {
         if (! isset($export['sql_create_trigger'])) {
@@ -1692,9 +1393,7 @@ final class Export
         return (bool) $export['sql_create_trigger'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setSqlAutoIncrement(array $export): bool
     {
         if (! isset($export['sql_auto_increment'])) {
@@ -1704,9 +1403,7 @@ final class Export
         return (bool) $export['sql_auto_increment'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setSqlBackquotes(array $export): bool
     {
         if (! isset($export['sql_backquotes'])) {
@@ -1716,9 +1413,7 @@ final class Export
         return (bool) $export['sql_backquotes'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setSqlDates(array $export): bool
     {
         if (! isset($export['sql_dates'])) {
@@ -1728,9 +1423,7 @@ final class Export
         return (bool) $export['sql_dates'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setSqlRelation(array $export): bool
     {
         if (! isset($export['sql_relation'])) {
@@ -1740,9 +1433,7 @@ final class Export
         return (bool) $export['sql_relation'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setSqlTruncate(array $export): bool
     {
         if (! isset($export['sql_truncate'])) {
@@ -1752,9 +1443,7 @@ final class Export
         return (bool) $export['sql_truncate'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setSqlDelayed(array $export): bool
     {
         if (! isset($export['sql_delayed'])) {
@@ -1764,9 +1453,7 @@ final class Export
         return (bool) $export['sql_delayed'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setSqlIgnore(array $export): bool
     {
         if (! isset($export['sql_ignore'])) {
@@ -1776,9 +1463,7 @@ final class Export
         return (bool) $export['sql_ignore'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setSqlUtcTime(array $export): bool
     {
         if (! isset($export['sql_utc_time'])) {
@@ -1788,9 +1473,7 @@ final class Export
         return (bool) $export['sql_utc_time'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setSqlHexForBinary(array $export): bool
     {
         if (! isset($export['sql_hex_for_binary'])) {
@@ -1830,9 +1513,7 @@ final class Export
         return $maxQuerySize >= 0 ? $maxQuerySize : 50000;
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setSqlMime(array $export): bool
     {
         if (! isset($export['sql_mime'])) {
@@ -1842,9 +1523,7 @@ final class Export
         return (bool) $export['sql_mime'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setSqlHeaderComment(array $export): string
     {
         if (! isset($export['sql_header_comment'])) {
@@ -1871,9 +1550,7 @@ final class Export
         return $export['sql_insert_syntax'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setPdfReportTitle(array $export): string
     {
         if (! isset($export['pdf_report_title'])) {
@@ -1900,9 +1577,7 @@ final class Export
         return $export['xml_structure_or_data'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setXmlExportStruc(array $export): bool
     {
         if (! isset($export['xml_export_struc'])) {
@@ -1912,9 +1587,7 @@ final class Export
         return (bool) $export['xml_export_struc'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setXmlExportEvents(array $export): bool
     {
         if (! isset($export['xml_export_events'])) {
@@ -1924,9 +1597,7 @@ final class Export
         return (bool) $export['xml_export_events'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setXmlExportFunctions(array $export): bool
     {
         if (! isset($export['xml_export_functions'])) {
@@ -1936,9 +1607,7 @@ final class Export
         return (bool) $export['xml_export_functions'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setXmlExportProcedures(array $export): bool
     {
         if (! isset($export['xml_export_procedures'])) {
@@ -1948,9 +1617,7 @@ final class Export
         return (bool) $export['xml_export_procedures'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setXmlExportTables(array $export): bool
     {
         if (! isset($export['xml_export_tables'])) {
@@ -1960,9 +1627,7 @@ final class Export
         return (bool) $export['xml_export_tables'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setXmlExportTriggers(array $export): bool
     {
         if (! isset($export['xml_export_triggers'])) {
@@ -1972,9 +1637,7 @@ final class Export
         return (bool) $export['xml_export_triggers'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setXmlExportViews(array $export): bool
     {
         if (! isset($export['xml_export_views'])) {
@@ -1984,9 +1647,7 @@ final class Export
         return (bool) $export['xml_export_views'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setXmlExportContents(array $export): bool
     {
         if (! isset($export['xml_export_contents'])) {
@@ -2013,9 +1674,7 @@ final class Export
         return $export['yaml_structure_or_data'];
     }
 
-    /**
-     * @param array<int|string, mixed> $export
-     */
+    /** @param array<int|string, mixed> $export */
     private function setRemoveDefinerClause(array $export): bool
     {
         if (! isset($export['remove_definer_from_definitions'])) {

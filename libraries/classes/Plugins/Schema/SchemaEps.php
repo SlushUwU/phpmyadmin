@@ -23,9 +23,7 @@ use function __;
  */
 class SchemaEps extends SchemaPlugin
 {
-    /**
-     * @psalm-return non-empty-lowercase-string
-     */
+    /** @psalm-return non-empty-lowercase-string */
     public function getName(): string
     {
         return 'eps';
@@ -54,19 +52,19 @@ class SchemaEps extends SchemaPlugin
         // create leaf items and add them to the group
         $leaf = new BoolPropertyItem(
             'all_tables_same_width',
-            __('Same width for all tables')
+            __('Same width for all tables'),
         );
         $specificOptions->addProperty($leaf);
 
         $leaf = new SelectPropertyItem(
             'orientation',
-            __('Orientation')
+            __('Orientation'),
         );
         $leaf->setValues(
             [
                 'L' => __('Landscape'),
                 'P' => __('Portrait'),
-            ]
+            ],
         );
         $specificOptions->addProperty($leaf);
 
@@ -79,9 +77,7 @@ class SchemaEps extends SchemaPlugin
         return $schemaPluginProperties;
     }
 
-    /**
-     * @return array{fileName: non-empty-string, mediaType: non-empty-string, fileData: string}
-     */
+    /** @return array{fileName: non-empty-string, mediaType: non-empty-string, fileData: string} */
     public function getExportInfo(DatabaseName $db): array
     {
         $export = new EpsRelationSchema($db);

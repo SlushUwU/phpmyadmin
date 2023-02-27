@@ -24,20 +24,17 @@ use PhpMyAdmin\Tests\Stubs\ResponseRenderer;
 use PhpMyAdmin\Transformations;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 
-/**
- * @covers \PhpMyAdmin\Controllers\Table\ReplaceController
- */
+/** @covers \PhpMyAdmin\Controllers\Table\ReplaceController */
 class ReplaceControllerTest extends AbstractTestCase
 {
-    /** @var DatabaseInterface */
-    protected $dbi;
+    protected DatabaseInterface $dbi;
 
-    /** @var DbiDummy */
-    protected $dummyDbi;
+    protected DbiDummy $dummyDbi;
 
     protected function setUp(): void
     {
         parent::setUp();
+
         $this->dummyDbi = $this->createDbiDummy();
         $this->dbi = $this->createDatabaseInterface($this->dummyDbi);
         $GLOBALS['dbi'] = $this->dbi;
@@ -122,7 +119,7 @@ class ReplaceControllerTest extends AbstractTestCase
             new InsertEdit($dbi, $relation, $transformations, new FileListing(), $template),
             $transformations,
             $relation,
-            $dbi
+            $dbi,
         );
 
         $sqlController = new SqlController(
@@ -134,10 +131,10 @@ class ReplaceControllerTest extends AbstractTestCase
                 new RelationCleanup($dbi, $relation),
                 new Operations($dbi, $relation),
                 $transformations,
-                $template
+                $template,
             ),
             new CheckUserPrivileges($dbi),
-            $dbi
+            $dbi,
         );
         $GLOBALS['containerBuilder'] = $this->createStub(ContainerBuilder::class);
         $GLOBALS['containerBuilder']->method('get')->willReturn($sqlController);
@@ -150,7 +147,7 @@ class ReplaceControllerTest extends AbstractTestCase
         $this->dummyDbi->assertAllSelectsConsumed();
         $this->assertStringContainsString(
             'class="icon ic_s_success"> Showing rows 0 -  1 (2 total, Query took',
-            $output
+            $output,
         );
         $this->assertStringContainsString('SELECT * FROM `test_tbl`', $output);
     }
@@ -179,7 +176,7 @@ class ReplaceControllerTest extends AbstractTestCase
             $insertEdit,
             $transformations,
             $relation,
-            $dbi
+            $dbi,
         );
 
         $request = $this->createStub(ServerRequest::class);
@@ -200,12 +197,12 @@ class ReplaceControllerTest extends AbstractTestCase
         $this->assertStringContainsString(
             '<form id="continueForm" method="post" '
             . 'action="index.php?route=/table/replace&lang=en" name="continueForm">',
-            $output
+            $output,
         );
         $this->assertStringContainsString(
             'Continue insertion with         <input type="number" '
             . 'name="insert_rows" id="insert_rows" value="5" min="1">',
-            $output
+            $output,
         );
     }
 }

@@ -35,7 +35,7 @@ abstract class AbstractTestCase extends TestCase
      *
      * @var string[]
      */
-    private $globalsAllowList = [
+    private array $globalsAllowList = [
         '__composer_autoload_files',
         'GLOBALS',
         '_SERVER',
@@ -174,7 +174,7 @@ abstract class AbstractTestCase extends TestCase
         $GLOBALS['theme'] = Theme::load(
             ThemeManager::getThemesDir() . 'pmahomme',
             ThemeManager::getThemesFsDir() . 'pmahomme' . DIRECTORY_SEPARATOR,
-            'pmahomme'
+            'pmahomme',
         );
     }
 
@@ -222,7 +222,7 @@ abstract class AbstractTestCase extends TestCase
      *
      * @return mixed the output from the protected method.
      */
-    protected function callFunction($object, string $className, string $methodName, array $params)
+    protected function callFunction(object|null $object, string $className, string $methodName, array $params): mixed
     {
         $class = new ReflectionClass($className);
         $method = $class->getMethod($methodName);

@@ -47,7 +47,9 @@ class TransformationPluginsTest extends AbstractTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
         parent::setLanguage();
+
         // For Application Octetstream Download plugin
 
         $GLOBALS['fields_meta'] = [];
@@ -58,6 +60,7 @@ class TransformationPluginsTest extends AbstractTestCase
 
         // For Image_*_Inline plugin
         parent::setGlobalConfig();
+
         $GLOBALS['Server'] = 1;
 
         // For Date Format plugin
@@ -710,7 +713,7 @@ class TransformationPluginsTest extends AbstractTestCase
      * @dataProvider multiDataProvider
      * @group medium
      */
-    public function testGetMulti($object, string $method, $expected, array $args = []): void
+    public function testGetMulti(object $object, string $method, mixed $expected, array $args = []): void
     {
         if (! method_exists($object, $method)) {
             return;
@@ -719,7 +722,7 @@ class TransformationPluginsTest extends AbstractTestCase
         $reflectionMethod = new ReflectionMethod($object, $method);
         $this->assertEquals(
             $expected,
-            $reflectionMethod->invokeArgs($object, $args)
+            $reflectionMethod->invokeArgs($object, $args),
         );
     }
 
@@ -1266,23 +1269,23 @@ class TransformationPluginsTest extends AbstractTestCase
      * @group medium
      */
     public function testTransformation(
-        $object,
+        object $object,
         array $applyArgs,
-        $transformed,
+        string|int $transformed,
         bool $success = true,
-        string $error = ''
+        string $error = '',
     ): void {
         $reflectionMethod = new ReflectionMethod($object, 'applyTransformation');
         $this->assertEquals(
             $transformed,
-            $reflectionMethod->invokeArgs($object, $applyArgs)
+            $reflectionMethod->invokeArgs($object, $applyArgs),
         );
 
         // For output transformation plugins, this method may not exist
         if (method_exists($object, 'isSuccess')) {
             $this->assertEquals(
                 $success,
-                $object->isSuccess()
+                $object->isSuccess(),
             );
         }
 
@@ -1293,7 +1296,7 @@ class TransformationPluginsTest extends AbstractTestCase
 
         $this->assertEquals(
             $error,
-            $object->getError()
+            $object->getError(),
         );
     }
 }

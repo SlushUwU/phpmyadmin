@@ -6,17 +6,13 @@ namespace PhpMyAdmin\Tests\Selenium;
 
 use function trim;
 
-/**
- * @coversNothing
- */
+/** @coversNothing */
 class ChangePasswordTest extends TestBase
 {
     /**
      * Create a test database for this test class
-     *
-     * @var bool
      */
-    protected static $createDatabase = false;
+    protected static bool $createDatabase = false;
 
     /**
      * Tests the changing of the password
@@ -63,7 +59,7 @@ class ChangePasswordTest extends TestBase
         $ele = $this->waitForElement('cssSelector', '.alert-success');
         $this->assertEquals(
             'The profile has been updated.',
-            trim($ele->getText())
+            trim($ele->getText()),
         );
     }
 }

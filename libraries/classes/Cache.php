@@ -12,7 +12,7 @@ use function array_key_exists;
 class Cache
 {
     /** @var array<string,mixed> */
-    private static $cacheData = [];
+    private static array $cacheData = [];
 
     /**
      * Store a value
@@ -43,7 +43,7 @@ class Cache
      *
      * @return mixed The cached value
      */
-    public static function get(string $cacheKey, $defaultValue = null)
+    public static function get(string $cacheKey, $defaultValue = null): mixed
     {
         return self::$cacheData[$cacheKey] ?? $defaultValue;
     }

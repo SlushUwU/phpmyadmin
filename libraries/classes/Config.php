@@ -74,25 +74,24 @@ use const PHP_URL_SCHEME;
 class Config
 {
     /** @var array   default configuration settings */
-    public $default = [];
+    public array $default = [];
 
     /** @var array   configuration settings, without user preferences applied */
-    public $baseSettings = [];
+    public array $baseSettings = [];
 
     /** @var array   configuration settings */
-    public $settings = [];
+    public array $settings = [];
 
     /** @var string  config source */
-    public $source = '';
+    public string $source = '';
 
     /** @var int     source modification time */
-    public $sourceMtime = 0;
+    public int $sourceMtime = 0;
 
-    /** @var bool */
-    public $errorConfigFile = false;
+    public bool $errorConfigFile = false;
 
     /** @var array */
-    public $defaultServer = [];
+    public array $defaultServer = [];
 
     /**
      * @param string|null $source source to read config from
@@ -395,7 +394,7 @@ class Config
         $cfg = array_filter(
             $cfg,
             static fn (string $key): bool => ! str_contains($key, '/'),
-            ARRAY_FILTER_USE_KEY
+            ARRAY_FILTER_USE_KEY,
         );
 
         $this->settings = array_replace_recursive($this->settings, $cfg);
@@ -477,14 +476,13 @@ class Config
                     null,
                     'ThemeDefault',
                     $tmanager->theme->getId(),
-                    'original'
+                    'original',
                 );
             }
         } else {
             // no cookie - read default from settings
             if (
-                $tmanager->theme !== null
-                && $this->settings['ThemeDefault'] != $tmanager->theme->getId()
+                $this->settings['ThemeDefault'] != $tmanager->theme->getId()
                 && $tmanager->checkTheme($this->settings['ThemeDefault'])
             ) {
                 $tmanager->setActiveTheme($this->settings['ThemeDefault']);
@@ -536,8 +534,8 @@ class Config
         string|null $cookie_name,
         string $cfg_path,
         $new_cfg_value,
-        $default_value = null
-    ) {
+        $default_value = null,
+    ): bool|Message {
         $userPreferences = new UserPreferences($GLOBALS['dbi']);
         $result = true;
         // use permanent user preferences if possible
@@ -570,10 +568,8 @@ class Config
      *
      * @param string $cookie_name cookie name
      * @param mixed  $cfg_value   config value
-     *
-     * @return mixed
      */
-    public function getUserValue(string $cookie_name, $cfg_value)
+    public function getUserValue(string $cookie_name, $cfg_value): mixed
     {
         $cookie_exists = ! empty($this->getCookie($cookie_name));
         $prefs_type = $this->get('user_preferences');
@@ -600,9 +596,7 @@ class Config
         $this->source = trim($source);
     }
 
-    /**
-     * @throws ConfigException
-     */
+    /** @throws ConfigException */
     public function checkConfigSource(): bool
     {
         if (! $this->getSource()) {
@@ -634,7 +628,7 @@ class Config
                     function_exists('__')
                         ? __('Existing configuration file (%s) is not readable.')
                         : 'Existing configuration file (%s) is not readable.',
-                    $this->getSource()
+                    $this->getSource(),
                 ));
             }
         }
@@ -698,7 +692,7 @@ class Config
      *
      * @return mixed|null value
      */
-    public function get(string $setting)
+    public function get(string $setting): mixed
     {
         return $this->settings[$setting] ?? null;
     }
@@ -847,7 +841,7 @@ class Config
 
         $parts = explode(
             '/',
-            rtrim(str_replace('\\', '/', $parsedUrlPath), '/')
+            rtrim(str_replace('\\', '/', $parsedUrlPath), '/'),
         );
 
         /* Remove filename */
@@ -888,7 +882,7 @@ class Config
             time() - 3600,
             $this->getRootPath(),
             '',
-            $this->isHttps()
+            $this->isHttps(),
         );
     }
 
@@ -907,7 +901,7 @@ class Config
         string $value,
         string|null $default = null,
         int|null $validity = null,
-        bool $httponly = true
+        bool $httponly = true,
     ): bool {
         if ($value !== '' && $value === $default) {
             // default value is used
@@ -971,7 +965,7 @@ class Config
      *
      * @return mixed|null result of getCookie()
      */
-    public function getCookie(string $cookieName)
+    public function getCookie(string $cookieName): mixed
     {
         return $_COOKIE[$this->getCookieName($cookieName)] ?? null;
     }

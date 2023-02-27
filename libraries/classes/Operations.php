@@ -21,7 +21,6 @@ use function is_scalar;
 use function is_string;
 use function mb_strtolower;
 use function str_replace;
-use function strlen;
 use function strtolower;
 use function urldecode;
 
@@ -117,8 +116,8 @@ class Operations
         array $tables,
         $exportSqlPlugin,
         $db,
-        DatabaseName $newDatabaseName
-    ) {
+        DatabaseName $newDatabaseName,
+    ): array {
         $views = [];
         foreach ($tables as $table) {
             // to be able to rename a db containing views,
@@ -158,7 +157,7 @@ class Operations
      *
      * @return array SQL queries for the constraints
      */
-    public function copyTables(array $tables, $move, $db, DatabaseName $newDatabaseName)
+    public function copyTables(array $tables, $move, $db, DatabaseName $newDatabaseName): array
     {
         $sqlContraints = [];
         foreach ($tables as $table) {
@@ -200,7 +199,7 @@ class Operations
                     ($copyMode ?? 'data'),
                     $move,
                     'db_copy',
-                    isset($_POST['drop_if_exists']) && $_POST['drop_if_exists'] === 'true'
+                    isset($_POST['drop_if_exists']) && $_POST['drop_if_exists'] === 'true',
                 )
             ) {
                 $GLOBALS['_error'] = true;
@@ -242,7 +241,7 @@ class Operations
         /** @var string[] $eventNames */
         $eventNames = $this->dbi->fetchResult(
             'SELECT EVENT_NAME FROM information_schema.EVENTS WHERE EVENT_SCHEMA= '
-            . $this->dbi->quoteString($db) . ';'
+            . $this->dbi->quoteString($db) . ';',
         );
 
         foreach ($eventNames as $eventName) {
@@ -274,7 +273,7 @@ class Operations
                 'structure',
                 $move,
                 'db_copy',
-                true
+                true,
             );
             if (! $copyingSucceeded) {
                 $GLOBALS['_error'] = true;
@@ -373,7 +372,7 @@ class Operations
 
         foreach ($oldPrivsTable as $oldPriv) {
             $newDbTablePrivsQuery = 'INSERT INTO ' . Util::backquote(
-                'tables_priv'
+                'tables_priv',
             ) . ' VALUES("' . $oldPriv[0] . '", "' . $newName . '", "'
             . $oldPriv[2] . '", "' . $oldPriv[3] . '", "' . $oldPriv[4]
             . '", "' . $oldPriv[5] . '", "' . $oldPriv[6] . '", "'
@@ -391,7 +390,7 @@ class Operations
 
         foreach ($oldPrivsCol as $oldPriv) {
             $newDbColPrivsQuery = 'INSERT INTO ' . Util::backquote(
-                'columns_priv'
+                'columns_priv',
             ) . ' VALUES("' . $oldPriv[0] . '", "' . $newName . '", "'
             . $oldPriv[2] . '", "' . $oldPriv[3] . '", "' . $oldPriv[4]
             . '", "' . $oldPriv[5] . '", "' . $oldPriv[6] . '");';
@@ -408,7 +407,7 @@ class Operations
 
         foreach ($oldPrivsProc as $oldPriv) {
             $newDbProcPrivsQuery = 'INSERT INTO ' . Util::backquote(
-                'procs_priv'
+                'procs_priv',
             ) . ' VALUES("' . $oldPriv[0] . '", "' . $newName . '", "'
             . $oldPriv[2] . '", "' . $oldPriv[3] . '", "' . $oldPriv[4]
             . '", "' . $oldPriv[5] . '", "' . $oldPriv[6] . '", "'
@@ -463,7 +462,7 @@ class Operations
      *
      * @return array
      */
-    public function getPossibleRowFormat()
+    public function getPossibleRowFormat(): array
     {
         // the outer array is for engines, the inner array contains the dropdown
         // option values as keys then the dropdown option labels
@@ -498,7 +497,7 @@ class Operations
         $innodbEnginePlugin = StorageEngine::getEngine('Innodb');
         $innodbPluginVersion = $innodbEnginePlugin->getInnodbPluginVersion();
         $innodbFileFormat = '';
-        if (! empty($innodbPluginVersion)) {
+        if ($innodbPluginVersion !== '') {
             $innodbFileFormat = $innodbEnginePlugin->getInnodbFileFormat() ?? '';
         }
 
@@ -518,9 +517,7 @@ class Operations
         return $possibleRowFormats;
     }
 
-    /**
-     * @return array<string, string>
-     */
+    /** @return array<string, string> */
     public function getPartitionMaintenanceChoices(): array
     {
         $choices = [
@@ -557,7 +554,7 @@ class Operations
      */
     public function getForeignersForReferentialIntegrityCheck(
         array $urlParams,
-        $hasRelationFeature
+        $hasRelationFeature,
     ): array {
         if (! $hasRelationFeature) {
             return [];
@@ -605,7 +602,7 @@ class Operations
                 [
                     'sql_query' => $joinQuery,
                     'sql_signature' => Core::signSqlQuery($joinQuery),
-                ]
+                ],
             );
 
             $foreigners[] = [
@@ -644,8 +641,8 @@ class Operations
         $rowFormat,
         $newTblStorageEngine,
         $transactional,
-        $tableCollation
-    ) {
+        $tableCollation,
+    ): array {
         $GLOBALS['auto_increment'] ??= null;
 
         $tableAlters = [];
@@ -655,7 +652,7 @@ class Operations
         }
 
         if (
-            ! empty($newTblStorageEngine)
+            $newTblStorageEngine !== ''
             && mb_strtolower($newTblStorageEngine) !== mb_strtolower($GLOBALS['tbl_storage_engine'])
         ) {
             $tableAlters[] = 'ENGINE = ' . $newTblStorageEngine;
@@ -710,7 +707,7 @@ class Operations
             $newRowFormatLower = mb_strtolower($newRowFormat);
             if (
                 $pmaTable->isEngine(['MYISAM', 'ARIA', 'INNODB', 'PBXT'])
-                && (strlen($rowFormat) === 0
+                && ($rowFormat === ''
                 || $newRowFormatLower !== mb_strtolower($rowFormat))
             ) {
                 $tableAlters[] = 'ROW_FORMAT = '
@@ -882,14 +879,14 @@ class Operations
          * (when there are many databases, no drop-down)
          */
         $targetDb = $db;
-        if (isset($_POST['target_db']) && is_string($_POST['target_db']) && strlen($_POST['target_db']) > 0) {
+        if (isset($_POST['target_db']) && is_string($_POST['target_db']) && $_POST['target_db'] !== '') {
             $targetDb = $_POST['target_db'];
         }
 
         /**
          * A target table name has been sent to this script -> do the work
          */
-        if (isset($_POST['new_name']) && is_scalar($_POST['new_name']) && strlen((string) $_POST['new_name']) > 0) {
+        if (isset($_POST['new_name']) && is_scalar($_POST['new_name']) && (string) $_POST['new_name'] !== '') {
             if ($db == $targetDb && $table == $_POST['new_name']) {
                 if (isset($_POST['submit_move'])) {
                     $message = Message::error(__('Can\'t move table to same one!'));
@@ -905,7 +902,7 @@ class Operations
                     $_POST['what'],
                     isset($_POST['submit_move']),
                     'one_table',
-                    isset($_POST['drop_if_exists']) && $_POST['drop_if_exists'] === 'true'
+                    isset($_POST['drop_if_exists']) && $_POST['drop_if_exists'] === 'true',
                 );
 
                 if (isset($_POST['adjust_privileges']) && ! empty($_POST['adjust_privileges'])) {
@@ -918,24 +915,24 @@ class Operations
                     if (isset($_POST['submit_move'])) {
                         $message = Message::success(
                             __(
-                                'Table %s has been moved to %s. Privileges have been adjusted.'
-                            )
+                                'Table %s has been moved to %s. Privileges have been adjusted.',
+                            ),
                         );
                     } else {
                         $message = Message::success(
                             __(
-                                'Table %s has been copied to %s. Privileges have been adjusted.'
-                            )
+                                'Table %s has been copied to %s. Privileges have been adjusted.',
+                            ),
                         );
                     }
                 } else {
                     if (isset($_POST['submit_move'])) {
                         $message = Message::success(
-                            __('Table %s has been moved to %s.')
+                            __('Table %s has been moved to %s.'),
                         );
                     } else {
                         $message = Message::success(
-                            __('Table %s has been copied to %s.')
+                            __('Table %s has been copied to %s.'),
                         );
                     }
                 }

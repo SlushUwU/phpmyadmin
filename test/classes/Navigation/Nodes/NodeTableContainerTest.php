@@ -7,9 +7,7 @@ namespace PhpMyAdmin\Tests\Navigation\Nodes;
 use PhpMyAdmin\Navigation\Nodes\NodeTableContainer;
 use PhpMyAdmin\Tests\AbstractTestCase;
 
-/**
- * @covers \PhpMyAdmin\Navigation\Nodes\NodeTableContainer
- */
+/** @covers \PhpMyAdmin\Navigation\Nodes\NodeTableContainer */
 class NodeTableContainerTest extends AbstractTestCase
 {
     /**
@@ -18,6 +16,7 @@ class NodeTableContainerTest extends AbstractTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
         $GLOBALS['dbi'] = $this->createDatabaseInterface();
         $GLOBALS['server'] = 0;
         $GLOBALS['cfg']['NavigationTreeEnableGrouping'] = true;
@@ -32,13 +31,12 @@ class NodeTableContainerTest extends AbstractTestCase
     public function testConstructor(): void
     {
         $parent = new NodeTableContainer();
-        $this->assertIsArray($parent->links);
         $this->assertEquals(
             [
                 'text' => ['route' => '/database/structure', 'params' => ['tbl_type' => 'table', 'db' => null]],
                 'icon' => ['route' => '/database/structure', 'params' => ['tbl_type' => 'table', 'db' => null]],
             ],
-            $parent->links
+            $parent->links,
         );
         $this->assertEquals('tables', $parent->realName);
         $this->assertStringContainsString('tableContainer', $parent->classes);

@@ -30,7 +30,7 @@ abstract class SubstringTransformationsPlugin extends TransformationsPlugin
             . ' characters to skip from the beginning of the string (Default 0).'
             . ' The second option is the number of characters to return (Default:'
             . ' until end of string). The third option is the string to append'
-            . ' and/or prepend when truncation occurs (Default: "…").'
+            . ' and/or prepend when truncation occurs (Default: "…").',
         );
     }
 
@@ -40,10 +40,8 @@ abstract class SubstringTransformationsPlugin extends TransformationsPlugin
      * @param string             $buffer  text to be transformed
      * @param array              $options transformation options
      * @param FieldMetadata|null $meta    meta information
-     *
-     * @return string
      */
-    public function applyTransformation($buffer, array $options = [], FieldMetadata|null $meta = null)
+    public function applyTransformation($buffer, array $options = [], FieldMetadata|null $meta = null): string
     {
         // possibly use a global transform and feed it with special options
 

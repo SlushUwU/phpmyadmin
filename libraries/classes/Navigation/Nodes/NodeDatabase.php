@@ -23,13 +23,11 @@ class NodeDatabase extends Node
 {
     /**
      * The number of hidden items in this database
-     *
-     * @var int
      */
-    protected $hiddenCount = 0;
+    protected int $hiddenCount = 0;
 
     /** @var int[][] $presenceCounts */
-    private $presenceCounts = [];
+    private array $presenceCounts = [];
 
     /**
      * Initialises the class
@@ -42,6 +40,7 @@ class NodeDatabase extends Node
     public function __construct($name, $type = Node::OBJECT, $isGroup = false)
     {
         parent::__construct($name, $type, $isGroup);
+
         $this->icon = ['image' => 's_db', 'title' => __('Database operations')];
 
         $this->links = [
@@ -66,10 +65,8 @@ class NodeDatabase extends Node
      *                             ('tables', 'views', etc)
      * @param string $searchClause A string used to filter the results of
      *                             the query
-     *
-     * @return int
      */
-    public function getPresence($type = '', $searchClause = '')
+    public function getPresence($type = '', $searchClause = ''): int
     {
         if (isset($this->presenceCounts[$type][$searchClause])) {
             return $this->presenceCounts[$type][$searchClause];
@@ -91,10 +88,8 @@ class NodeDatabase extends Node
      * @param string $which        tables|views
      * @param string $searchClause A string used to filter the results of
      *                             the query
-     *
-     * @return int
      */
-    private function getTableOrViewCount($which, string $searchClause)
+    private function getTableOrViewCount($which, string $searchClause): int
     {
         if ($which === 'tables') {
             $condition = 'IN';
@@ -120,7 +115,7 @@ class NodeDatabase extends Node
         if ($searchClause !== '') {
             $query .= 'AND ' . $this->getWhereClauseForSearch(
                 $searchClause,
-                'Tables_in_' . $this->realName
+                'Tables_in_' . $this->realName,
             );
         }
 
@@ -132,10 +127,8 @@ class NodeDatabase extends Node
      *
      * @param string $searchClause A string used to filter the results of
      *                             the query
-     *
-     * @return int
      */
-    private function getTableCount(string $searchClause)
+    private function getTableCount(string $searchClause): int
     {
         return $this->getTableOrViewCount('tables', $searchClause);
     }
@@ -145,10 +138,8 @@ class NodeDatabase extends Node
      *
      * @param string $searchClause A string used to filter the results of
      *                             the query
-     *
-     * @return int
      */
-    private function getViewCount(string $searchClause)
+    private function getViewCount(string $searchClause): int
     {
         return $this->getTableOrViewCount('views', $searchClause);
     }
@@ -158,10 +149,8 @@ class NodeDatabase extends Node
      *
      * @param string $searchClause A string used to filter the results of
      *                             the query
-     *
-     * @return int
      */
-    private function getProcedureCount(string $searchClause)
+    private function getProcedureCount(string $searchClause): int
     {
         if (! $GLOBALS['cfg']['Server']['DisableIS']) {
             $query = 'SELECT COUNT(*) ';
@@ -189,10 +178,8 @@ class NodeDatabase extends Node
      *
      * @param string $searchClause A string used to filter the results of
      *                             the query
-     *
-     * @return int
      */
-    private function getFunctionCount(string $searchClause)
+    private function getFunctionCount(string $searchClause): int
     {
         if (! $GLOBALS['cfg']['Server']['DisableIS']) {
             $query = 'SELECT COUNT(*) ';
@@ -220,10 +207,8 @@ class NodeDatabase extends Node
      *
      * @param string $searchClause A string used to filter the results of
      *                             the query
-     *
-     * @return int
      */
-    private function getEventCount(string $searchClause)
+    private function getEventCount(string $searchClause): int
     {
         if (! $GLOBALS['cfg']['Server']['DisableIS']) {
             $query = 'SELECT COUNT(*) ';
@@ -255,8 +240,8 @@ class NodeDatabase extends Node
      */
     private function getWhereClauseForSearch(
         string $searchClause,
-        $columnName
-    ) {
+        $columnName,
+    ): string {
         return Util::backquote($columnName) . ' LIKE '
             . $GLOBALS['dbi']->quoteString('%' . $GLOBALS['dbi']->escapeMysqlWildcards($searchClause) . '%');
     }
@@ -320,7 +305,7 @@ class NodeDatabase extends Node
      *
      * @return array Array containing hidden items of given type
      */
-    public function getHiddenItems($type)
+    public function getHiddenItems($type): array
     {
         $relationParameters = $this->relation->getRelationParameters();
         if ($relationParameters->navigationItemsHidingFeature === null || $relationParameters->user === null) {
@@ -353,7 +338,7 @@ class NodeDatabase extends Node
      *
      * @return array
      */
-    private function getTablesOrViews($which, int $pos, string $searchClause)
+    private function getTablesOrViews($which, int $pos, string $searchClause): array
     {
         if ($which === 'tables') {
             $condition = 'IN';
@@ -370,7 +355,7 @@ class NodeDatabase extends Node
             if ($searchClause !== '') {
                 $query .= 'AND `TABLE_NAME` LIKE ';
                 $query .= $GLOBALS['dbi']->quoteString(
-                    '%' . $GLOBALS['dbi']->escapeMysqlWildcards($searchClause) . '%'
+                    '%' . $GLOBALS['dbi']->escapeMysqlWildcards($searchClause) . '%',
                 );
             }
 
@@ -386,7 +371,7 @@ class NodeDatabase extends Node
         if ($searchClause !== '') {
             $query .= 'AND ' . Util::backquote('Tables_in_' . $this->realName);
             $query .= ' LIKE ' . $GLOBALS['dbi']->quoteString(
-                '%' . $GLOBALS['dbi']->escapeMysqlWildcards($searchClause) . '%'
+                '%' . $GLOBALS['dbi']->escapeMysqlWildcards($searchClause) . '%',
             );
         }
 
@@ -417,7 +402,7 @@ class NodeDatabase extends Node
      *
      * @return array
      */
-    private function getTables(int $pos, string $searchClause)
+    private function getTables(int $pos, string $searchClause): array
     {
         return $this->getTablesOrViews('tables', $pos, $searchClause);
     }
@@ -430,7 +415,7 @@ class NodeDatabase extends Node
      *
      * @return array
      */
-    private function getViews(int $pos, string $searchClause)
+    private function getViews(int $pos, string $searchClause): array
     {
         return $this->getTablesOrViews('views', $pos, $searchClause);
     }
@@ -444,7 +429,7 @@ class NodeDatabase extends Node
      *
      * @return array
      */
-    private function getRoutines(string $routineType, int $pos, string $searchClause)
+    private function getRoutines(string $routineType, int $pos, string $searchClause): array
     {
         $maxItems = $GLOBALS['cfg']['MaxNavigationItems'];
         if (! $GLOBALS['cfg']['Server']['DisableIS']) {
@@ -456,7 +441,7 @@ class NodeDatabase extends Node
             if ($searchClause !== '') {
                 $query .= 'AND `ROUTINE_NAME` LIKE ';
                 $query .= $GLOBALS['dbi']->quoteString(
-                    '%' . $GLOBALS['dbi']->escapeMysqlWildcards($searchClause) . '%'
+                    '%' . $GLOBALS['dbi']->escapeMysqlWildcards($searchClause) . '%',
                 );
             }
 
@@ -470,7 +455,7 @@ class NodeDatabase extends Node
         if ($searchClause !== '') {
             $query .= 'AND `Name` LIKE ';
             $query .= $GLOBALS['dbi']->quoteString(
-                '%' . $GLOBALS['dbi']->escapeMysqlWildcards($searchClause) . '%'
+                '%' . $GLOBALS['dbi']->escapeMysqlWildcards($searchClause) . '%',
             );
         }
 
@@ -501,7 +486,7 @@ class NodeDatabase extends Node
      *
      * @return array
      */
-    private function getProcedures(int $pos, string $searchClause)
+    private function getProcedures(int $pos, string $searchClause): array
     {
         return $this->getRoutines('PROCEDURE', $pos, $searchClause);
     }
@@ -514,7 +499,7 @@ class NodeDatabase extends Node
      *
      * @return array
      */
-    private function getFunctions(int $pos, string $searchClause)
+    private function getFunctions(int $pos, string $searchClause): array
     {
         return $this->getRoutines('FUNCTION', $pos, $searchClause);
     }
@@ -527,7 +512,7 @@ class NodeDatabase extends Node
      *
      * @return array
      */
-    private function getEvents(int $pos, string $searchClause)
+    private function getEvents(int $pos, string $searchClause): array
     {
         $maxItems = $GLOBALS['cfg']['MaxNavigationItems'];
         if (! $GLOBALS['cfg']['Server']['DisableIS']) {
@@ -538,7 +523,7 @@ class NodeDatabase extends Node
             if ($searchClause !== '') {
                 $query .= 'AND `EVENT_NAME` LIKE ';
                 $query .= $GLOBALS['dbi']->quoteString(
-                    '%' . $GLOBALS['dbi']->escapeMysqlWildcards($searchClause) . '%'
+                    '%' . $GLOBALS['dbi']->escapeMysqlWildcards($searchClause) . '%',
                 );
             }
 
@@ -552,7 +537,7 @@ class NodeDatabase extends Node
         if ($searchClause !== '') {
             $query .= 'WHERE `Name` LIKE ';
             $query .= $GLOBALS['dbi']->quoteString(
-                '%' . $GLOBALS['dbi']->escapeMysqlWildcards($searchClause) . '%'
+                '%' . $GLOBALS['dbi']->escapeMysqlWildcards($searchClause) . '%',
             );
         }
 
@@ -596,7 +581,7 @@ class NodeDatabase extends Node
                     . ' class="showUnhide ajax">'
                     . Generator::getImage(
                         'show',
-                        __('Show hidden items')
+                        __('Show hidden items'),
                     )
                     . '</a></span>';
             }
@@ -620,7 +605,7 @@ class NodeDatabase extends Node
      *
      * @return int hidden item count
      */
-    public function getHiddenCount()
+    public function getHiddenCount(): int
     {
         return $this->hiddenCount;
     }

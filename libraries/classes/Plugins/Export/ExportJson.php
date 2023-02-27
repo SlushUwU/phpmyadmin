@@ -31,12 +31,9 @@ use const JSON_UNESCAPED_UNICODE;
  */
 class ExportJson extends ExportPlugin
 {
-    /** @var bool */
-    private $first = true;
+    private bool $first = true;
 
-    /**
-     * @psalm-return non-empty-lowercase-string
-     */
+    /** @psalm-return non-empty-lowercase-string */
     public function getName(): string
     {
         return 'json';
@@ -82,13 +79,13 @@ class ExportJson extends ExportPlugin
 
         $leaf = new BoolPropertyItem(
             'pretty_print',
-            __('Output pretty-printed JSON (Use human-readable formatting)')
+            __('Output pretty-printed JSON (Use human-readable formatting)'),
         );
         $generalOptions->addProperty($leaf);
 
         $leaf = new BoolPropertyItem(
             'unicode',
-            __('Output unicode characters unescaped')
+            __('Output unicode characters unescaped'),
         );
         $generalOptions->addProperty($leaf);
 
@@ -134,7 +131,7 @@ class ExportJson extends ExportPlugin
      */
     public function exportDBHeader($db, $dbAlias = ''): bool
     {
-        if (empty($dbAlias)) {
+        if ($dbAlias === '') {
             $dbAlias = $db;
         }
 
@@ -182,7 +179,7 @@ class ExportJson extends ExportPlugin
         $table,
         $errorUrl,
         $sqlQuery,
-        array $aliases = []
+        array $aliases = [],
     ): bool {
         $db_alias = $db;
         $table_alias = $table;
@@ -228,7 +225,7 @@ class ExportJson extends ExportPlugin
         string $buffer,
         array|null $aliases,
         string|null $db,
-        string|null $table
+        string|null $table,
     ): bool {
         [$header, $footer] = explode('"@@DATA@@"', $buffer);
 

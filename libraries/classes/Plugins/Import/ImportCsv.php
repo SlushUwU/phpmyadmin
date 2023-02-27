@@ -43,14 +43,10 @@ class ImportCsv extends AbstractImportCsv
 {
     /**
      * Whether to analyze tables
-     *
-     * @var bool
      */
-    private $analyze;
+    private bool $analyze = false;
 
-    /**
-     * @psalm-return non-empty-lowercase-string
-     */
+    /** @psalm-return non-empty-lowercase-string */
     public function getName(): string
     {
         return 'csv';
@@ -80,8 +76,8 @@ class ImportCsv extends AbstractImportCsv
             $leaf = new TextPropertyItem(
                 'new_tbl_name',
                 __(
-                    'Name of the new table (optional):'
-                )
+                    'Name of the new table (optional):',
+                ),
             );
             $generalOptions->addProperty($leaf);
 
@@ -89,8 +85,8 @@ class ImportCsv extends AbstractImportCsv
                 $leaf = new TextPropertyItem(
                     'new_db_name',
                     __(
-                        'Name of the new database (optional):'
-                    )
+                        'Name of the new database (optional):',
+                    ),
                 );
                 $generalOptions->addProperty($leaf);
             }
@@ -98,8 +94,8 @@ class ImportCsv extends AbstractImportCsv
             $leaf = new NumberPropertyItem(
                 'partial_import',
                 __(
-                    'Import these many number of rows (optional):'
-                )
+                    'Import these many number of rows (optional):',
+                ),
             );
             $generalOptions->addProperty($leaf);
 
@@ -108,16 +104,16 @@ class ImportCsv extends AbstractImportCsv
                 __(
                     'The first line of the file contains the table column names'
                     . ' <i>(if this is unchecked, the first line will become part'
-                    . ' of the data)</i>'
-                )
+                    . ' of the data)</i>',
+                ),
             );
             $generalOptions->addProperty($leaf);
         } else {
             $leaf = new NumberPropertyItem(
                 'partial_import',
                 __(
-                    'Import these many number of rows (optional):'
-                )
+                    'Import these many number of rows (optional):',
+                ),
             );
             $generalOptions->addProperty($leaf);
 
@@ -126,19 +122,19 @@ class ImportCsv extends AbstractImportCsv
                     'If the data in each row of the file is not'
                     . ' in the same order as in the database, list the corresponding'
                     . ' column names here. Column names must be separated by commas'
-                    . ' and not enclosed in quotations.'
-                )
+                    . ' and not enclosed in quotations.',
+                ),
             );
             $leaf = new TextPropertyItem(
                 'columns',
-                __('Column names:') . ' ' . Generator::showHint($hint->getMessage())
+                __('Column names:') . ' ' . Generator::showHint($hint->getMessage()),
             );
             $generalOptions->addProperty($leaf);
         }
 
         $leaf = new BoolPropertyItem(
             'ignore',
-            __('Do not abort on INSERT error')
+            __('Do not abort on INSERT error'),
         );
         $generalOptions->addProperty($leaf);
 
@@ -188,13 +184,13 @@ class ImportCsv extends AbstractImportCsv
             $GLOBALS['csv_enclosed'],
             $GLOBALS['csv_escaped'],
             $GLOBALS['csv_new_line'],
-            (string) $GLOBALS['errorUrl']
+            (string) $GLOBALS['errorUrl'],
         );
 
         [$sql_template, $required_fields, $fields] = $this->getSqlTemplateAndRequiredFields(
             $GLOBALS['db'],
             $GLOBALS['table'],
-            $GLOBALS['csv_columns']
+            $GLOBALS['csv_columns'],
         );
 
         $sqlStatements = [];
@@ -283,7 +279,7 @@ class ImportCsv extends AbstractImportCsv
                 // Deadlock protection
                 if ($lasti == $i && $lastlen == $len) {
                     $GLOBALS['message'] = Message::error(
-                        __('Invalid format of CSV input on line %d.')
+                        __('Invalid format of CSV input on line %d.'),
                     );
                     $GLOBALS['message']->addParam($line);
                     $GLOBALS['error'] = true;
@@ -501,8 +497,8 @@ class ImportCsv extends AbstractImportCsv
                         if ($values[count($values) - 1] !== ';') {
                             $GLOBALS['message'] = Message::error(
                                 __(
-                                    'Invalid column count in CSV input on line %d.'
-                                )
+                                    'Invalid column count in CSV input on line %d.',
+                                ),
                             );
                             $GLOBALS['message']->addParam($line);
                             $GLOBALS['error'] = true;
@@ -614,7 +610,7 @@ class ImportCsv extends AbstractImportCsv
              * Otherwise, check if user provided the database name in the request,
              * if not, set the default name
              */
-            if (isset($_REQUEST['csv_new_db_name']) && strlen($_REQUEST['csv_new_db_name']) > 0) {
+            if (isset($_REQUEST['csv_new_db_name']) && (string) $_REQUEST['csv_new_db_name'] !== '') {
                 $newDb = $_REQUEST['csv_new_db_name'];
             } else {
                 $result = $GLOBALS['dbi']->fetchResult('SHOW DATABASES');
@@ -641,7 +637,7 @@ class ImportCsv extends AbstractImportCsv
         }
 
         $GLOBALS['message'] = Message::error(
-            __('Invalid format of CSV input on line %d.')
+            __('Invalid format of CSV input on line %d.'),
         );
         $GLOBALS['message']->addParam($line);
         $GLOBALS['error'] = true;
@@ -654,15 +650,15 @@ class ImportCsv extends AbstractImportCsv
         string $csvEnclosed,
         string $csvEscaped,
         string $csvNewLine,
-        string $errUrl
+        string $errUrl,
     ): array {
         $GLOBALS['error'] ??= null;
         $GLOBALS['message'] ??= null;
 
         $param_error = false;
-        if (strlen($csvTerminated) === 0) {
+        if ($csvTerminated === '') {
             $GLOBALS['message'] = Message::error(
-                __('Invalid parameter for CSV import: %s')
+                __('Invalid parameter for CSV import: %s'),
             );
             $GLOBALS['message']->addParam(__('Columns terminated with'));
             $GLOBALS['error'] = true;
@@ -677,7 +673,7 @@ class ImportCsv extends AbstractImportCsv
             // one character.
         } elseif (mb_strlen($csvEnclosed) > 1) {
             $GLOBALS['message'] = Message::error(
-                __('Invalid parameter for CSV import: %s')
+                __('Invalid parameter for CSV import: %s'),
             );
             $GLOBALS['message']->addParam(__('Columns enclosed with'));
             $GLOBALS['error'] = true;
@@ -688,14 +684,14 @@ class ImportCsv extends AbstractImportCsv
             // one character.
         } elseif (mb_strlen($csvEscaped) > 1) {
             $GLOBALS['message'] = Message::error(
-                __('Invalid parameter for CSV import: %s')
+                __('Invalid parameter for CSV import: %s'),
             );
             $GLOBALS['message']->addParam(__('Columns escaped with'));
             $GLOBALS['error'] = true;
             $param_error = true;
         } elseif (mb_strlen($csvNewLine) != 1 && $csvNewLine !== 'auto') {
             $GLOBALS['message'] = Message::error(
-                __('Invalid parameter for CSV import: %s')
+                __('Invalid parameter for CSV import: %s'),
             );
             $GLOBALS['message']->addParam(__('Lines terminated with'));
             $GLOBALS['error'] = true;
@@ -709,7 +705,7 @@ class ImportCsv extends AbstractImportCsv
                 $GLOBALS['message']->getMessage(),
                 '',
                 false,
-                $errUrl
+                $errUrl,
             );
         }
 
@@ -725,7 +721,7 @@ class ImportCsv extends AbstractImportCsv
         $importFileName = (string) preg_replace('/[^a-zA-Z0-9_]/', '_', $importFileName);
 
         // get new table name, if user didn't provide one, set the default name
-        if (isset($_REQUEST['csv_new_tbl_name']) && strlen($_REQUEST['csv_new_tbl_name']) > 0) {
+        if (isset($_REQUEST['csv_new_tbl_name']) && (string) $_REQUEST['csv_new_tbl_name'] !== '') {
             return $_REQUEST['csv_new_tbl_name'];
         }
 
@@ -781,7 +777,7 @@ class ImportCsv extends AbstractImportCsv
     private function getSqlTemplateAndRequiredFields(
         string|null $db,
         string|null $table,
-        string|null $csvColumns
+        string|null $csvColumns,
     ): array {
         $GLOBALS['error'] ??= null;
         $GLOBALS['message'] ??= null;
@@ -799,7 +795,7 @@ class ImportCsv extends AbstractImportCsv
 
             $tmp_fields = $GLOBALS['dbi']->getColumns($db, $table);
 
-            if (empty($csvColumns)) {
+            if ($csvColumns === null || $csvColumns === '') {
                 $fields = $tmp_fields;
             } else {
                 $sqlTemplate .= ' (';
@@ -828,8 +824,8 @@ class ImportCsv extends AbstractImportCsv
                             __(
                                 'Invalid column (%s) specified! Ensure that columns'
                                 . ' names are spelled correctly, separated by commas'
-                                . ', and not enclosed in quotes.'
-                            )
+                                . ', and not enclosed in quotes.',
+                            ),
                         );
                         $GLOBALS['message']->addParam($val);
                         $GLOBALS['error'] = true;
@@ -867,10 +863,8 @@ class ImportCsv extends AbstractImportCsv
      * @param int    $i                  Current read counter of buffer string
      * @param int    $csv_terminated_len The length of "column separated with"
      *                                   String
-     *
-     * @return string
      */
-    public function readCsvTerminatedString($buffer, $ch, $i, $csv_terminated_len)
+    public function readCsvTerminatedString($buffer, $ch, $i, $csv_terminated_len): string
     {
         for ($j = 0; $j < $csv_terminated_len - 1; $j++) {
             $i++;

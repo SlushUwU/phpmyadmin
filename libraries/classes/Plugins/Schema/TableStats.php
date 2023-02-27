@@ -29,26 +29,21 @@ use function sprintf;
  */
 abstract class TableStats
 {
-    /** @var mixed */
-    public $displayfield;
+    public mixed $displayfield;
 
     /** @var array */
-    public $fields = [];
+    public array $fields = [];
 
     /** @var array */
-    public $primary = [];
+    public array $primary = [];
 
-    /** @var int|float */
-    public $x = 0;
+    public int|float $x = 0;
 
-    /** @var int|float */
-    public $y = 0;
+    public int|float $y = 0;
 
-    /** @var int */
-    public $width = 0;
+    public int|float $width = 0;
 
-    /** @var int */
-    public $heightCell = 0;
+    public int $heightCell = 0;
 
     protected Relation $relation;
 
@@ -71,7 +66,7 @@ abstract class TableStats
         protected $tableName,
         protected $showKeys,
         protected $tableDimension,
-        protected $offline
+        protected $offline,
     ) {
         $this->relation = new Relation($GLOBALS['dbi']);
         $this->font = new Font();
@@ -105,7 +100,7 @@ abstract class TableStats
             foreach ($indexes as $index) {
                 $all_columns = array_merge(
                     $all_columns,
-                    array_flip(array_keys($index->getColumns()))
+                    array_flip(array_keys($index->getColumns())),
                 );
             }
 
@@ -175,7 +170,7 @@ abstract class TableStats
      *
      * @return string title of the current table
      */
-    protected function getTitle()
+    protected function getTitle(): string
     {
         return ($this->tableDimension
             ? sprintf('%.0fx%0.f', $this->width, $this->heightCell)

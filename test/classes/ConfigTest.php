@@ -42,11 +42,10 @@ use const TEST_PATH;
  */
 class ConfigTest extends AbstractTestCase
 {
-    /** @var Config */
-    protected $object;
+    protected Config $object;
 
     /** @var Config to test file permission */
-    protected $permTestObj;
+    protected Config $permTestObj;
 
     /**
      * Sets up the fixture, for example, opens a network connection.
@@ -55,7 +54,9 @@ class ConfigTest extends AbstractTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
         parent::setTheme();
+
         $GLOBALS['dbi'] = $this->createDatabaseInterface();
         $_SERVER['HTTP_USER_AGENT'] = '';
         $this->object = $this->createConfig();
@@ -78,6 +79,7 @@ class ConfigTest extends AbstractTestCase
     protected function tearDown(): void
     {
         parent::tearDown();
+
         unset($this->object);
         unset($this->permTestObj);
     }
@@ -216,7 +218,7 @@ class ConfigTest extends AbstractTestCase
         string $agent,
         string $os,
         string|null $browser = null,
-        string|null $version = null
+        string|null $version = null,
     ): void {
         $_SERVER['HTTP_USER_AGENT'] = $agent;
         $this->object->checkClient();
@@ -224,7 +226,7 @@ class ConfigTest extends AbstractTestCase
         if ($os != null) {
             $this->assertEquals(
                 $browser,
-                $this->object->get('PMA_USR_BROWSER_AGENT')
+                $this->object->get('PMA_USR_BROWSER_AGENT'),
             );
         }
 
@@ -234,7 +236,7 @@ class ConfigTest extends AbstractTestCase
 
         $this->assertEquals(
             $version,
-            $this->object->get('PMA_USR_BROWSER_VER')
+            $this->object->get('PMA_USR_BROWSER_VER'),
         );
     }
 
@@ -327,9 +329,7 @@ class ConfigTest extends AbstractTestCase
                 'FIREFOX',
                 '12.0',
             ],
-            /**
-             * @todo Is this version really expected?
-             */
+            /** @todo Is this version really expected? */
             [
                 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/535.4+ (KHTML, like G'
                 . 'ecko) Version/5.0 Safari/535.4+ SUSE/12.1 (3.2.1) Epiphany/3.2.1',
@@ -360,7 +360,7 @@ class ConfigTest extends AbstractTestCase
             $this->assertEquals(
                 0,
                 $this->object->get('PMA_IS_GD2'),
-                'imagecreatetruecolor does not exist, PMA_IS_GD2 should be 0'
+                'imagecreatetruecolor does not exist, PMA_IS_GD2 should be 0',
             );
         }
 
@@ -371,13 +371,13 @@ class ConfigTest extends AbstractTestCase
                 $this->assertEquals(
                     1,
                     $this->object->get('PMA_IS_GD2'),
-                    'GD Version >= 2, PMA_IS_GD2 should be 1'
+                    'GD Version >= 2, PMA_IS_GD2 should be 1',
                 );
             } else {
                 $this->assertEquals(
                     0,
                     $this->object->get('PMA_IS_GD2'),
-                    'GD Version < 2, PMA_IS_GD2 should be 0'
+                    'GD Version < 2, PMA_IS_GD2 should be 0',
                 );
             }
         }
@@ -396,13 +396,13 @@ class ConfigTest extends AbstractTestCase
             $this->assertEquals(
                 1,
                 $this->object->get('PMA_IS_GD2'),
-                'PMA_IS_GD2 should be 1'
+                'PMA_IS_GD2 should be 1',
             );
         } else {
             $this->assertEquals(
                 0,
                 $this->object->get('PMA_IS_GD2'),
-                'PMA_IS_GD2 should be 0'
+                'PMA_IS_GD2 should be 0',
             );
         }
     }
@@ -491,7 +491,7 @@ class ConfigTest extends AbstractTestCase
         $this->assertEquals($config, $this->object->default);
         $this->assertEquals(
             array_replace_recursive(['is_setup' => false, 'AvailableCharsets' => ['test']], $config),
-            $this->object->settings
+            $this->object->settings,
         );
     }
 
@@ -536,7 +536,7 @@ class ConfigTest extends AbstractTestCase
         $this->assertEquals(
             ROOT_PATH . 'config.sample.inc.php',
             $this->object->getSource(),
-            'Cant set new source'
+            'Cant set new source',
         );
     }
 
@@ -568,7 +568,7 @@ class ConfigTest extends AbstractTestCase
         string $protoCloudFront,
         string $pmaAbsoluteUri,
         int $port,
-        bool $expected
+        bool $expected,
     ): void {
         $_SERVER['HTTP_SCHEME'] = $scheme;
         $_SERVER['HTTPS'] = $https;
@@ -967,7 +967,7 @@ class ConfigTest extends AbstractTestCase
         $this->object->setUserValue('TEST_COOKIE_USER_VAL', '', 'cfg_val_1');
         $this->assertEquals(
             $this->object->getUserValue('TEST_COOKIE_USER_VAL', 'fail'),
-            'cfg_val_1'
+            'cfg_val_1',
         );
     }
 
@@ -1009,8 +1009,8 @@ class ConfigTest extends AbstractTestCase
             $this->object->setCookie(
                 'TEST_DEF_COOKIE',
                 'test_def_123',
-                'test_def_123'
-            )
+                'test_def_123',
+            ),
         );
 
         $this->assertTrue(
@@ -1018,16 +1018,16 @@ class ConfigTest extends AbstractTestCase
                 'TEST_CONFIG_COOKIE',
                 'test_val_123',
                 null,
-                3600
-            )
+                3600,
+            ),
         );
 
         $this->assertTrue(
             $this->object->setCookie(
                 'TEST_CONFIG_COOKIE',
                 '',
-                'default_val'
-            )
+                'default_val',
+            ),
         );
 
         $_COOKIE['TEST_MANUAL_COOKIE'] = 'some_test_val';
@@ -1035,8 +1035,8 @@ class ConfigTest extends AbstractTestCase
             $this->object->setCookie(
                 'TEST_MANUAL_COOKIE',
                 'other',
-                'other'
-            )
+                'other',
+            ),
         );
     }
 
@@ -1056,7 +1056,7 @@ class ConfigTest extends AbstractTestCase
         // Check no double slash is here
         $this->assertEquals(
             $dir . DIRECTORY_SEPARATOR . 'upload',
-            $this->object->getTempDir('upload')
+            $this->object->getTempDir('upload'),
         );
     }
 
@@ -1077,7 +1077,7 @@ class ConfigTest extends AbstractTestCase
 
         $this->assertEquals(
             $this->object->getTempDir('upload'),
-            $this->object->getUploadTempDir()
+            $this->object->getUploadTempDir(),
         );
     }
 

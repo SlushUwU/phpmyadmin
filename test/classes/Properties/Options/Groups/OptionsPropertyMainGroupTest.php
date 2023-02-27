@@ -7,13 +7,10 @@ namespace PhpMyAdmin\Tests\Properties\Options\Groups;
 use PhpMyAdmin\Properties\Options\Groups\OptionsPropertyMainGroup;
 use PhpMyAdmin\Tests\AbstractTestCase;
 
-/**
- * @covers \PhpMyAdmin\Properties\Options\Groups\OptionsPropertyMainGroup
- */
+/** @covers \PhpMyAdmin\Properties\Options\Groups\OptionsPropertyMainGroup */
 class OptionsPropertyMainGroupTest extends AbstractTestCase
 {
-    /** @var OptionsPropertyMainGroup */
-    protected $object;
+    protected OptionsPropertyMainGroup $object;
 
     /**
      * Configures global environment.
@@ -21,6 +18,7 @@ class OptionsPropertyMainGroupTest extends AbstractTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
         $this->object = new OptionsPropertyMainGroup();
     }
 
@@ -30,6 +28,7 @@ class OptionsPropertyMainGroupTest extends AbstractTestCase
     protected function tearDown(): void
     {
         parent::tearDown();
+
         unset($this->object);
     }
 
@@ -37,7 +36,7 @@ class OptionsPropertyMainGroupTest extends AbstractTestCase
     {
         $this->assertEquals(
             'main',
-            $this->object->getItemType()
+            $this->object->getItemType(),
         );
     }
 }

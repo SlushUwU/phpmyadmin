@@ -9,13 +9,11 @@ use PhpMyAdmin\Gis\ScaleData;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PHPUnit\Framework\MockObject\MockObject;
 
-/**
- * @covers \PhpMyAdmin\Gis\GisGeometry
- */
+/** @covers \PhpMyAdmin\Gis\GisGeometry */
 class GisGeometryTest extends AbstractTestCase
 {
-    /** @var GisGeometry|MockObject */
-    protected $object;
+    /** @var GisGeometry&MockObject */
+    protected GisGeometry $object;
 
     /**
      * Sets up the fixture, for example, opens a network connection.
@@ -24,6 +22,7 @@ class GisGeometryTest extends AbstractTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
         $this->object = $this->getMockForAbstractClass(GisGeometry::class);
     }
 
@@ -34,6 +33,7 @@ class GisGeometryTest extends AbstractTestCase
     protected function tearDown(): void
     {
         parent::tearDown();
+
         unset($this->object);
     }
 
@@ -57,8 +57,8 @@ class GisGeometryTest extends AbstractTestCase
                 [
                     $point_set,
                     $min_max,
-                ]
-            )
+                ],
+            ),
         );
     }
 
@@ -84,32 +84,32 @@ class GisGeometryTest extends AbstractTestCase
     }
 
     /**
-     * tests generateParams method
+     * tests parseWktAndSrid method
      *
      * @param string $value  Geometry data
      * @param array  $output Expected output
      *
-     * @dataProvider providerForTestGenerateParams
+     * @dataProvider providerForTestParseWktAndSrid
      */
-    public function testGenerateParams(string $value, array $output): void
+    public function testParseWktAndSrid(string $value, array $output): void
     {
         $this->assertEquals(
             $output,
             $this->callFunction(
                 $this->object,
                 GisGeometry::class,
-                'generateParams',
-                [$value]
-            )
+                'parseWktAndSrid',
+                [$value],
+            ),
         );
     }
 
     /**
-     * data provider for testGenerateParams
+     * data provider for testParseWktAndSrid
      *
-     * @return array data for testGenerateParams
+     * @return array data for testParseWktAndSrid
      */
-    public static function providerForTestGenerateParams(): array
+    public static function providerForTestParseWktAndSrid(): array
     {
         return [
             [
@@ -158,8 +158,8 @@ class GisGeometryTest extends AbstractTestCase
                     $point_set,
                     $scale_data,
                     $linear,
-                ]
-            )
+                ],
+            ),
         );
     }
 
@@ -273,8 +273,8 @@ class GisGeometryTest extends AbstractTestCase
                 [
                     $srid,
                     $scale_data,
-                ]
-            )
+                ],
+            ),
         );
     }
 
@@ -325,8 +325,8 @@ class GisGeometryTest extends AbstractTestCase
                 [
                     $polygons,
                     $srid,
-                ]
-            )
+                ],
+            ),
         );
     }
 

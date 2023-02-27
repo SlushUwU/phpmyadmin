@@ -20,7 +20,7 @@ class UserPassword
     public function __construct(
         private Privileges $serverPrivileges,
         private AuthenticationPluginFactory $authPluginFactory,
-        private DatabaseInterface $dbi
+        private DatabaseInterface $dbi,
     ) {
     }
 
@@ -29,7 +29,7 @@ class UserPassword
      *
      * @return array   error value and message
      */
-    public function setChangePasswordMsg(string $pmaPw, string $pmaPw2, bool $skipPassword)
+    public function setChangePasswordMsg(string $pmaPw, string $pmaPw2, bool $skipPassword): array
     {
         $error = false;
         $message = Message::success(__('The profile has been updated.'));
@@ -40,7 +40,7 @@ class UserPassword
                 $error = true;
             } elseif ($pmaPw !== $pmaPw2) {
                 $message = Message::error(
-                    __('The passwords aren\'t the same!')
+                    __('The passwords aren\'t the same!'),
                 );
                 $error = true;
             } elseif (strlen($pmaPw) > 256) {
@@ -106,7 +106,7 @@ class UserPassword
             $password,
             $sql_query,
             $hashing_function,
-            $orig_auth_plugin
+            $orig_auth_plugin,
         );
 
         $authPlugin = $this->authPluginFactory->create();
@@ -140,7 +140,7 @@ class UserPassword
         $password,
         $sql_query,
         $hashing_function,
-        $orig_auth_plugin
+        $orig_auth_plugin,
     ): void {
         $err_url = Url::getFromRoute('/user-password');
 
@@ -186,7 +186,7 @@ class UserPassword
                 $this->dbi->getError(),
                 $sql_query,
                 false,
-                $err_url
+                $err_url,
             );
         }
 
@@ -194,9 +194,7 @@ class UserPassword
         $this->dbi->tryQuery('FLUSH PRIVILEGES;');
     }
 
-    /**
-     * @psalm-param non-empty-string $route
-     */
+    /** @psalm-param non-empty-string $route */
     public function getFormForChangePassword(string|null $username, string|null $hostname, string $route): string
     {
         return $this->serverPrivileges->getFormForChangePassword($username ?? '', $hostname ?? '', false, $route);

@@ -43,42 +43,35 @@ use function strtoupper;
 class ZoomSearchController extends AbstractController
 {
     /** @var array */
-    private $columnNames;
+    private array $columnNames = [];
 
     /** @var array */
-    private $columnTypes;
+    private array $columnTypes = [];
 
     /** @var array */
-    private $originalColumnTypes;
+    private array $originalColumnTypes = [];
 
     /** @var array */
-    private $columnCollations;
+    private array $columnCollations = [];
 
     /** @var array */
-    private $columnNullFlags;
+    private array $columnNullFlags = [];
 
     /** @var bool Whether a geometry column is present */
-    private bool $geomColumnFlag;
+    private bool $geomColumnFlag = false;
 
     /** @var array Foreign keys */
-    private $foreigners;
+    private array $foreigners = [];
 
     public function __construct(
         ResponseRenderer $response,
         Template $template,
         private Search $search,
         private Relation $relation,
-        private DatabaseInterface $dbi
+        private DatabaseInterface $dbi,
     ) {
         parent::__construct($response, $template);
 
-        $this->columnNames = [];
-        $this->columnTypes = [];
-        $this->originalColumnTypes = [];
-        $this->columnCollations = [];
-        $this->columnNullFlags = [];
-        $this->geomColumnFlag = false;
-        $this->foreigners = [];
         $this->loadTableInfo();
     }
 
@@ -305,7 +298,7 @@ class ZoomSearchController extends AbstractController
         $properties = $this->getColumnProperties($search_index, $key);
         $this->response->addJSON(
             'field_type',
-            htmlspecialchars($properties['type'])
+            htmlspecialchars($properties['type']),
         );
         $this->response->addJSON('field_collation', $properties['collation']);
         $this->response->addJSON('field_operators', $properties['func']);
@@ -338,7 +331,7 @@ class ZoomSearchController extends AbstractController
                 count($this->columnNames),
                 $fields_meta,
                 $tmpRow,
-                true
+                true,
             );
             //Append it to row array as where_clause
             $row['where_clause'] = $uniqueCondition;
@@ -366,7 +359,7 @@ class ZoomSearchController extends AbstractController
             $foreignData[$columnIndex] = $this->relation->getForeignData($this->foreigners, $columnName, false, '', '');
             $searchColumnInForeigners[$columnIndex] = $this->relation->searchColumnInForeigners(
                 $this->foreigners,
-                $columnName
+                $columnName,
             );
             if (
                 ! $this->foreigners
@@ -381,7 +374,7 @@ class ZoomSearchController extends AbstractController
                 (string) $foreignData[$columnIndex]['foreign_field'],
                 $foreignData[$columnIndex]['foreign_display'],
                 '',
-                $GLOBALS['cfg']['ForeignKeyMaxLimit']
+                $GLOBALS['cfg']['ForeignKeyMaxLimit'],
             );
         }
 
@@ -412,7 +405,7 @@ class ZoomSearchController extends AbstractController
      *
      * @return array Array containing column's properties
      */
-    public function getColumnProperties($search_index, $column_index)
+    public function getColumnProperties($search_index, $column_index): array
     {
         $selected_operator = ($_POST['criteriaColumnOperators'][$search_index] ?? '');
         $entered_value = ($_POST['criteriaValues'] ?? '');
@@ -424,7 +417,7 @@ class ZoomSearchController extends AbstractController
         $typeOperators = $this->dbi->types->getTypeOperatorsHtml(
             $cleanType,
             $this->columnNullFlags[$column_index],
-            $selected_operator
+            $selected_operator,
         );
         $func = $this->template->render('table/search/column_comparison_operators', [
             'search_index' => $search_index,
@@ -436,7 +429,7 @@ class ZoomSearchController extends AbstractController
             $this->columnNames[$column_index],
             false,
             '',
-            ''
+            '',
         );
         $htmlAttributes = '';
         $isInteger = in_array($cleanType, $this->dbi->types->getIntegerTypes());
@@ -464,7 +457,7 @@ class ZoomSearchController extends AbstractController
                 $foreignData['foreign_field'],
                 $foreignData['foreign_display'],
                 '',
-                $GLOBALS['cfg']['ForeignKeyMaxLimit']
+                $GLOBALS['cfg']['ForeignKeyMaxLimit'],
             );
         }
 

@@ -7,13 +7,10 @@ namespace PhpMyAdmin\Tests\Engines;
 use PhpMyAdmin\Engines\Memory;
 use PhpMyAdmin\Tests\AbstractTestCase;
 
-/**
- * @covers \PhpMyAdmin\Engines\Memory
- */
+/** @covers \PhpMyAdmin\Engines\Memory */
 class MemoryTest extends AbstractTestCase
 {
-    /** @var Memory */
-    protected $object;
+    protected Memory $object;
 
     /**
      * Sets up the fixture, for example, opens a network connection.
@@ -22,6 +19,7 @@ class MemoryTest extends AbstractTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
         $GLOBALS['dbi'] = $this->createDatabaseInterface();
         $GLOBALS['server'] = 0;
         $this->object = new Memory('memory');
@@ -34,6 +32,7 @@ class MemoryTest extends AbstractTestCase
     protected function tearDown(): void
     {
         parent::tearDown();
+
         unset($this->object);
     }
 
@@ -46,7 +45,7 @@ class MemoryTest extends AbstractTestCase
             $this->object->getVariables(),
             [
                 'max_heap_table_size' => ['type' => 1],
-            ]
+            ],
         );
     }
 }

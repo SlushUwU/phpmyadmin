@@ -26,9 +26,10 @@ final class DropController extends AbstractController
     public function __construct(
         ResponseRenderer $response,
         Template $template,
-        Maintenance $maintenance
+        Maintenance $maintenance,
     ) {
         parent::__construct($response, $template);
+
         $this->model = $maintenance;
     }
 
@@ -53,13 +54,13 @@ final class DropController extends AbstractController
             $message = Generator::getMessage(
                 __('Your SQL query has been executed successfully.'),
                 $query,
-                'success'
+                'success',
             );
         } else {
             $message = Generator::getMessage(
                 __('Error'),
                 $query,
-                'error'
+                'error',
             );
         }
 

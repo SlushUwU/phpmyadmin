@@ -176,7 +176,7 @@ class Util
         // Fixup for newly used names:
         $link = str_replace('_', '-', mb_strtolower($link));
 
-        if (empty($link)) {
+        if ($link === '') {
             $link = 'index';
         }
 
@@ -195,7 +195,7 @@ class Util
 
         $url = 'https://dev.mysql.com/doc/refman/'
             . $mysql . '/' . $lang . '/' . $link . '.html';
-        if (! empty($anchor)) {
+        if ($anchor !== '') {
             $url .= '#' . $anchor;
         }
 
@@ -230,7 +230,7 @@ class Util
      *
      * @return int the possibly modified row count
      */
-    private static function checkRowCount($db, array $table)
+    private static function checkRowCount($db, array $table): int
     {
         $rowCount = 0;
 
@@ -373,7 +373,7 @@ class Util
     public static function backquoteCompat(
         $identifier,
         string $compatibility = 'MSSQL',
-        $doIt = true
+        $doIt = true,
     ): string {
         $identifier = (string) $identifier;
         if ($identifier === '' || $identifier === '*') {
@@ -488,8 +488,8 @@ class Util
         $digitsLeft = 3,
         $digitsRight = 0,
         $onlyDown = false,
-        $noTrailingZero = true
-    ) {
+        $noTrailingZero = true,
+    ): string {
         if ($value == 0) {
             return '0';
         }
@@ -507,7 +507,7 @@ class Util
                 /* l10n: Decimal separator */
                 __('.'),
                 /* l10n: Thousands separator */
-                __(',')
+                __(','),
             );
             if (($originalValue != 0) && (floatval($value) == 0)) {
                 return ' <' . (1 / 10 ** $digitsRight);
@@ -613,7 +613,7 @@ class Util
      *
      * @return string   the formatted date
      */
-    public static function localisedDate($timestamp = -1, $format = '')
+    public static function localisedDate($timestamp = -1, $format = ''): string
     {
         $month = [
             /* l10n: Short month name */
@@ -671,13 +671,13 @@ class Util
             '@%[aA]@',
             // phpcs:ignore Generic.PHP.DeprecatedFunctions
             $dayOfWeek[(int) @strftime('%w', (int) $timestamp)],
-            $format
+            $format,
         );
         $date = (string) preg_replace(
             '@%[bB]@',
             // phpcs:ignore Generic.PHP.DeprecatedFunctions
             $month[(int) @strftime('%m', (int) $timestamp) - 1],
-            $date
+            $date,
         );
 
         /* Fill in AM/PM */
@@ -761,7 +761,7 @@ class Util
             (string) $days,
             (string) $hours,
             (string) $minutes,
-            (string) $seconds
+            (string) $seconds,
         );
     }
 
@@ -782,7 +782,7 @@ class Util
         FieldMetadata $meta,
         int $fieldsCount,
         string $conditionKey,
-        string $condition
+        string $condition,
     ): array {
         if ($row === null) {
             return ['IS NULL', $condition];
@@ -821,7 +821,7 @@ class Util
             }
         } elseif ($meta->isMappedTypeBit) {
             $conditionValue = "= b'"
-                . self::printableBitValue((int) $row, (int) $meta->length) . "'";
+                . self::printableBitValue((int) $row, $meta->length) . "'";
         } else {
             $conditionValue = '= \''
                 . $GLOBALS['dbi']->escapeString((string) $row) . '\'';
@@ -849,7 +849,7 @@ class Util
         array $row,
         $forceUnique = false,
         string|bool $restrictToTable = false,
-        array $expressions = []
+        array $expressions = [],
     ): array {
         $primaryKey = '';
         $uniqueKey = '';
@@ -1011,7 +1011,7 @@ class Util
         $sliceEnd = 5,
         $percent = 20,
         $range = 10,
-        $prompt = ''
+        $prompt = '',
     ): string {
         $increment = floor($nbTotalPage / $percent);
         $pageNowMinusRange = $pageNow - $range;
@@ -1141,7 +1141,7 @@ class Util
      *
      * @return int $page_num
      */
-    public static function getPageFromPosition($pos, $maxCount)
+    public static function getPageFromPosition($pos, $maxCount): int
     {
         return (int) floor($pos / $maxCount) + 1;
     }
@@ -1239,7 +1239,7 @@ class Util
             "/^b'(\d*)'?$/",
             '$1',
             htmlspecialchars_decode((string) $bitDefaultValue, ENT_QUOTES),
-            1
+            1,
         );
     }
 
@@ -1251,7 +1251,7 @@ class Util
      * @return array associative array containing type, spec_in_brackets
      *          and possibly enum_set_values (another array)
      */
-    public static function extractColumnSpec($columnSpecification)
+    public static function extractColumnSpec($columnSpecification): array
     {
         $firstBracketPos = mb_strpos($columnSpecification, '(');
         if ($firstBracketPos) {
@@ -1259,12 +1259,12 @@ class Util
                 mb_substr(
                     $columnSpecification,
                     $firstBracketPos + 1,
-                    mb_strrpos($columnSpecification, ')') - $firstBracketPos - 1
-                )
+                    mb_strrpos($columnSpecification, ')') - $firstBracketPos - 1,
+                ),
             );
             // convert to lowercase just to be sure
             $type = mb_strtolower(
-                rtrim(mb_substr($columnSpecification, 0, $firstBracketPos))
+                rtrim(mb_substr($columnSpecification, 0, $firstBracketPos)),
             );
         } else {
             // Split trailing attributes such as unsigned,
@@ -1343,9 +1343,9 @@ class Util
                 mb_substr(
                     $printType,
                     0,
-                    (int) $GLOBALS['cfg']['LimitChars']
+                    (int) $GLOBALS['cfg']['LimitChars'],
                 ) . '...',
-                ENT_COMPAT
+                ENT_COMPAT,
             );
             $displayedType .= '</abbr>';
         }
@@ -1520,7 +1520,7 @@ class Util
     public static function expandUserString(
         string $string,
         callable|null $escape = null,
-        array $updates = []
+        array $updates = [],
     ): string {
         /* Content */
         $vars = [];
@@ -1603,7 +1603,7 @@ class Util
      *
      * @return mixed   An HTML snippet or an array of datatypes.
      */
-    public static function getSupportedDatatypes($html = false, $selected = '')
+    public static function getSupportedDatatypes($html = false, $selected = ''): mixed
     {
         if ($html) {
             $retval = Generator::getSupportedDatatypes($selected);
@@ -1694,8 +1694,8 @@ class Util
                 $query,
                 'USER_PRIVILEGES',
                 $username,
-                $priv
-            )
+                $priv,
+            ),
         );
         if ($userPrivileges) {
             return true;
@@ -1716,8 +1716,8 @@ class Util
                 'SCHEMA_PRIVILEGES',
                 $username,
                 $priv,
-                $GLOBALS['dbi']->escapeString($db)
-            )
+                $GLOBALS['dbi']->escapeString($db),
+            ),
         );
         if ($schemaPrivileges) {
             return true;
@@ -1734,8 +1734,8 @@ class Util
                     $username,
                     $priv,
                     $GLOBALS['dbi']->escapeString($db),
-                    $GLOBALS['dbi']->escapeString($tbl)
-                )
+                    $GLOBALS['dbi']->escapeString($tbl),
+                ),
             );
             if ($tablePrivileges) {
                 return true;
@@ -1832,7 +1832,7 @@ class Util
      *
      * @return array|null list of tabs for the menu
      */
-    public static function getMenuTabList($level = null)
+    public static function getMenuTabList($level = null): array|null
     {
         $tabList = [
             'server' => [
@@ -1901,9 +1901,9 @@ class Util
      *
      * @return string time, datetime or timestamp strings with fractional seconds
      */
-    public static function addMicroseconds($value)
+    public static function addMicroseconds($value): string
     {
-        if (empty($value) || $value === 'CURRENT_TIMESTAMP' || $value === 'current_timestamp()') {
+        if ($value === '' || $value === 'CURRENT_TIMESTAMP' || $value === 'current_timestamp()') {
             return $value;
         }
 
@@ -1916,7 +1916,7 @@ class Util
         return mb_substr(
             $value,
             0,
-            mb_strpos($value, '.') + 7
+            mb_strpos($value, '.') + 7,
         );
     }
 
@@ -1928,7 +1928,7 @@ class Util
      *
      * @return string the MIME type for compression, or 'none'
      */
-    public static function getCompressionMimeType($file)
+    public static function getCompressionMimeType($file): string
     {
         $test = fread($file, 4);
 
@@ -1961,7 +1961,7 @@ class Util
      *
      * @return string COLLATE clause if needed or empty string.
      */
-    public static function getCollateForIS()
+    public static function getCollateForIS(): string
     {
         $names = $GLOBALS['dbi']->getLowerCaseNames();
         if ($names === 0) {
@@ -1982,7 +1982,7 @@ class Util
      *
      * @return array processes index data
      */
-    public static function processIndexData(array $indexes)
+    public static function processIndexData(array $indexes): array
     {
         $lastIndex = '';
 
@@ -2047,7 +2047,7 @@ class Util
         // Special speedup for newer MySQL Versions (in 4.0 format changed)
         if ($GLOBALS['cfg']['SkipLockedTables'] === true) {
             $dbInfoResult = $GLOBALS['dbi']->query(
-                'SHOW OPEN TABLES FROM ' . self::backquote($db) . ' WHERE In_use > 0;'
+                'SHOW OPEN TABLES FROM ' . self::backquote($db) . ' WHERE In_use > 0;',
             );
 
             // Blending out tables in use
@@ -2117,7 +2117,7 @@ class Util
                         false,
                         $sort,
                         $sortOrder,
-                        $tableType
+                        $tableType,
                     );
                     $groupWithSeparator = $tableGroupParam . $GLOBALS['cfg']['NavigationTreeTableSeparator'];
                 }
@@ -2142,7 +2142,7 @@ class Util
                 $limitCount,
                 $sort,
                 $sortOrder,
-                $tableType
+                $tableType,
             );
         }
 
@@ -2184,7 +2184,7 @@ class Util
             ) {
                 $group = $GLOBALS['dbi']->escapeMysqlWildcards((string) $_REQUEST['tbl_group']);
                 $groupWithSeparator = $GLOBALS['dbi']->escapeMysqlWildcards(
-                    $_REQUEST['tbl_group'] . $GLOBALS['cfg']['NavigationTreeTableSeparator']
+                    $_REQUEST['tbl_group'] . $GLOBALS['cfg']['NavigationTreeTableSeparator'],
                 );
                 $tblGroupSql .= ' WHERE ('
                     . self::backquote('Tables_in_' . $db)
@@ -2226,7 +2226,7 @@ class Util
                 if (count($names) > 0) {
                     $tables = array_merge(
                         $tables,
-                        $GLOBALS['dbi']->getTablesFull($db, $names)
+                        $GLOBALS['dbi']->getTablesFull($db, $names),
                     );
                 }
 
@@ -2315,10 +2315,8 @@ class Util
      * Wrapper around PHP date function
      *
      * @param string $format Date format string
-     *
-     * @return string
      */
-    public static function date($format)
+    public static function date($format): string
     {
         return date($format);
     }
@@ -2345,7 +2343,7 @@ class Util
      *
      * @return mixed Searched value
      */
-    public static function getValueByKey(array $array, string|array $path, $default = null)
+    public static function getValueByKey(array $array, string|array $path, $default = null): mixed
     {
         if (is_string($path)) {
             $path = explode('.', $path);
@@ -2374,7 +2372,7 @@ class Util
      *
      * @return string Link to be displayed in the table header
      */
-    public static function sortableTableHeader($title, $sort, $initialSortOrder = 'ASC')
+    public static function sortableTableHeader($title, $sort, $initialSortOrder = 'ASC'): string
     {
         $requestedSort = 'table';
         $requestedSortOrder = $futureSortOrder = $initialSortOrder;
@@ -2400,7 +2398,7 @@ class Util
                     [
                         'class' => 'sort_arrow',
                         'title' => '',
-                    ]
+                    ],
                 );
                 $orderImg .= ' ' . Generator::getImage(
                     's_desc',
@@ -2408,7 +2406,7 @@ class Util
                     [
                         'class' => 'sort_arrow hide',
                         'title' => '',
-                    ]
+                    ],
                 );
                 // but on mouse over, show the reverse order (DESC)
                 $orderLinkParams['onmouseover'] = "$('.sort_arrow').toggle();";
@@ -2423,7 +2421,7 @@ class Util
                     [
                         'class' => 'sort_arrow hide',
                         'title' => '',
-                    ]
+                    ],
                 );
                 $orderImg .= ' ' . Generator::getImage(
                     's_desc',
@@ -2431,7 +2429,7 @@ class Util
                     [
                         'class' => 'sort_arrow',
                         'title' => '',
-                    ]
+                    ],
                 );
                 // but on mouse over, show the reverse order (ASC)
                 $orderLinkParams['onmouseover'] = "$('.sort_arrow').toggle();";

@@ -16,21 +16,18 @@ use function str_repeat;
 
 use const SODIUM_CRYPTO_SECRETBOX_KEYBYTES;
 
-/**
- * @covers \PhpMyAdmin\Config\ServerConfigChecks
- */
+/** @covers \PhpMyAdmin\Config\ServerConfigChecks */
 class ServerConfigChecksTest extends AbstractTestCase
 {
-    /** @var string */
-    private $sessionID;
+    private string $sessionID;
 
-    /**
-     * @throws ReflectionException
-     */
+    /** @throws ReflectionException */
     protected function setUp(): void
     {
         parent::setUp();
+
         parent::setGlobalConfig();
+
         $GLOBALS['cfg']['AvailableCharsets'] = [];
         $GLOBALS['cfg']['ServerDefault'] = 0;
         $GLOBALS['server'] = 0;
@@ -88,7 +85,7 @@ class ServerConfigChecksTest extends AbstractTestCase
                 'SaveDir',
                 'TempDir',
             ],
-            array_keys($_SESSION['messages']['notice'])
+            array_keys($_SESSION['messages']['notice']),
         );
 
         $this->assertEquals(
@@ -99,7 +96,7 @@ class ServerConfigChecksTest extends AbstractTestCase
                 'ZipDump_import',
                 'ZipDump_export',
             ],
-            array_keys($_SESSION['messages']['error'])
+            array_keys($_SESSION['messages']['error']),
         );
     }
 

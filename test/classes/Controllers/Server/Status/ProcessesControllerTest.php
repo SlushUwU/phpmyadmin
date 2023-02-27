@@ -14,26 +14,25 @@ use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\DbiDummy;
 use PhpMyAdmin\Tests\Stubs\ResponseRenderer;
 
-/**
- * @covers \PhpMyAdmin\Controllers\Server\Status\ProcessesController
- */
+/** @covers \PhpMyAdmin\Controllers\Server\Status\ProcessesController */
 class ProcessesControllerTest extends AbstractTestCase
 {
-    /** @var DatabaseInterface */
-    protected $dbi;
+    protected DatabaseInterface $dbi;
 
-    /** @var DbiDummy */
-    protected $dummyDbi;
+    protected DbiDummy $dummyDbi;
 
-    /** @var Data */
-    private $data;
+    private Data $data;
 
     protected function setUp(): void
     {
         parent::setUp();
+
         $GLOBALS['text_dir'] = 'ltr';
+
         parent::setGlobalConfig();
+
         parent::setTheme();
+
         $this->dummyDbi = $this->createDbiDummy();
         $this->dbi = $this->createDatabaseInterface($this->dummyDbi);
         $GLOBALS['dbi'] = $this->dbi;
@@ -57,7 +56,7 @@ class ProcessesControllerTest extends AbstractTestCase
             new Template(),
             $this->data,
             $GLOBALS['dbi'],
-            new Processes($GLOBALS['dbi'])
+            new Processes($GLOBALS['dbi']),
         );
 
         $this->dummyDbi->addSelectDb('mysql');
@@ -68,7 +67,7 @@ class ProcessesControllerTest extends AbstractTestCase
         $this->assertStringContainsString(
             'Note: Enabling the auto refresh here might cause '
             . 'heavy traffic between the web server and the MySQL server.',
-            $html
+            $html,
         );
         // Test tab links
         $this->assertStringContainsString('<div class="tabLinks row">', $html);
@@ -81,7 +80,7 @@ class ProcessesControllerTest extends AbstractTestCase
 
         $this->assertStringContainsString(
             '<table id="tableprocesslist" class="table table-striped table-hover sortable w-auto">',
-            $html
+            $html,
         );
         $this->assertStringContainsString('<th>Processes</th>', $html);
         $this->assertStringContainsString('Show full queries', $html);

@@ -32,9 +32,7 @@ use const LIBXML_COMPACT;
  */
 class ImportXml extends ImportPlugin
 {
-    /**
-     * @psalm-return non-empty-lowercase-string
-     */
+    /** @psalm-return non-empty-lowercase-string */
     public function getName(): string
     {
         return 'xml';
@@ -99,11 +97,9 @@ class ImportXml extends ImportPlugin
          * The XML was malformed
          */
         if ($xml === false) {
-            echo Message::error(
-                __(
-                    'The XML file specified was either malformed or incomplete. Please correct the issue and try again.'
-                )
-            )->getDisplay();
+            echo Message::error(__(
+                'The XML file specified was either malformed or incomplete. Please correct the issue and try again.',
+            ))->getDisplay();
             unset($xml);
             $GLOBALS['finished'] = false;
 
@@ -162,11 +158,9 @@ class ImportXml extends ImportPlugin
          * The XML was malformed
          */
         if ($db_name === '') {
-            echo Message::error(
-                __(
-                    'The XML file specified was either malformed or incomplete. Please correct the issue and try again.'
-                )
-            )->getDisplay();
+            echo Message::error(__(
+                'The XML file specified was either malformed or incomplete. Please correct the issue and try again.',
+            ))->getDisplay();
             unset($xml);
             $GLOBALS['finished'] = false;
 

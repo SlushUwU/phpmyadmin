@@ -92,7 +92,7 @@ final class Gis
      *
      * @return string GIS data enclosed in 'ST_GeomFromText' or 'GeomFromText' function
      */
-    public static function createData($gisString, $mysqlVersion)
+    public static function createData($gisString, $mysqlVersion): string
     {
         $geomFromText = $mysqlVersion >= 50600 ? 'ST_GeomFromText' : 'GeomFromText';
         $gisString = trim($gisString);
@@ -125,7 +125,7 @@ final class Gis
     public static function getFunctions(
         $geomType = null,
         $binary = true,
-        $display = false
+        $display = false,
     ): array {
         $funcs = [];
         if ($display) {

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Gis;
 
+use PhpMyAdmin\Gis\GisGeometry;
 use PhpMyAdmin\Gis\GisPolygon;
 use PhpMyAdmin\Gis\ScaleData;
 use PhpMyAdmin\Image\ImageWrapper;
@@ -16,8 +17,7 @@ use TCPDF;
  */
 class GisPolygonTest extends GisGeomTestCase
 {
-    /** @var    GisPolygon */
-    protected $object;
+    protected GisGeometry $object;
 
     /**
      * Sets up the fixture, for example, opens a network connection.
@@ -26,6 +26,7 @@ class GisPolygonTest extends GisGeomTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
         $this->object = GisPolygon::singleton();
     }
 
@@ -36,6 +37,7 @@ class GisPolygonTest extends GisGeomTestCase
     protected function tearDown(): void
     {
         parent::tearDown();
+
         unset($this->object);
     }
 
@@ -167,24 +169,13 @@ class GisPolygonTest extends GisGeomTestCase
      */
     public static function providerForTestGenerateParams(): array
     {
-        $temp = self::getData();
-
-        $temp1 = $temp;
-        $temp1['gis_type'] = 'POLYGON';
-
         return [
             [
                 '\'POLYGON((35 10,10 20,15 40,45 45,35 10),(20 30,35 32,30 20,20 30))\',124',
-                null,
                 [
                     'srid' => 124,
-                    0 => $temp,
+                    0 => self::getData(),
                 ],
-            ],
-            [
-                'POLYGON((35 10,10 20,15 40,45 45,35 10),(20 30,35 32,30 20,20 30))',
-                2,
-                [2 => $temp1],
             ],
         ];
     }
@@ -283,7 +274,7 @@ class GisPolygonTest extends GisGeomTestCase
     {
         $this->assertEquals(
             $isInside,
-            $this->object->isPointInsidePolygon($point, $polygon)
+            $this->object->isPointInsidePolygon($point, $polygon),
         );
     }
 
@@ -407,9 +398,7 @@ class GisPolygonTest extends GisGeomTestCase
         ];
     }
 
-    /**
-     * @requires extension gd
-     */
+    /** @requires extension gd */
     public function testPrepareRowAsPng(): void
     {
         $image = ImageWrapper::create(200, 124, ['red' => 229, 'green' => 229, 'blue' => 229]);
@@ -419,7 +408,7 @@ class GisPolygonTest extends GisGeomTestCase
             'image',
             [176, 46, 224],
             ['x' => -56, 'y' => -16, 'scale' => 0.94, 'height' => 124],
-            $image
+            $image,
         );
         $this->assertEquals(200, $return->width());
         $this->assertEquals(124, $return->height());
@@ -445,7 +434,7 @@ class GisPolygonTest extends GisGeomTestCase
         string $label,
         array $color,
         array $scale_data,
-        TCPDF $pdf
+        TCPDF $pdf,
     ): void {
         $return = $this->object->prepareRowAsPdf($spatial, $label, $color, $scale_data, $pdf);
 
@@ -469,6 +458,7 @@ class GisPolygonTest extends GisGeomTestCase
                 'pdf',
                 [176, 46, 224],
                 ['x' => -8, 'y' => -32, 'scale' => 1.80, 'height' => 297],
+
                 parent::createEmptyPdf('POLYGON'),
             ],
         ];
@@ -490,7 +480,7 @@ class GisPolygonTest extends GisGeomTestCase
         string $label,
         array $color,
         array $scaleData,
-        string $output
+        string $output,
     ): void {
         $svg = $this->object->prepareRowAsSvg($spatial, $label, $color, $scaleData);
         $this->assertEquals($output, $svg);
@@ -539,7 +529,7 @@ class GisPolygonTest extends GisGeomTestCase
         string $label,
         array $color,
         array $scale_data,
-        string $output
+        string $output,
     ): void {
         $ol = $this->object->prepareRowAsOl($spatial, $srid, $label, $color, $scale_data);
         $this->assertEquals($output, $ol);

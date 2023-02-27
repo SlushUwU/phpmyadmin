@@ -12,13 +12,10 @@ use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Url;
 
-/**
- * @covers \PhpMyAdmin\Navigation\Navigation
- */
+/** @covers \PhpMyAdmin\Navigation\Navigation */
 class NavigationTest extends AbstractTestCase
 {
-    /** @var Navigation */
-    protected $object;
+    protected Navigation $object;
 
     /**
      * Sets up the fixture.
@@ -26,7 +23,9 @@ class NavigationTest extends AbstractTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
         parent::setLanguage();
+
         $GLOBALS['dbi'] = $this->createDatabaseInterface();
         $GLOBALS['server'] = 1;
         $GLOBALS['db'] = 'db';
@@ -45,7 +44,7 @@ class NavigationTest extends AbstractTestCase
         $this->object = new Navigation(
             new Template(),
             new Relation($GLOBALS['dbi']),
-            $GLOBALS['dbi']
+            $GLOBALS['dbi'],
         );
     }
 
@@ -55,6 +54,7 @@ class NavigationTest extends AbstractTestCase
     protected function tearDown(): void
     {
         parent::tearDown();
+
         unset($this->object);
     }
 
@@ -113,7 +113,7 @@ class NavigationTest extends AbstractTestCase
             '<a class="unhideNavItem ajax" href="' . Url::getFromRoute('/navigation') . '" data-post="'
             . 'unhideNavItem=1&itemType=table&'
             . 'itemName=tableName&dbName=db&lang=en">',
-            $html
+            $html,
         );
     }
 }

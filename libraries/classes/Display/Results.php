@@ -230,14 +230,13 @@ class Results
      * @var array<string, array<string, array<string, string[]>>>
      * @psalm-var array<string, array<string, array<string, array{string, class-string, string}>>> $transformationInfo
      */
-    public $transformationInfo;
+    public array $transformationInfo = [];
 
     private Relation $relation;
 
     private Transformations $transformations;
 
-    /** @var Template */
-    public $template;
+    public Template $template;
 
     /**
      * @param string $db       the database name
@@ -416,7 +415,7 @@ class Results
         array|null $showTable,
         $printView,
         $editable,
-        $isBrowseDistinct
+        $isBrowseDistinct,
     ): void {
         $this->properties['unlim_num_rows'] = $unlimNumRows;
         $this->properties['fields_meta'] = $fieldsMeta;
@@ -463,7 +462,7 @@ class Results
             . 'PROCESSLIST|STATUS|TABLE|GRANTS|CREATE|LOGS|DATABASES|FIELDS'
             . ')@i',
             $this->properties['sql_query'],
-            $which
+            $which,
         );
 
         $bIsProcessList = isset($which[1]);
@@ -644,7 +643,7 @@ class Results
                 || $this->properties['is_export']
                 || $this->properties['is_func']
                 || $this->properties['is_analyse'])
-            && ! empty($statementInfo->selectFrom)
+            && $statementInfo->selectFrom
             && ! empty($statementInfo->statement->from)
             && (count($statementInfo->statement->from) === 1)
             && ! empty($statementInfo->statement->from[0]->table);
@@ -677,7 +676,7 @@ class Results
                     'pos',
                     $_SESSION['tmpval']['max_rows'],
                     $pageNow,
-                    $nbTotalPage
+                    $nbTotalPage,
                 ),
             ]);
         }
@@ -704,7 +703,7 @@ class Results
         int $posNext,
         int $posPrevious,
         bool $isInnodb,
-        array $sortByKeyData
+        array $sortByKeyData,
     ): array {
         $isShowingAll = $_SESSION['tmpval']['max_rows'] === self::ALL_ROWS;
 
@@ -735,7 +734,7 @@ class Results
         $posLast = 0;
         if (is_numeric($_SESSION['tmpval']['max_rows'])) {
             $posLast = @((int) ceil(
-                (int) $this->properties['unlim_num_rows'] / $_SESSION['tmpval']['max_rows']
+                (int) $this->properties['unlim_num_rows'] / $_SESSION['tmpval']['max_rows'],
             ) - 1) * intval($_SESSION['tmpval']['max_rows']);
         }
 
@@ -790,8 +789,8 @@ class Results
         array $sortExpressionNoDirection,
         array $sortDirection,
         $isLimitedDisplay,
-        $unsortedSqlQuery
-    ) {
+        $unsortedSqlQuery,
+    ): string {
         // required to generate sort links that will remember whether the
         // "Show all" button has been clicked
         $sqlMd5 = md5($this->properties['server'] . $this->properties['db'] . $this->properties['sql_query']);
@@ -842,7 +841,7 @@ class Results
                     $comments,
                     $sortDirection,
                     $colVisib,
-                    $colVisibCurrent
+                    $colVisibCurrent,
                 );
 
                 $orderLink = $sortedHeaderData['order_link'];
@@ -909,7 +908,7 @@ class Results
         array $sortExpression = [],
         array $sortExpressionNoDirection = [],
         array $sortDirection = [],
-        $isLimitedDisplay = false
+        $isLimitedDisplay = false,
     ): array {
         // Needed for use in isset/empty or
         // use with array indexes/safe use in foreach
@@ -957,7 +956,7 @@ class Results
             $sortExpressionNoDirection,
             $sortDirection,
             $isLimitedDisplay,
-            $unsortedSqlQuery
+            $unsortedSqlQuery,
         );
 
         // Display column at rightside - checkboxes or empty column
@@ -990,7 +989,7 @@ class Results
      */
     private function getSortByKeyDropDown(
         array|null $sortExpression,
-        string $unsortedSqlQuery
+        string $unsortedSqlQuery,
     ): array {
         // grab indexes data:
         $indexes = Index::getFromTable($this->dbi, $this->properties['table'], $this->properties['db']);
@@ -1035,7 +1034,7 @@ class Results
                 preg_match(
                     '@(.*)([[:space:]](LIMIT (.*)|PROCEDURE (.*)|FOR UPDATE|LOCK IN SHARE MODE))@is',
                     $unsortedSqlQuery,
-                    $myReg
+                    $myReg,
                 )
             ) {
                 $unsortedSqlQueryFirstPart = $myReg[1];
@@ -1079,8 +1078,8 @@ class Results
     private function getFieldVisibilityParams(
         DisplayParts $displayParts,
         string $fullOrPartialTextLink,
-        string $colspan
-    ) {
+        string $colspan,
+    ): string {
         $displayParams = $this->properties['display_params'];
 
         // 1. Displays the full/partial text button (part 1)...
@@ -1133,7 +1132,7 @@ class Results
      *
      * @return array table comments
      */
-    private function getTableCommentsArray(StatementInfo $statementInfo)
+    private function getTableCommentsArray(StatementInfo $statementInfo): array
     {
         if (! $GLOBALS['cfg']['ShowBrowseComments'] || empty($statementInfo->statement->from)) {
             return [];
@@ -1147,7 +1146,7 @@ class Results
 
             $ret[$field->table] = $this->relation->getComments(
                 empty($field->database) ? $this->properties['db'] : $field->database,
-                $field->table
+                $field->table,
             );
         }
 
@@ -1194,7 +1193,7 @@ class Results
         if (! $table->isView()) {
             $tableCreateTime = $this->dbi->getTable(
                 $this->properties['db'],
-                $this->properties['table']
+                $this->properties['table'],
             )->getStatusInfo('Create_time');
         }
 
@@ -1327,7 +1326,7 @@ class Results
         string $comments,
         array $sortDirection,
         $colVisib,
-        $colVisibElement
+        $colVisibElement,
     ): array {
         // Checks if the table name is required; it's the case
         // for a query with a "JOIN" statement and if the column
@@ -1348,14 +1347,14 @@ class Results
             $sortTable,
             $fieldsMeta->name,
             $sortDirection,
-            $fieldsMeta
+            $fieldsMeta,
         );
 
         if (
             preg_match(
                 '@(.*)([[:space:]](LIMIT (.*)|PROCEDURE (.*)|FOR UPDATE|LOCK IN SHARE MODE))@is',
                 $unsortedSqlQuery,
-                $regs3
+                $regs3,
             )
         ) {
             $singleSortedSqlQuery = $regs3[1] . $singleSortOrder . $regs3[2];
@@ -1420,7 +1419,7 @@ class Results
         string $sortTable,
         string $nameToUseInSort,
         array $sortDirection,
-        FieldMetadata $fieldsMeta
+        FieldMetadata $fieldsMeta,
     ): array {
         // Check if the current column is in the order by clause
         $isInSort = $this->isInSorted($sortExpression, $sortExpressionNoDirection, $sortTable, $nameToUseInSort);
@@ -1496,7 +1495,7 @@ class Results
                 if ($isInSort) {
                     [$singleSortOrder, $orderImg] = $this->getSortingUrlParams(
                         $sortDirection[$index],
-                        $singleSortOrder
+                        $singleSortOrder,
                     );
                 } else {
                     $singleSortOrder .= strtoupper($sortDirection[$index]);
@@ -1537,7 +1536,7 @@ class Results
         array $sortExpression,
         array $sortExpressionNoDirection,
         string $sortTable,
-        string $nameToUseInSort
+        string $nameToUseInSort,
     ): bool {
         $indexInExpression = 0;
 
@@ -1570,7 +1569,7 @@ class Results
         // (and try clicking on each column's header twice)
         $noSortTable = $sortTable === '' || mb_strpos(
             $sortExpressionNoDirection[$indexInExpression],
-            $sortTable
+            $sortTable,
         ) === false;
         $noOpenParenthesis = mb_strpos($sortExpressionNoDirection[$indexInExpression], '(') === false;
         if ($sortTable !== '' && $noSortTable && $noOpenParenthesis) {
@@ -1610,7 +1609,7 @@ class Results
                 [
                     'class' => 'soimg',
                     'title' => '',
-                ]
+                ],
             );
             $orderImg .= ' ' . Generator::getImage(
                 's_asc',
@@ -1618,7 +1617,7 @@ class Results
                 [
                     'class' => 'soimg hide',
                     'title' => '',
-                ]
+                ],
             );
         } else {
             $sortOrder .= self::DESCENDING_SORT_DIR;
@@ -1628,7 +1627,7 @@ class Results
                 [
                     'class' => 'soimg',
                     'title' => '',
-                ]
+                ],
             );
             $orderImg .= ' ' . Generator::getImage(
                 's_desc',
@@ -1636,7 +1635,7 @@ class Results
                 [
                     'class' => 'soimg hide',
                     'title' => '',
-                ]
+                ],
             );
         }
 
@@ -1662,7 +1661,7 @@ class Results
         string $orderImg,
         FieldMetadata $fieldsMeta,
         array $orderUrlParams,
-        array $multiOrderUrlParams
+        array $multiOrderUrlParams,
     ): string {
         $urlPath = Url::getFromRoute('/sql');
         $innerLinkContent = htmlspecialchars($fieldsMeta->name) . $orderImg
@@ -1675,13 +1674,13 @@ class Results
             Url::getFromRoute('/sql'),
             $orderUrlParams,
             $innerLinkContent,
-            ['class' => 'sortlink']
+            ['class' => 'sortlink'],
         );
     }
 
     private function getSortOrderHiddenInputs(
         array $multipleUrlParams,
-        string $nameToUseInSort
+        string $nameToUseInSort,
     ): string {
         $sqlQuery = $multipleUrlParams['sql_query'];
         $sqlQueryAdd = $sqlQuery;
@@ -1750,8 +1749,8 @@ class Results
     private function getColumnAtRightSide(
         DisplayParts $displayParts,
         string $fullOrPartialTextLink,
-        string $colspan
-    ) {
+        string $colspan,
+    ): string {
         $rightColumnHtml = '';
         $displayParams = $this->properties['display_params'];
 
@@ -1804,7 +1803,7 @@ class Results
      *
      * @return string  the td
      */
-    private function buildValueDisplay($class, $conditionField, $value)
+    private function buildValueDisplay($class, $conditionField, $value): string
     {
         return $this->template->render('display/results/value_display', [
             'class' => $class,
@@ -1876,14 +1875,14 @@ class Results
         FieldMetadata $meta,
         string $nowrap,
         bool $isFieldTruncated = false,
-        bool $hasTransformationPlugin = false
+        bool $hasTransformationPlugin = false,
     ): string {
         $classes = array_filter([
             $class,
             $nowrap,
         ]);
 
-        if (isset($meta->internalMediaType)) {
+        if ($meta->internalMediaType !== null) {
             $classes[] = preg_replace('/\//', '_', $meta->internalMediaType);
         }
 
@@ -1942,8 +1941,8 @@ class Results
         DisplayParts $displayParts,
         array $map,
         StatementInfo $statementInfo,
-        $isLimitedDisplay = false
-    ) {
+        $isLimitedDisplay = false,
+    ): string {
         // Mostly because of browser transformations, to make the row-data accessible in a plugin.
 
         $GLOBALS['row'] ??= null;
@@ -1997,7 +1996,7 @@ class Results
                 $tableBodyHtml .= $this->getRepeatingHeaders(
                     $displayParams['emptypre'],
                     $displayParams['desc'],
-                    $displayParams['emptyafter']
+                    $displayParams['emptyafter'],
                 );
             }
 
@@ -2054,7 +2053,7 @@ class Results
                     $GLOBALS['row'],
                     false,
                     $this->properties['table'],
-                    $expressions
+                    $expressions,
                 );
                 $whereClauseMap[$rowNumber][$this->properties['table']] = $whereClause;
                 $this->properties['whereClauseMap'] = $whereClauseMap;
@@ -2076,7 +2075,7 @@ class Results
                     $clauseIsUnique,
                     $urlSqlQuery,
                     $displayParts->deleteLink,
-                    (int) $GLOBALS['row'][0]
+                    (int) $GLOBALS['row'][0],
                 );
 
                 // 1.3 Displays the links at left if required
@@ -2145,7 +2144,7 @@ class Results
                 $gridEditConfig,
                 $colVisib,
                 $urlSqlQuery,
-                $statementInfo
+                $statementInfo,
             );
 
             // 3. Displays the modify/delete links on the right if required
@@ -2213,7 +2212,7 @@ class Results
 
             $mediaTypeMap = array_merge(
                 $mediaTypeMap,
-                $this->transformations->getMime($this->properties['db'], $meta->orgtable, false, true) ?? []
+                $this->transformations->getMime($this->properties['db'], $meta->orgtable, false, true) ?? [],
             );
             $added[$orgFullTableName] = true;
         }
@@ -2225,7 +2224,7 @@ class Results
                 . 'PROCESSLIST|STATUS|TABLE|GRANTS|CREATE|LOGS|DATABASES|FIELDS'
                 . ')@i',
                 $this->properties['sql_query'],
-                $which
+                $which,
             );
 
             if (isset($which[1])) {
@@ -2278,8 +2277,8 @@ class Results
         string $gridEditConfig,
         bool|array|string $colVisib,
         $urlSqlQuery,
-        StatementInfo $statementInfo
-    ) {
+        StatementInfo $statementInfo,
+    ): string {
         $rowValuesHtml = '';
 
         // Following variable are needed for use in isset/empty or
@@ -2355,13 +2354,13 @@ class Results
                         if ($plugin instanceof TransformationsPlugin) {
                             $transformationPlugin = $plugin;
                             $transformOptions = $this->transformations->getOptions(
-                                $mediaTypeMap[$orgFullColName]['transformation_options'] ?? ''
+                                $mediaTypeMap[$orgFullColName]['transformation_options'] ?? '',
                             );
 
                             $meta->internalMediaType = str_replace(
                                 '_',
                                 '/',
-                                $mediaTypeMap[$orgFullColName]['mimetype']
+                                $mediaTypeMap[$orgFullColName]['mimetype'],
                             );
                         }
                     }
@@ -2385,7 +2384,7 @@ class Results
                 if ($plugin instanceof TransformationsPlugin) {
                     $transformationPlugin = $plugin;
                     $transformOptions = $this->transformations->getOptions(
-                        $mediaTypeMap[$orgFullColName]['transformation_options'] ?? ''
+                        $mediaTypeMap[$orgFullColName]['transformation_options'] ?? '',
                     );
 
                     $orgTable = mb_strtolower($meta->orgtable);
@@ -2394,7 +2393,7 @@ class Results
                     $meta->internalMediaType = str_replace(
                         '_',
                         '/',
-                        $this->transformationInfo[$dbLower][$orgTable][$orgName][2]
+                        $this->transformationInfo[$dbLower][$orgTable][$orgName][2],
                     );
                 }
             }
@@ -2404,7 +2403,7 @@ class Results
                 $linkingUrl = $this->getSpecialLinkUrl(
                     $specialSchemaLinks[$dbLower][$tblLower][$nameLower],
                     $row[$i],
-                    $rowInfo
+                    $rowInfo,
                 );
                 $transformationPlugin = new Text_Plain_Link();
 
@@ -2439,7 +2438,7 @@ class Results
                     $row,
                     false,
                     $meta->orgtable,
-                    $expressions
+                    $expressions,
                 );
                 $whereClauseMap[$rowNumber][$meta->orgtable] = $uniqueConditions;
             }
@@ -2472,7 +2471,7 @@ class Results
                     $map,
                     $statementInfo,
                     $transformationPlugin,
-                    $transformOptions
+                    $transformOptions,
                 );
             } elseif ($meta->isMappedTypeGeometry) {
                 // g e o m e t r y
@@ -2490,7 +2489,7 @@ class Results
                     $conditionField,
                     $transformationPlugin,
                     $transformOptions,
-                    $statementInfo
+                    $statementInfo,
                 );
             } else {
                 // n o t   n u m e r i c
@@ -2504,7 +2503,7 @@ class Results
                     $conditionField,
                     $transformationPlugin,
                     $transformOptions,
-                    $statementInfo
+                    $statementInfo,
                 );
             }
 
@@ -2543,8 +2542,8 @@ class Results
     private function getSpecialLinkUrl(
         array $linkRelations,
         $columnValue,
-        array $rowInfo
-    ) {
+        array $rowInfo,
+    ): string {
         $linkingUrlParams = [];
 
         $linkingUrlParams[$linkRelations['link_param']] = $columnValue;
@@ -2602,7 +2601,7 @@ class Results
      *
      * @return string analyzed sql query
      */
-    private function getUrlSqlQuery(StatementInfo $statementInfo)
+    private function getUrlSqlQuery(StatementInfo $statementInfo): string
     {
         if (
             $statementInfo->queryType !== 'SELECT'
@@ -2616,7 +2615,7 @@ class Results
         $query = 'SELECT ' . Query::getClause(
             $statementInfo->statement,
             $statementInfo->parser->list,
-            'SELECT'
+            'SELECT',
         );
 
         $fromClause = Query::getClause($statementInfo->statement, $statementInfo->parser->list, 'FROM');
@@ -2688,7 +2687,7 @@ class Results
     private function getRepeatingHeaders(
         int $numEmptyColumnsBefore,
         array $descriptions,
-        int $numEmptyColumnsAfter
+        int $numEmptyColumnsAfter,
     ): string {
         $headerHtml = '<tr>' . "\n";
 
@@ -2727,8 +2726,8 @@ class Results
     private function getModifiedLinks(
         $whereClause,
         $clauseIsUnique,
-        $urlSqlQuery
-    ) {
+        $urlSqlQuery,
+    ): array {
         $urlParams = [
             'db' => $this->properties['db'],
             'table' => $this->properties['table'],
@@ -2746,11 +2745,11 @@ class Results
 
         $editStr = $this->getActionLinkContent(
             'b_edit',
-            __('Edit')
+            __('Edit'),
         );
         $copyStr = $this->getActionLinkContent(
             'b_insrow',
-            __('Copy')
+            __('Copy'),
         );
 
         return [
@@ -2781,8 +2780,8 @@ class Results
         $clauseIsUnique,
         $urlSqlQuery,
         int $deleteLink,
-        int $processId
-    ) {
+        int $processId,
+    ): array {
         $goto = $this->properties['goto'];
 
         if ($deleteLink === DisplayParts::DELETE_ROW) { // delete row case
@@ -2837,7 +2836,7 @@ class Results
             $jsConf = $kill;
             $deleteString = Generator::getIcon(
                 'b_drop',
-                __('Kill')
+                __('Kill'),
             );
         } else {
             $deleteUrl = $deleteString = $jsConf = $urlParams = null;
@@ -2858,10 +2857,8 @@ class Results
      *
      * @param string $icon        The name of the file to get
      * @param string $displayText The text displaying after the image icon
-     *
-     * @return string
      */
-    private function getActionLinkContent($icon, $displayText)
+    private function getActionLinkContent($icon, $displayText): string
     {
         if (
             isset($GLOBALS['cfg']['RowActionType'])
@@ -2930,8 +2927,8 @@ class Results
         array $map,
         StatementInfo $statementInfo,
         TransformationsPlugin|null $transformationPlugin,
-        array $transformOptions
-    ) {
+        array $transformOptions,
+    ): string {
         if ($column === null) {
             return $this->buildNullDisplay($class, $conditionField, $meta);
         }
@@ -2953,7 +2950,7 @@ class Results
             $transformationPlugin,
             'text-nowrap',
             $whereComparison,
-            $transformOptions
+            $transformOptions,
         );
     }
 
@@ -2981,8 +2978,8 @@ class Results
         bool $conditionField,
         TransformationsPlugin|null $transformationPlugin,
         $transformOptions,
-        StatementInfo $statementInfo
-    ) {
+        StatementInfo $statementInfo,
+    ): string {
         if ($column === null) {
             return $this->buildNullDisplay($class, $conditionField, $meta);
         }
@@ -2999,7 +2996,7 @@ class Results
                 $transformationPlugin,
                 $transformOptions,
                 $meta,
-                $urlParams
+                $urlParams,
             );
 
             return $this->buildValueDisplay($class, $conditionField, $geometryText);
@@ -3029,7 +3026,7 @@ class Results
                 '',
                 $whereComparison,
                 $transformOptions,
-                $isFieldTruncated
+                $isFieldTruncated,
             );
         }
 
@@ -3057,7 +3054,7 @@ class Results
                 '',
                 $whereComparison,
                 $transformOptions,
-                $isFieldTruncated
+                $isFieldTruncated,
             );
         }
 
@@ -3067,7 +3064,7 @@ class Results
             $transformationPlugin,
             $transformOptions,
             $meta,
-            $urlParams
+            $urlParams,
         );
 
         return $this->buildValueDisplay($class, $conditionField, $wkbval);
@@ -3097,8 +3094,8 @@ class Results
         bool $conditionField,
         TransformationsPlugin|null $transformationPlugin,
         $transformOptions,
-        StatementInfo $statementInfo
-    ) {
+        StatementInfo $statementInfo,
+    ): string {
         $originalLength = 0;
 
         $isAnalyse = $this->properties['is_analyse'];
@@ -3169,7 +3166,7 @@ class Results
                 $transformOptions,
                 $meta,
                 $urlParams,
-                $isFieldTruncated
+                $isFieldTruncated,
             );
             $class = $this->addClass(
                 $class,
@@ -3177,7 +3174,7 @@ class Results
                 $meta,
                 '',
                 $isFieldTruncated,
-                $transformationPlugin !== null
+                $transformationPlugin !== null,
             );
             $result = strip_tags($column);
             // disable inline grid editing
@@ -3214,7 +3211,7 @@ class Results
             $whereComparison,
             $transformOptions,
             $isFieldTruncated,
-            (string) $originalLength
+            (string) $originalLength,
         );
     }
 
@@ -3269,7 +3266,7 @@ class Results
         if (
             isset($_REQUEST['pftext']) && in_array(
                 $_REQUEST['pftext'],
-                [self::DISPLAY_PARTIAL_TEXT, self::DISPLAY_FULL_TEXT]
+                [self::DISPLAY_PARTIAL_TEXT, self::DISPLAY_FULL_TEXT],
             )
         ) {
             $query['pftext'] = $_REQUEST['pftext'];
@@ -3283,7 +3280,7 @@ class Results
         if (
             isset($_REQUEST['relational_display']) && in_array(
                 $_REQUEST['relational_display'],
-                [self::RELATIONAL_KEY, self::RELATIONAL_DISPLAY_COLUMN]
+                [self::RELATIONAL_KEY, self::RELATIONAL_DISPLAY_COLUMN],
             )
         ) {
             $query['relational_display'] = $_REQUEST['relational_display'];
@@ -3298,7 +3295,7 @@ class Results
         if (
             isset($_REQUEST['geoOption']) && in_array(
                 $_REQUEST['geoOption'],
-                [self::GEOMETRY_DISP_WKT, self::GEOMETRY_DISP_WKB, self::GEOMETRY_DISP_GEOM]
+                [self::GEOMETRY_DISP_WKT, self::GEOMETRY_DISP_WKB, self::GEOMETRY_DISP_GEOM],
             )
         ) {
             $query['geoOption'] = $_REQUEST['geoOption'];
@@ -3373,8 +3370,8 @@ class Results
         ResultInterface $dtResult,
         DisplayParts $displayParts,
         StatementInfo $statementInfo,
-        $isLimitedDisplay = false
-    ) {
+        $isLimitedDisplay = false,
+    ): string {
         // The statement this table is built for.
         if (isset($statementInfo->statement)) {
             /** @var SelectStatement $statement */
@@ -3400,8 +3397,8 @@ class Results
             $preCount = '~';
             $afterCount = Generator::showHint(
                 Sanitize::sanitizeMessage(
-                    __('May be approximate. See [doc@faq3-11]FAQ 3.11[/doc].')
-                )
+                    __('May be approximate. See [doc@faq3-11]FAQ 3.11[/doc].'),
+                ),
             );
         } else {
             $preCount = '';
@@ -3461,7 +3458,7 @@ class Results
                 $total,
                 $posNext,
                 $preCount,
-                $afterCount
+                $afterCount,
             );
 
             $sqlQueryMessage = Generator::getMessage($message, $this->properties['sql_query'], 'success');
@@ -3469,7 +3466,7 @@ class Results
             $sqlQueryMessage = Generator::getMessage(
                 __('Your SQL query has been executed successfully.'),
                 $this->properties['sql_query'],
-                'success'
+                'success',
             );
         }
 
@@ -3493,14 +3490,14 @@ class Results
                 $statementInfo->statement,
                 $statementInfo->parser->list,
                 'ORDER BY',
-                ''
+                '',
             );
 
             // Data is sorted by indexes only if there is only one table.
             if ($this->isSelect($statementInfo)) {
                 $sortByKeyData = $this->getSortByKeyDropDown(
                     $sortExpression,
-                    $unsortedSqlQuery
+                    $unsortedSqlQuery,
                 );
             }
         }
@@ -3542,7 +3539,7 @@ class Results
             $sortExpression,
             $sortExpressionNoDirection,
             $sortDirection,
-            $isLimitedDisplay
+            $isLimitedDisplay,
         );
 
         $body = $this->getTableBody($dtResult, $displayParts, $map, $statementInfo, $isLimitedDisplay);
@@ -3609,13 +3606,11 @@ class Results
      * @param ResultInterface $dtResult                  the link id associated to the query
      *                                                   which results have to be displayed
      * @param string|null     $sortExpressionNoDirection sort expression without direction
-     *
-     * @return string
      */
     private function getSortedColumnMessage(
         ResultInterface $dtResult,
-        $sortExpressionNoDirection
-    ) {
+        $sortExpressionNoDirection,
+    ): string {
         $fieldsMeta = $this->properties['fields_meta']; // To use array indexes
 
         if (empty($sortExpressionNoDirection)) {
@@ -3662,7 +3657,7 @@ class Results
                 $row ? $row[$sortedColumnIndex] : '',
                 null,
                 [],
-                $meta
+                $meta,
             );
         } else {
             $columnForFirstRow = $row !== [] ? $row[$sortedColumnIndex] : '';
@@ -3672,8 +3667,8 @@ class Results
             mb_substr(
                 (string) $columnForFirstRow,
                 0,
-                (int) $GLOBALS['cfg']['LimitChars']
-            ) . '...'
+                (int) $GLOBALS['cfg']['LimitChars'],
+            ) . '...',
         );
 
         // fetch last row of the result set
@@ -3688,7 +3683,7 @@ class Results
                 $row ? $row[$sortedColumnIndex] : '',
                 null,
                 [],
-                $meta
+                $meta,
             );
         } else {
             $columnForLastRow = $row !== [] ? $row[$sortedColumnIndex] : '';
@@ -3698,8 +3693,8 @@ class Results
             mb_substr(
                 (string) $columnForLastRow,
                 0,
-                (int) $GLOBALS['cfg']['LimitChars']
-            ) . '...'
+                (int) $GLOBALS['cfg']['LimitChars'],
+            ) . '...',
         );
 
         // reset to first row for the loop in getTableBody()
@@ -3732,8 +3727,8 @@ class Results
         $total,
         $posNext,
         string $preCount,
-        string $afterCount
-    ) {
+        string $afterCount,
+    ): Message {
         $unlimNumRows = $this->properties['unlim_num_rows']; // To use in isset()
 
         if (! empty($statementInfo->statement->limit)) {
@@ -3758,8 +3753,8 @@ class Results
         if ($table->isView() && ($total == $GLOBALS['cfg']['MaxExactCountViews'])) {
             $message = Message::notice(
                 __(
-                    'This view has at least this number of rows. Please refer to %sdocumentation%s.'
-                )
+                    'This view has at least this number of rows. Please refer to %sdocumentation%s.',
+                ),
             );
 
             $message->addParam('[doc@cfg_MaxExactCount]');
@@ -3781,7 +3776,7 @@ class Results
         if ($messageViewWarning === false) {
             if ($unlimNumRows != $total) {
                 $messageTotal = Message::notice(
-                    $preCount . __('%1$d total, %2$d in query')
+                    $preCount . __('%1$d total, %2$d in query'),
                 );
                 $messageTotal->addParam($total);
                 $messageTotal->addParam($unlimNumRows);
@@ -3829,7 +3824,7 @@ class Results
             $this->properties['db'],
             $this->properties['table'],
             '',
-            self::POSITION_BOTH
+            self::POSITION_BOTH,
         );
 
         if ($existRel === []) {
@@ -3850,7 +3845,7 @@ class Results
                     foreach ($oneKey['index_list'] as $index => $oneField) {
                         $displayField = $this->relation->getDisplayField(
                             $oneKey['ref_db_name'] ?? $GLOBALS['db'],
-                            $oneKey['ref_table_name']
+                            $oneKey['ref_table_name'],
                         );
 
                         $map[$oneField] = [
@@ -3881,7 +3876,7 @@ class Results
     private function getBulkLinks(
         ResultInterface $dtResult,
         StatementInfo $statementInfo,
-        int $deleteLink
+        int $deleteLink,
     ): array {
         if ($deleteLink !== DisplayParts::DELETE_ROW) {
             return [];
@@ -3907,7 +3902,7 @@ class Results
             $row,
             false,
             false,
-            $expressions
+            $expressions,
         );
 
         // reset to first row for the loop in getTableBody()
@@ -3942,7 +3937,7 @@ class Results
      */
     private function getResultsOperations(
         bool $hasPrintLink,
-        StatementInfo $statementInfo
+        StatementInfo $statementInfo,
     ): array {
         $urlParams = [
             'db' => $this->properties['db'],
@@ -3961,7 +3956,7 @@ class Results
         // display the Export link).
         if (
             ($statementInfo->queryType === self::QUERY_TYPE_SELECT)
-            && empty($statementInfo->isProcedure)
+            && ! $statementInfo->isProcedure
         ) {
             if (count($statementInfo->selectTables) === 1) {
                 $urlParams['single_table'] = 'true';
@@ -3997,7 +3992,7 @@ class Results
         }
 
         return [
-            'has_procedure' => ! empty($statementInfo->isProcedure),
+            'has_procedure' => $statementInfo->isProcedure,
             'has_geometry' => $geometryFound,
             'has_print_link' => $hasPrintLink,
             'has_export_link' => $statementInfo->queryType === self::QUERY_TYPE_SELECT,
@@ -4025,7 +4020,7 @@ class Results
         array $transformOptions,
         FieldMetadata $meta,
         array $urlParams = [],
-        &$isTruncated = false
+        &$isTruncated = false,
     ): string {
         $isTruncated = false;
         $result = '[' . $category;
@@ -4048,7 +4043,7 @@ class Results
         if ($transformationPlugin !== null) {
             $posMimeOctetstream = strpos(
                 $transformationPlugin->getMIMESubtype(),
-                'Octetstream'
+                'Octetstream',
             );
             $posMimeText = strpos($transformationPlugin->getMIMEType(), 'Text');
             if ($posMimeOctetstream || $posMimeText !== false) {
@@ -4173,8 +4168,8 @@ class Results
         string $whereComparison,
         array $transformOptions,
         bool $isFieldTruncated = false,
-        string $originalLength = ''
-    ) {
+        string $originalLength = '',
+    ): string {
         $relationalDisplay = $_SESSION['tmpval']['relational_display'];
         $printView = $this->properties['printview'];
         $value = '';
@@ -4184,7 +4179,7 @@ class Results
             $meta,
             $nowrap,
             $isFieldTruncated,
-            $transformationPlugin !== null
+            $transformationPlugin !== null,
         );
 
         if (! empty($statementInfo->statement->expr)) {
@@ -4267,7 +4262,7 @@ class Results
                     Url::getFromRoute('/sql'),
                     $urlParams,
                     $displayedData,
-                    $tagParams
+                    $tagParams,
                 );
             }
         } elseif ($transformationPlugin !== null) {

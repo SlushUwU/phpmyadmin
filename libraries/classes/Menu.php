@@ -106,7 +106,7 @@ class Menu
      *
      * @return array list of allowed tabs
      */
-    private function getAllowedTabs($level)
+    private function getAllowedTabs($level): array
     {
         $cacheKey = 'menu-levels-' . $level;
         if (SessionCache::has($cacheKey)) {
@@ -134,7 +134,7 @@ class Menu
                     $tab = (string) $row['tab'];
                     $tabName = mb_substr(
                         $tab,
-                        mb_strpos($tab, '_') + 1
+                        mb_strpos($tab, '_') + 1,
                     );
                     unset($allowedTabs[$tabName]);
                 }
@@ -452,7 +452,7 @@ class Menu
         } else {
             $binaryLogs = $this->dbi->fetchResult(
                 'SHOW MASTER LOGS',
-                'Log_name'
+                'Log_name',
             );
             SessionCache::set('binary_logs', $binaryLogs);
         }
@@ -556,10 +556,8 @@ class Menu
      * Set current table
      *
      * @param string $table Current table
-     *
-     * @return Menu
      */
-    public function setTable(string $table)
+    public function setTable(string $table): Menu
     {
         $this->table = $table;
 

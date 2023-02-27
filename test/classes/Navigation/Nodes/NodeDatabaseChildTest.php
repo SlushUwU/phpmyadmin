@@ -20,9 +20,9 @@ class NodeDatabaseChildTest extends AbstractTestCase
     /**
      * Mock of NodeDatabaseChild
      *
-     * @var NodeDatabaseChild|MockObject
+     * @var NodeDatabaseChild&MockObject
      */
-    protected $object;
+    protected NodeDatabaseChild $object;
 
     /**
      * Sets up the fixture.
@@ -30,8 +30,11 @@ class NodeDatabaseChildTest extends AbstractTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
         parent::setTheme();
+
         parent::setLanguage();
+
         $GLOBALS['dbi'] = $this->createDatabaseInterface();
         $GLOBALS['cfg']['DefaultTabDatabase'] = 'structure';
         $GLOBALS['server'] = 1;
@@ -44,7 +47,7 @@ class NodeDatabaseChildTest extends AbstractTestCase
         ])->toArray();
         $this->object = $this->getMockForAbstractClass(
             NodeDatabaseChild::class,
-            ['child']
+            ['child'],
         );
     }
 
@@ -54,6 +57,7 @@ class NodeDatabaseChildTest extends AbstractTestCase
     protected function tearDown(): void
     {
         parent::tearDown();
+
         unset($this->object);
     }
 
@@ -75,7 +79,7 @@ class NodeDatabaseChildTest extends AbstractTestCase
             '<a href="' . Url::getFromRoute('/navigation') . '" data-post="'
             . 'hideNavItem=1&itemType=itemType&itemName=child'
             . '&dbName=parent&lang=en" class="hideNavItem ajax">',
-            $html
+            $html,
         );
     }
 }

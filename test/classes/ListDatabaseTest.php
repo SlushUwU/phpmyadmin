@@ -6,17 +6,13 @@ namespace PhpMyAdmin\Tests;
 
 use PhpMyAdmin\ListDatabase;
 
-/**
- * @covers \PhpMyAdmin\ListDatabase<extended>
- */
+/** @covers \PhpMyAdmin\ListDatabase */
 class ListDatabaseTest extends AbstractTestCase
 {
     /**
      * ListDatabase instance
-     *
-     * @var ListDatabase
      */
-    private $object;
+    private ListDatabase $object;
 
     /**
      * SetUp for test cases
@@ -24,6 +20,7 @@ class ListDatabaseTest extends AbstractTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
         $GLOBALS['dbi'] = $this->createDatabaseInterface();
         $GLOBALS['server'] = 1;
         $GLOBALS['cfg']['Server']['DisableIS'] = false;
@@ -61,7 +58,7 @@ class ListDatabaseTest extends AbstractTestCase
                     'is_selected' => false,
                 ],
             ],
-            $arr->getList()
+            $arr->getList(),
         );
 
         $GLOBALS['db'] = 'single_db';
@@ -72,7 +69,7 @@ class ListDatabaseTest extends AbstractTestCase
                     'is_selected' => true,
                 ],
             ],
-            $arr->getList()
+            $arr->getList(),
         );
     }
 
@@ -87,9 +84,9 @@ class ListDatabaseTest extends AbstractTestCase
                 $this->object,
                 ListDatabase::class,
                 'checkHideDatabase',
-                []
+                [],
             ),
-            ''
+            '',
         );
     }
 
@@ -101,13 +98,13 @@ class ListDatabaseTest extends AbstractTestCase
         $GLOBALS['db'] = '';
         $this->assertEquals(
             $this->object->getDefault(),
-            ''
+            '',
         );
 
         $GLOBALS['db'] = 'mysql';
         $this->assertEquals(
             $this->object->getDefault(),
-            'mysql'
+            'mysql',
         );
     }
 }

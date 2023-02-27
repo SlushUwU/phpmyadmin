@@ -29,25 +29,20 @@ use function in_array;
 class DiaRelationSchema extends ExportRelationSchema
 {
     /** @var TableStatsDia[] */
-    private $tables = [];
+    private array $tables = [];
 
     /** @var RelationStatsDia[] Relations */
-    private $relations = [];
+    private array $relations = [];
 
-    /** @var float */
-    private $topMargin = 2.8222000598907471;
+    private float $topMargin = 2.8222000598907471;
 
-    /** @var float */
-    private $bottomMargin = 2.8222000598907471;
+    private float $bottomMargin = 2.8222000598907471;
 
-    /** @var float */
-    private $leftMargin = 2.8222000598907471;
+    private float $leftMargin = 2.8222000598907471;
 
-    /** @var float */
-    private $rightMargin = 2.8222000598907471;
+    private float $rightMargin = 2.8222000598907471;
 
-    /** @var int */
-    public static $objectId = 0;
+    public static int $objectId = 0;
 
     /**
      * Upon instantiation This outputs the Dia XML document
@@ -72,7 +67,7 @@ class DiaRelationSchema extends ExportRelationSchema
             $this->bottomMargin,
             $this->leftMargin,
             $this->rightMargin,
-            $this->orientation
+            $this->orientation,
         );
 
         $alltables = $this->getTablesFromRequest();
@@ -88,7 +83,7 @@ class DiaRelationSchema extends ExportRelationSchema
                 $table,
                 $this->pageNumber,
                 $this->showKeys,
-                $this->offline
+                $this->offline,
             );
         }
 
@@ -110,7 +105,7 @@ class DiaRelationSchema extends ExportRelationSchema
                             $master_field,
                             $rel['foreign_table'],
                             $rel['foreign_field'],
-                            $this->showKeys
+                            $this->showKeys,
                         );
                     }
 
@@ -128,7 +123,7 @@ class DiaRelationSchema extends ExportRelationSchema
                             $one_field,
                             $one_key['ref_table_name'],
                             $one_key['ref_index_list'][$index],
-                            $this->showKeys
+                            $this->showKeys,
                         );
                     }
                 }
@@ -144,9 +139,7 @@ class DiaRelationSchema extends ExportRelationSchema
         $this->diagram->endDiaDoc();
     }
 
-    /**
-     * @return array{fileName: non-empty-string, fileData: string}
-     */
+    /** @return array{fileName: non-empty-string, fileData: string} */
     public function getExportInfo(): array
     {
         return ['fileName' => $this->getFileName('.dia'), 'fileData' => $this->diagram->getOutputData()];
@@ -168,7 +161,7 @@ class DiaRelationSchema extends ExportRelationSchema
         $masterField,
         $foreignTable,
         $foreignField,
-        $showKeys
+        $showKeys,
     ): void {
         if (! isset($this->tables[$masterTable])) {
             $this->tables[$masterTable] = new TableStatsDia(
@@ -176,7 +169,7 @@ class DiaRelationSchema extends ExportRelationSchema
                 $this->db->getName(),
                 $masterTable,
                 $this->pageNumber,
-                $showKeys
+                $showKeys,
             );
         }
 
@@ -186,7 +179,7 @@ class DiaRelationSchema extends ExportRelationSchema
                 $this->db->getName(),
                 $foreignTable,
                 $this->pageNumber,
-                $showKeys
+                $showKeys,
             );
         }
 
@@ -195,7 +188,7 @@ class DiaRelationSchema extends ExportRelationSchema
             $this->tables[$masterTable],
             $masterField,
             $this->tables[$foreignTable],
-            $foreignField
+            $foreignField,
         );
     }
 

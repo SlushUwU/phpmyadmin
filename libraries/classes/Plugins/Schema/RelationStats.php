@@ -22,26 +22,19 @@ use function min;
  */
 abstract class RelationStats
 {
-    /** @var mixed */
-    public $xSrc;
+    public mixed $xSrc;
 
-    /** @var mixed */
-    public $ySrc;
+    public mixed $ySrc;
 
-    /** @var int */
-    public $srcDir;
+    public int $srcDir;
 
-    /** @var int */
-    public $destDir;
+    public int $destDir;
 
-    /** @var mixed */
-    public $xDest;
+    public mixed $xDest;
 
-    /** @var mixed */
-    public $yDest;
+    public mixed $yDest;
 
-    /** @var int */
-    public $wTick = 0;
+    public int $wTick = 0;
 
     /**
      * @param object $diagram       The diagram
@@ -55,7 +48,7 @@ abstract class RelationStats
         $master_table,
         $master_field,
         $foreign_table,
-        $foreign_field
+        $foreign_field,
     ) {
         $src_pos = $this->getXy($master_table, $master_field);
         $dest_pos = $this->getXy($foreign_table, $foreign_field);
@@ -107,7 +100,7 @@ abstract class RelationStats
      *
      * @return array Arrows coordinates
      */
-    private function getXy($table, $column)
+    private function getXy($table, $column): array
     {
         $pos = array_search($column, $table->fields);
 

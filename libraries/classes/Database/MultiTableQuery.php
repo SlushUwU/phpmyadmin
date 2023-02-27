@@ -26,50 +26,18 @@ use function md5;
 class MultiTableQuery
 {
     /**
-     * DatabaseInterface instance
-     */
-    private DatabaseInterface $dbi;
-
-    /**
-     * Database name
-     *
-     * @var string
-     */
-    private $db;
-
-    /**
-     * Default number of columns
-     *
-     * @var int
-     */
-    private $defaultNoOfColumns;
-
-    /**
      * Table names
      *
      * @var array<int, string>
      */
     private array $tables;
 
-    /** @var Template */
-    public $template;
-
-    /**
-     * @param string $dbName             Database name
-     * @param int    $defaultNoOfColumns Default number of columns
-     */
     public function __construct(
-        DatabaseInterface $dbi,
-        Template $template,
-        $dbName,
-        $defaultNoOfColumns = 3
+        private DatabaseInterface $dbi,
+        public Template $template,
+        private string $db,
+        private int $defaultNoOfColumns = 3,
     ) {
-        $this->dbi = $dbi;
-        $this->db = $dbName;
-        $this->defaultNoOfColumns = $defaultNoOfColumns;
-
-        $this->template = $template;
-
         $this->tables = $this->dbi->getTables($this->db);
     }
 
@@ -78,13 +46,13 @@ class MultiTableQuery
      *
      * @return string Multi-Table query page HTML
      */
-    public function getFormHtml()
+    public function getFormHtml(): string
     {
         $tables = [];
         foreach ($this->tables as $table) {
             $tables[$table]['hash'] = md5($table);
             $tables[$table]['columns'] = array_keys(
-                $this->dbi->getColumns($this->db, $table)
+                $this->dbi->getColumns($this->db, $table),
             );
         }
 
@@ -114,7 +82,7 @@ class MultiTableQuery
             new RelationCleanup($GLOBALS['dbi'], $relation),
             new Operations($GLOBALS['dbi'], $relation),
             new Transformations(),
-            new Template()
+            new Template(),
         );
 
         return $sql->executeQueryAndSendQueryResponse(
@@ -131,7 +99,7 @@ class MultiTableQuery
             null, // disp_query
             null, // disp_message
             $sqlQuery, // sql_query
-            null // complete_query
+            null, // complete_query
         );
     }
 }

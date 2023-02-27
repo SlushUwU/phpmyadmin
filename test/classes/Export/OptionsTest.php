@@ -14,21 +14,23 @@ use PhpMyAdmin\Plugins;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Util;
 
-/**
- * @covers \PhpMyAdmin\Export\Options
- */
+/** @covers \PhpMyAdmin\Export\Options */
 class OptionsTest extends AbstractTestCase
 {
-    /** @var Options */
-    private $export;
+    private Options $export;
 
     protected function setUp(): void
     {
         parent::setUp();
+
         $this->loadContainerBuilder();
+
         parent::setLanguage();
+
         parent::setGlobalConfig();
+
         $GLOBALS['dbi'] = $this->createDatabaseInterface();
+
         parent::loadDbiIntoContainerBuilder();
 
         $GLOBALS['cfg']['Server']['host'] = 'localhost';
@@ -50,7 +52,7 @@ class OptionsTest extends AbstractTestCase
 
         $this->export = new Options(
             new Relation($GLOBALS['dbi']),
-            new TemplateModel($GLOBALS['dbi'])
+            new TemplateModel($GLOBALS['dbi']),
         );
     }
 
@@ -95,7 +97,7 @@ class OptionsTest extends AbstractTestCase
             '',
             $num_tables_str,
             $unlim_num_rows_str,
-            $exportList
+            $exportList,
         );
 
         $expected = [
@@ -145,7 +147,6 @@ class OptionsTest extends AbstractTestCase
             'filename_template' => 'user value for test',
         ];
 
-        $this->assertIsArray($actual);
         $this->assertEquals($expected, $actual);
     }
 }

@@ -14,12 +14,9 @@ use function ucfirst;
 
 class AuthenticationPluginFactory
 {
-    /** @var AuthenticationPlugin|null */
-    private $plugin = null;
+    private AuthenticationPlugin|null $plugin = null;
 
-    /**
-     * @throws AuthenticationPluginException
-     */
+    /** @throws AuthenticationPluginException */
     public function create(): AuthenticationPlugin
     {
         if ($this->plugin instanceof AuthenticationPlugin) {
@@ -30,7 +27,7 @@ class AuthenticationPluginFactory
         $class = 'PhpMyAdmin\\Plugins\\Auth\\Authentication' . ucfirst(strtolower($authType));
         if (! class_exists($class) || ! is_subclass_of($class, AuthenticationPlugin::class)) {
             throw new AuthenticationPluginException(
-                __('Invalid authentication method set in configuration:') . ' ' . $authType
+                __('Invalid authentication method set in configuration:') . ' ' . $authType,
             );
         }
 

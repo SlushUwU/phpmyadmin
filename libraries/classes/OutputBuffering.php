@@ -25,11 +25,9 @@ class OutputBuffering
 {
     private int $mode;
 
-    /** @var string */
-    private $content = '';
+    private string $content = '';
 
-    /** @var bool */
-    private $on = false;
+    private bool $on = false;
 
     public function __construct()
     {
@@ -124,7 +122,7 @@ class OutputBuffering
      *
      * @return string buffer content
      */
-    public function getContents()
+    public function getContents(): string
     {
         return $this->content;
     }

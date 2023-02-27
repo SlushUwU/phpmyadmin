@@ -15,26 +15,23 @@ use PhpMyAdmin\Tests\Stubs\DummyResult;
 use PhpMyAdmin\Tests\Stubs\ResponseRenderer;
 use PHPUnit\Framework\MockObject\Stub;
 
-/**
- * @covers \PhpMyAdmin\Controllers\Server\Privileges\AccountUnlockController
- */
+/** @covers \PhpMyAdmin\Controllers\Server\Privileges\AccountUnlockController */
 class AccountUnlockControllerTest extends AbstractTestCase
 {
     /** @var DatabaseInterface&Stub */
-    private $dbiStub;
+    private DatabaseInterface $dbiStub;
 
     /** @var ServerRequest&Stub  */
-    private $requestStub;
+    private ServerRequest $requestStub;
 
-    /** @var ResponseRenderer */
-    private $responseRendererStub;
+    private ResponseRenderer $responseRendererStub;
 
-    /** @var AccountUnlockController */
-    private $controller;
+    private AccountUnlockController $controller;
 
     protected function setUp(): void
     {
         parent::setUp();
+
         $GLOBALS['dbi'] = $this->createDatabaseInterface();
 
         $GLOBALS['server'] = 1;
@@ -54,7 +51,7 @@ class AccountUnlockControllerTest extends AbstractTestCase
         $this->controller = new AccountUnlockController(
             $this->responseRendererStub,
             new Template(),
-            new AccountLocking($this->dbiStub)
+            new AccountLocking($this->dbiStub),
         );
     }
 

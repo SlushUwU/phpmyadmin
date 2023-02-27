@@ -24,7 +24,7 @@ class NodeTable extends NodeDatabaseChild
      * @var array<string, string>|null
      * @psalm-var array{image: string, title: string}|null
      */
-    public $secondIcon;
+    public array|null $secondIcon = null;
 
     /**
      * Initialises the class
@@ -37,15 +37,16 @@ class NodeTable extends NodeDatabaseChild
     public function __construct($name, $type = Node::OBJECT, $isGroup = false)
     {
         parent::__construct($name, $type, $isGroup);
+
         $icon = $this->addIcon(
-            Util::getScriptNameForOption($GLOBALS['cfg']['NavigationTreeDefaultTabTable'], 'table')
+            Util::getScriptNameForOption($GLOBALS['cfg']['NavigationTreeDefaultTabTable'], 'table'),
         );
         if ($icon !== null) {
             $this->icon = $icon;
         }
 
         $this->secondIcon = $this->addIcon(
-            Util::getScriptNameForOption($GLOBALS['cfg']['NavigationTreeDefaultTabTable2'], 'table')
+            Util::getScriptNameForOption($GLOBALS['cfg']['NavigationTreeDefaultTabTable2'], 'table'),
         );
         $title = (string) Util::getTitleForTarget($GLOBALS['cfg']['DefaultTabTable']);
         $this->title = $title;
@@ -77,10 +78,8 @@ class NodeTable extends NodeDatabaseChild
      * @param string $type         The type of item we are looking for
      *                             ('columns' or 'indexes')
      * @param string $searchClause A string used to filter the results of the query
-     *
-     * @return int
      */
-    public function getPresence($type = '', $searchClause = '')
+    public function getPresence($type = '', $searchClause = ''): int
     {
         $retval = 0;
         $db = $this->realParent()->realName;
@@ -272,7 +271,7 @@ class NodeTable extends NodeDatabaseChild
      *
      * @return string type of the item
      */
-    protected function getItemType()
+    protected function getItemType(): string
     {
         return 'table';
     }

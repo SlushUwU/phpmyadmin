@@ -6,9 +6,7 @@ namespace PhpMyAdmin\Tests\Selenium;
 
 use function strtolower;
 
-/**
- * @coversNothing
- */
+/** @coversNothing */
 class ExportTest extends TestBase
 {
     /**
@@ -17,6 +15,7 @@ class ExportTest extends TestBase
     protected function setUp(): void
     {
         parent::setUp();
+
         $this->dbQuery(
             'USE `' . $this->databaseName . '`;'
             . 'CREATE TABLE `test_table` ('
@@ -24,7 +23,7 @@ class ExportTest extends TestBase
             . ' `val` int(11) NOT NULL,'
             . ' PRIMARY KEY (`id`)'
             . ');'
-            . 'INSERT INTO `test_table` (val) VALUES (2);'
+            . 'INSERT INTO `test_table` (val) VALUES (2);',
         );
 
         $this->login();

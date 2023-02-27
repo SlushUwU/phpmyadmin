@@ -7,9 +7,7 @@ namespace PhpMyAdmin\Tests\Navigation\Nodes;
 use PhpMyAdmin\Navigation\Nodes\NodeFunctionContainer;
 use PhpMyAdmin\Tests\AbstractTestCase;
 
-/**
- * @covers \PhpMyAdmin\Navigation\Nodes\NodeFunctionContainer
- */
+/** @covers \PhpMyAdmin\Navigation\Nodes\NodeFunctionContainer */
 class NodeFunctionContainerTest extends AbstractTestCase
 {
     /**
@@ -18,6 +16,7 @@ class NodeFunctionContainerTest extends AbstractTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
         $GLOBALS['dbi'] = $this->createDatabaseInterface();
         $GLOBALS['server'] = 0;
     }
@@ -28,13 +27,12 @@ class NodeFunctionContainerTest extends AbstractTestCase
     public function testConstructor(): void
     {
         $parent = new NodeFunctionContainer();
-        $this->assertIsArray($parent->links);
         $this->assertEquals(
             [
                 'text' => ['route' => '/database/routines', 'params' => ['type' => 'FUNCTION', 'db' => null]],
                 'icon' => ['route' => '/database/routines', 'params' => ['type' => 'FUNCTION', 'db' => null]],
             ],
-            $parent->links
+            $parent->links,
         );
         $this->assertEquals('functions', $parent->realName);
     }

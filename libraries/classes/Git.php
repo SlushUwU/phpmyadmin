@@ -55,10 +55,8 @@ class Git
 
     /**
      * Git has been found and the data fetched
-     *
-     * @var bool
      */
-    private $hasGit = false;
+    private bool $hasGit = false;
 
     public function __construct(bool $showGitRevision)
     {
@@ -208,7 +206,7 @@ class Git
         // parse fanout table
         $fanout = unpack(
             'N*',
-            substr($index_data, 8, 256 * 4)
+            substr($index_data, 8, 256 * 4),
         );
 
         // find where we should search
@@ -229,8 +227,8 @@ class Git
         for ($position = $start; $position < $end; $position++) {
             $sha = strtolower(
                 bin2hex(
-                    substr($index_data, $offset + ($position * 20), 20)
-                )
+                    substr($index_data, $offset + ($position * 20), 20),
+                ),
             );
             if ($sha === $hash) {
                 $found = true;
@@ -246,7 +244,7 @@ class Git
         $offset = 8 + (256 * 4) + (24 * $fanout[256]);
         $packOffsets = unpack(
             'N',
-            substr($index_data, $offset + ($position * 4), 4)
+            substr($index_data, $offset + ($position * 4), 4),
         );
 
         return $packOffsets[1];
@@ -257,10 +255,8 @@ class Git
      *
      * @param string $gitFolder The Git folder
      * @param string $hash      The commit hash
-     *
-     * @return array|false|null
      */
-    private function unPackGz(string $gitFolder, string $hash)
+    private function unPackGz(string $gitFolder, string $hash): array|false|null
     {
         $commit = false;
 
@@ -577,7 +573,7 @@ class Git
         $commit_json = $this->isRemoteCommit(
             $commit, // Will be modified if necessary by the function
             $is_remote_commit, // Will be modified if necessary by the function
-            $hash
+            $hash,
         );
 
         $is_remote_branch = false;

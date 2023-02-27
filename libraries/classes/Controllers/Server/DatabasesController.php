@@ -24,7 +24,6 @@ use function count;
 use function in_array;
 use function mb_strtolower;
 use function str_contains;
-use function strlen;
 
 /**
  * Handles viewing and creating and deleting databases
@@ -32,24 +31,24 @@ use function strlen;
 class DatabasesController extends AbstractController
 {
     /** @var array array of database details */
-    private $databases = [];
+    private array $databases = [];
 
     /** @var int number of databases */
-    private $databaseCount = 0;
+    private int $databaseCount = 0;
 
     /** @var string sort by column */
-    private $sortBy;
+    private string $sortBy = '';
 
     /** @var string sort order of databases */
-    private $sortOrder;
+    private string $sortOrder = '';
 
     /** @var bool whether to show database statistics */
-    private $hasStatistics;
+    private bool $hasStatistics = false;
 
     public function __construct(
         ResponseRenderer $response,
         Template $template,
-        private DatabaseInterface $dbi
+        private DatabaseInterface $dbi,
     ) {
         parent::__construct($response, $template);
 
@@ -100,7 +99,7 @@ class DatabasesController extends AbstractController
                 $this->sortBy,
                 $this->sortOrder,
                 $position,
-                true
+                true,
             );
             $this->databaseCount = count($this->dbi->getDatabaseList());
         }
@@ -167,7 +166,7 @@ class DatabasesController extends AbstractController
      */
     private function setSortDetails(string|null $sortBy, string|null $sortOrder): void
     {
-        if (empty($sortBy)) {
+        if ($sortBy === null || $sortBy === '') {
             $this->sortBy = 'SCHEMA_NAME';
         } else {
             $sortByAllowList = [
@@ -214,10 +213,10 @@ class DatabasesController extends AbstractController
                 $key = array_search($database['SCHEMA_NAME'], $primaryInfo['Ignore_DB']);
                 $replication['primary']['is_replicated'] = false;
 
-                if (strlen((string) $key) === 0) {
+                if ((string) $key === '') {
                     $key = array_search($database['SCHEMA_NAME'], $primaryInfo['Do_DB']);
 
-                    if (strlen((string) $key) > 0 || count($primaryInfo['Do_DB']) === 0) {
+                    if ((string) $key !== '' || count($primaryInfo['Do_DB']) === 0) {
                         $replication['primary']['is_replicated'] = true;
                     }
                 }
@@ -227,10 +226,10 @@ class DatabasesController extends AbstractController
                 $key = array_search($database['SCHEMA_NAME'], $replicaInfo['Ignore_DB']);
                 $replication['replica']['is_replicated'] = false;
 
-                if (strlen((string) $key) === 0) {
+                if ((string) $key === '') {
                     $key = array_search($database['SCHEMA_NAME'], $replicaInfo['Do_DB']);
 
-                    if (strlen((string) $key) > 0 || count($replicaInfo['Do_DB']) === 0) {
+                    if ((string) $key !== '' || count($replicaInfo['Do_DB']) === 0) {
                         $replication['replica']['is_replicated'] = true;
                     }
                 }
@@ -247,7 +246,7 @@ class DatabasesController extends AbstractController
             $url = Util::getScriptNameForOption($GLOBALS['cfg']['DefaultTabDatabase'], 'database');
             $url .= Url::getCommonRaw(
                 ['db' => $database['SCHEMA_NAME']],
-                ! str_contains($url, '?') ? '?' : '&'
+                ! str_contains($url, '?') ? '?' : '&',
             );
             $databases[$database['SCHEMA_NAME']] = [
                 'name' => $database['SCHEMA_NAME'],
@@ -261,7 +260,7 @@ class DatabasesController extends AbstractController
             $collation = Charsets::findCollationByName(
                 $this->dbi,
                 $GLOBALS['cfg']['Server']['DisableIS'],
-                $database['DEFAULT_COLLATION_NAME']
+                $database['DEFAULT_COLLATION_NAME'],
             );
             if ($collation === null) {
                 continue;

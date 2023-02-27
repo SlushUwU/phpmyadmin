@@ -12,13 +12,11 @@ use function array_merge;
 
 // phpcs:disable Generic.Files.LineLength.TooLong
 
-/**
- * @covers \PhpMyAdmin\Config\Settings\Server
- */
+/** @covers \PhpMyAdmin\Config\Settings\Server */
 class ServerTest extends TestCase
 {
     /** @var array<string, array|bool|int|string|null> */
-    private $defaultValues = [
+    private array $defaultValues = [
         'host' => 'localhost',
         'port' => '',
         'socket' => '',

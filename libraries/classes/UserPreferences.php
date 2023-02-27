@@ -33,8 +33,7 @@ class UserPreferences
 {
     private Relation $relation;
 
-    /** @var Template */
-    public $template;
+    public Template $template;
 
     public function __construct(private DatabaseInterface $dbi)
     {
@@ -56,7 +55,7 @@ class UserPreferences
             [
                 'Server/hide_db' => 'Servers/1/hide_db',
                 'Server/only_db' => 'Servers/1/only_db',
-            ]
+            ],
         );
         $cf->updateWithGlobalConfig($GLOBALS['cfg']);
     }
@@ -100,7 +99,7 @@ class UserPreferences
         $row = $this->dbi->fetchSingleRow(
             $query,
             DatabaseInterface::FETCH_ASSOC,
-            Connection::TYPE_CONTROL
+            Connection::TYPE_CONTROL,
         );
         if (! is_array($row) || ! isset($row['config_data']) || ! isset($row['ts'])) {
             return ['config_data' => [], 'mtime' => time(), 'type' => 'db'];
@@ -122,7 +121,7 @@ class UserPreferences
      *
      * @return true|Message
      */
-    public function save(array $config_array)
+    public function save(array $config_array): bool|Message
     {
         $relationParameters = $this->relation->getRelationParameters();
         $server = $GLOBALS['server'] ?? $GLOBALS['cfg']['ServerDefault'];
@@ -175,7 +174,7 @@ class UserPreferences
             $message = Message::error(__('Could not save configuration'));
             $message->addMessage(
                 Message::error($this->dbi->getError(Connection::TYPE_CONTROL)),
-                '<br><br>'
+                '<br><br>',
             );
             if (! $this->hasAccessToDatabase($relationParameters->db)) {
                 /**
@@ -186,7 +185,7 @@ class UserPreferences
                  */
                 $_SESSION['relation'][$GLOBALS['server']] = [];
                 $message->addMessage(Message::error(htmlspecialchars(
-                    __('The phpMyAdmin configuration storage database could not be accessed.')
+                    __('The phpMyAdmin configuration storage database could not be accessed.'),
                 )), '<br><br>');
             }
 
@@ -203,7 +202,7 @@ class UserPreferences
         if ($GLOBALS['cfg']['Server']['DisableIS']) {
             $query = 'SHOW DATABASES LIKE '
                 . $this->dbi->quoteString(
-                    $this->dbi->escapeMysqlWildcards($database->getName())
+                    $this->dbi->escapeMysqlWildcards($database->getName()),
                 );
         }
 
@@ -218,7 +217,7 @@ class UserPreferences
      *
      * @return array
      */
-    public function apply(array $config_data)
+    public function apply(array $config_data): array
     {
         $cfg = [];
         $excludeList = array_flip($GLOBALS['cfg']['UserprefsDisallow']);
@@ -251,7 +250,7 @@ class UserPreferences
      *
      * @return true|Message
      */
-    public function persistOption($path, $value, $default_value)
+    public function persistOption($path, $value, $default_value): bool|Message
     {
         $prefs = $this->load();
         if ($value === $default_value) {
@@ -277,7 +276,7 @@ class UserPreferences
     public function redirect(
         $file_name,
         $params = null,
-        $hash = null
+        $hash = null,
     ): void {
         // redirect
         $url_params = ['saved' => 1];
@@ -296,10 +295,8 @@ class UserPreferences
     /**
      * Shows form which allows to quickly load
      * settings stored in browser's local storage
-     *
-     * @return string
      */
-    public function autoloadGetHeader()
+    public function autoloadGetHeader(): string
     {
         if (isset($_REQUEST['prefs_autoload']) && $_REQUEST['prefs_autoload'] === 'hide') {
             $_SESSION['userprefs_autoload'] = true;

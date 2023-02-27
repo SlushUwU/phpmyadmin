@@ -31,9 +31,7 @@ final class MysqliResult implements ResultInterface
      */
     private mysqli_result|null $result;
 
-    /**
-     * @param mysqli_result|bool $result
-     */
+    /** @param mysqli_result|bool $result */
     public function __construct($result)
     {
         $this->result = is_bool($result) ? null : $result;
@@ -94,10 +92,8 @@ final class MysqliResult implements ResultInterface
      * Returns a single value from the given result; false on error
      *
      * @param int|string $field
-     *
-     * @return string|false|null
      */
-    public function fetchValue($field = 0)
+    public function fetchValue($field = 0): string|false|null
     {
         if (is_string($field)) {
             $row = $this->fetchAssoc();

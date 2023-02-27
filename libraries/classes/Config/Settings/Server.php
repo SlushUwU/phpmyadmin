@@ -10,73 +10,53 @@ use function is_array;
 
 // phpcs:disable Squiz.NamingConventions.ValidVariableName.MemberNotCamelCaps
 
-/**
- * @psalm-immutable
- */
+/** @psalm-immutable */
 final class Server
 {
     /**
      * MySQL hostname or IP address
-     *
-     * @var string
      */
-    public $host;
+    public string $host;
 
     /**
      * MySQL port - leave blank for default port
-     *
-     * @var string
      */
-    public $port;
+    public string $port;
 
     /**
      * Path to the socket - leave blank for default socket
-     *
-     * @var string
      */
-    public $socket;
+    public string $socket;
 
     /**
      * Use SSL for connecting to MySQL server?
-     *
-     * @var bool
      */
-    public $ssl;
+    public bool $ssl;
 
     /**
      * Path to the key file when using SSL for connecting to the MySQL server
-     *
-     * @var string|null
      */
-    public $ssl_key;
+    public string|null $ssl_key = null;
 
     /**
      * Path to the cert file when using SSL for connecting to the MySQL server
-     *
-     * @var string|null
      */
-    public $ssl_cert;
+    public string|null $ssl_cert = null;
 
     /**
      * Path to the CA file when using SSL for connecting to the MySQL server
-     *
-     * @var string|null
      */
-    public $ssl_ca;
+    public string|null $ssl_ca = null;
 
     /**
      * Directory containing trusted SSL CA certificates in PEM format
-     *
-     * @var string|null
      */
-    public $ssl_ca_path;
+    public string|null $ssl_ca_path = null;
 
     /**
      * List of allowable ciphers for SSL connections to the MySQL server
-     *
-     * @var string|null
      */
-    public $ssl_ciphers;
+    public string|null $ssl_ciphers = null;
 
     /**
      * MySQL 5.6 or later triggers the mysqlnd driver in PHP to validate the
@@ -85,89 +65,68 @@ final class Server
      * will disable the check and allow the connection (PHP 5.6.16 or later)
      *
      * @link https://bugs.php.net/68344
-     *
-     * @var bool
      */
-    public $ssl_verify;
+    public bool $ssl_verify;
 
     /**
      * Use compressed protocol for the MySQL connection
-     *
-     * @var bool
      */
-    public $compress;
+    public bool $compress;
 
     /**
      * MySQL control host. This permits to use a host different than the
      * main host, for the phpMyAdmin configuration storage. If left empty,
      * $cfg['Servers'][$i]['host'] is used instead.
-     *
-     * @var string
      */
-    public $controlhost;
+    public string $controlhost;
 
     /**
      * MySQL control port. This permits to use a port different than the
      * main port, for the phpMyAdmin configuration storage. If left empty,
      * $cfg['Servers'][$i]['port'] is used instead.
-     *
-     * @var string
      */
-    public $controlport;
+    public string $controlport;
 
     /**
      * MySQL control user settings (this user must have read-only
      * access to the "mysql/user" and "mysql/db" tables). The controluser is also
      * used for all relational features (pmadb)
-     *
-     * @var string
      */
-    public $controluser;
+    public string $controluser;
 
     /**
      * MySQL control user settings (this user must have read-only
      * access to the "mysql/user" and "mysql/db" tables). The controluser is also
      * used for all relational features (pmadb)
-     *
-     * @var string
      */
-    public $controlpass;
+    public string $controlpass;
 
     /**
      * Authentication method (valid choices: config, http, signon or cookie)
      *
-     * @var string
      * @psalm-var 'config'|'http'|'signon'|'cookie'
      */
-    public $auth_type;
+    public string $auth_type;
 
     /**
      * HTTP Basic Auth Realm name to display (only used with 'HTTP' auth_type)
-     *
-     * @var string
      */
-    public $auth_http_realm;
+    public string $auth_http_realm;
 
     /**
      * MySQL user
-     *
-     * @var string
      */
-    public $user;
+    public string $user;
 
     /**
      * MySQL password (only needed with 'config' auth_type)
-     *
-     * @var string
      */
-    public $password;
+    public string $password;
 
     /**
      * Session to use for 'signon' authentication method
-     *
-     * @var string
      */
-    public $SignonSession;
+    public string $SignonSession;
 
     /**
      * Cookie params to match session to use for 'signon' authentication method
@@ -178,28 +137,22 @@ final class Server
      *   lifetime: 0|positive-int, path: string, domain: string, secure: bool, httponly: bool, samesite?: 'Lax'|'Strict'
      * }
      */
-    public $SignonCookieParams;
+    public array $SignonCookieParams;
 
     /**
      * PHP script to use for 'signon' authentication method
-     *
-     * @var string
      */
-    public $SignonScript;
+    public string $SignonScript;
 
     /**
      * URL where to redirect user to login for 'signon' authentication method
-     *
-     * @var string
      */
-    public $SignonURL;
+    public string $SignonURL;
 
     /**
      * URL where to redirect user after logout
-     *
-     * @var string
      */
-    public $LogoutURL;
+    public string $LogoutURL;
 
     /**
      * If set to a db-name, only this db is displayed in navigation panel
@@ -207,203 +160,159 @@ final class Server
      *
      * @var string|string[]
      */
-    public $only_db;
+    public string|array $only_db;
 
     /**
      * Database name to be hidden from listings
-     *
-     * @var string
      */
-    public $hide_db;
+    public string $hide_db;
 
     /**
      * Verbose name for this host - leave blank to show the hostname
      * (for HTTP authentication, all non-US-ASCII characters will be stripped)
-     *
-     * @var string
      */
-    public $verbose;
+    public string $verbose;
 
     /**
      * Database used for Relation, Bookmark and PDF Features
      * (see sql/create_tables.sql)
      *   - leave blank for no support
      *     SUGGESTED: 'phpmyadmin'
-     *
-     * @var string
      */
-    public $pmadb;
+    public string $pmadb;
 
     /**
      * Bookmark table
      *   - leave blank for no bookmark support
      *     SUGGESTED: 'pma__bookmark'
-     *
-     * @var string|false
      */
-    public $bookmarktable;
+    public string|false $bookmarktable;
 
     /**
      * table to describe the relation between links (see doc)
      *   - leave blank for no relation-links support
      *     SUGGESTED: 'pma__relation'
-     *
-     * @var string|false
      */
-    public $relation;
+    public string|false $relation;
 
     /**
      * table to describe the display fields
      *   - leave blank for no display fields support
      *     SUGGESTED: 'pma__table_info'
-     *
-     * @var string|false
      */
-    public $table_info;
+    public string|false $table_info;
 
     /**
      * table to describe the tables position for the designer and PDF schema
      *   - leave blank for no PDF schema support
      *     SUGGESTED: 'pma__table_coords'
-     *
-     * @var string|false
      */
-    public $table_coords;
+    public string|false $table_coords;
 
     /**
      * table to describe pages of relationpdf
      *   - leave blank if you don't want to use this
      *     SUGGESTED: 'pma__pdf_pages'
-     *
-     * @var string|false
      */
-    public $pdf_pages;
+    public string|false $pdf_pages;
 
     /**
      * table to store column information
      *   - leave blank for no column comments/mime types
      *     SUGGESTED: 'pma__column_info'
-     *
-     * @var string|false
      */
-    public $column_info;
+    public string|false $column_info;
 
     /**
      * table to store SQL history
      *   - leave blank for no SQL query history
      *     SUGGESTED: 'pma__history'
-     *
-     * @var string|false
      */
-    public $history;
+    public string|false $history;
 
     /**
      * table to store recently used tables
      *   - leave blank for no "persistent" recently used tables
      *     SUGGESTED: 'pma__recent'
-     *
-     * @var string|false
      */
-    public $recent;
+    public string|false $recent;
 
     /**
      * table to store favorite tables
      *   - leave blank for no favorite tables
      *     SUGGESTED: 'pma__favorite'
-     *
-     * @var string|false
      */
-    public $favorite;
+    public string|false $favorite;
 
     /**
      * table to store UI preferences for tables
      *   - leave blank for no "persistent" UI preferences
      *     SUGGESTED: 'pma__table_uiprefs'
-     *
-     * @var string|false
      */
-    public $table_uiprefs;
+    public string|false $table_uiprefs;
 
     /**
      * table to store SQL tracking
      *   - leave blank for no SQL tracking
      *     SUGGESTED: 'pma__tracking'
-     *
-     * @var string|false
      */
-    public $tracking;
+    public string|false $tracking;
 
     /**
      * table to store user preferences
      *   - leave blank to disable server storage
      *     SUGGESTED: 'pma__userconfig'
-     *
-     * @var string|false
      */
-    public $userconfig;
+    public string|false $userconfig;
 
     /**
      * table to store users and their assignment to user groups
      *   - leave blank to disable configurable menus feature
      *     SUGGESTED: 'pma__users'
-     *
-     * @var string|false
      */
-    public $users;
+    public string|false $users;
 
     /**
      * table to store allowed menu items for each user group
      *   - leave blank to disable configurable menus feature
      *     SUGGESTED: 'pma__usergroups'
-     *
-     * @var string|false
      */
-    public $usergroups;
+    public string|false $usergroups;
 
     /**
      * table to store information about item hidden from navigation tree
      *   - leave blank to disable hide/show navigation items feature
      *     SUGGESTED: 'pma__navigationhiding'
-     *
-     * @var string|false
      */
-    public $navigationhiding;
+    public string|false $navigationhiding;
 
     /**
      * table to store information about saved searches from query-by-example on a db
      *   - leave blank to disable saved searches feature
      *     SUGGESTED: 'pma__savedsearches'
-     *
-     * @var string|false
      */
-    public $savedsearches;
+    public string|false $savedsearches;
 
     /**
      * table to store central list of columns per database
      *   - leave blank to disable central list of columns feature
      *     SUGGESTED: 'pma__central_columns'
-     *
-     * @var string|false
      */
-    public $central_columns;
+    public string|false $central_columns;
 
     /**
      * table to store designer settings
      *   - leave blank to disable the storage of designer settings
      *     SUGGESTED: 'pma__designer_settings'
-     *
-     * @var string|false
      */
-    public $designer_settings;
+    public string|false $designer_settings;
 
     /**
      * table to store export templates
      *   - leave blank to disable saved searches feature
      *     SUGGESTED: 'pma__export_templates'
-     *
-     * @var string|false
      */
-    public $export_templates;
+    public string|false $export_templates;
 
     /**
      * Maximum number of records saved in $cfg['Servers'][$i]['table_uiprefs'] table.
@@ -414,32 +323,25 @@ final class Server
      * This configuration make sure that we only keep N (N = MaxTableUiprefs)
      * newest record in table_uiprefs and automatically delete older records.
      *
-     * @var int
      * @psalm-var positive-int
      */
-    public $MaxTableUiprefs;
+    public int $MaxTableUiprefs;
 
     /**
      * Sets the time zone used by phpMyAdmin. Possible values are explained at
      * https://dev.mysql.com/doc/refman/5.7/en/time-zone-support.html
-     *
-     * @var string
      */
-    public $SessionTimeZone;
+    public string $SessionTimeZone;
 
     /**
      * whether to allow root login
-     *
-     * @var bool
      */
-    public $AllowRoot;
+    public bool $AllowRoot;
 
     /**
      * whether to allow login of any user without a password
-     *
-     * @var bool
      */
-    public $AllowNoPassword;
+    public bool $AllowNoPassword;
 
     /**
      * Host authentication
@@ -450,68 +352,52 @@ final class Server
      * @var array<string, string|string[]>
      * @psalm-var array{order: ''|'deny,allow'|'allow,deny'|'explicit', rules: string[]}
      */
-    public $AllowDeny;
+    public array $AllowDeny;
 
     /**
      * Disable use of INFORMATION_SCHEMA.
      *
      * @see https://github.com/phpmyadmin/phpmyadmin/issues/8970
      * @see https://bugs.mysql.com/19588
-     *
-     * @var bool
      */
-    public $DisableIS;
+    public bool $DisableIS;
 
     /**
      * Whether the tracking mechanism creates
      * versions for tables and views automatically.
-     *
-     * @var bool
      */
-    public $tracking_version_auto_create;
+    public bool $tracking_version_auto_create;
 
     /**
      * Defines the list of statements
      * the auto-creation uses for new versions.
-     *
-     * @var string
      */
-    public $tracking_default_statements;
+    public string $tracking_default_statements;
 
     /**
      * Whether a DROP VIEW IF EXISTS statement will be added
      * as first line to the log when creating a view.
-     *
-     * @var bool
      */
-    public $tracking_add_drop_view;
+    public bool $tracking_add_drop_view;
 
     /**
      * Whether a DROP TABLE IF EXISTS statement will be added
      * as first line to the log when creating a table.
-     *
-     * @var bool
      */
-    public $tracking_add_drop_table;
+    public bool $tracking_add_drop_table;
 
     /**
      * Whether a DROP DATABASE IF EXISTS statement will be added
      * as first line to the log when creating a database.
-     *
-     * @var bool
      */
-    public $tracking_add_drop_database;
+    public bool $tracking_add_drop_database;
 
     /**
      * Whether to show or hide detailed MySQL/MariaDB connection errors on the login page.
-     *
-     * @var bool
      */
-    public $hide_connection_errors;
+    public bool $hide_connection_errors;
 
-    /**
-     * @param array<int|string, mixed> $server
-     */
+    /** @param array<int|string, mixed> $server */
     public function __construct(array $server = [])
     {
         $this->host = $this->setHost($server);
@@ -575,9 +461,7 @@ final class Server
         $this->hide_connection_errors = $this->setHideConnectionErrors($server);
     }
 
-    /**
-     * @return static
-     */
+    /** @return static */
     public function withSSL(bool $ssl): Server
     {
         $clone = clone $this;
@@ -586,9 +470,7 @@ final class Server
         return $clone;
     }
 
-    /**
-     * @param array<int|string, mixed> $server
-     */
+    /** @param array<int|string, mixed> $server */
     private function setHost(array $server): string
     {
         if (isset($server['host'])) {
@@ -598,9 +480,7 @@ final class Server
         return 'localhost';
     }
 
-    /**
-     * @param array<int|string, mixed> $server
-     */
+    /** @param array<int|string, mixed> $server */
     private function setPort(array $server): string
     {
         if (isset($server['port'])) {
@@ -610,9 +490,7 @@ final class Server
         return '';
     }
 
-    /**
-     * @param array<int|string, mixed> $server
-     */
+    /** @param array<int|string, mixed> $server */
     private function setSocket(array $server): string
     {
         if (isset($server['socket'])) {
@@ -622,9 +500,7 @@ final class Server
         return '';
     }
 
-    /**
-     * @param array<int|string, mixed> $server
-     */
+    /** @param array<int|string, mixed> $server */
     private function setSsl(array $server): bool
     {
         if (isset($server['ssl'])) {
@@ -634,9 +510,7 @@ final class Server
         return false;
     }
 
-    /**
-     * @param array<int|string, mixed> $server
-     */
+    /** @param array<int|string, mixed> $server */
     private function setSslKey(array $server): string|null
     {
         if (isset($server['ssl_key'])) {
@@ -646,9 +520,7 @@ final class Server
         return null;
     }
 
-    /**
-     * @param array<int|string, mixed> $server
-     */
+    /** @param array<int|string, mixed> $server */
     private function setSslCert(array $server): string|null
     {
         if (isset($server['ssl_cert'])) {
@@ -658,9 +530,7 @@ final class Server
         return null;
     }
 
-    /**
-     * @param array<int|string, mixed> $server
-     */
+    /** @param array<int|string, mixed> $server */
     private function setSslCa(array $server): string|null
     {
         if (isset($server['ssl_ca'])) {
@@ -670,9 +540,7 @@ final class Server
         return null;
     }
 
-    /**
-     * @param array<int|string, mixed> $server
-     */
+    /** @param array<int|string, mixed> $server */
     private function setSslCaPath(array $server): string|null
     {
         if (isset($server['ssl_ca_path'])) {
@@ -682,9 +550,7 @@ final class Server
         return null;
     }
 
-    /**
-     * @param array<int|string, mixed> $server
-     */
+    /** @param array<int|string, mixed> $server */
     private function setSslCiphers(array $server): string|null
     {
         if (isset($server['ssl_ciphers'])) {
@@ -694,9 +560,7 @@ final class Server
         return null;
     }
 
-    /**
-     * @param array<int|string, mixed> $server
-     */
+    /** @param array<int|string, mixed> $server */
     private function setSslVerify(array $server): bool
     {
         if (isset($server['ssl_verify'])) {
@@ -706,9 +570,7 @@ final class Server
         return true;
     }
 
-    /**
-     * @param array<int|string, mixed> $server
-     */
+    /** @param array<int|string, mixed> $server */
     private function setCompress(array $server): bool
     {
         if (isset($server['compress'])) {
@@ -718,9 +580,7 @@ final class Server
         return false;
     }
 
-    /**
-     * @param array<int|string, mixed> $server
-     */
+    /** @param array<int|string, mixed> $server */
     private function setControlhost(array $server): string
     {
         if (isset($server['controlhost'])) {
@@ -730,9 +590,7 @@ final class Server
         return '';
     }
 
-    /**
-     * @param array<int|string, mixed> $server
-     */
+    /** @param array<int|string, mixed> $server */
     private function setControlport(array $server): string
     {
         if (isset($server['controlport'])) {
@@ -742,9 +600,7 @@ final class Server
         return '';
     }
 
-    /**
-     * @param array<int|string, mixed> $server
-     */
+    /** @param array<int|string, mixed> $server */
     private function setControluser(array $server): string
     {
         if (isset($server['controluser'])) {
@@ -754,9 +610,7 @@ final class Server
         return '';
     }
 
-    /**
-     * @param array<int|string, mixed> $server
-     */
+    /** @param array<int|string, mixed> $server */
     private function setControlpass(array $server): string
     {
         if (isset($server['controlpass'])) {
@@ -780,9 +634,7 @@ final class Server
         return 'cookie';
     }
 
-    /**
-     * @param array<int|string, mixed> $server
-     */
+    /** @param array<int|string, mixed> $server */
     private function setAuthHttpRealm(array $server): string
     {
         if (isset($server['auth_http_realm'])) {
@@ -792,9 +644,7 @@ final class Server
         return '';
     }
 
-    /**
-     * @param array<int|string, mixed> $server
-     */
+    /** @param array<int|string, mixed> $server */
     private function setUser(array $server): string
     {
         if (isset($server['user'])) {
@@ -804,9 +654,7 @@ final class Server
         return 'root';
     }
 
-    /**
-     * @param array<int|string, mixed> $server
-     */
+    /** @param array<int|string, mixed> $server */
     private function setPassword(array $server): string
     {
         if (isset($server['password'])) {
@@ -816,9 +664,7 @@ final class Server
         return '';
     }
 
-    /**
-     * @param array<int|string, mixed> $server
-     */
+    /** @param array<int|string, mixed> $server */
     private function setSignonSession(array $server): string
     {
         if (isset($server['SignonSession'])) {
@@ -874,9 +720,7 @@ final class Server
         return $params;
     }
 
-    /**
-     * @param array<int|string, mixed> $server
-     */
+    /** @param array<int|string, mixed> $server */
     private function setSignonScript(array $server): string
     {
         if (isset($server['SignonScript'])) {
@@ -886,9 +730,7 @@ final class Server
         return '';
     }
 
-    /**
-     * @param array<int|string, mixed> $server
-     */
+    /** @param array<int|string, mixed> $server */
     private function setSignonUrl(array $server): string
     {
         if (isset($server['SignonURL'])) {
@@ -898,9 +740,7 @@ final class Server
         return '';
     }
 
-    /**
-     * @param array<int|string, mixed> $server
-     */
+    /** @param array<int|string, mixed> $server */
     private function setLogoutUrl(array $server): string
     {
         if (isset($server['LogoutURL'])) {
@@ -933,9 +773,7 @@ final class Server
         return $onlyDb;
     }
 
-    /**
-     * @param array<int|string, mixed> $server
-     */
+    /** @param array<int|string, mixed> $server */
     private function setHideDb(array $server): string
     {
         if (isset($server['hide_db'])) {
@@ -945,9 +783,7 @@ final class Server
         return '';
     }
 
-    /**
-     * @param array<int|string, mixed> $server
-     */
+    /** @param array<int|string, mixed> $server */
     private function setVerbose(array $server): string
     {
         if (isset($server['verbose'])) {
@@ -957,9 +793,7 @@ final class Server
         return '';
     }
 
-    /**
-     * @param array<int|string, mixed> $server
-     */
+    /** @param array<int|string, mixed> $server */
     private function setPmadb(array $server): string
     {
         if (isset($server['pmadb'])) {
@@ -969,9 +803,7 @@ final class Server
         return '';
     }
 
-    /**
-     * @param array<int|string, mixed> $server
-     */
+    /** @param array<int|string, mixed> $server */
     private function setBookmarktable(array $server): false|string
     {
         if (isset($server['bookmarktable'])) {
@@ -981,9 +813,7 @@ final class Server
         return '';
     }
 
-    /**
-     * @param array<int|string, mixed> $server
-     */
+    /** @param array<int|string, mixed> $server */
     private function setRelation(array $server): false|string
     {
         if (isset($server['relation'])) {
@@ -993,9 +823,7 @@ final class Server
         return '';
     }
 
-    /**
-     * @param array<int|string, mixed> $server
-     */
+    /** @param array<int|string, mixed> $server */
     private function setTableInfo(array $server): false|string
     {
         if (isset($server['table_info'])) {
@@ -1005,9 +833,7 @@ final class Server
         return '';
     }
 
-    /**
-     * @param array<int|string, mixed> $server
-     */
+    /** @param array<int|string, mixed> $server */
     private function setTableCoords(array $server): false|string
     {
         if (isset($server['table_coords'])) {
@@ -1017,9 +843,7 @@ final class Server
         return '';
     }
 
-    /**
-     * @param array<int|string, mixed> $server
-     */
+    /** @param array<int|string, mixed> $server */
     private function setPdfPages(array $server): false|string
     {
         if (isset($server['pdf_pages'])) {
@@ -1029,9 +853,7 @@ final class Server
         return '';
     }
 
-    /**
-     * @param array<int|string, mixed> $server
-     */
+    /** @param array<int|string, mixed> $server */
     private function setColumnInfo(array $server): false|string
     {
         if (isset($server['column_info'])) {
@@ -1041,9 +863,7 @@ final class Server
         return '';
     }
 
-    /**
-     * @param array<int|string, mixed> $server
-     */
+    /** @param array<int|string, mixed> $server */
     private function setHistory(array $server): false|string
     {
         if (isset($server['history'])) {
@@ -1053,9 +873,7 @@ final class Server
         return '';
     }
 
-    /**
-     * @param array<int|string, mixed> $server
-     */
+    /** @param array<int|string, mixed> $server */
     private function setRecent(array $server): false|string
     {
         if (isset($server['recent'])) {
@@ -1065,9 +883,7 @@ final class Server
         return '';
     }
 
-    /**
-     * @param array<int|string, mixed> $server
-     */
+    /** @param array<int|string, mixed> $server */
     private function setFavorite(array $server): false|string
     {
         if (isset($server['favorite'])) {
@@ -1077,9 +893,7 @@ final class Server
         return '';
     }
 
-    /**
-     * @param array<int|string, mixed> $server
-     */
+    /** @param array<int|string, mixed> $server */
     private function setTableUiprefs(array $server): false|string
     {
         if (isset($server['table_uiprefs'])) {
@@ -1089,9 +903,7 @@ final class Server
         return '';
     }
 
-    /**
-     * @param array<int|string, mixed> $server
-     */
+    /** @param array<int|string, mixed> $server */
     private function setTracking(array $server): false|string
     {
         if (isset($server['tracking'])) {
@@ -1101,9 +913,7 @@ final class Server
         return '';
     }
 
-    /**
-     * @param array<int|string, mixed> $server
-     */
+    /** @param array<int|string, mixed> $server */
     private function setUserconfig(array $server): false|string
     {
         if (isset($server['userconfig'])) {
@@ -1113,9 +923,7 @@ final class Server
         return '';
     }
 
-    /**
-     * @param array<int|string, mixed> $server
-     */
+    /** @param array<int|string, mixed> $server */
     private function setUsers(array $server): false|string
     {
         if (isset($server['users'])) {
@@ -1125,9 +933,7 @@ final class Server
         return '';
     }
 
-    /**
-     * @param array<int|string, mixed> $server
-     */
+    /** @param array<int|string, mixed> $server */
     private function setUsergroups(array $server): false|string
     {
         if (isset($server['usergroups'])) {
@@ -1137,9 +943,7 @@ final class Server
         return '';
     }
 
-    /**
-     * @param array<int|string, mixed> $server
-     */
+    /** @param array<int|string, mixed> $server */
     private function setNavigationhiding(array $server): false|string
     {
         if (isset($server['navigationhiding'])) {
@@ -1151,9 +955,7 @@ final class Server
         return '';
     }
 
-    /**
-     * @param array<int|string, mixed> $server
-     */
+    /** @param array<int|string, mixed> $server */
     private function setSavedsearches(array $server): false|string
     {
         if (isset($server['savedsearches'])) {
@@ -1163,9 +965,7 @@ final class Server
         return '';
     }
 
-    /**
-     * @param array<int|string, mixed> $server
-     */
+    /** @param array<int|string, mixed> $server */
     private function setCentralColumns(array $server): false|string
     {
         if (isset($server['central_columns'])) {
@@ -1175,9 +975,7 @@ final class Server
         return '';
     }
 
-    /**
-     * @param array<int|string, mixed> $server
-     */
+    /** @param array<int|string, mixed> $server */
     private function setDesignerSettings(array $server): false|string
     {
         if (isset($server['designer_settings'])) {
@@ -1189,9 +987,7 @@ final class Server
         return '';
     }
 
-    /**
-     * @param array<int|string, mixed> $server
-     */
+    /** @param array<int|string, mixed> $server */
     private function setExportTemplates(array $server): false|string
     {
         if (isset($server['export_templates'])) {
@@ -1220,9 +1016,7 @@ final class Server
         return 100;
     }
 
-    /**
-     * @param array<int|string, mixed> $server
-     */
+    /** @param array<int|string, mixed> $server */
     private function setSessionTimeZone(array $server): string
     {
         if (isset($server['SessionTimeZone'])) {
@@ -1232,9 +1026,7 @@ final class Server
         return '';
     }
 
-    /**
-     * @param array<int|string, mixed> $server
-     */
+    /** @param array<int|string, mixed> $server */
     private function setAllowRoot(array $server): bool
     {
         if (isset($server['AllowRoot'])) {
@@ -1244,9 +1036,7 @@ final class Server
         return true;
     }
 
-    /**
-     * @param array<int|string, mixed> $server
-     */
+    /** @param array<int|string, mixed> $server */
     private function setAllowNoPassword(array $server): bool
     {
         if (isset($server['AllowNoPassword'])) {
@@ -1284,9 +1074,7 @@ final class Server
         return $allowDeny;
     }
 
-    /**
-     * @param array<int|string, mixed> $server
-     */
+    /** @param array<int|string, mixed> $server */
     private function setDisableIs(array $server): bool
     {
         if (isset($server['DisableIS'])) {
@@ -1296,9 +1084,7 @@ final class Server
         return false;
     }
 
-    /**
-     * @param array<int|string, mixed> $server
-     */
+    /** @param array<int|string, mixed> $server */
     private function setTrackingVersionAutoCreate(array $server): bool
     {
         if (isset($server['tracking_version_auto_create'])) {
@@ -1308,9 +1094,7 @@ final class Server
         return false;
     }
 
-    /**
-     * @param array<int|string, mixed> $server
-     */
+    /** @param array<int|string, mixed> $server */
     private function setTrackingDefaultStatements(array $server): string
     {
         if (isset($server['tracking_default_statements'])) {
@@ -1321,9 +1105,7 @@ final class Server
             . 'TRUNCATE,REPLACE,CREATE VIEW,ALTER VIEW,DROP VIEW,CREATE DATABASE,ALTER DATABASE,DROP DATABASE';
     }
 
-    /**
-     * @param array<int|string, mixed> $server
-     */
+    /** @param array<int|string, mixed> $server */
     private function setTrackingAddDropView(array $server): bool
     {
         if (isset($server['tracking_add_drop_view'])) {
@@ -1333,9 +1115,7 @@ final class Server
         return true;
     }
 
-    /**
-     * @param array<int|string, mixed> $server
-     */
+    /** @param array<int|string, mixed> $server */
     private function setTrackingAddDropTable(array $server): bool
     {
         if (isset($server['tracking_add_drop_table'])) {
@@ -1345,9 +1125,7 @@ final class Server
         return true;
     }
 
-    /**
-     * @param array<int|string, mixed> $server
-     */
+    /** @param array<int|string, mixed> $server */
     private function setTrackingAddDropDatabase(array $server): bool
     {
         if (isset($server['tracking_add_drop_database'])) {
@@ -1357,9 +1135,7 @@ final class Server
         return true;
     }
 
-    /**
-     * @param array<int|string, mixed> $server
-     */
+    /** @param array<int|string, mixed> $server */
     private function setHideConnectionErrors(array $server): bool
     {
         if (isset($server['hide_connection_errors'])) {

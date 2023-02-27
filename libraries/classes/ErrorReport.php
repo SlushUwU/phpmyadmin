@@ -28,16 +28,14 @@ class ErrorReport
 {
     /**
      * The URL where to submit reports to
-     *
-     * @var string
      */
-    private $submissionUrl = 'https://reports.phpmyadmin.net/incidents/create';
+    private string $submissionUrl = 'https://reports.phpmyadmin.net/incidents/create';
 
     public function __construct(
         private HttpRequest $httpRequest,
         private Relation $relation,
         public Template $template,
-        private Config $config
+        private Config $config,
     ) {
     }
 
@@ -207,14 +205,14 @@ class ErrorReport
      *
      * @return string|bool|null the reply of the server
      */
-    public function send(array $report)
+    public function send(array $report): string|bool|null
     {
         return $this->httpRequest->create(
             $this->submissionUrl,
             'POST',
             false,
             json_encode($report),
-            'Content-Type: application/json'
+            'Content-Type: application/json',
         );
     }
 

@@ -8,7 +8,6 @@ declare(strict_types=1);
 namespace PhpMyAdmin\Tests\Gis;
 
 use PhpMyAdmin\Gis\GisGeometry;
-use PhpMyAdmin\Gis\GisPolygon;
 use PhpMyAdmin\Gis\ScaleData;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use ReflectionProperty;
@@ -25,15 +24,14 @@ use const PHP_INT_MAX;
  */
 abstract class GisGeomTestCase extends AbstractTestCase
 {
-    /** @var string */
-    protected $testDir = '';
+    protected string $testDir = '';
 
-    /** @var GisGeometry */
-    protected $object;
+    protected GisGeometry $object;
 
     protected function setUp(): void
     {
         parent::setUp();
+
         $this->testDir = 'file://' . getcwd() . '/test/test_data/gis';
     }
 
@@ -50,28 +48,16 @@ abstract class GisGeomTestCase extends AbstractTestCase
     /**
      * test generateParams method
      *
-     * @param string   $wkt    point in WKT form
-     * @param int|null $index  index
-     * @param array    $params expected output array
+     * @param string $wkt    point in WKT form
+     * @param array  $params expected output array
      *
      * @dataProvider providerForTestGenerateParams
      */
-    public function testGenerateParams(string $wkt, int|null $index, array $params): void
+    public function testGenerateParams(string $wkt, array $params): void
     {
-        if ($index === null) {
-            $this->assertEquals(
-                $params,
-                $this->object->generateParams($wkt)
-            );
-
-            return;
-        }
-
-        /** @var GisPolygon $obj or another GisGeometry that supports this definition */
-        $obj = $this->object;
         $this->assertEquals(
             $params,
-            $obj->generateParams($wkt, $index)
+            $this->object->generateParams($wkt),
         );
     }
 
@@ -87,7 +73,7 @@ abstract class GisGeomTestCase extends AbstractTestCase
     {
         $this->assertEquals(
             $min_max,
-            $this->object->scaleRow($spatial)
+            $this->object->scaleRow($spatial),
         );
     }
 

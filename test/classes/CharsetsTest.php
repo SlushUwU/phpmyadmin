@@ -20,7 +20,7 @@ class CharsetsTest extends AbstractTestCase
         $dummyDbi->addResult(
             'SHOW SESSION VARIABLES LIKE \'character_set_server\';',
             [['character_set_server', 'utf8mb3']],
-            ['Variable_name', 'Value']
+            ['Variable_name', 'Value'],
         );
         $dummyDbi->addResult('SHOW SESSION VARIABLES LIKE \'character_set_server\';', false);
         $dummyDbi->addResult('SELECT @@character_set_server;', false);
@@ -29,7 +29,7 @@ class CharsetsTest extends AbstractTestCase
         $dummyDbi->addResult(
             'SHOW SESSION VARIABLES LIKE \'character_set_server\';',
             [['character_set_server', 'utf8mb4']],
-            ['Variable_name', 'Value']
+            ['Variable_name', 'Value'],
         );
 
         $charset = Charsets::getServerCharset($dbi, false);
@@ -53,7 +53,6 @@ class CharsetsTest extends AbstractTestCase
     public function testFindCollationByName(): void
     {
         $dbi = $this->createDatabaseInterface();
-        $this->assertNull(Charsets::findCollationByName($dbi, false, null));
         $this->assertNull(Charsets::findCollationByName($dbi, false, ''));
         $this->assertNull(Charsets::findCollationByName($dbi, false, 'invalid'));
         $actual = Charsets::findCollationByName($dbi, false, 'utf8_general_ci');
@@ -81,7 +80,7 @@ class CharsetsTest extends AbstractTestCase
                 ['utf8mb4', 'UTF-8 Unicode', 'utf8mb4_0900_ai_ci', '4'],
                 ['latin1', 'latin1_swedish_ci', 'cp1252 West European', '1'],
             ],
-            ['Charset', 'Default collation', 'Description', 'Maxlen']
+            ['Charset', 'Default collation', 'Description', 'Maxlen'],
         );
 
         $charsets = Charsets::getCharsets($dbi, true);
@@ -113,7 +112,7 @@ class CharsetsTest extends AbstractTestCase
                 ['utf8_bin', 'utf8', '83', '', 'Yes', '1'],
                 ['latin1_swedish_ci', 'latin1', '8', 'Yes', 'Yes', '1'],
             ],
-            ['Collation', 'Charset', 'Id', 'Default', 'Compiled', 'Sortlen']
+            ['Collation', 'Charset', 'Id', 'Default', 'Compiled', 'Sortlen'],
         );
 
         $collations = Charsets::getCollations($dbi, true);

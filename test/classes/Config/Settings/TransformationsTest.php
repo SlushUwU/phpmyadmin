@@ -12,13 +12,11 @@ use function array_merge;
 
 // phpcs:disable Generic.Files.LineLength.TooLong
 
-/**
- * @covers \PhpMyAdmin\Config\Settings\Transformations
- */
+/** @covers \PhpMyAdmin\Config\Settings\Transformations */
 class TransformationsTest extends TestCase
 {
     /** @var array<string, array<int|string, array|int|string|null>> */
-    private $defaultValues = [
+    private array $defaultValues = [
         'Substring' => [0, 'all', '…'],
         'Bool2Text' => ['T', 'F'],
         'External' => [0, '-f /dev/null -i -wrap -q', 1, 1],

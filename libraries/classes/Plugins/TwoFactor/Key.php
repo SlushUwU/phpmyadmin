@@ -31,12 +31,12 @@ use function json_encode;
  */
 class Key extends TwoFactorPlugin
 {
-    /** @var string */
-    public static $id = 'key';
+    public static string $id = 'key';
 
     public function __construct(TwoFactor $twofactor)
     {
         parent::__construct($twofactor);
+
         if (
             isset($this->twofactor->config['settings']['registrations'])
             && is_array($this->twofactor->config['settings']['registrations'])
@@ -88,7 +88,7 @@ class Key extends TwoFactorPlugin
             $auth = U2FServer::authenticate(
                 $_SESSION['authenticationRequest'],
                 $this->getRegistrations(),
-                $response
+                $response,
             );
             $this->twofactor->config['settings']['registrations'][$auth->index]['counter'] = $auth->counter;
             $this->twofactor->save();
@@ -117,11 +117,11 @@ class Key extends TwoFactorPlugin
      *
      * @return string HTML code
      */
-    public function render()
+    public function render(): string
     {
         $request = U2FServer::makeAuthentication(
             $this->getRegistrations(),
-            $this->getAppId(true)
+            $this->getAppId(true),
         );
         $_SESSION['authenticationRequest'] = $request;
         $this->loadScripts();
@@ -143,11 +143,11 @@ class Key extends TwoFactorPlugin
      * @throws RuntimeError
      * @throws SyntaxError
      */
-    public function setup()
+    public function setup(): string
     {
         $registrationData = U2FServer::makeRegistration(
             $this->getAppId(true),
-            $this->getRegistrations()
+            $this->getRegistrations(),
         );
         $_SESSION['registrationRequest'] = $registrationData['request'];
 
@@ -195,20 +195,16 @@ class Key extends TwoFactorPlugin
 
     /**
      * Get user visible name
-     *
-     * @return string
      */
-    public static function getName()
+    public static function getName(): string
     {
         return __('Hardware Security Key (FIDO U2F)');
     }
 
     /**
      * Get user visible description
-     *
-     * @return string
      */
-    public static function getDescription()
+    public static function getDescription(): string
     {
         return __('Provides authentication using hardware security tokens supporting FIDO U2F, such as a YubiKey.');
     }

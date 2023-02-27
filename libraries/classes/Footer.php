@@ -31,10 +31,8 @@ class Footer
     private Scripts $scripts;
     /**
      * Whether we are servicing an ajax request.
-     *
-     * @var bool
      */
-    private $isAjax;
+    private bool $isAjax = false;
     /**
      * Whether to only close the BODY and HTML tags
      * or also include scripts, errors and links
@@ -85,7 +83,7 @@ class Footer
      *
      * @return mixed Reference passed object
      */
-    private static function removeRecursion(&$object, array $stack = [])
+    private static function removeRecursion(&$object, array $stack = []): mixed
     {
         if ((is_object($object) || is_array($object)) && $object) {
             if ($object instanceof Traversable) {
@@ -193,7 +191,7 @@ class Footer
             isset($GLOBALS['db']) && is_scalar($GLOBALS['db']) ? (string) $GLOBALS['db'] : '',
             isset($GLOBALS['table']) && is_scalar($GLOBALS['table']) ? (string) $GLOBALS['table'] : '',
             $GLOBALS['cfg']['Server']['user'],
-            $GLOBALS['sql_query']
+            $GLOBALS['sql_query'],
         );
     }
 

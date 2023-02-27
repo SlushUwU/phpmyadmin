@@ -18,13 +18,10 @@ use const SORT_NATURAL;
 use const SORT_REGULAR;
 use const TEST_PATH;
 
-/**
- * @covers \PhpMyAdmin\Command\TwigLintCommand
- */
+/** @covers \PhpMyAdmin\Command\TwigLintCommand */
 class TwigLintCommandTest extends AbstractTestCase
 {
-    /** @var TwigLintCommand */
-    private $command;
+    private TwigLintCommand $command;
 
     public function setUp(): void
     {
@@ -33,6 +30,7 @@ class TwigLintCommandTest extends AbstractTestCase
         }
 
         parent::setUp();
+
         $GLOBALS['cfg']['environment'] = 'development';
         $GLOBALS['config'] = null;
 
@@ -108,7 +106,7 @@ class TwigLintCommandTest extends AbstractTestCase
                 [
                     'foo.twig',
                     'foo-invalid.twig',
-                ]
+                ],
             );
 
         $command->expects($this->exactly(2))->method('getTemplateContents')->willReturnMap([
@@ -133,7 +131,7 @@ class TwigLintCommandTest extends AbstractTestCase
                 'line' => 1,
                 'exception' => new SyntaxError('Unexpected "}".', 1, new Source(
                     '{{ file }',
-                    'foo-invalid.twig'
+                    'foo-invalid.twig',
                 )),
             ],
         ], $filesFound);

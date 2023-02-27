@@ -7,9 +7,7 @@ namespace PhpMyAdmin\Tests\Navigation\Nodes;
 use PhpMyAdmin\Navigation\Nodes\NodeTable;
 use PhpMyAdmin\Tests\AbstractTestCase;
 
-/**
- * @covers \PhpMyAdmin\Navigation\Nodes\NodeTable
- */
+/** @covers \PhpMyAdmin\Navigation\Nodes\NodeTable */
 class NodeTableTest extends AbstractTestCase
 {
     /**
@@ -18,6 +16,7 @@ class NodeTableTest extends AbstractTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
         $GLOBALS['dbi'] = $this->createDatabaseInterface();
 
         $GLOBALS['server'] = 0;
@@ -37,7 +36,6 @@ class NodeTableTest extends AbstractTestCase
     public function testConstructor(): void
     {
         $parent = new NodeTable('default');
-        $this->assertIsArray($parent->links);
         $this->assertEquals(
             [
                 'text' => ['route' => '/sql', 'params' => ['pos' => 0, 'db' => null, 'table' => null]],
@@ -45,7 +43,7 @@ class NodeTableTest extends AbstractTestCase
                 'second_icon' => ['route' => '/table/change', 'params' => ['db' => null, 'table' => null]],
                 'title' => 'Browse',
             ],
-            $parent->links
+            $parent->links,
         );
         $this->assertStringContainsString('table', $parent->classes);
     }

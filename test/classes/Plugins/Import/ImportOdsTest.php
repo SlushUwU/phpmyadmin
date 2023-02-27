@@ -19,14 +19,11 @@ use function str_repeat;
  */
 class ImportOdsTest extends AbstractTestCase
 {
-    /** @var DatabaseInterface */
-    protected $dbi;
+    protected DatabaseInterface $dbi;
 
-    /** @var DbiDummy */
-    protected $dummyDbi;
+    protected DbiDummy $dummyDbi;
 
-    /** @var ImportOds */
-    protected $object;
+    protected ImportOds $object;
 
     /**
      * Sets up the fixture, for example, opens a network connection.
@@ -35,6 +32,7 @@ class ImportOdsTest extends AbstractTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
         $GLOBALS['dbi'] = $this->createDatabaseInterface();
         $GLOBALS['server'] = 0;
         $GLOBALS['plugin_param'] = 'csv';
@@ -75,6 +73,7 @@ class ImportOdsTest extends AbstractTestCase
     protected function tearDown(): void
     {
         parent::tearDown();
+
         unset($this->object);
     }
 
@@ -88,15 +87,15 @@ class ImportOdsTest extends AbstractTestCase
         $properties = $this->object->getProperties();
         $this->assertEquals(
             __('OpenDocument Spreadsheet'),
-            $properties->getText()
+            $properties->getText(),
         );
         $this->assertEquals(
             'ods',
-            $properties->getExtension()
+            $properties->getExtension(),
         );
         $this->assertEquals(
             __('Options'),
-            $properties->getOptionsText()
+            $properties->getOptionsText(),
         );
     }
 
@@ -128,18 +127,18 @@ class ImportOdsTest extends AbstractTestCase
 
         $this->assertStringContainsString(
             'CREATE DATABASE IF NOT EXISTS `ODS_DB` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci',
-            $GLOBALS['sql_query']
+            $GLOBALS['sql_query'],
         );
         $this->assertStringContainsString('CREATE TABLE IF NOT EXISTS `ODS_DB`.`pma_bookmark`', $GLOBALS['sql_query']);
         $this->assertStringContainsString(
             'INSERT INTO `ODS_DB`.`pma_bookmark` (`A`, `B`, `C`, `D`) VALUES (1, \'dbbase\', NULL, \'ddd\');',
-            $GLOBALS['sql_query']
+            $GLOBALS['sql_query'],
         );
 
         //asset that all databases and tables are imported
         $this->assertStringContainsString(
             'The following structures have either been created or altered.',
-            $GLOBALS['import_notice']
+            $GLOBALS['import_notice'],
         );
         $this->assertStringContainsString('Go to database: `ODS_DB`', $GLOBALS['import_notice']);
         $this->assertStringContainsString('Edit settings for `ODS_DB`', $GLOBALS['import_notice']);
@@ -250,13 +249,13 @@ class ImportOdsTest extends AbstractTestCase
              . ' (\'12\')'
              . ($odsEmptyRowsMode ? '' : ',' . "\n" . ' (NULL)')
              . ($odsEmptyRowsMode ? ';;' : ',' . "\n" . ' (NULL);;'),
-            $GLOBALS['sql_query']
+            $GLOBALS['sql_query'],
         );
 
         //asset that all databases and tables are imported
         $this->assertStringContainsString(
             'The following structures have either been created or altered.',
-            $GLOBALS['import_notice']
+            $GLOBALS['import_notice'],
         );
         $this->assertStringContainsString('Go to database: `ODS_DB`', $GLOBALS['import_notice']);
         $this->assertStringContainsString('Edit settings for `ODS_DB`', $GLOBALS['import_notice']);

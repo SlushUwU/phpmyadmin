@@ -21,10 +21,8 @@ class ResponseRenderer extends \PhpMyAdmin\ResponseRenderer
 {
     /**
      * HTML data to be used in the response
-     *
-     * @var string
      */
-    protected $htmlString;
+    protected string $htmlString;
 
     /**
      * An array of JSON key-value pairs
@@ -32,10 +30,9 @@ class ResponseRenderer extends \PhpMyAdmin\ResponseRenderer
      *
      * @var array
      */
-    protected $json;
+    protected array $json;
 
-    /** @var int */
-    private $responseCode = 200;
+    private int $responseCode = 200;
 
     /**
      * Creates a new class instance
@@ -71,7 +68,7 @@ class ResponseRenderer extends \PhpMyAdmin\ResponseRenderer
      * @param mixed|null                        $value Null, if passing an array in $json otherwise
      *                                                 it's a string value to the key
      */
-    public function addJSON($json, $value = null): void
+    public function addJSON(string|int|array $json, $value = null): void
     {
         if (is_array($json)) {
             foreach ($json as $key => $value) {
@@ -86,10 +83,8 @@ class ResponseRenderer extends \PhpMyAdmin\ResponseRenderer
 
     /**
      * Return the final concatenated HTML string
-     *
-     * @return string
      */
-    public function getHTMLResult()
+    public function getHTMLResult(): string
     {
         return $this->htmlString;
     }
@@ -99,7 +94,7 @@ class ResponseRenderer extends \PhpMyAdmin\ResponseRenderer
      *
      * @return array
      */
-    public function getJSONResult()
+    public function getJSONResult(): array
     {
         return $this->json;
     }
@@ -107,10 +102,8 @@ class ResponseRenderer extends \PhpMyAdmin\ResponseRenderer
     /**
      * Current I choose to return PhpMyAdmin\Header object directly because
      * our test has nothing about the Scripts and PhpMyAdmin\Header class.
-     *
-     * @return Header
      */
-    public function getHeader()
+    public function getHeader(): Header
     {
         return $this->header;
     }

@@ -56,9 +56,7 @@ abstract class SchemaPlugin implements Plugin
      */
     abstract protected function setProperties(): SchemaPluginProperties;
 
-    /**
-     * @return array{fileName: non-empty-string, mediaType: non-empty-string, fileData: string}
-     */
+    /** @return array{fileName: non-empty-string, mediaType: non-empty-string, fileData: string} */
     abstract public function getExportInfo(DatabaseName $db): array;
 
     /**
@@ -79,7 +77,7 @@ abstract class SchemaPlugin implements Plugin
      *
      * @return array array of paper sizes
      */
-    protected function getPaperSizeArray()
+    protected function getPaperSizeArray(): array
     {
         $ret = [];
         foreach ($GLOBALS['cfg']['PDFPageSizes'] as $val) {

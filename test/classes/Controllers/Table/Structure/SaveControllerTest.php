@@ -14,14 +14,13 @@ use PhpMyAdmin\Tests\Stubs\ResponseRenderer;
 use PhpMyAdmin\Transformations;
 use ReflectionClass;
 
-/**
- * @covers \PhpMyAdmin\Controllers\Table\Structure\SaveController
- */
+/** @covers \PhpMyAdmin\Controllers\Table\Structure\SaveController */
 class SaveControllerTest extends AbstractTestCase
 {
     protected function setUp(): void
     {
         parent::setUp();
+
         $GLOBALS['dbi'] = $this->createDatabaseInterface();
     }
 
@@ -79,7 +78,7 @@ class SaveControllerTest extends AbstractTestCase
         $dummyDbi->addResult(
             'ALTER TABLE `test_table` CHANGE `name` `new_name` VARCHAR(21)'
             . ' CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL;',
-            []
+            [],
         );
         $dbi = $this->createDatabaseInterface($dummyDbi);
 
@@ -94,7 +93,7 @@ class SaveControllerTest extends AbstractTestCase
             new Relation($dbi),
             new Transformations(),
             $dbi,
-            $mock
+            $mock,
         ))($request);
 
         $this->assertArrayNotHasKey('selected', $_POST);
@@ -119,11 +118,11 @@ class SaveControllerTest extends AbstractTestCase
             new Relation($dbi),
             new Transformations(),
             $dbi,
-            $this->createStub(StructureController::class)
+            $this->createStub(StructureController::class),
         );
 
         $this->assertFalse(
-            $method->invokeArgs($ctrl, [[]])
+            $method->invokeArgs($ctrl, [[]]),
         );
     }
 }

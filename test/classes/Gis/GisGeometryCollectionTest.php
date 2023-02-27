@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Gis;
 
+use PhpMyAdmin\Gis\GisGeometry;
 use PhpMyAdmin\Gis\GisGeometryCollection;
 use PhpMyAdmin\Gis\ScaleData;
 use PhpMyAdmin\Image\ImageWrapper;
@@ -16,8 +17,7 @@ use TCPDF;
  */
 class GisGeometryCollectionTest extends GisGeomTestCase
 {
-    /** @var GisGeometryCollection */
-    protected $object;
+    protected GisGeometry $object;
 
     /**
      * Sets up the fixture, for example, opens a network connection.
@@ -26,6 +26,7 @@ class GisGeometryCollectionTest extends GisGeomTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
         $this->object = GisGeometryCollection::singleton();
     }
 
@@ -36,6 +37,7 @@ class GisGeometryCollectionTest extends GisGeomTestCase
     protected function tearDown(): void
     {
         parent::tearDown();
+
         unset($this->object);
     }
 
@@ -68,7 +70,7 @@ class GisGeometryCollectionTest extends GisGeomTestCase
     {
         $this->assertEquals(
             $output,
-            $this->object->generateWkt($gis_data, $index, $empty)
+            $this->object->generateWkt($gis_data, $index, $empty),
         );
     }
 
@@ -115,22 +117,207 @@ class GisGeometryCollectionTest extends GisGeomTestCase
     {
         return [
             [
-                'GEOMETRYCOLLECTION(LINESTRING(5.02 8.45,6.14 0.15))',
-                0,
+                'GEOMETRYCOLLECTION('
+                . 'LINESTRING(5.02 8.45,6.14 0.15)'
+                . ',MULTILINESTRING((36 14,47 23,62 75),(36 10,17 23,178 53))'
+                . ',MULTIPOINT(5.02 8.45,6.14 0.15)'
+                . ',MULTIPOLYGON(((35 10,10 20,15 40,45 45,35 10)'
+                . ',(20 30,35 32,30 20,20 30)),((123 0,23 30,17 63,123 0)))'
+                . ',POINT(5.02 8.45)'
+                . ',POLYGON((35 10,10 20,15 40,45 45,35 10),(20 30,35 32,30 20,20 30))'
+                . ')',
                 [
                     'srid' => 0,
-                    'GEOMETRYCOLLECTION' => ['geom_count' => 1],
-                    '0' => [
+                    'GEOMETRYCOLLECTION' => ['geom_count' => 6],
+                    0 => [
                         'gis_type' => 'LINESTRING',
                         'LINESTRING' => [
                             'no_of_points' => 2,
-                            '0' => [
+                            0 => [
                                 'x' => 5.02,
                                 'y' => 8.45,
                             ],
-                            '1' => [
+                            1 => [
                                 'x' => 6.14,
                                 'y' => 0.15,
+                            ],
+                        ],
+                    ],
+                    1 => [
+                        'gis_type' => 'MULTILINESTRING',
+                        'MULTILINESTRING' => [
+                            'no_of_lines' => 2,
+                            0 => [
+                                'no_of_points' => 3,
+                                0 => [
+                                    'x' => 36.0,
+                                    'y' => 14.0,
+                                ],
+                                1 => [
+                                    'x' => 47.0,
+                                    'y' => 23.0,
+                                ],
+                                2 => [
+                                    'x' => 62.0,
+                                    'y' => 75.0,
+                                ],
+                            ],
+                            1 => [
+                                'no_of_points' => 3,
+                                0 => [
+                                    'x' => 36.0,
+                                    'y' => 10.0,
+                                ],
+                                1 => [
+                                    'x' => 17.0,
+                                    'y' => 23.0,
+                                ],
+                                2 => [
+                                    'x' => 178.0,
+                                    'y' => 53.0,
+                                ],
+                            ],
+                        ],
+                    ],
+                    2 => [
+                        'gis_type' => 'MULTIPOINT',
+                        'MULTIPOINT' => [
+                            'no_of_points' => 2,
+                            0 => [
+                                'x' => 5.02,
+                                'y' => 8.45,
+                            ],
+                            1 => [
+                                'x' => 6.14,
+                                'y' => 0.15,
+                            ],
+                        ],
+                    ],
+                    3 => [
+                        'gis_type' => 'MULTIPOLYGON',
+                        'MULTIPOLYGON' => [
+                            'no_of_polygons' => 2,
+                            0 => [
+                                'no_of_lines' => 2,
+                                0 => [
+                                    'no_of_points' => 5,
+                                    0 => [
+                                        'x' => 35.0,
+                                        'y' => 10.0,
+                                    ],
+                                    1 => [
+                                        'x' => 10.0,
+                                        'y' => 20.0,
+                                    ],
+                                    2 => [
+                                        'x' => 15.0,
+                                        'y' => 40.0,
+                                    ],
+                                    3 => [
+                                        'x' => 45.0,
+                                        'y' => 45.0,
+                                    ],
+                                    4 => [
+                                        'x' => 35.0,
+                                        'y' => 10.0,
+                                    ],
+                                ],
+                                1 => [
+                                    'no_of_points' => 4,
+                                    0 => [
+                                        'x' => 20.0,
+                                        'y' => 30.0,
+                                    ],
+                                    1 => [
+                                        'x' => 35.0,
+                                        'y' => 32.0,
+                                    ],
+                                    2 => [
+                                        'x' => 30.0,
+                                        'y' => 20.0,
+                                    ],
+                                    3 => [
+                                        'x' => 20.0,
+                                        'y' => 30.0,
+                                    ],
+                                ],
+                            ],
+                            1 => [
+                                'no_of_lines' => 1,
+                                0 => [
+                                    'no_of_points' => 4,
+                                    0 => [
+                                        'x' => 123.0,
+                                        'y' => 0.0,
+                                    ],
+                                    1 => [
+                                        'x' => 23.0,
+                                        'y' => 30.0,
+                                    ],
+                                    2 => [
+                                        'x' => 17.0,
+                                        'y' => 63.0,
+                                    ],
+                                    3 => [
+                                        'x' => 123.0,
+                                        'y' => 0.0,
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                    4 => [
+                        'gis_type' => 'POINT',
+                        'POINT' => [
+                            'x' => 5.02,
+                            'y' => 8.45,
+                        ],
+                    ],
+                    5 => [
+                        'gis_type' => 'POLYGON',
+                        'POLYGON' => [
+                            'no_of_lines' => 2,
+                            0 => [
+                                'no_of_points' => 5,
+                                0 => [
+                                    'x' => 35.0,
+                                    'y' => 10.0,
+                                ],
+                                1 => [
+                                    'x' => 10.0,
+                                    'y' => 20.0,
+                                ],
+                                2 => [
+                                    'x' => 15.0,
+                                    'y' => 40.0,
+                                ],
+                                3 => [
+                                    'x' => 45.0,
+                                    'y' => 45.0,
+                                ],
+                                4 => [
+                                    'x' => 35.0,
+                                    'y' => 10.0,
+                                ],
+                            ],
+                            1 => [
+                                'no_of_points' => 4,
+                                0 => [
+                                    'x' => 20.0,
+                                    'y' => 30.0,
+                                ],
+                                1 => [
+                                    'x' => 35.0,
+                                    'y' => 32.0,
+                                ],
+                                2 => [
+                                    'x' => 30.0,
+                                    'y' => 20.0,
+                                ],
+                                3 => [
+                                    'x' => 20.0,
+                                    'y' => 30.0,
+                                ],
                             ],
                         ],
                     ],
@@ -139,9 +326,7 @@ class GisGeometryCollectionTest extends GisGeomTestCase
         ];
     }
 
-    /**
-     * @requires extension gd
-     */
+    /** @requires extension gd */
     public function testPrepareRowAsPng(): void
     {
         $image = ImageWrapper::create(200, 124, ['red' => 229, 'green' => 229, 'blue' => 229]);
@@ -152,7 +337,7 @@ class GisGeometryCollectionTest extends GisGeomTestCase
             'image',
             [176, 46, 224],
             ['x' => -19, 'y' => -3, 'scale' => 2.29, 'height' => 124],
-            $image
+            $image,
         );
         $this->assertEquals(200, $return->width());
         $this->assertEquals(124, $return->height());
@@ -179,7 +364,7 @@ class GisGeometryCollectionTest extends GisGeomTestCase
         string $label,
         array $color,
         array $scale_data,
-        TCPDF $pdf
+        TCPDF $pdf,
     ): void {
         $return = $this->object->prepareRowAsPdf($spatial, $label, $color, $scale_data, $pdf);
 
@@ -203,6 +388,7 @@ class GisGeometryCollectionTest extends GisGeomTestCase
                 'pdf',
                 [176, 46, 224],
                 ['x' => 1, 'y' => -9, 'scale' => 4.39, 'height' => 297],
+
                 parent::createEmptyPdf('GEOMETRYCOLLECTION'),
             ],
         ];
@@ -224,7 +410,7 @@ class GisGeometryCollectionTest extends GisGeomTestCase
         string $label,
         array $color,
         array $scaleData,
-        string $output
+        string $output,
     ): void {
         $svg = $this->object->prepareRowAsSvg($spatial, $label, $color, $scaleData);
         $this->assertEquals($output, $svg);
@@ -274,7 +460,7 @@ class GisGeometryCollectionTest extends GisGeomTestCase
         string $label,
         array $color,
         array $scale_data,
-        string $output
+        string $output,
     ): void {
         $this->assertEquals(
             $output,
@@ -283,8 +469,8 @@ class GisGeometryCollectionTest extends GisGeomTestCase
                 $srid,
                 $label,
                 $color,
-                $scale_data
-            )
+                $scale_data,
+            ),
         );
     }
 

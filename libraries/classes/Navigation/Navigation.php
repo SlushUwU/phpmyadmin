@@ -76,7 +76,7 @@ class Navigation
                     $hasStartChar = strpos($logo['link'], '?');
                     $logo['link'] .= Url::getCommon(
                         [],
-                        is_bool($hasStartChar) ? '?' : Url::getArgSeparator()
+                        is_bool($hasStartChar) ? '?' : Url::getArgSeparator(),
                     );
                     // Internal link detected
                     $logo['attributes'] = '';
@@ -142,7 +142,7 @@ class Navigation
         $itemName,
         $itemType,
         $dbName,
-        $tableName = null
+        $tableName = null,
     ): void {
         $navigationItemsHidingFeature = $this->relation->getRelationParameters()->navigationItemsHidingFeature;
         if ($navigationItemsHidingFeature === null) {
@@ -176,7 +176,7 @@ class Navigation
         $itemName,
         $itemType,
         $dbName,
-        $tableName = null
+        $tableName = null,
     ): void {
         $navigationItemsHidingFeature = $this->relation->getRelationParameters()->navigationItemsHidingFeature;
         if ($navigationItemsHidingFeature === null) {
@@ -208,7 +208,7 @@ class Navigation
      *
      * @return string HTML for the dialog to show hidden navigation items
      */
-    public function getItemUnhideDialog($database, $itemType = null, $table = null)
+    public function getItemUnhideDialog($database, $itemType = null, $table = null): string
     {
         $hidden = $this->getHiddenItems($database, $table);
 
@@ -268,9 +268,7 @@ class Navigation
         return $hidden;
     }
 
-    /**
-     * @return string Logo source
-     */
+    /** @return string Logo source */
     private function getLogoSource(): string
     {
         $GLOBALS['theme'] ??= null;

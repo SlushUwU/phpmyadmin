@@ -23,21 +23,15 @@ class ExportPdf extends ExportPlugin
 {
     /**
      * PhpMyAdmin\Plugins\Export\Helpers\Pdf instance
-     *
-     * @var Pdf
      */
-    private $pdf;
+    private Pdf $pdf;
 
     /**
      * PDF Report Title
-     *
-     * @var string
      */
-    private $pdfReportTitle = '';
+    private string $pdfReportTitle = '';
 
-    /**
-     * @psalm-return non-empty-lowercase-string
-     */
+    /** @psalm-return non-empty-lowercase-string */
     public function getName(): string
     {
         return 'pdf';
@@ -74,7 +68,7 @@ class ExportPdf extends ExportPlugin
         // create primary items and add them to the group
         $leaf = new TextPropertyItem(
             'report_title',
-            __('Report title:')
+            __('Report title:'),
         );
         $generalOptions->addProperty($leaf);
         // add the group to the root group
@@ -83,7 +77,7 @@ class ExportPdf extends ExportPlugin
         // what to dump (structure/data/both) main group
         $dumpWhat = new OptionsPropertyMainGroup(
             'dump_what',
-            __('Dump table')
+            __('Dump table'),
         );
         $leaf = new RadioPropertyItem('structure_or_data');
         $leaf->setValues(
@@ -91,7 +85,7 @@ class ExportPdf extends ExportPlugin
                 'structure' => __('structure'),
                 'data' => __('data'),
                 'structure_and_data' => __('structure and data'),
-            ]
+            ],
         );
         $dumpWhat->addProperty($leaf);
         // add the group to the root group
@@ -176,7 +170,7 @@ class ExportPdf extends ExportPlugin
         $table,
         $errorUrl,
         $sqlQuery,
-        array $aliases = []
+        array $aliases = [],
     ): bool {
         $db_alias = $db;
         $table_alias = $table;
@@ -247,7 +241,7 @@ class ExportPdf extends ExportPlugin
         $do_comments = false,
         $do_mime = false,
         $dates = false,
-        array $aliases = []
+        array $aliases = [],
     ): bool {
         $db_alias = $db;
         $table_alias = $table;
@@ -303,10 +297,8 @@ class ExportPdf extends ExportPlugin
 
     /**
      * Gets the PhpMyAdmin\Plugins\Export\Helpers\Pdf instance
-     *
-     * @return Pdf
      */
-    private function getPdf()
+    private function getPdf(): Pdf
     {
         return $this->pdf;
     }

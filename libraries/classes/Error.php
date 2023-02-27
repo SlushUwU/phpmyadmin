@@ -55,7 +55,7 @@ class Error extends Message
      *
      * @var array
      */
-    public static $errortype = [
+    public static array $errortype = [
         0 => 'Internal error',
         E_ERROR => 'Error',
         E_WARNING => 'Warning',
@@ -79,7 +79,7 @@ class Error extends Message
      *
      * @var array
      */
-    public static $errorlevel = [
+    public static array $errorlevel = [
         0 => 'error',
         E_ERROR => 'error',
         E_WARNING => 'error',
@@ -100,17 +100,13 @@ class Error extends Message
 
     /**
      * The file in which the error occurred
-     *
-     * @var string
      */
-    protected $file = '';
+    protected string $file = '';
 
     /**
      * The line in which the error occurred
-     *
-     * @var int
      */
-    protected $line = 0;
+    protected int $line = 0;
 
     /**
      * Holds the backtrace for this error
@@ -119,10 +115,8 @@ class Error extends Message
 
     /**
      * Hide location of errors
-     *
-     * @var bool
      */
-    protected $hideLocation = false;
+    protected bool $hideLocation = false;
 
     /**
      * @param int    $errno   error number
@@ -133,6 +127,7 @@ class Error extends Message
     public function __construct(int $errno, string $errstr, string $errfile, int $errline)
     {
         parent::__construct();
+
         $this->setNumber($errno);
         $this->setMessage($errstr, false);
         $this->setFile($errfile);
@@ -261,7 +256,7 @@ class Error extends Message
                 $this->getMessage() .
                 $this->getFile() .
                 $this->getLine() .
-                $backtrace
+                $backtrace,
             );
         }
 
@@ -334,7 +329,7 @@ class Error extends Message
     public function getHtmlTitle(): string
     {
         return htmlspecialchars(
-            mb_substr($this->getTitle(), 0, 100)
+            mb_substr($this->getTitle(), 0, 100),
         );
     }
 
@@ -507,7 +502,7 @@ class Error extends Message
 
         $hereParts = explode(
             DIRECTORY_SEPARATOR,
-            (string) realpath(__DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . '..')
+            (string) realpath(__DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . '..'),
         );
         $destParts = explode(DIRECTORY_SEPARATOR, $dest);
 

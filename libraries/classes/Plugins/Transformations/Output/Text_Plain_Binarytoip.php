@@ -25,7 +25,7 @@ class Text_Plain_Binarytoip extends TransformationsPlugin
     {
         return __(
             'Converts an Internet network address stored as a binary string'
-            . ' into a string in Internet standard (IPv4/IPv6) format.'
+            . ' into a string in Internet standard (IPv4/IPv6) format.',
         );
     }
 
@@ -40,7 +40,7 @@ class Text_Plain_Binarytoip extends TransformationsPlugin
      *
      * @return string IP address
      */
-    public function applyTransformation($buffer, array $options = [], FieldMetadata|null $meta = null)
+    public function applyTransformation($buffer, array $options = [], FieldMetadata|null $meta = null): string
     {
         $isBinary = ($meta !== null && $meta->isBinary);
 

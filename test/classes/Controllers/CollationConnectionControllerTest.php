@@ -12,9 +12,7 @@ use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Url;
 
-/**
- * @covers \PhpMyAdmin\Controllers\CollationConnectionController
- */
+/** @covers \PhpMyAdmin\Controllers\CollationConnectionController */
 class CollationConnectionControllerTest extends AbstractTestCase
 {
     public function testInvoke(): void
@@ -35,7 +33,7 @@ class CollationConnectionControllerTest extends AbstractTestCase
         (new CollationConnectionController(
             $response,
             new Template(),
-            $config
+            $config,
         ))($request);
     }
 }

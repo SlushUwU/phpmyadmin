@@ -33,28 +33,28 @@ use const E_USER_ERROR;
 class Theme
 {
     /** @var string theme version */
-    public $version = '0.0.0.0';
+    public string $version = '0.0.0.0';
 
     /** @var string theme name */
-    public $name = '';
+    public string $name = '';
 
     /** @var string theme id */
-    public $id = '';
+    public string $id = '';
 
     /** @var string theme path */
-    public $path = '';
+    public string $path = '';
 
     /** @var string file system theme path */
-    private $fsPath = '';
+    private string $fsPath = '';
 
     /** @var string image path as an URL */
-    public $imgPath = '';
+    public string $imgPath = '';
 
     /** @var string image path on the file-system */
-    public $imgPathFs = '';
+    public string $imgPathFs = '';
 
     /** @var int last modification time for info file */
-    public $mtimeInfo = 0;
+    public int $mtimeInfo = 0;
 
     /**
      * needed because sometimes, the mtime for different themes
@@ -62,7 +62,7 @@ class Theme
      *
      * @var int filesize for info file
      */
-    public $filesizeInfo = 0;
+    public int $filesizeInfo = 0;
 
     /**
      * Loads theme information
@@ -166,9 +166,9 @@ class Theme
         trigger_error(
             sprintf(
                 __('No valid image path for theme %s found!'),
-                $this->getName()
+                $this->getName(),
             ),
-            E_USER_ERROR
+            E_USER_ERROR,
         );
 
         return false;
@@ -179,7 +179,7 @@ class Theme
      *
      * @return string path to theme
      */
-    public function getPath()
+    public function getPath(): string
     {
         return $this->path;
     }
@@ -229,7 +229,7 @@ class Theme
      *
      * @return string version
      */
-    public function getVersion()
+    public function getVersion(): string
     {
         return $this->version;
     }
@@ -260,7 +260,7 @@ class Theme
      *
      * @return string name
      */
-    public function getName()
+    public function getName(): string
     {
         return $this->name;
     }
@@ -280,7 +280,7 @@ class Theme
      *
      * @return string id
      */
-    public function getId()
+    public function getId(): string
     {
         return $this->id;
     }
@@ -315,7 +315,7 @@ class Theme
      *
      * @return string image path for this theme
      */
-    public function getImgPath($file = null, $fallback = null)
+    public function getImgPath($file = null, $fallback = null): string
     {
         if ($file === null) {
             return $this->imgPath;

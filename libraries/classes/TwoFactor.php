@@ -34,12 +34,11 @@ class TwoFactor
      * @var array
      * @psalm-var array{backend: string, settings: mixed[], type?: 'session'|'db'}
      */
-    public $config;
+    public array $config;
 
     protected bool $writable;
 
-    /** @var TwoFactorPlugin */
-    protected $backend;
+    protected TwoFactorPlugin $backend;
 
     protected array $available;
 
@@ -97,9 +96,7 @@ class TwoFactor
         return $this->backend;
     }
 
-    /**
-     * @return array
-     */
+    /** @return array */
     public function getAvailable(): array
     {
         return $this->available;
@@ -176,16 +173,15 @@ class TwoFactor
      *
      * @param string $name Backend name
      *
-     * @return string
      * @psalm-return class-string
      */
-    public function getBackendClass($name)
+    public function getBackendClass($name): string
     {
         $result = TwoFactorPlugin::class;
         if (in_array($name, $this->available)) {
             /** @psalm-var class-string $result */
             $result = 'PhpMyAdmin\\Plugins\\TwoFactor\\' . ucfirst($name);
-        } elseif (! empty($name)) {
+        } elseif ($name !== '') {
             $result = Invalid::class;
         }
 
@@ -194,10 +190,8 @@ class TwoFactor
 
     /**
      * Returns backend for current user
-     *
-     * @return TwoFactorPlugin
      */
-    public function getBackendForCurrentUser()
+    public function getBackendForCurrentUser(): TwoFactorPlugin
     {
         $name = $this->getBackendClass($this->config['backend']);
 
@@ -227,7 +221,7 @@ class TwoFactor
      *
      * @return string HTML code
      */
-    public function render()
+    public function render(): string
     {
         return $this->backend->getError() . $this->backend->render();
     }
@@ -237,7 +231,7 @@ class TwoFactor
      *
      * @return string HTML code
      */
-    public function setup()
+    public function setup(): string
     {
         return $this->backend->getError() . $this->backend->setup();
     }
@@ -247,7 +241,7 @@ class TwoFactor
      *
      * @return true|Message
      */
-    public function save()
+    public function save(): bool|Message
     {
         return $this->userPreferences->persistOption('2fa', $this->config, null);
     }

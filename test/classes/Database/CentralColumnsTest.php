@@ -21,11 +21,10 @@ use function array_slice;
  */
 class CentralColumnsTest extends AbstractTestCase
 {
-    /** @var CentralColumns */
-    private $centralColumns;
+    private CentralColumns $centralColumns;
 
     /** @var array<int, array<string, string|int>> */
-    private $columnData = [
+    private array $columnData = [
         [
             'col_name' => 'id',
             'col_type' => 'integer',
@@ -56,7 +55,7 @@ class CentralColumnsTest extends AbstractTestCase
     ];
 
     /** @var array<int, array<string, string|int>> */
-    private $modifiedColumnData = [
+    private array $modifiedColumnData = [
         [
             'col_name' => 'id',
             'col_type' => 'integer',
@@ -95,7 +94,9 @@ class CentralColumnsTest extends AbstractTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
         parent::setGlobalConfig();
+
         $GLOBALS['cfg']['Server']['user'] = 'pma_user';
         $GLOBALS['cfg']['Server']['DisableIS'] = true;
         $GLOBALS['cfg']['MaxRows'] = 10;
@@ -144,8 +145,8 @@ class CentralColumnsTest extends AbstractTestCase
                             'Type' => 'DATETIME',
                             'Null' => 'NO',
                         ],
-                    ]
-                )
+                    ],
+                ),
             );
         $dbi->expects($this->any())
             ->method('getColumnNames')
@@ -156,7 +157,7 @@ class CentralColumnsTest extends AbstractTestCase
         $dbi->expects($this->any())
             ->method('getTables')
             ->will(
-                $this->returnValue(['PMA_table', 'PMA_table1', 'PMA_table2'])
+                $this->returnValue(['PMA_table', 'PMA_table1', 'PMA_table2']),
             );
         $dbi->expects($this->any())->method('escapeString')
             ->will($this->returnArgument(0));
@@ -175,7 +176,7 @@ class CentralColumnsTest extends AbstractTestCase
                 'db' => 'phpmyadmin',
                 'table' => 'pma_central_columns',
             ],
-            $this->centralColumns->getParams()
+            $this->centralColumns->getParams(),
         );
     }
 
@@ -188,16 +189,16 @@ class CentralColumnsTest extends AbstractTestCase
             ->method('fetchResult')
             ->willReturnOnConsecutiveCalls(
                 $this->columnData,
-                array_slice($this->columnData, 1, 2)
+                array_slice($this->columnData, 1, 2),
             );
 
         $this->assertEquals(
             $this->modifiedColumnData,
-            $this->centralColumns->getColumnsList('phpmyadmin')
+            $this->centralColumns->getColumnsList('phpmyadmin'),
         );
         $this->assertEquals(
             array_slice($this->modifiedColumnData, 1, 2),
-            $this->centralColumns->getColumnsList('phpmyadmin', 1, 2)
+            $this->centralColumns->getColumnsList('phpmyadmin', 1, 2),
         );
     }
 
@@ -212,15 +213,15 @@ class CentralColumnsTest extends AbstractTestCase
                 'SELECT count(db_name) FROM `pma_central_columns` WHERE db_name = \'phpmyadmin\';',
                 null,
                 null,
-                Connection::TYPE_CONTROL
+                Connection::TYPE_CONTROL,
             )
             ->will(
-                $this->returnValue([3])
+                $this->returnValue([3]),
             );
 
         $this->assertEquals(
             3,
-            $this->centralColumns->getCount('phpmyadmin')
+            $this->centralColumns->getCount('phpmyadmin'),
         );
     }
 
@@ -234,8 +235,8 @@ class CentralColumnsTest extends AbstractTestCase
 
         $this->assertTrue(
             $this->centralColumns->syncUniqueColumns(
-                ['PMA_table']
-            )
+                ['PMA_table'],
+            ),
         );
     }
 
@@ -247,18 +248,18 @@ class CentralColumnsTest extends AbstractTestCase
         $GLOBALS['dbi']->expects($this->any())
             ->method('fetchResult')
             ->will(
-                $this->returnValue($this->columnData)
+                $this->returnValue($this->columnData),
             );
         $GLOBALS['dbi']->expects($this->any())
             ->method('fetchValue')
             ->will(
-                $this->returnValue('PMA_table=CREATE table `PMA_table` (id integer)')
+                $this->returnValue('PMA_table=CREATE table `PMA_table` (id integer)'),
             );
         $this->assertTrue(
             $this->centralColumns->makeConsistentWithList(
                 'phpmyadmin',
-                ['PMA_table']
-            )
+                ['PMA_table'],
+            ),
         );
     }
 
@@ -277,10 +278,10 @@ class CentralColumnsTest extends AbstractTestCase
                 . "WHERE db_name = 'PMA_db' AND col_name IN ('id','col1','col2');",
                 null,
                 null,
-                Connection::TYPE_CONTROL
+                Connection::TYPE_CONTROL,
             )
             ->will(
-                $this->returnValue(['id', 'col1'])
+                $this->returnValue(['id', 'col1']),
             );
         $this->assertEquals(
             [
@@ -289,8 +290,8 @@ class CentralColumnsTest extends AbstractTestCase
             ],
             $this->centralColumns->getFromTable(
                 $db,
-                $table
-            )
+                $table,
+            ),
         );
     }
 
@@ -309,18 +310,18 @@ class CentralColumnsTest extends AbstractTestCase
                 . "WHERE db_name = 'PMA_db' AND col_name IN ('id','col1','col2');",
                 null,
                 null,
-                Connection::TYPE_CONTROL
+                Connection::TYPE_CONTROL,
             )
             ->will(
-                $this->returnValue(array_slice($this->columnData, 0, 2))
+                $this->returnValue(array_slice($this->columnData, 0, 2)),
             );
         $this->assertEquals(
             array_slice($this->modifiedColumnData, 0, 2),
             $this->centralColumns->getFromTable(
                 $db,
                 $table,
-                true
-            )
+                true,
+            ),
         );
     }
 
@@ -340,8 +341,8 @@ class CentralColumnsTest extends AbstractTestCase
                 0,
                 '',
                 '',
-                ''
-            )
+                '',
+            ),
         );
         $this->assertTrue(
             $this->centralColumns->updateOneColumn(
@@ -354,8 +355,8 @@ class CentralColumnsTest extends AbstractTestCase
                 0,
                 '',
                 '',
-                ''
-            )
+                '',
+            ),
         );
     }
 
@@ -399,7 +400,7 @@ class CentralColumnsTest extends AbstractTestCase
             '',
         ];
         $this->assertTrue(
-            $this->centralColumns->updateMultipleColumn($params)
+            $this->centralColumns->updateMultipleColumn($params),
         );
     }
 
@@ -415,17 +416,17 @@ class CentralColumnsTest extends AbstractTestCase
                 . "WHERE db_name = 'phpmyadmin' AND col_name IN ('col1','col2');",
                 null,
                 null,
-                Connection::TYPE_CONTROL
+                Connection::TYPE_CONTROL,
             )
             ->will(
-                $this->returnValue($this->columnData)
+                $this->returnValue($this->columnData),
             );
         $result = $this->centralColumns->getHtmlForEditingPage(
             [
                 'col1',
                 'col2',
             ],
-            'phpmyadmin'
+            'phpmyadmin',
         );
         $list_detail_cols = $this->callFunction(
             $this->centralColumns,
@@ -435,7 +436,7 @@ class CentralColumnsTest extends AbstractTestCase
                 'phpmyadmin',
                 "'col1','col2'",
                 true,
-            ]
+            ],
         );
         $this->assertStringContainsString(
             $this->callFunction(
@@ -445,9 +446,9 @@ class CentralColumnsTest extends AbstractTestCase
                 [
                     $list_detail_cols[0],
                     0,
-                ]
+                ],
             ),
-            $result
+            $result,
         );
     }
 
@@ -462,17 +463,17 @@ class CentralColumnsTest extends AbstractTestCase
                 'SELECT * FROM `pma_central_columns` WHERE db_name = \'phpmyadmin\';',
                 null,
                 null,
-                Connection::TYPE_CONTROL
+                Connection::TYPE_CONTROL,
             )
             ->will(
-                $this->returnValue($this->columnData)
+                $this->returnValue($this->columnData),
             );
         $this->assertEquals(
             $this->modifiedColumnData,
             $this->centralColumns->getListRaw(
                 'phpmyadmin',
-                ''
-            )
+                '',
+            ),
         );
     }
 
@@ -489,17 +490,17 @@ class CentralColumnsTest extends AbstractTestCase
                 . "NOT IN ('id','col1','col2');",
                 null,
                 null,
-                Connection::TYPE_CONTROL
+                Connection::TYPE_CONTROL,
             )
             ->will(
-                $this->returnValue($this->columnData)
+                $this->returnValue($this->columnData),
             );
         $this->assertEquals(
             $this->modifiedColumnData,
             $this->centralColumns->getListRaw(
                 'phpmyadmin',
-                'table1'
-            )
+                'table1',
+            ),
         );
     }
 
@@ -514,10 +515,10 @@ class CentralColumnsTest extends AbstractTestCase
                 'SELECT * FROM `pma_central_columns` WHERE db_name = \'phpmyadmin\' AND col_name IN (\'col1\');',
                 null,
                 null,
-                Connection::TYPE_CONTROL
+                Connection::TYPE_CONTROL,
             )
             ->will(
-                $this->returnValue(array_slice($this->columnData, 1, 1))
+                $this->returnValue(array_slice($this->columnData, 1, 1)),
             );
         $this->assertEquals(
             array_slice($this->modifiedColumnData, 1, 1),
@@ -529,8 +530,8 @@ class CentralColumnsTest extends AbstractTestCase
                     'phpmyadmin',
                     "'col1'",
                     true,
-                ]
-            )
+                ],
+            ),
         );
     }
 

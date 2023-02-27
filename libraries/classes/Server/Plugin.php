@@ -40,13 +40,11 @@ final class Plugin
         private string $license,
         private string|null $loadOption,
         private string|null $maturity,
-        private string|null $authVersion
+        private string|null $authVersion,
     ) {
     }
 
-    /**
-     * @param array $state array with the properties
-     */
+    /** @param array $state array with the properties */
     public static function fromState(array $state): self
     {
         return new self(
@@ -62,13 +60,11 @@ final class Plugin
             $state['license'] ?? '',
             $state['loadOption'] ?? null,
             $state['maturity'] ?? null,
-            $state['authVersion'] ?? null
+            $state['authVersion'] ?? null,
         );
     }
 
-    /**
-     * @return array
-     */
+    /** @return array */
     public function toArray(): array
     {
         return [

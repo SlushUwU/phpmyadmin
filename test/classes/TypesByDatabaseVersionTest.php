@@ -8,16 +8,13 @@ use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\Types;
 use PHPUnit\Framework\MockObject\Stub;
 
-/**
- * @covers \PhpMyAdmin\Types
- */
+/** @covers \PhpMyAdmin\Types */
 class TypesByDatabaseVersionTest extends AbstractTestCase
 {
     /** @var DatabaseInterface&Stub */
-    private $dbiStub;
+    private DatabaseInterface $dbiStub;
 
-    /** @var Types */
-    protected $object;
+    protected Types $object;
 
     /**
      * Sets up the fixture, for example, opens a network connection.
@@ -58,7 +55,7 @@ class TypesByDatabaseVersionTest extends AbstractTestCase
         int $dbVersion,
         string $class,
         array $includes,
-        array $excludes
+        array $excludes,
     ): void {
         $this->createObject($database, $dbVersion);
 

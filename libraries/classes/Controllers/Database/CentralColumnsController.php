@@ -25,7 +25,7 @@ class CentralColumnsController extends AbstractController
     public function __construct(
         ResponseRenderer $response,
         Template $template,
-        private CentralColumns $centralColumns
+        private CentralColumns $centralColumns,
     ) {
         parent::__construct($response, $template);
     }
@@ -136,10 +136,10 @@ class CentralColumnsController extends AbstractController
         $GLOBALS['num_cols'] = $this->centralColumns->getColumnsCount(
             $GLOBALS['db'],
             $pos,
-            (int) $GLOBALS['cfg']['MaxRows']
+            (int) $GLOBALS['cfg']['MaxRows'],
         );
         $GLOBALS['message'] = Message::success(
-            sprintf(__('Showing rows %1$s - %2$s.'), $pos + 1, $pos + $GLOBALS['num_cols'])
+            sprintf(__('Showing rows %1$s - %2$s.'), $pos + 1, $pos + $GLOBALS['num_cols']),
         );
         if (! isset($tmp_msg) || $tmp_msg === true) {
             return;
@@ -148,9 +148,7 @@ class CentralColumnsController extends AbstractController
         $GLOBALS['message'] = $tmp_msg;
     }
 
-    /**
-     * @param array $params Request parameters
-     */
+    /** @param array $params Request parameters */
     public function main(array $params): void
     {
         $GLOBALS['text_dir'] ??= null;
@@ -170,7 +168,7 @@ class CentralColumnsController extends AbstractController
             $GLOBALS['db'],
             $totalRows,
             $pos,
-            $GLOBALS['text_dir']
+            $GLOBALS['text_dir'],
         );
 
         $this->render('database/central_columns/main', $variables);
@@ -191,7 +189,7 @@ class CentralColumnsController extends AbstractController
      *
      * @return true|Message
      */
-    public function editSave(array $params)
+    public function editSave(array $params): bool|Message
     {
         $columnDefault = $params['col_default'];
         if ($columnDefault === 'NONE' && $params['col_default_sel'] !== 'USER_DEFINED') {
@@ -208,7 +206,7 @@ class CentralColumnsController extends AbstractController
             isset($params['col_isNull']) ? 1 : 0,
             $params['collation'],
             $params['col_extra'] ?? '',
-            $columnDefault
+            $columnDefault,
         );
     }
 
@@ -217,7 +215,7 @@ class CentralColumnsController extends AbstractController
      *
      * @return true|Message
      */
-    public function addNewColumn(array $params)
+    public function addNewColumn(array $params): bool|Message
     {
         $columnDefault = $params['col_default'];
         if ($columnDefault === 'NONE' && $params['col_default_sel'] !== 'USER_DEFINED') {
@@ -234,7 +232,7 @@ class CentralColumnsController extends AbstractController
             isset($params['col_isNull']) ? 1 : 0,
             $params['collation'],
             $params['col_extra'] ?? '',
-            $columnDefault
+            $columnDefault,
         );
     }
 
@@ -243,18 +241,16 @@ class CentralColumnsController extends AbstractController
      *
      * @return true|Message
      */
-    public function addColumn(array $params)
+    public function addColumn(array $params): bool|Message
     {
         return $this->centralColumns->syncUniqueColumns(
             [$params['column-select']],
             false,
-            $params['table-select']
+            $params['table-select'],
         );
     }
 
-    /**
-     * @param array $params Request parameters
-     */
+    /** @param array $params Request parameters */
     public function editPage(array $params): void
     {
         $rows = $this->centralColumns->getHtmlForEditingPage($params['selected_fld'], $params['db']);
@@ -267,7 +263,7 @@ class CentralColumnsController extends AbstractController
      *
      * @return true|Message
      */
-    public function updateMultipleColumn(array $params)
+    public function updateMultipleColumn(array $params): bool|Message
     {
         return $this->centralColumns->updateMultipleColumn($params);
     }
@@ -277,7 +273,7 @@ class CentralColumnsController extends AbstractController
      *
      * @return true|Message
      */
-    public function deleteSave(array $params)
+    public function deleteSave(array $params): bool|Message
     {
         $name = [];
         parse_str($params['col_name'], $name);

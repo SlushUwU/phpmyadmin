@@ -12,16 +12,13 @@ use function filemtime;
 use const DIRECTORY_SEPARATOR;
 use const TEST_PATH;
 
-/**
- * @covers \PhpMyAdmin\Theme
- */
+/** @covers \PhpMyAdmin\Theme */
 class ThemeTest extends AbstractTestCase
 {
-    /** @var Theme */
-    protected $object;
+    protected Theme $object;
 
     /** @var Theme backup for session theme */
-    protected $backup;
+    protected Theme $backup;
 
     /**
      * Sets up the fixture, for example, opens a network connection.
@@ -30,11 +27,15 @@ class ThemeTest extends AbstractTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
         parent::setTheme();
+
         $this->object = new Theme();
         $this->backup = $GLOBALS['theme'];
         $GLOBALS['theme'] = $this->object;
+
         parent::setGlobalConfig();
+
         $GLOBALS['text_dir'] = 'ltr';
         $GLOBALS['server'] = '99';
     }
@@ -46,6 +47,7 @@ class ThemeTest extends AbstractTestCase
     protected function tearDown(): void
     {
         parent::tearDown();
+
         $GLOBALS['theme'] = $this->backup;
     }
 
@@ -68,7 +70,7 @@ class ThemeTest extends AbstractTestCase
         $this->object->setPath(TEST_PATH . 'test/classes/_data/incorrect_theme');
         $this->assertFalse(
             $this->object->loadInfo(),
-            'Theme name is not properly set'
+            'Theme name is not properly set',
         );
     }
 
@@ -88,16 +90,16 @@ class ThemeTest extends AbstractTestCase
      */
     public function testLoadInfo(): void
     {
-        $this->object->setFsPath(ROOT_PATH . 'themes/original/');
+        $this->object->setFsPath(ROOT_PATH . 'public/themes/original/');
         $infofile = $this->object->getFsPath() . 'theme.json';
         $this->assertTrue($this->object->loadInfo());
 
         $this->assertEquals(
             filemtime($infofile),
-            $this->object->mtimeInfo
+            $this->object->mtimeInfo,
         );
 
-        $this->object->setPath(ROOT_PATH . 'themes/original');
+        $this->object->setPath(ROOT_PATH . 'public/themes/original');
         $this->object->mtimeInfo = (int) filemtime($infofile);
         $this->assertTrue($this->object->loadInfo());
         $this->assertEquals('Original', $this->object->getName());
@@ -111,7 +113,7 @@ class ThemeTest extends AbstractTestCase
         $newTheme = Theme::load(
             ThemeManager::getThemesDir() . 'original',
             ThemeManager::getThemesFsDir() . 'original' . DIRECTORY_SEPARATOR,
-            'original'
+            'original',
         );
         $this->assertNotNull($newTheme);
         $this->assertInstanceOf(Theme::class, $newTheme);
@@ -126,8 +128,8 @@ class ThemeTest extends AbstractTestCase
             Theme::load(
                 ThemeManager::getThemesDir() . 'nonexistent',
                 ThemeManager::getThemesFsDir() . 'nonexistent' . DIRECTORY_SEPARATOR,
-                'nonexistent'
-            )
+                'nonexistent',
+            ),
         );
     }
 
@@ -170,7 +172,7 @@ class ThemeTest extends AbstractTestCase
         $this->assertEquals(
             '0.0.0.0',
             $this->object->getVersion(),
-            'Version 0.0.0.0 by default'
+            'Version 0.0.0.0 by default',
         );
 
         $this->object->setVersion('1.2.3.4');
@@ -209,7 +211,7 @@ class ThemeTest extends AbstractTestCase
     {
         $this->assertEmpty(
             $this->object->getImgPath(),
-            'ImgPath is empty by default'
+            'ImgPath is empty by default',
         );
         $this->object->setImgPath('/new/path');
 
@@ -229,7 +231,7 @@ class ThemeTest extends AbstractTestCase
     {
         $this->assertEquals(
             $this->object->getImgPath($file, $fallback),
-            $output
+            $output,
         );
     }
 
