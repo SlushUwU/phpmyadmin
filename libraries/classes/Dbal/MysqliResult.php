@@ -17,7 +17,6 @@ use function array_key_exists;
 use function is_array;
 use function is_bool;
 use function is_string;
-use function method_exists;
 
 use const MYSQLI_ASSOC;
 
@@ -31,8 +30,7 @@ final class MysqliResult implements ResultInterface
      */
     private mysqli_result|null $result;
 
-    /** @param mysqli_result|bool $result */
-    public function __construct($result)
+    public function __construct(mysqli_result|bool $result)
     {
         $this->result = is_bool($result) ? null : $result;
     }
@@ -90,10 +88,8 @@ final class MysqliResult implements ResultInterface
 
     /**
      * Returns a single value from the given result; false on error
-     *
-     * @param int|string $field
      */
-    public function fetchValue($field = 0): string|false|null
+    public function fetchValue(int|string $field = 0): string|false|null
     {
         if (is_string($field)) {
             $row = $this->fetchAssoc();
@@ -122,17 +118,7 @@ final class MysqliResult implements ResultInterface
         // This function should return all rows, not only the remaining rows
         $this->result->data_seek(0);
 
-        // Pre PHP 8.1 when compiled against libmysql doesn't support fetch_all
-        if (method_exists($this->result, 'fetch_all')) {
-            return $this->result->fetch_all(MYSQLI_ASSOC);
-        }
-
-        $rows = [];
-        while ($row = $this->result->fetch_assoc()) {
-            $rows[] = $row;
-        }
-
-        return $rows;
+        return $this->result->fetch_all(MYSQLI_ASSOC);
     }
 
     /**
@@ -149,17 +135,7 @@ final class MysqliResult implements ResultInterface
         // This function should return all rows, not only the remaining rows
         $this->result->data_seek(0);
 
-        // Pre PHP 8.1 when compiled against libmysql doesn't support fetch_all
-        if (method_exists($this->result, 'fetch_all')) {
-            return array_column($this->result->fetch_all(), 0);
-        }
-
-        $rows = [];
-        while ($row = $this->result->fetch_row()) {
-            $rows[] = $row[0];
-        }
-
-        return $rows;
+        return array_column($this->result->fetch_all(), 0);
     }
 
     /**
@@ -181,17 +157,7 @@ final class MysqliResult implements ResultInterface
         // This function should return all rows, not only the remaining rows
         $this->result->data_seek(0);
 
-        // Pre PHP 8.1 when compiled against libmysql doesn't support fetch_all
-        if (method_exists($this->result, 'fetch_all')) {
-            return array_column($this->result->fetch_all(), 1, 0);
-        }
-
-        $rows = [];
-        while ($row = $this->result->fetch_row()) {
-            $rows[$row[0] ?? ''] = $row[1];
-        }
-
-        return $rows;
+        return array_column($this->result->fetch_all(), 1, 0);
     }
 
     /**

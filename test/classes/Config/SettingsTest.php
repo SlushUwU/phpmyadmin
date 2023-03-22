@@ -132,8 +132,6 @@ class SettingsTest extends TestCase
         'HideStructureActions' => true,
         'ShowColumnComments' => true,
         'TableNavigationLinksMode' => 'icons',
-        'ShowAll' => false,
-        'MaxRows' => 25,
         'Order' => 'SMART',
         'SaveCellsAtOnce' => false,
         'GridEditing' => 'double-click',
@@ -214,14 +212,12 @@ class SettingsTest extends TestCase
         'TextareaAutoSelect' => false,
         'CharTextareaCols' => 40,
         'CharTextareaRows' => 7,
-        'LimitChars' => 50,
         'RowActionLinks' => 'left',
         'RowActionLinksWithoutUnique' => false,
         'TablePrimaryKeyOrder' => 'NONE',
         'RememberSorting' => true,
         'ShowBrowseComments' => true,
         'ShowPropertyComments' => true,
-        'RepeatCells' => 100,
         'QueryHistoryDB' => false,
         'QueryHistoryMax' => 25,
         'BrowseMIME' => true,
@@ -253,7 +249,6 @@ class SettingsTest extends TestCase
         'DisableMultiTableMaintenance' => false,
         'SendErrorReports' => 'ask',
         'ConsoleEnterExecutes' => false,
-        'ZeroConf' => true,
         'DBG' => null,
         'environment' => 'production',
         'DefaultFunctions' => [
@@ -266,28 +261,16 @@ class SettingsTest extends TestCase
         ],
         'maxRowPlotLimit' => 500,
         'ShowGitRevision' => true,
-        'MysqlMinVersion' => ['internal' => 50500, 'human' => '5.5.0'],
         'DisableShortcutKeys' => false,
         'Console' => null,
         'DefaultTransformations' => null,
         'FirstDayOfCalendar' => 0,
     ];
 
-    /** @psalm-suppress UnusedVariable, PossiblyNullArrayAssignment, PossiblyInvalidArrayAssignment */
-    public function testConfigDefaultFile(): void
-    {
-        $cfg = [];
-        include ROOT_PATH . 'libraries/config.default.php';
-        $settings = new Settings($cfg);
-        $config = $settings->toArray();
-        $config['Servers'][1]['SignonCookieParams'] = [];
-        $this->assertEquals($config, $cfg);
-    }
-
-    public function testToArray(): void
+    public function testAsArray(): void
     {
         $settings = new Settings([]);
-        $config = $settings->toArray();
+        $config = $settings->asArray();
         $this->assertIsArray($config['Console']);
         $this->assertIsArray($config['DBG']);
         $this->assertIsArray($config['Export']);
@@ -317,6 +300,7 @@ class SettingsTest extends TestCase
 
         $expected = array_merge($this->defaultValues, $expectedValues);
         $settings = new Settings($actualValues);
+        $settingsArray = $settings->asArray();
         foreach (array_keys($expectedValues) as $key) {
             if ($key === 'Servers') {
                 $this->assertContainsOnlyInstancesOf(Server::class, $settings->Servers);
@@ -361,6 +345,8 @@ class SettingsTest extends TestCase
             }
 
             $this->assertSame($expected[$key], $settings->$key);
+            $this->assertArrayHasKey($key, $settingsArray);
+            $this->assertSame($expected[$key], $settingsArray[$key]);
         }
     }
 
@@ -468,8 +454,6 @@ class SettingsTest extends TestCase
                     ['HideStructureActions', null, true],
                     ['ShowColumnComments', null, true],
                     ['TableNavigationLinksMode', null, 'icons'],
-                    ['ShowAll', null, false],
-                    ['MaxRows', null, 25],
                     ['Order', null, 'SMART'],
                     ['SaveCellsAtOnce', null, false],
                     ['GridEditing', null, 'double-click'],
@@ -516,14 +500,12 @@ class SettingsTest extends TestCase
                     ['TextareaAutoSelect', null, false],
                     ['CharTextareaCols', null, 40],
                     ['CharTextareaRows', null, 7],
-                    ['LimitChars', null, 50],
                     ['RowActionLinks', null, 'left'],
                     ['RowActionLinksWithoutUnique', null, false],
                     ['TablePrimaryKeyOrder', null, 'NONE'],
                     ['RememberSorting', null, true],
                     ['ShowBrowseComments', null, true],
                     ['ShowPropertyComments', null, true],
-                    ['RepeatCells', null, 100],
                     ['QueryHistoryDB', null, false],
                     ['QueryHistoryMax', null, 25],
                     ['BrowseMIME', null, true],
@@ -555,13 +537,11 @@ class SettingsTest extends TestCase
                     ['DisableMultiTableMaintenance', null, false],
                     ['SendErrorReports', null, 'ask'],
                     ['ConsoleEnterExecutes', null, false],
-                    ['ZeroConf', null, true],
                     ['DBG', null, null],
                     ['environment', null, 'production'],
                     ['DefaultFunctions', null, ['FUNC_CHAR' => '', 'FUNC_DATE' => '', 'FUNC_NUMBER' => '', 'FUNC_SPATIAL' => 'GeomFromText', 'FUNC_UUID' => 'UUID', 'first_timestamp' => 'NOW']],
                     ['maxRowPlotLimit', null, 500],
                     ['ShowGitRevision', null, true],
-                    ['MysqlMinVersion', null, ['internal' => 50500, 'human' => '5.5.0']],
                     ['DisableShortcutKeys', null, false],
                     ['Console', null, null],
                     ['DefaultTransformations', null, null],
@@ -663,8 +643,6 @@ class SettingsTest extends TestCase
                     ['HideStructureActions', false, false],
                     ['ShowColumnComments', false, false],
                     ['TableNavigationLinksMode', 'text', 'text'],
-                    ['ShowAll', true, true],
-                    ['MaxRows', 1, 1],
                     ['Order', 'ASC', 'ASC'],
                     ['SaveCellsAtOnce', true, true],
                     ['GridEditing', 'click', 'click'],
@@ -711,14 +689,12 @@ class SettingsTest extends TestCase
                     ['TextareaAutoSelect', true, true],
                     ['CharTextareaCols', 1, 1],
                     ['CharTextareaRows', 1, 1],
-                    ['LimitChars', 1, 1],
                     ['RowActionLinks', 'none', 'none'],
                     ['RowActionLinksWithoutUnique', true, true],
                     ['TablePrimaryKeyOrder', 'DESC', 'DESC'],
                     ['RememberSorting', false, false],
                     ['ShowBrowseComments', false, false],
                     ['ShowPropertyComments', false, false],
-                    ['RepeatCells', 0, 0],
                     ['QueryHistoryDB', true, true],
                     ['QueryHistoryMax', 1, 1],
                     ['BrowseMIME', false, false],
@@ -750,13 +726,11 @@ class SettingsTest extends TestCase
                     ['DisableMultiTableMaintenance', true, true],
                     ['SendErrorReports', 'never', 'never'],
                     ['ConsoleEnterExecutes', true, true],
-                    ['ZeroConf', false, false],
                     ['DBG', [], null],
                     ['environment', 'development', 'development'],
                     ['DefaultFunctions', ['key' => 'value', 'key2' => 'value2'], ['key' => 'value', 'key2' => 'value2']],
                     ['maxRowPlotLimit', 1, 1],
                     ['ShowGitRevision', false, false],
-                    ['MysqlMinVersion', ['internal' => 80026, 'human' => '8.0.26'], ['internal' => 80026, 'human' => '8.0.26']],
                     ['DisableShortcutKeys', true, true],
                     ['Console', [], null],
                     ['DefaultTransformations', [], null],
@@ -772,6 +746,7 @@ class SettingsTest extends TestCase
                     ['NavigationTreeDefaultTabTable', 'insert', 'insert'],
                     ['NavigationTreeDefaultTabTable2', 'insert', 'insert'],
                     ['TableNavigationLinksMode', 'both', 'both'],
+                    ['ShowServerInfo', 'database-server', 'database-server'],
                     ['Order', 'DESC', 'DESC'],
                     ['GridEditing', 'disabled', 'disabled'],
                     ['RelationalDisplay', 'K', 'K'],
@@ -794,7 +769,6 @@ class SettingsTest extends TestCase
                     ['SendErrorReports', 'ask', 'ask'],
                     ['environment', 'production', 'production'],
                     ['DefaultFunctions', [], []],
-                    ['MysqlMinVersion', [], ['internal' => 50500, 'human' => '5.5.0']],
                     ['FirstDayOfCalendar', 0, 0],
                 ],
             ],
@@ -805,6 +779,7 @@ class SettingsTest extends TestCase
                     ['NavigationTreeDefaultTabTable', 'structure', 'structure'],
                     ['NavigationTreeDefaultTabTable2', 'structure', 'structure'],
                     ['TableNavigationLinksMode', 'icons', 'icons'],
+                    ['ShowServerInfo', 'web-server', 'web-server'],
                     ['Order', 'SMART', 'SMART'],
                     ['GridEditing', 'double-click', 'double-click'],
                     ['ProtectBinary', 'blob', 'blob'],
@@ -978,8 +953,6 @@ class SettingsTest extends TestCase
                     ['ShowDbStructureLastCheck', 1, true],
                     ['HideStructureActions', 0, false],
                     ['ShowColumnComments', 0, false],
-                    ['ShowAll', 1, true],
-                    ['MaxRows', '1', 1],
                     ['SaveCellsAtOnce', 1, true],
                     ['ShowFunctionFields', 0, false],
                     ['ShowFieldTypesInDataEditView', 0, false],
@@ -1009,12 +982,10 @@ class SettingsTest extends TestCase
                     ['TextareaAutoSelect', 1, true],
                     ['CharTextareaCols', '1', 1],
                     ['CharTextareaRows', '1', 1],
-                    ['LimitChars', '1', 1],
                     ['RowActionLinksWithoutUnique', 1, true],
                     ['RememberSorting', 0, false],
                     ['ShowBrowseComments', 0, false],
                     ['ShowPropertyComments', 0, false],
-                    ['RepeatCells', '0', 0],
                     ['QueryHistoryDB', 1, true],
                     ['QueryHistoryMax', '1', 1],
                     ['BrowseMIME', 0, false],
@@ -1042,11 +1013,9 @@ class SettingsTest extends TestCase
                     ['CSPAllow', 1234, '1234'],
                     ['DisableMultiTableMaintenance', 1, true],
                     ['ConsoleEnterExecutes', 1, true],
-                    ['ZeroConf', 0, false],
                     ['DefaultFunctions', ['test' => 1234], ['test' => '1234']],
                     ['maxRowPlotLimit', '1', 1],
                     ['ShowGitRevision', 0, false],
-                    ['MysqlMinVersion', ['internal' => '50500', 'human' => 550], ['internal' => 50500, 'human' => '550']],
                     ['DisableShortcutKeys', 1, true],
                     ['FirstDayOfCalendar', '1', 1],
                 ],
@@ -1078,7 +1047,6 @@ class SettingsTest extends TestCase
                     ['NavigationTreeDefaultTabTable2', 'invalid', ''],
                     ['NavigationWidth', -1, 240],
                     ['TableNavigationLinksMode', 'invalid', 'icons'],
-                    ['MaxRows', 0, 25],
                     ['Order', 'invalid', 'SMART'],
                     ['GridEditing', 'invalid', 'double-click'],
                     ['RelationalDisplay', 'invalid', 'K'],
@@ -1104,10 +1072,8 @@ class SettingsTest extends TestCase
                     ['TextareaRows', 0, 15],
                     ['CharTextareaCols', 0, 40],
                     ['CharTextareaRows', 0, 7],
-                    ['LimitChars', 0, 50],
                     ['RowActionLinks', 'invalid', 'left'],
                     ['TablePrimaryKeyOrder', 'invalid', 'NONE'],
-                    ['RepeatCells', -1, 100],
                     ['QueryHistoryMax', 0, 25],
                     ['MaxExactCount', 0, 50000],
                     ['MaxExactCountViews', -1, 0],
@@ -1123,7 +1089,6 @@ class SettingsTest extends TestCase
                     ['environment', 'invalid', 'production'],
                     ['DefaultFunctions', 'invalid', ['FUNC_CHAR' => '', 'FUNC_DATE' => '', 'FUNC_NUMBER' => '', 'FUNC_SPATIAL' => 'GeomFromText', 'FUNC_UUID' => 'UUID', 'first_timestamp' => 'NOW']],
                     ['maxRowPlotLimit', 0, 500],
-                    ['MysqlMinVersion', 'invalid', ['internal' => 50500, 'human' => '5.5.0']],
                     ['Console', 'invalid', null],
                     ['FirstDayOfCalendar', 8, 0],
                 ],
@@ -1146,5 +1111,132 @@ class SettingsTest extends TestCase
             ],
             'invalid values 4' => [[['ForeignKeyDropdownOrder', [1 => 'content-id'], ['content-id', 'id-content']]]],
         ];
+    }
+
+    /** @dataProvider booleanWithDefaultFalseProvider */
+    public function testShowAll(mixed $actual, bool $expected): void
+    {
+        $settings = new Settings(['ShowAll' => $actual]);
+        $settingsArray = $settings->asArray();
+        $this->assertSame($expected, $settings->showAll);
+        $this->assertArrayHasKey('ShowAll', $settingsArray);
+        $this->assertSame($expected, $settingsArray['ShowAll']);
+    }
+
+    /** @return iterable<string, array{mixed, bool}> */
+    public static function booleanWithDefaultFalseProvider(): iterable
+    {
+        yield 'null value' => [null, false];
+        yield 'valid value' => [false, false];
+        yield 'valid value 2' => [true, true];
+        yield 'valid value with type coercion' => [1, true];
+    }
+
+    /** @dataProvider valuesForMaxRowsProvider */
+    public function testMaxRows(mixed $actual, int $expected): void
+    {
+        $settings = new Settings(['MaxRows' => $actual]);
+        $settingsArray = $settings->asArray();
+        $this->assertSame($expected, $settings->maxRows);
+        $this->assertArrayHasKey('MaxRows', $settingsArray);
+        $this->assertSame($expected, $settingsArray['MaxRows']);
+    }
+
+    /** @return iterable<string, array{mixed, int}> */
+    public static function valuesForMaxRowsProvider(): iterable
+    {
+        yield 'null value' => [null, 25];
+        yield 'valid value' => [1, 1];
+        yield 'valid value with type coercion' => ['2', 2];
+        yield 'invalid value' => [0, 25];
+    }
+
+    /** @dataProvider valuesForLimitCharsProvider */
+    public function testLimitChars(mixed $actual, int $expected): void
+    {
+        $settings = new Settings(['LimitChars' => $actual]);
+        $settingsArray = $settings->asArray();
+        $this->assertSame($expected, $settings->limitChars);
+        $this->assertArrayHasKey('LimitChars', $settingsArray);
+        $this->assertSame($expected, $settingsArray['LimitChars']);
+    }
+
+    /** @return iterable<string, array{mixed, int}> */
+    public static function valuesForLimitCharsProvider(): iterable
+    {
+        yield 'null value' => [null, 50];
+        yield 'valid value' => [1, 1];
+        yield 'valid value with type coercion' => ['2', 2];
+        yield 'invalid value' => [0, 50];
+    }
+
+    /** @dataProvider valuesForRepeatCellsProvider */
+    public function testRepeatCells(mixed $actual, int $expected): void
+    {
+        $settings = new Settings(['RepeatCells' => $actual]);
+        $settingsArray = $settings->asArray();
+        $this->assertSame($expected, $settings->repeatCells);
+        $this->assertArrayHasKey('RepeatCells', $settingsArray);
+        $this->assertSame($expected, $settingsArray['RepeatCells']);
+    }
+
+    /** @return iterable<string, array{mixed, int}> */
+    public static function valuesForRepeatCellsProvider(): iterable
+    {
+        yield 'null value' => [null, 100];
+        yield 'valid value' => [0, 0];
+        yield 'valid value with type coercion' => ['1', 1];
+        yield 'invalid value' => [-1, 100];
+    }
+
+    /** @dataProvider booleanWithDefaultTrueProvider */
+    public function testZeroConf(mixed $actual, bool $expected): void
+    {
+        $settings = new Settings(['ZeroConf' => $actual]);
+        $settingsArray = $settings->asArray();
+        $this->assertSame($expected, $settings->zeroConf);
+        $this->assertArrayHasKey('ZeroConf', $settingsArray);
+        $this->assertSame($expected, $settingsArray['ZeroConf']);
+    }
+
+    /** @return iterable<string, array{mixed, bool}> */
+    public static function booleanWithDefaultTrueProvider(): iterable
+    {
+        yield 'null value' => [null, true];
+        yield 'valid value' => [true, true];
+        yield 'valid value 2' => [false, false];
+        yield 'valid value with type coercion' => [0, false];
+    }
+
+    /**
+     * @param array{internal: int, human: string} $expected
+     *
+     * @dataProvider valuesForMysqlMinVersionProvider
+     */
+    public function testMysqlMinVersion(mixed $actual, array $expected): void
+    {
+        $settings = new Settings(['MysqlMinVersion' => $actual]);
+        $settingsArray = $settings->asArray();
+        $this->assertSame($expected, $settings->mysqlMinVersion);
+        $this->assertArrayHasKey('MysqlMinVersion', $settingsArray);
+        $this->assertSame($expected, $settingsArray['MysqlMinVersion']);
+    }
+
+    /** @return iterable<string, array{mixed, array{internal: int, human: string}}> */
+    public static function valuesForMysqlMinVersionProvider(): iterable
+    {
+        yield 'null value' => [null, ['internal' => 50500, 'human' => '5.5.0']];
+        yield 'valid value' => [
+            ['internal' => 80026, 'human' => '8.0.26'],
+            ['internal' => 80026, 'human' => '8.0.26'],
+        ];
+
+        yield 'valid value 2' => [[], ['internal' => 50500, 'human' => '5.5.0']];
+        yield 'valid value with type coercion' => [
+            ['internal' => '50500', 'human' => 550],
+            ['internal' => 50500, 'human' => '550'],
+        ];
+
+        yield 'invalid value' => ['invalid', ['internal' => 50500, 'human' => '5.5.0']];
     }
 }

@@ -66,7 +66,6 @@ class InsertEditTest extends AbstractTestCase
         $this->dbi = $this->createDatabaseInterface($this->dummyDbi);
         $GLOBALS['dbi'] = $this->dbi;
         $GLOBALS['server'] = 1;
-        $GLOBALS['PMA_PHP_SELF'] = 'index.php';
         $GLOBALS['cfg']['ServerDefault'] = 1;
         $GLOBALS['text_dir'] = 'ltr';
         $GLOBALS['db'] = 'db';
@@ -3277,7 +3276,7 @@ class InsertEditTest extends AbstractTestCase
         $tabindex = 0;
         $GLOBALS['plugin_scripts'] = [];
         $GLOBALS['cfg']['LongtextDoubleTextarea'] = true;
-        $GLOBALS['cfg']['CharEditing'] = true;
+        $GLOBALS['cfg']['CharEditing'] = 'input';
         $GLOBALS['cfg']['TextareaRows'] = 10;
         $GLOBALS['cfg']['TextareaCols'] = 11;
         $foreigners = ['foreign_keys_data' => []];
@@ -3343,7 +3342,7 @@ class InsertEditTest extends AbstractTestCase
         $tabindex = 0;
         $GLOBALS['plugin_scripts'] = [];
         $GLOBALS['cfg']['LongtextDoubleTextarea'] = true;
-        $GLOBALS['cfg']['CharEditing'] = true;
+        $GLOBALS['cfg']['CharEditing'] = 'input';
         $foreigners = ['foreign_keys_data' => []];
 
         // edit

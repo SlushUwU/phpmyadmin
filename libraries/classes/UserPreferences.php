@@ -13,7 +13,6 @@ use PhpMyAdmin\Dbal\DatabaseName;
 use function __;
 use function array_flip;
 use function array_merge;
-use function basename;
 use function htmlspecialchars;
 use function http_build_query;
 use function is_array;
@@ -250,7 +249,7 @@ class UserPreferences
      *
      * @return true|Message
      */
-    public function persistOption($path, $value, $default_value): bool|Message
+    public function persistOption(string $path, mixed $value, mixed $default_value): bool|Message
     {
         $prefs = $this->load();
         if ($value === $default_value) {
@@ -269,14 +268,14 @@ class UserPreferences
     /**
      * Redirects after saving new user preferences
      *
-     * @param string     $file_name Filename
-     * @param array|null $params    URL parameters
-     * @param string     $hash      Hash value
+     * @param string      $file_name Filename
+     * @param array|null  $params    URL parameters
+     * @param string|null $hash      Hash value
      */
     public function redirect(
-        $file_name,
-        $params = null,
-        $hash = null,
+        string $file_name,
+        array|null $params = null,
+        string|null $hash = null,
     ): void {
         // redirect
         $url_params = ['saved' => 1];
@@ -304,8 +303,7 @@ class UserPreferences
             return '';
         }
 
-        $script_name = basename(basename($GLOBALS['PMA_PHP_SELF']));
-        $return_url = $script_name . '?' . http_build_query($_GET, '', '&');
+        $return_url = '?' . http_build_query($_GET, '', '&');
 
         return $this->template->render('preferences/autoload', [
             'hidden_inputs' => Url::getHiddenInputs(),

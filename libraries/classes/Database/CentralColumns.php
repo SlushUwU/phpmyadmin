@@ -13,8 +13,8 @@ use PhpMyAdmin\Template;
 use PhpMyAdmin\Util;
 
 use function __;
+use function array_column;
 use function array_diff;
-use function array_keys;
 use function array_unique;
 use function array_values;
 use function bin2hex;
@@ -285,14 +285,15 @@ class CentralColumns
         if ($isTable) {
             foreach ($field_select as $table) {
                 $fields[$table] = $this->dbi->getColumns($db, $table, true);
-                foreach (array_keys($fields[$table]) as $field) {
+                foreach (array_column($fields[$table], 'Field') as $field) {
                     $cols .= "'" . $this->dbi->escapeString($field) . "',";
                 }
             }
 
             $has_list = $this->findExistingColNames($db, trim($cols, ','));
             foreach ($field_select as $table) {
-                foreach ($fields[$table] as $field => $def) {
+                foreach ($fields[$table] as $def) {
+                    $field = (string) $def['Field'];
                     if (! in_array($field, $has_list)) {
                         $has_list[] = $field;
                         $insQuery[] = $this->getInsertQuery($field, $def, $db, $central_list_table);
@@ -452,8 +453,8 @@ class CentralColumns
      * Make the columns of given tables consistent with central list of columns.
      * Updates only those columns which are not being referenced.
      *
-     * @param string $db              current database
-     * @param array  $selected_tables list of selected tables.
+     * @param string   $db              current database
+     * @param string[] $selected_tables list of selected tables.
      *
      * @return true|Message
      */

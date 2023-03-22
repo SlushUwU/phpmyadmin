@@ -201,9 +201,9 @@ class Generator
             . '`DATABASE_COLLATION` AS `Database Collation`'
             . ' FROM `information_schema`.`EVENTS`'
             . ' WHERE `EVENT_SCHEMA` ' . Util::getCollateForIS()
-            . " = '" . $escapedDb . "'";
+            . ' = ' . $escapedDb;
         if ($escapedEventName !== null) {
-            $query .= ' AND `EVENT_NAME`' . " = '" . $escapedEventName . "'";
+            $query .= ' AND `EVENT_NAME` = ' . $escapedEventName;
         }
 
         return $query;
@@ -258,7 +258,7 @@ class Generator
             . ' REFERENCED_COLUMN_NAME'
             . ' FROM information_schema.key_column_usage'
             . ' WHERE referenced_table_name IS NOT NULL'
-            . " AND TABLE_SCHEMA = '" . $escapedDatabase . "'"
+            . ' AND TABLE_SCHEMA = ' . $escapedDatabase
             . ' AND TABLE_NAME IN (' . $tablesListForQueryCsv . ')'
             . ' AND REFERENCED_TABLE_NAME IN (' . $tablesListForQueryCsv . ');';
     }

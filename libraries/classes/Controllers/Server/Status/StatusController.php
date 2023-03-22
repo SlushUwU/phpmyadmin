@@ -6,7 +6,7 @@ namespace PhpMyAdmin\Controllers\Server\Status;
 
 use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\Http\ServerRequest;
-use PhpMyAdmin\ReplicationGui;
+use PhpMyAdmin\Replication\ReplicationGui;
 use PhpMyAdmin\ResponseRenderer;
 use PhpMyAdmin\Server\Status\Data;
 use PhpMyAdmin\Template;
@@ -59,7 +59,7 @@ class StatusController extends AbstractController
             }
 
             if (isset($this->data->status['Uptime'])) {
-                $uptime = Util::timespanFormat($this->data->status['Uptime']);
+                $uptime = Util::timespanFormat((int) $this->data->status['Uptime']);
             }
 
             $startTime = Util::localisedDate($this->getStartTime());

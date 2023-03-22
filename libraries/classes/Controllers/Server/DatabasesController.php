@@ -11,7 +11,7 @@ use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\Dbal\Connection;
 use PhpMyAdmin\Http\ServerRequest;
 use PhpMyAdmin\Query\Utilities;
-use PhpMyAdmin\ReplicationInfo;
+use PhpMyAdmin\Replication\ReplicationInfo;
 use PhpMyAdmin\ResponseRenderer;
 use PhpMyAdmin\Template;
 use PhpMyAdmin\Url;
@@ -199,7 +199,7 @@ class DatabasesController extends AbstractController
      *
      * @return array
      */
-    private function getDatabases($primaryInfo, $replicaInfo): array
+    private function getDatabases(array $primaryInfo, array $replicaInfo): array
     {
         $databases = [];
         $totalStatistics = $this->getStatisticsColumns();

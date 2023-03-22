@@ -64,7 +64,7 @@ class StorageEngine
     public int $support = self::SUPPORT_NO;
 
     /** @param string $engine The engine ID */
-    public function __construct($engine)
+    public function __construct(string $engine)
     {
         $storage_engines = self::getStorageEngines();
         if (empty($storage_engines[$engine])) {
@@ -239,7 +239,7 @@ class StorageEngine
      *
      * @return StorageEngine The engine plugin
      */
-    public static function getEngine($engine): StorageEngine
+    public static function getEngine(string $engine): StorageEngine
     {
         return match (mb_strtolower($engine)) {
             'bdb' => new Bdb($engine),
@@ -263,7 +263,7 @@ class StorageEngine
      *
      * @param string $engine name of engine
      */
-    public static function isValid($engine): bool
+    public static function isValid(string $engine): bool
     {
         if ($engine === 'PBMS') {
             return true;
@@ -336,11 +336,11 @@ class StorageEngine
      * DETAILS_TYPE_SIZE type needs to be
      * handled differently for a particular engine.
      *
-     * @param int $value Value to format
+     * @param int|string $value Value to format
      *
      * @return array|null the formatted value and its unit
      */
-    public function resolveTypeSize($value): array|null
+    public function resolveTypeSize(int|string $value): array|null
     {
         return Util::formatByteDown($value);
     }
@@ -476,7 +476,7 @@ class StorageEngine
      *
      * @return string html output
      */
-    public function getPage($id): string
+    public function getPage(string $id): string
     {
         if (! array_key_exists($id, $this->getInfoPages())) {
             return '';

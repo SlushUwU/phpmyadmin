@@ -7,10 +7,12 @@ namespace PhpMyAdmin;
 use PhpMyAdmin\Config\Settings;
 use PhpMyAdmin\Dbal\Connection;
 use PhpMyAdmin\Exceptions\ConfigException;
+use PhpMyAdmin\Theme\ThemeManager;
 use Throwable;
 
 use function __;
 use function array_filter;
+use function array_key_last;
 use function array_merge;
 use function array_replace_recursive;
 use function array_slice;
@@ -26,7 +28,6 @@ use function fopen;
 use function fread;
 use function function_exists;
 use function gd_info;
-use function get_object_vars;
 use function implode;
 use function ini_get;
 use function intval;
@@ -52,7 +53,6 @@ use function rtrim;
 use function setcookie;
 use function sprintf;
 use function str_contains;
-use function str_replace;
 use function stripos;
 use function strtolower;
 use function substr;
@@ -92,6 +92,15 @@ class Config
 
     /** @var array */
     public array $defaultServer = [];
+
+    private bool $isHttps;
+
+    private Settings|null $config = null;
+
+    public function __construct()
+    {
+        $this->isHttps = $this->isHttps();
+    }
 
     /**
      * @param string|null $source source to read config from
@@ -317,10 +326,10 @@ class Config
     public function loadDefaults(): void
     {
         $settings = new Settings([]);
-        $cfg = $settings->toArray();
+        $cfg = $settings->asArray();
 
         // phpcs:ignore Squiz.NamingConventions.ValidVariableName.MemberNotCamelCaps
-        $this->defaultServer = get_object_vars($settings->Servers[1]);
+        $this->defaultServer = $settings->Servers[1]->asArray();
         unset($cfg['Servers']);
 
         $this->default = $cfg;
@@ -533,8 +542,8 @@ class Config
     public function setUserValue(
         string|null $cookie_name,
         string $cfg_path,
-        $new_cfg_value,
-        $default_value = null,
+        string $new_cfg_value,
+        string|null $default_value = null,
     ): bool|Message {
         $userPreferences = new UserPreferences($GLOBALS['dbi']);
         $result = true;
@@ -569,7 +578,7 @@ class Config
      * @param string $cookie_name cookie name
      * @param mixed  $cfg_value   config value
      */
-    public function getUserValue(string $cookie_name, $cfg_value): mixed
+    public function getUserValue(string $cookie_name, mixed $cfg_value): mixed
     {
         $cookie_exists = ! empty($this->getCookie($cookie_name));
         $prefs_type = $this->get('user_preferences');
@@ -703,7 +712,7 @@ class Config
      * @param string $setting configuration option
      * @param mixed  $value   new value for configuration option
      */
-    public function set(string $setting, $value): void
+    public function set(string $setting, mixed $value): void
     {
         if (isset($this->settings[$setting]) && $this->settings[$setting] === $value) {
             return;
@@ -774,8 +783,9 @@ class Config
      */
     public function isHttps(): bool
     {
-        if ($this->get('is_https') !== null) {
-            return (bool) $this->get('is_https');
+        $is_https = $this->get('is_https');
+        if ($is_https !== null) {
+            return (bool) $is_https;
         }
 
         $url = $this->get('PmaAbsoluteUri');
@@ -837,11 +847,11 @@ class Config
             }
         }
 
-        $parsedUrlPath = parse_url($GLOBALS['PMA_PHP_SELF'], PHP_URL_PATH);
+        $parsedUrlPath = Routing::getCleanPathInfo();
 
         $parts = explode(
             '/',
-            rtrim(str_replace('\\', '/', $parsedUrlPath), '/'),
+            $parsedUrlPath,
         );
 
         /* Remove filename */
@@ -854,7 +864,10 @@ class Config
             $parts = array_slice($parts, 0, count($parts) - 1);
         }
 
-        $parts[] = '';
+        // Add one more part to make the path end in slash unless it already ends with slash
+        if (count($parts) < 2 || $parts[array_key_last($parts)] !== '') {
+            $parts[] = '';
+        }
 
         return implode('/', $parts);
     }
@@ -882,7 +895,7 @@ class Config
             time() - 3600,
             $this->getRootPath(),
             '',
-            $this->isHttps(),
+            $this->isHttps,
         );
     }
 
@@ -946,7 +959,7 @@ class Config
                 'expires' => $validity,
                 'path' => $this->getRootPath(),
                 'domain' => '',
-                'secure' => $this->isHttps(),
+                'secure' => $this->isHttps,
                 'httponly' => $httponly,
                 'samesite' => $cookieSameSite,
             ];
@@ -977,7 +990,7 @@ class Config
      */
     public function getCookieName(string $cookieName): string
     {
-        return $cookieName . ( $this->isHttps() ? '_https' : '' );
+        return $cookieName . ( $this->isHttps ? '_https' : '' );
     }
 
     /**
@@ -1317,5 +1330,14 @@ class Config
         $value = $_SESSION['cache'][$cacheKey]['userprefs']['LoginCookieValidity'];
         $this->set('LoginCookieValidity', $value);
         $GLOBALS['cfg']['LoginCookieValidity'] = $value;
+    }
+
+    public function getSettings(): Settings
+    {
+        if ($this->config === null) {
+            $this->config = new Settings($this->settings);
+        }
+
+        return $this->config;
     }
 }

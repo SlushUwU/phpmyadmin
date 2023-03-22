@@ -8,11 +8,12 @@ use PhpMyAdmin\ConfigStorage\Relation;
 use PhpMyAdmin\Controllers\Database\StructureController;
 use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\Http\ServerRequest;
-use PhpMyAdmin\Replication;
+use PhpMyAdmin\Replication\Replication;
 use PhpMyAdmin\Table;
 use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\ResponseRenderer as ResponseStub;
+use PhpMyAdmin\Tracking\TrackingChecker;
 use ReflectionClass;
 use ReflectionException;
 
@@ -41,7 +42,6 @@ class StructureControllerTest extends AbstractTestCase
         $GLOBALS['cfg']['Server']['DisableIS'] = false;
         $GLOBALS['table'] = 'table';
         $GLOBALS['db'] = 'db';
-        $GLOBALS['PMA_PHP_SELF'] = 'index.php';
 
         $table = $this->getMockBuilder(Table::class)
             ->disableOriginalConstructor()
@@ -79,6 +79,7 @@ class StructureControllerTest extends AbstractTestCase
             $this->relation,
             $this->replication,
             $GLOBALS['dbi'],
+            $this->createStub(TrackingChecker::class),
         );
         // Showing statistics
         $property = $class->getProperty('isShowStats');
@@ -122,6 +123,7 @@ class StructureControllerTest extends AbstractTestCase
             $this->relation,
             $this->replication,
             $GLOBALS['dbi'],
+            $this->createStub(TrackingChecker::class),
         );
 
         $currentTable['ENGINE'] = 'InnoDB';
@@ -149,6 +151,7 @@ class StructureControllerTest extends AbstractTestCase
             $this->relation,
             $this->replication,
             $GLOBALS['dbi'],
+            $this->createStub(TrackingChecker::class),
         );
         // Showing statistics
         $property = $class->getProperty('isShowStats');
@@ -199,6 +202,7 @@ class StructureControllerTest extends AbstractTestCase
             $this->relation,
             $this->replication,
             $GLOBALS['dbi'],
+            $this->createStub(TrackingChecker::class),
         );
         [$currentTable, , , , , , $sumSize] = $method->invokeArgs(
             $controller,
@@ -220,6 +224,7 @@ class StructureControllerTest extends AbstractTestCase
             $this->relation,
             $this->replication,
             $GLOBALS['dbi'],
+            $this->createStub(TrackingChecker::class),
         );
         [$currentTable] = $method->invokeArgs(
             $controller,
@@ -250,6 +255,7 @@ class StructureControllerTest extends AbstractTestCase
             $this->relation,
             $this->replication,
             $GLOBALS['dbi'],
+            $this->createStub(TrackingChecker::class),
         );
 
         // When parameter $db is empty
@@ -284,6 +290,7 @@ class StructureControllerTest extends AbstractTestCase
             $this->relation,
             $this->replication,
             $GLOBALS['dbi'],
+            $this->createStub(TrackingChecker::class),
         );
 
         $_SESSION['tmpval']['favoriteTables'][$GLOBALS['server']] = [
@@ -314,6 +321,7 @@ class StructureControllerTest extends AbstractTestCase
             $this->relation,
             $this->replication,
             $GLOBALS['dbi'],
+            $this->createStub(TrackingChecker::class),
         );
         // Showing statistics
         $class = new ReflectionClass(StructureController::class);

@@ -17,7 +17,7 @@ return [
         ],
         'browse_foreigners' => [
             'class' => PhpMyAdmin\BrowseForeigners::class,
-            'arguments' => ['@template'],
+            'arguments' => ['@template', '@config'],
         ],
         'config' => [
             'class' => PhpMyAdmin\Config::class,
@@ -148,11 +148,11 @@ return [
             ],
         ],
         'replication' => [
-            'class' => PhpMyAdmin\Replication::class,
+            'class' => PhpMyAdmin\Replication\Replication::class,
             'arguments' => ['$dbi' => '@dbi'],
         ],
         'replication_gui' => [
-            'class' => PhpMyAdmin\ReplicationGui::class,
+            'class' => PhpMyAdmin\Replication\ReplicationGui::class,
             'arguments' => [
                 '$replication' => '@replication',
                 '$template' => '@template',
@@ -205,7 +205,7 @@ return [
         ],
         'status_data' => [
             'class' => PhpMyAdmin\Server\Status\Data::class,
-            'arguments' => ['@dbi'],
+            'arguments' => ['@dbi', '@config'],
         ],
         'status_monitor' => [
             'class' => PhpMyAdmin\Server\Status\Monitor::class,
@@ -233,14 +233,23 @@ return [
         ],
         'template' => [
             'class' => PhpMyAdmin\Template::class,
+            'arguments' => ['$config' => '@config'],
         ],
         'tracking' => [
-            'class' => PhpMyAdmin\Tracking::class,
+            'class' => PhpMyAdmin\Tracking\Tracking::class,
             'arguments' => [
                 '$sqlQueryForm' => '@sql_query_form',
                 '$template' => '@template',
                 '$relation' => '@relation',
                 '$dbi' => '@dbi',
+                '$trackingChecker' => '@tracking_checker',
+            ],
+        ],
+        'tracking_checker' => [
+            'class' => PhpMyAdmin\Tracking\TrackingChecker::class,
+            'arguments' => [
+                '$dbi' => '@dbi',
+                '$relation' => '@relation',
             ],
         ],
         'transformations' => [

@@ -8,8 +8,6 @@ use Stringable;
 
 use function __;
 use function _ngettext;
-use function array_unshift;
-use function count;
 use function htmlspecialchars;
 use function is_array;
 use function is_float;
@@ -389,7 +387,7 @@ class Message implements Stringable
      * @param string   $string   string to set
      * @param bool|int $sanitize whether to sanitize $string or not
      */
-    public function setString(string $string, $sanitize = true): void
+    public function setString(string $string, bool|int $sanitize = true): void
     {
         if ($sanitize) {
             $string = self::sanitize($string);
@@ -418,7 +416,7 @@ class Message implements Stringable
      *
      * @param mixed $param parameter to add
      */
-    public function addParam($param): void
+    public function addParam(mixed $param): void
     {
         if ($param instanceof self || is_float($param) || is_int($param)) {
             $this->params[] = $param;
@@ -522,7 +520,7 @@ class Message implements Stringable
      * @param array    $params   parameters to set
      * @param bool|int $sanitize whether to sanitize params
      */
-    public function setParams(array $params, $sanitize = false): void
+    public function setParams(array $params, bool|int $sanitize = false): void
     {
         if ($sanitize) {
             $params = self::sanitize($params);
@@ -558,7 +556,7 @@ class Message implements Stringable
      *
      * @return mixed  the sanitized message(s)
      */
-    public static function sanitize($message): mixed
+    public static function sanitize(mixed $message): mixed
     {
         if (is_array($message)) {
             foreach ($message as $key => $val) {
@@ -582,23 +580,6 @@ class Message implements Stringable
     public static function decodeBB(string $message): string
     {
         return Sanitize::sanitizeMessage($message, false, true);
-    }
-
-    /**
-     * wrapper for sprintf()
-     *
-     * @param mixed[] ...$params Params
-     *
-     * @return string formatted
-     */
-    public static function format(...$params): string
-    {
-        if (isset($params[1]) && is_array($params[1])) {
-            array_unshift($params[1], $params[0]);
-            $params = $params[1];
-        }
-
-        return sprintf(...$params);
     }
 
     /**
@@ -636,8 +617,8 @@ class Message implements Stringable
             $message = $this->getMessageWithIcon($message);
         }
 
-        if (count($this->getParams()) > 0) {
-            $message = self::format($message, $this->getParams());
+        if ($this->params !== []) {
+            $message = sprintf($message, ...$this->params);
         }
 
         if ($this->useBBCode) {

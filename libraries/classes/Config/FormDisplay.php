@@ -101,11 +101,14 @@ class FormDisplay
 
     private FormDisplayTemplate $formDisplayTemplate;
 
+    private bool $isSetupScript;
+
     /** @param ConfigFile $cf Config file instance */
     public function __construct(ConfigFile $cf)
     {
         $this->formDisplayTemplate = new FormDisplayTemplate($GLOBALS['config']);
         $this->configFile = $cf;
+        $this->isSetupScript = Sanitize::isSetup();
         // initialize validators
         Validator::getValidators($this->configFile);
     }
@@ -121,11 +124,11 @@ class FormDisplay
     /**
      * Registers form in form manager
      *
-     * @param string $formName Form name
-     * @param array  $form     Form data
-     * @param int    $serverId 0 if new server, validation; >= 1 if editing a server
+     * @param string   $formName Form name
+     * @param array    $form     Form data
+     * @param int|null $serverId 0 if new server, validation; >= 1 if editing a server
      */
-    public function registerForm($formName, array $form, $serverId = null): void
+    public function registerForm(string $formName, array $form, int|null $serverId = null): void
     {
         $this->forms[$formName] = new Form($formName, $form, $this->configFile, $serverId);
         $this->isValidated = false;
@@ -145,7 +148,7 @@ class FormDisplay
      *                               on failed validation
      * @param bool $checkFormSubmit  whether check for $_POST['submit_save']
      */
-    public function process($allowPartialSave = true, $checkFormSubmit = true): bool
+    public function process(bool $allowPartialSave = true, bool $checkFormSubmit = true): bool
     {
         if ($checkFormSubmit && ! isset($_POST['submit_save'])) {
             return false;
@@ -204,17 +207,17 @@ class FormDisplay
     /**
      * Outputs HTML for forms
      *
-     * @param bool       $showButtons  whether show submit and reset button
-     * @param string     $formAction   action attribute for the form
-     * @param array|null $hiddenFields array of form hidden fields (key: field
-     *                                 name)
+     * @param bool        $showButtons  whether show submit and reset button
+     * @param string|null $formAction   action attribute for the form
+     * @param array|null  $hiddenFields array of form hidden fields (key: field
+     *                                  name)
      *
      * @return string HTML for forms
      */
     public function getDisplay(
-        $showButtons = true,
-        $formAction = null,
-        $hiddenFields = null,
+        bool $showButtons = true,
+        string|null $formAction = null,
+        array|null $hiddenFields = null,
     ): string {
         $js = [];
         $jsDefault = [];
@@ -322,11 +325,11 @@ class FormDisplay
      */
     private function displayFieldInput(
         Form $form,
-        $field,
-        $systemPath,
-        $workPath,
-        $translatedPath,
-        $userPrefsAllow,
+        string $field,
+        string $systemPath,
+        string $workPath,
+        string $translatedPath,
+        bool|null $userPrefsAllow,
         array &$jsDefault,
     ): string|null {
         $name = Descriptions::get($systemPath);
@@ -511,7 +514,7 @@ class FormDisplay
      * @param string|bool $value   Current value
      * @param array       $allowed List of allowed values
      */
-    private function validateSelect(&$value, array $allowed): bool
+    private function validateSelect(string|bool &$value, array $allowed): bool
     {
         $valueCmp = is_bool($value)
             ? (int) $value
@@ -714,7 +717,7 @@ class FormDisplay
      *
      * @param string $path Path to documentation
      */
-    public function getDocLink($path): string
+    public function getDocLink(string $path): string
     {
         $test = mb_substr($path, 0, 6);
         if ($test === 'Import' || $test === 'Export') {
@@ -724,7 +727,7 @@ class FormDisplay
         return MySQLDocumentation::getDocumentationLink(
             'config',
             'cfg_' . $this->getOptName($path),
-            Sanitize::isSetup() ? '../' : './',
+            $this->isSetupScript ? '../' : './',
         );
     }
 
@@ -733,7 +736,7 @@ class FormDisplay
      *
      * @param string $path Path
      */
-    private function getOptName($path): string
+    private function getOptName(string $path): string
     {
         return str_replace(['Servers/1/', '/'], ['Servers/', '_'], $path);
     }
@@ -761,7 +764,7 @@ class FormDisplay
      * @param string $systemPath Path to settings
      * @param array  $opts       Chosen options
      */
-    private function setComments($systemPath, array &$opts): void
+    private function setComments(string $systemPath, array &$opts): void
     {
         // RecodingEngine - mark unavailable types
         if ($systemPath === 'RecodingEngine') {
@@ -848,7 +851,7 @@ class FormDisplay
      * @param array  $postValues List of parameters
      * @param string $key        Array key
      */
-    private function fillPostArrayParameters(array $postValues, $key): void
+    private function fillPostArrayParameters(array $postValues, string $key): void
     {
         foreach ($postValues as $v) {
             $v = Util::requestString($v);

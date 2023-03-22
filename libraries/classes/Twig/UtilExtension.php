@@ -7,7 +7,6 @@ namespace PhpMyAdmin\Twig;
 use PhpMyAdmin\Html\Generator;
 use PhpMyAdmin\Html\MySQLDocumentation;
 use PhpMyAdmin\Util;
-use PhpMyAdmin\Utils\ForeignKey;
 use PhpMyAdmin\Utils\Gis;
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFilter;
@@ -87,10 +86,6 @@ class UtilExtension extends AbstractExtension
                 Util::isUUIDSupported(...),
             ),
             new TwigFunction(
-                'is_foreign_key_supported',
-                ForeignKey::isSupported(...),
-            ),
-            new TwigFunction(
                 'link_or_button',
                 Generator::linkOrButton(...),
                 ['is_safe' => ['html']],
@@ -99,10 +94,6 @@ class UtilExtension extends AbstractExtension
                 'link_to_var_documentation',
                 Generator::linkToVarDocumentation(...),
                 ['is_safe' => ['html']],
-            ),
-            new TwigFunction(
-                'localised_date',
-                Util::localisedDate(...),
             ),
             new TwigFunction(
                 'show_hint',

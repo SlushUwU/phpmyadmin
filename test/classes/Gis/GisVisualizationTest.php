@@ -4,28 +4,32 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Gis;
 
+use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\Gis\GisVisualization;
 use PhpMyAdmin\Tests\AbstractTestCase;
 
 /** @covers \PhpMyAdmin\Gis\GisVisualization */
 class GisVisualizationTest extends AbstractTestCase
 {
+    /** @psalm-suppress PropertyNotSetInConstructor */
+    private DatabaseInterface $dbi;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->dbi = $this->createDatabaseInterface();
+        $GLOBALS['dbi'] = $this->dbi;
+    }
+
     /**
      * Scale the data set
      */
     public function testScaleDataSet(): void
     {
-        $gis = GisVisualization::getByData([], [
-            'mysqlVersion' => 50500,
-            'spatialColumn' => 'abc',
-            'isMariaDB' => false,
-        ]);
-        $this->callFunction(
-            $gis,
-            GisVisualization::class,
-            'handleOptions',
-            [],
-        );
+        $this->dbi->setVersion(['@@version' => '5.5.0']);
+        $gis = GisVisualization::getByData([], ['spatialColumn' => 'abc', 'width' => 600, 'height' => 450]);
+
         $dataSet = $this->callFunction(
             $gis,
             GisVisualization::class,
@@ -42,14 +46,11 @@ class GisVisualizationTest extends AbstractTestCase
                 'scale' => 1,
                 'x' => -300.0,
                 'y' => -225.0,
-                'minX' => 0.0,
-                'maxX' => 0.0,
-                'minY' => 0.0,
-                'maxY' => 0.0,
                 'height' => 450,
             ],
             $dataSet,
         );
+
         $dataSet = $this->callFunction(
             $gis,
             GisVisualization::class,
@@ -69,15 +70,11 @@ class GisVisualizationTest extends AbstractTestCase
                 'scale' => 2.1,
                 'x' => -45.35714285714286,
                 'y' => 42.85714285714286,
-                'minX' => 17.0,
-                'maxX' => 178.0,
-                'minY' => 50.0 ,
-                'maxY' => 250.0,
                 'height' => 450,
-
             ],
             $dataSet,
         );
+
         // Regression test for bug with 0.0 sentinel values
         $dataSet = $this->callFunction(
             $gis,
@@ -95,12 +92,7 @@ class GisVisualizationTest extends AbstractTestCase
                 'scale' => 32.30769230769231,
                 'x' => -2.7857142857142865,
                 'y' => -0.4642857142857143,
-                'minX' => 0.0,
-                'maxX' => 13.0,
-                'minY' => 0.0,
-                'maxY' => 13.0,
                 'height' => 450,
-
             ],
             $dataSet,
         );
@@ -111,19 +103,12 @@ class GisVisualizationTest extends AbstractTestCase
      */
     public function testModifyQueryOld(): void
     {
+        $this->dbi->setVersion(['@@version' => '5.5.0']);
         $queryString = $this->callFunction(
-            GisVisualization::getByData([], [
-                'mysqlVersion' => 50500,
-                'spatialColumn' => 'abc',
-                'isMariaDB' => false,
-            ]),
+            GisVisualization::getByData([], ['spatialColumn' => 'abc', 'width' => 600, 'height' => 450]),
             GisVisualization::class,
             'modifySqlQuery',
-            [
-                '',
-                0,
-                0,
-            ],
+            [''],
         );
 
         $this->assertEquals('SELECT ASTEXT(`abc`) AS `abc`, SRID(`abc`) AS `srid` FROM () AS `temp_gis`', $queryString);
@@ -134,19 +119,12 @@ class GisVisualizationTest extends AbstractTestCase
      */
     public function testModifyQuery(): void
     {
+        $this->dbi->setVersion(['@@version' => '8.0.0']);
         $queryString = $this->callFunction(
-            GisVisualization::getByData([], [
-                'mysqlVersion' => 80000,
-                'spatialColumn' => 'abc',
-                'isMariaDB' => false,
-            ]),
+            GisVisualization::getByData([], ['spatialColumn' => 'abc', 'width' => 600, 'height' => 450]),
             GisVisualization::class,
             'modifySqlQuery',
-            [
-                '',
-                0,
-                0,
-            ],
+            [''],
         );
 
         $this->assertEquals(
@@ -160,19 +138,12 @@ class GisVisualizationTest extends AbstractTestCase
      */
     public function testModifyQueryTrimSqlEnd(): void
     {
+        $this->dbi->setVersion(['@@version' => '8.0.0']);
         $queryString = $this->callFunction(
-            GisVisualization::getByData([], [
-                'mysqlVersion' => 80000,
-                'spatialColumn' => 'abc',
-                'isMariaDB' => false,
-            ]),
+            GisVisualization::getByData([], ['spatialColumn' => 'abc', 'width' => 600, 'height' => 450]),
             GisVisualization::class,
             'modifySqlQuery',
-            [
-                'SELECT 1 FROM foo;',
-                0,
-                0,
-            ],
+            ['SELECT 1 FROM foo;'],
         );
 
         $this->assertEquals(
@@ -186,20 +157,17 @@ class GisVisualizationTest extends AbstractTestCase
      */
     public function testModifyQueryLabelColumn(): void
     {
+        $this->dbi->setVersion(['@@version' => '8.0.0']);
         $queryString = $this->callFunction(
             GisVisualization::getByData([], [
-                'mysqlVersion' => 80000,
                 'spatialColumn' => 'country_geom',
                 'labelColumn' => 'country name',
-                'isMariaDB' => false,
+                'width' => 600,
+                'height' => 450,
             ]),
             GisVisualization::class,
             'modifySqlQuery',
-            [
-                '',
-                0,
-                0,
-            ],
+            [''],
         );
 
         $this->assertEquals(
@@ -214,39 +182,29 @@ class GisVisualizationTest extends AbstractTestCase
      */
     public function testModifyQueryWithLimit(): void
     {
+        $this->dbi->setVersion(['@@version' => '8.0.0']);
+        $gis = GisVisualization::getByData([], ['spatialColumn' => 'abc', 'width' => 600, 'height' => 450]);
+        $this->setProperty($gis, GisVisualization::class, 'rows', 10);
         $queryString = $this->callFunction(
-            GisVisualization::getByData([], [
-                'mysqlVersion' => 80000,
-                'spatialColumn' => 'abc',
-                'isMariaDB' => false,
-            ]),
+            $gis,
             GisVisualization::class,
             'modifySqlQuery',
-            [
-                '',
-                10,// 10 rows
-                0,
-            ],
+            [''],
         );
 
         $this->assertEquals(
-            'SELECT ST_ASTEXT(`abc`) AS `abc`, ST_SRID(`abc`) AS `srid` FROM () AS `temp_gis` LIMIT 0, 10',
+            'SELECT ST_ASTEXT(`abc`) AS `abc`, ST_SRID(`abc`) AS `srid` FROM () AS `temp_gis` LIMIT 10',
             $queryString,
         );
 
+        $gis = GisVisualization::getByData([], ['spatialColumn' => 'abc', 'width' => 600, 'height' => 450]);
+        $this->setProperty($gis, GisVisualization::class, 'pos', 10);
+        $this->setProperty($gis, GisVisualization::class, 'rows', 15);
         $queryString = $this->callFunction(
-            GisVisualization::getByData([], [
-                'mysqlVersion' => 80000,
-                'spatialColumn' => 'abc',
-                'isMariaDB' => false,
-            ]),
+            $gis,
             GisVisualization::class,
             'modifySqlQuery',
-            [
-                '',
-                15,// 15 rows
-                10,// position 10
-            ],
+            [''],
         );
 
         $this->assertEquals(
@@ -260,19 +218,12 @@ class GisVisualizationTest extends AbstractTestCase
      */
     public function testModifyQueryVersion8(): void
     {
+        $this->dbi->setVersion(['@@version' => '8.0.1']);
         $queryString = $this->callFunction(
-            GisVisualization::getByData([], [
-                'mysqlVersion' => 80001,
-                'spatialColumn' => 'abc',
-                'isMariaDB' => false,
-            ]),
+            GisVisualization::getByData([], ['spatialColumn' => 'abc', 'width' => 600, 'height' => 450]),
             GisVisualization::class,
             'modifySqlQuery',
-            [
-                '',
-                0,
-                0,
-            ],
+            [''],
         );
 
         $this->assertEquals(
@@ -286,19 +237,12 @@ class GisVisualizationTest extends AbstractTestCase
      */
     public function testModifyQueryMariaDB(): void
     {
+        $this->dbi->setVersion(['@@version' => '8.0.0-MariaDB']);
         $queryString = $this->callFunction(
-            GisVisualization::getByData([], [
-                'mysqlVersion' => 100400,
-                'spatialColumn' => 'abc',
-                'isMariaDB' => true,
-            ]),
+            GisVisualization::getByData([], ['spatialColumn' => 'abc', 'width' => 600, 'height' => 450]),
             GisVisualization::class,
             'modifySqlQuery',
-            [
-                '',
-                0,
-                0,
-            ],
+            [''],
         );
 
         $this->assertEquals(

@@ -27,7 +27,6 @@ class FindReplaceControllerTest extends AbstractTestCase
         $GLOBALS['server'] = 1;
         $GLOBALS['db'] = 'db';
         $GLOBALS['table'] = 'table';
-        $GLOBALS['PMA_PHP_SELF'] = 'index.php';
         $GLOBALS['cfg']['Server']['DisableIS'] = false;
 
         $dbi = $this->getMockBuilder(DatabaseInterface::class)
@@ -65,8 +64,8 @@ class FindReplaceControllerTest extends AbstractTestCase
 
         $dbi->expects($this->any())->method('fetchValue')
             ->will($this->returnValue($show_create_table));
-        $dbi->expects($this->any())->method('escapeString')
-            ->will($this->returnArgument(0));
+        $dbi->expects($this->any())->method('quoteString')
+            ->will($this->returnCallback(static fn (string $string): string => "'" . $string . "'"));
 
         $GLOBALS['dbi'] = $dbi;
     }

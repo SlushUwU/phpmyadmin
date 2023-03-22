@@ -13,8 +13,8 @@ use PhpMyAdmin\LanguageManager;
 use PhpMyAdmin\SqlParser\Translator;
 use PhpMyAdmin\Tests\Stubs\DbiDummy;
 use PhpMyAdmin\Tests\Stubs\ResponseRenderer;
-use PhpMyAdmin\Theme;
-use PhpMyAdmin\ThemeManager;
+use PhpMyAdmin\Theme\Theme;
+use PhpMyAdmin\Theme\ThemeManager;
 use PhpMyAdmin\Utils\HttpRequest;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
@@ -78,7 +78,6 @@ abstract class AbstractTestCase extends TestCase
         $GLOBALS['table'] = '';
         $GLOBALS['sql_query'] = '';
         $GLOBALS['text_dir'] = 'ltr';
-        $GLOBALS['PMA_PHP_SELF'] = 'index.php';
 
         // Config before DBI
         $this->setGlobalConfig();
@@ -228,5 +227,22 @@ abstract class AbstractTestCase extends TestCase
         $method = $class->getMethod($methodName);
 
         return $method->invokeArgs($object, $params);
+    }
+
+    /**
+     * Set a private or protected property via reflection.
+     *
+     * @param object|null $object       The object to inspect, pass null for static objects()
+     * @param string      $className    The class name
+     * @param string      $propertyName The method name
+     * @param mixed       $value        The parameters for the invocation
+     * @phpstan-param class-string $className
+     */
+    protected function setProperty($object, string $className, string $propertyName, mixed $value): void
+    {
+        $class = new ReflectionClass($className);
+        $property = $class->getProperty($propertyName);
+
+        $property->setValue($object, $value);
     }
 }

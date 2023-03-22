@@ -69,15 +69,17 @@ class ExportSql extends ExportPlugin
      */
     private bool $sentCharset = false;
 
-    protected function init(): void
-    {
-        $GLOBALS['sql_backquotes'] ??= null;
-    }
+    private bool $useSqlBackquotes = false;
 
     /** @psalm-return non-empty-lowercase-string */
     public function getName(): string
     {
         return 'sql';
+    }
+
+    public function useSqlBackquotes(bool $useSqlBackquotes): void
+    {
+        $this->useSqlBackquotes = $useSqlBackquotes;
     }
 
     protected function setProperties(): ExportPluginProperties
@@ -571,7 +573,7 @@ class ExportSql extends ExportPlugin
      * @param string $db      Database
      * @param array  $aliases Aliases of db/table/columns
      */
-    public function exportRoutines($db, array $aliases = []): bool
+    public function exportRoutines(string $db, array $aliases = []): bool
     {
         $dbAlias = $db;
         $this->initAlias($aliases, $dbAlias);
@@ -807,7 +809,7 @@ class ExportSql extends ExportPlugin
      * @param string $exportType 'server', 'database', 'table'
      * @param string $dbAlias    Aliases of db
      */
-    public function exportDBCreate($db, $exportType, $dbAlias = ''): bool
+    public function exportDBCreate(string $db, string $exportType, string $dbAlias = ''): bool
     {
         if ($dbAlias === '') {
             $dbAlias = $db;
@@ -822,7 +824,7 @@ class ExportSql extends ExportPlugin
                     . Util::backquoteCompat(
                         $dbAlias,
                         $compat,
-                        isset($GLOBALS['sql_backquotes']),
+                        $this->useSqlBackquotes,
                     )
                     . ';' . "\n",
                 )
@@ -836,7 +838,7 @@ class ExportSql extends ExportPlugin
         }
 
         $createQuery = 'CREATE DATABASE IF NOT EXISTS '
-            . Util::backquoteCompat($dbAlias, $compat, isset($GLOBALS['sql_backquotes']));
+            . Util::backquoteCompat($dbAlias, $compat, $this->useSqlBackquotes);
         $collation = $GLOBALS['dbi']->getDbCollation($db);
         if (mb_strpos($collation, '_')) {
             $createQuery .= ' DEFAULT CHARACTER SET '
@@ -872,7 +874,7 @@ class ExportSql extends ExportPlugin
                 . Util::backquoteCompat(
                     $db,
                     $compat,
-                    isset($GLOBALS['sql_backquotes']),
+                    $this->useSqlBackquotes,
                 )
                 . ';' . "\n",
             );
@@ -887,7 +889,7 @@ class ExportSql extends ExportPlugin
      * @param string $db      Database name
      * @param string $dbAlias Alias of db
      */
-    public function exportDBHeader($db, $dbAlias = ''): bool
+    public function exportDBHeader(string $db, string $dbAlias = ''): bool
     {
         if ($dbAlias === '') {
             $dbAlias = $db;
@@ -901,7 +903,7 @@ class ExportSql extends ExportPlugin
                 . Util::backquoteCompat(
                     $dbAlias,
                     $compat,
-                    isset($GLOBALS['sql_backquotes']),
+                    $this->useSqlBackquotes,
                 ),
             )
             . $this->exportComment();
@@ -914,7 +916,7 @@ class ExportSql extends ExportPlugin
      *
      * @param string $db Database name
      */
-    public function exportDBFooter($db): bool
+    public function exportDBFooter(string $db): bool
     {
         $result = true;
 
@@ -944,7 +946,7 @@ class ExportSql extends ExportPlugin
      *
      * @param string $db Database
      */
-    public function exportEvents($db): bool
+    public function exportEvents(string $db): bool
     {
         $text = '';
         $delimiter = '$$';
@@ -1003,8 +1005,8 @@ class ExportSql extends ExportPlugin
      * @param string[]        $metadataTypes types of metadata to export
      */
     public function exportMetadata(
-        $db,
-        $tables,
+        string $db,
+        string|array $tables,
         array $metadataTypes,
     ): bool {
         $relationParameters = $this->relation->getRelationParameters();
@@ -1218,7 +1220,7 @@ class ExportSql extends ExportPlugin
      *
      * @return string resulting definition
      */
-    public function getTableDefStandIn($db, $view, $aliases = []): string
+    public function getTableDefStandIn(string $db, string $view, array $aliases = []): string
     {
         $dbAlias = $db;
         $viewAlias = $view;
@@ -1343,16 +1345,15 @@ class ExportSql extends ExportPlugin
      * @return string resulting schema
      */
     public function getTableDef(
-        $db,
-        $table,
-        $showDates = false,
-        $addSemicolon = true,
-        $view = false,
-        $updateIndexesIncrements = true,
+        string $db,
+        string $table,
+        bool $showDates = false,
+        bool $addSemicolon = true,
+        bool $view = false,
+        bool $updateIndexesIncrements = true,
         array $aliases = [],
     ): string {
         $GLOBALS['sql_drop_table'] ??= null;
-        $GLOBALS['sql_backquotes'] ??= null;
         $GLOBALS['sql_constraints'] ??= null;
         $GLOBALS['sql_constraints_query'] ??= null;
         $GLOBALS['sql_indexes'] ??= null;
@@ -1370,20 +1371,20 @@ class ExportSql extends ExportPlugin
 
         if (! empty($GLOBALS['sql_drop_table']) && $GLOBALS['dbi']->getTable($db, $table)->isView()) {
             $schemaCreate .= 'DROP VIEW IF EXISTS '
-                . Util::backquoteCompat($tableAlias, 'NONE', $GLOBALS['sql_backquotes']) . ';'
+                . Util::backquoteCompat($tableAlias, 'NONE', $this->useSqlBackquotes) . ';'
                 . "\n";
         }
 
         // no need to generate a DROP VIEW here, it was done earlier
         if (! empty($GLOBALS['sql_drop_table']) && ! $GLOBALS['dbi']->getTable($db, $table)->isView()) {
             $schemaCreate .= 'DROP TABLE IF EXISTS '
-                . Util::backquoteCompat($tableAlias, 'NONE', $GLOBALS['sql_backquotes']) . ';'
+                . Util::backquoteCompat($tableAlias, 'NONE', $this->useSqlBackquotes) . ';'
                 . "\n";
         }
 
         // Complete table dump,
         // Whether to quote table and column names or not
-        if ($GLOBALS['sql_backquotes']) {
+        if ($this->useSqlBackquotes) {
             $GLOBALS['dbi']->query('SET SQL_QUOTE_SHOW_CREATE = 1');
         } else {
             $GLOBALS['dbi']->query('SET SQL_QUOTE_SHOW_CREATE = 0');
@@ -1513,14 +1514,14 @@ class ExportSql extends ExportPlugin
             // Views have no constraints, indexes, etc. They do not require any
             // analysis.
             if (! $view) {
-                if (empty($GLOBALS['sql_backquotes'])) {
+                if (! $this->useSqlBackquotes) {
                     // Option "Enclose table and column names with backquotes"
                     // was checked.
                     Context::$MODE |= Context::SQL_MODE_NO_ENCLOSING_QUOTES;
                 }
 
                 // Using appropriate quotes.
-                if (($compat === 'MSSQL') || ($GLOBALS['sql_backquotes'] === '"')) {
+                if ($compat === 'MSSQL') {
                     Context::$MODE |= Context::SQL_MODE_ANSI_QUOTES;
                 }
             }
@@ -1625,7 +1626,7 @@ class ExportSql extends ExportPlugin
                 /**
                  * The header of the `ALTER` statement (`ALTER TABLE tbl`).
                  */
-                $alterHeader = 'ALTER TABLE ' . Util::backquoteCompat($tableAlias, $compat, $GLOBALS['sql_backquotes']);
+                $alterHeader = 'ALTER TABLE ' . Util::backquoteCompat($tableAlias, $compat, $this->useSqlBackquotes);
 
                 /**
                  * The footer of the `ALTER` statement (usually ';')
@@ -1747,8 +1748,6 @@ class ExportSql extends ExportPlugin
         bool $doMime = false,
         array $aliases = [],
     ): string {
-        $GLOBALS['sql_backquotes'] ??= null;
-
         $dbAlias = $db;
         $tableAlias = $table;
         $this->initAlias($aliases, $dbAlias, $tableAlias);
@@ -1774,19 +1773,19 @@ class ExportSql extends ExportPlugin
                 . $this->exportComment()
                 . $this->exportComment(
                     __('MEDIA TYPES FOR TABLE') . ' '
-                    . Util::backquoteCompat($table, 'NONE', $GLOBALS['sql_backquotes']) . ':',
+                    . Util::backquoteCompat($table, 'NONE', $this->useSqlBackquotes) . ':',
                 );
             foreach ($mimeMap as $mimeField => $mime) {
                 $schemaCreate .= $this->exportComment(
                     '  '
-                    . Util::backquoteCompat($mimeField, 'NONE', $GLOBALS['sql_backquotes']),
+                    . Util::backquoteCompat($mimeField, 'NONE', $this->useSqlBackquotes),
                 )
                 . $this->exportComment(
                     '      '
                     . Util::backquoteCompat(
                         $mime['mimetype'],
                         'NONE',
-                        $GLOBALS['sql_backquotes'],
+                        $this->useSqlBackquotes,
                     ),
                 );
             }
@@ -1799,7 +1798,7 @@ class ExportSql extends ExportPlugin
                 . $this->exportComment()
                 . $this->exportComment(
                     __('RELATIONSHIPS FOR TABLE') . ' '
-                    . Util::backquoteCompat($tableAlias, 'NONE', $GLOBALS['sql_backquotes'])
+                    . Util::backquoteCompat($tableAlias, 'NONE', $this->useSqlBackquotes)
                     . ':',
                 );
 
@@ -1814,7 +1813,7 @@ class ExportSql extends ExportPlugin
                         . Util::backquoteCompat(
                             $relFieldAlias,
                             'NONE',
-                            $GLOBALS['sql_backquotes'],
+                            $this->useSqlBackquotes,
                         ),
                     )
                     . $this->exportComment(
@@ -1822,13 +1821,13 @@ class ExportSql extends ExportPlugin
                         . Util::backquoteCompat(
                             $rel['foreign_table'],
                             'NONE',
-                            $GLOBALS['sql_backquotes'],
+                            $this->useSqlBackquotes,
                         )
                         . ' -> '
                         . Util::backquoteCompat(
                             $rel['foreign_field'],
                             'NONE',
-                            $GLOBALS['sql_backquotes'],
+                            $this->useSqlBackquotes,
                         ),
                     );
                 } else {
@@ -1843,7 +1842,7 @@ class ExportSql extends ExportPlugin
                                 . Util::backquoteCompat(
                                     $relFieldAlias,
                                     'NONE',
-                                    $GLOBALS['sql_backquotes'],
+                                    $this->useSqlBackquotes,
                                 ),
                             )
                             . $this->exportComment(
@@ -1851,13 +1850,13 @@ class ExportSql extends ExportPlugin
                                 . Util::backquoteCompat(
                                     $oneKey['ref_table_name'],
                                     'NONE',
-                                    $GLOBALS['sql_backquotes'],
+                                    $this->useSqlBackquotes,
                                 )
                                 . ' -> '
                                 . Util::backquoteCompat(
                                     $oneKey['ref_index_list'][$index],
                                     'NONE',
-                                    $GLOBALS['sql_backquotes'],
+                                    $this->useSqlBackquotes,
                                 ),
                             );
                         }
@@ -1908,15 +1907,15 @@ class ExportSql extends ExportPlugin
      * @param array  $aliases    Aliases of db/table/columns
      */
     public function exportStructure(
-        $db,
-        $table,
-        $errorUrl,
-        $exportMode,
-        $exportType,
-        $relation = false,
-        $comments = false,
-        $mime = false,
-        $dates = false,
+        string $db,
+        string $table,
+        string $errorUrl,
+        string $exportMode,
+        string $exportType,
+        bool $relation = false,
+        bool $comments = false,
+        bool $mime = false,
+        bool $dates = false,
         array $aliases = [],
     ): bool {
         $dbAlias = $db;
@@ -1924,7 +1923,7 @@ class ExportSql extends ExportPlugin
         $this->initAlias($aliases, $dbAlias, $tableAlias);
         $compat = $GLOBALS['sql_compatibility'] ?? 'NONE';
 
-        $formattedTableName = Util::backquoteCompat($tableAlias, $compat, isset($GLOBALS['sql_backquotes']));
+        $formattedTableName = Util::backquoteCompat($tableAlias, $compat, $this->useSqlBackquotes);
         $dump = $this->possibleCRLF()
             . $this->exportComment(str_repeat('-', 56))
             . $this->possibleCRLF()
@@ -2043,14 +2042,12 @@ class ExportSql extends ExportPlugin
      * @param array  $aliases  Aliases of db/table/columns
      */
     public function exportData(
-        $db,
-        $table,
-        $errorUrl,
-        $sqlQuery,
+        string $db,
+        string $table,
+        string $errorUrl,
+        string $sqlQuery,
         array $aliases = [],
     ): bool {
-        $GLOBALS['sql_backquotes'] ??= null;
-
         // Do not export data for merge tables
         if ($GLOBALS['dbi']->getTable($db, $table)->isMerge()) {
             return true;
@@ -2062,7 +2059,7 @@ class ExportSql extends ExportPlugin
 
         $compat = $GLOBALS['sql_compatibility'] ?? 'NONE';
 
-        $formattedTableName = Util::backquoteCompat($tableAlias, $compat, $GLOBALS['sql_backquotes']);
+        $formattedTableName = Util::backquoteCompat($tableAlias, $compat, $this->useSqlBackquotes);
 
         // Do not export data for a VIEW, unless asked to export the view as a table
         // (For a VIEW, this is called only when exporting a single VIEW)
@@ -2113,7 +2110,7 @@ class ExportSql extends ExportPlugin
                 $colAs = $aliases[$db]['tables'][$table]['columns'][$colAs];
             }
 
-            $fieldSet[$j] = Util::backquoteCompat($colAs, $compat, $GLOBALS['sql_backquotes']);
+            $fieldSet[$j] = Util::backquoteCompat($colAs, $compat, $this->useSqlBackquotes);
         }
 
         if (isset($GLOBALS['sql_type']) && $GLOBALS['sql_type'] === 'UPDATE') {
@@ -2124,7 +2121,7 @@ class ExportSql extends ExportPlugin
             }
 
             // avoid EOL blank
-            $schemaInsert .= Util::backquoteCompat($tableAlias, $compat, $GLOBALS['sql_backquotes']) . ' SET';
+            $schemaInsert .= Util::backquoteCompat($tableAlias, $compat, $this->useSqlBackquotes) . ' SET';
         } else {
             // insert or replace
             if (isset($GLOBALS['sql_type']) && $GLOBALS['sql_type'] === 'REPLACE') {
@@ -2148,7 +2145,7 @@ class ExportSql extends ExportPlugin
             //truncate table before insert
             if (isset($GLOBALS['sql_truncate']) && $GLOBALS['sql_truncate'] && $sqlCommand === 'INSERT') {
                 $truncate = 'TRUNCATE TABLE '
-                    . Util::backquoteCompat($tableAlias, $compat, $GLOBALS['sql_backquotes']) . ';';
+                    . Util::backquoteCompat($tableAlias, $compat, $this->useSqlBackquotes) . ';';
                 $truncatehead = $this->possibleCRLF()
                     . $this->exportComment()
                     . $this->exportComment(
@@ -2165,11 +2162,11 @@ class ExportSql extends ExportPlugin
             if ($GLOBALS['sql_insert_syntax'] === 'complete' || $GLOBALS['sql_insert_syntax'] === 'both') {
                 $fields = implode(', ', $fieldSet);
                 $schemaInsert = $sqlCommand . $insertDelayed . ' INTO '
-                    . Util::backquoteCompat($tableAlias, $compat, $GLOBALS['sql_backquotes'])
+                    . Util::backquoteCompat($tableAlias, $compat, $this->useSqlBackquotes)
                     . ' (' . $fields . ') VALUES'; // avoid EOL blank
             } else {
                 $schemaInsert = $sqlCommand . $insertDelayed . ' INTO '
-                    . Util::backquoteCompat($tableAlias, $compat, $GLOBALS['sql_backquotes'])
+                    . Util::backquoteCompat($tableAlias, $compat, $this->useSqlBackquotes)
                     . ' VALUES';
             }
         }
@@ -2216,7 +2213,7 @@ class ExportSql extends ExportPlugin
                         . Util::backquoteCompat(
                             $tableAlias,
                             $compat,
-                            $GLOBALS['sql_backquotes'],
+                            $this->useSqlBackquotes,
                         )
                         . ' ON ;' . "\n",
                     )
@@ -2341,7 +2338,7 @@ class ExportSql extends ExportPlugin
                 . Util::backquoteCompat(
                     $tableAlias,
                     $compat,
-                    $GLOBALS['sql_backquotes'],
+                    $this->useSqlBackquotes,
                 )
                 . ' OFF;' . "\n",
             );
@@ -2674,7 +2671,7 @@ class ExportSql extends ExportPlugin
                     $comment2 . ' ' . Util::backquoteCompat(
                         $tableAlias,
                         $compat,
-                        isset($GLOBALS['sql_backquotes']),
+                        $this->useSqlBackquotes,
                     ),
                 )
                 . $this->exportComment();

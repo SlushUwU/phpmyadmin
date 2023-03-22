@@ -8,8 +8,7 @@ Configuration
 All configurable data is placed in :file:`config.inc.php` in phpMyAdmin's
 toplevel directory.  If this file does not exist, please refer to the
 :ref:`setup` section to create one. This file only needs to contain the
-parameters you want to change from their corresponding default value in
-:file:`libraries/config.default.php` (this file is not intended for changes).
+parameters you want to change from their corresponding default value.
 
 .. seealso::
 
@@ -231,9 +230,7 @@ Server connection settings
     added which contains the login information for the different servers. The
     first :config:option:`$cfg['Servers'][$i]['host']` contains the hostname of
     the first server, the second :config:option:`$cfg['Servers'][$i]['host']`
-    the hostname of the second server, etc. In
-    :file:`libraries/config.default.php`, there is only one section for server
-    definition, however you can put as many as you need in
+    the hostname of the second server, etc. You can put as many sections for server definition as you need in
     :file:`config.inc.php`, copy that block or needed parts (you don't have to
     define all settings, just those you need to change).
 
@@ -1804,6 +1801,15 @@ Generic settings
     middle-clicking for pasting the clipboard contents in some Linux
     distributions (such as Ubuntu) is not supported by all browsers.
 
+.. config:option:: $cfg['LintEnable']
+
+    :type: boolean
+    :default: true
+
+    .. versionadded:: 4.5.0
+
+    Defines whether to use the parser to find any errors in the query before executing.
+
 .. config:option:: $cfg['DefaultForeignKeyChecks']
 
     :type: string
@@ -1890,6 +1896,13 @@ Generic settings
 
     .. seealso:: :ref:`faq2_10`
 
+.. config:option:: $cfg['maxRowPlotLimit']
+
+    :type: integer
+    :default: 500
+
+    Maximum number of rows retrieved for zoom search.
+
 Cookie authentication options
 -----------------------------
 
@@ -1961,7 +1974,7 @@ Cookie authentication options
     * ``Strict``
     * ``None``
 
-    .. seealso:: `rfc6265 bis <https://tools.ietf.org/id/draft-ietf-httpbis-rfc6265bis-03.html#rfc.section.5.3.7>`_
+    .. seealso:: `rfc6265 bis <https://datatracker.ietf.org/doc/html/draft-ietf-httpbis-rfc6265bis-03#section-5.3.7>`_
 
 .. config:option:: $cfg['LoginCookieRecall']
 
@@ -2385,6 +2398,13 @@ Navigation panel setup
 
     Whether to show events under database in the navigation panel.
 
+.. config:option:: $cfg['NavigationTreeAutoexpandSingleDb']
+
+    :type: boolean
+    :default: true
+
+    Whether to expand single database in the navigation tree automatically.
+
 .. config:option:: $cfg['NavigationWidth']
 
     :type: integer
@@ -2407,12 +2427,22 @@ Main panel
 
 .. config:option:: $cfg['ShowServerInfo']
 
-    :type: boolean
+    :type: boolean|string
     :default: true
 
     Defines whether to display detailed server information on main page.
+    Possible values are:
+
+    * ``true`` to show all server information
+    * ``false`` to hide server information
+    * ``'database-server'`` to show only database server information
+    * ``'web-server'`` to show only web server information
+
     You can additionally hide more information by using
     :config:option:`$cfg['Servers'][$i]['verbose']`.
+
+    .. versionchanged:: 6.0.0
+        Added ``'database-server'`` and ``'web-server'`` options.
 
 .. config:option:: $cfg['ShowPhpInfo']
 
@@ -2479,6 +2509,20 @@ Main panel
 
 Database structure
 ------------------
+
+.. config:option:: $cfg['ShowDbStructureCharset']
+
+    :type: boolean
+    :default: false
+
+    Defines whether to show a column displaying the charset for all tables in the database structure page.
+
+.. config:option:: $cfg['ShowDbStructureComment']
+
+    :type: boolean
+    :default: false
+
+    Defines whether to show a column displaying the comments for all tables in the database structure page.
 
 .. config:option:: $cfg['ShowDbStructureCreation']
 
@@ -2578,6 +2622,19 @@ Browse mode
 
     .. versionchanged:: 3.4.0
         Since phpMyAdmin 3.4.0 the default value is ``'SMART'``.
+
+.. config:option:: $cfg['DisplayBinaryAsHex']
+
+    :type: boolean
+    :default: true
+
+    Defines whether the ":guilabel:`Show binary contents as HEX`" browse option is
+    ticked by default.
+
+    .. versionadded:: 3.3.0
+    .. deprecated:: 4.3.0
+
+        This setting was removed.
 
 .. config:option:: $cfg['GridEditing']
 
@@ -2726,6 +2783,13 @@ Export and import settings
     * ``custom-no-form`` same as ``custom`` but does not display the option
       of using quick export
 
+.. config:option:: $cfg['Export']['compression']
+
+    :type: string
+    :default: ``'none'``
+
+    Default export compression method. Possible values are ``'none'``, ``'zip'`` or ``'gzip'``.
+
 .. config:option:: $cfg['Export']['charset']
 
     :type: string
@@ -2786,6 +2850,18 @@ Export and import settings
 
     Defines charset for import. By default no charset conversion is done
     assuming UTF-8.
+
+.. config:option:: $cfg['Schema']
+
+    :type: array
+    :default: array(...)
+
+.. config:option:: $cfg['Schema']['format']
+
+    :type: string
+    :default: ``'pdf'``
+
+    Defines the default format for schema export. Possible values are ``'pdf'``, ``'eps'``, ``'dia'`` or ``'svg'``.
 
 Tabs display settings
 ---------------------
@@ -3391,10 +3467,48 @@ Various display setting
 
     Repeat the headers every X cells, or 0 to deactivate.
 
+.. config:option:: $cfg['EditInWindow']
+
+    :type: boolean
+    :default: true
+
+    .. seealso:: `Feature request to add a pop-up window back <https://github.com/phpmyadmin/phpmyadmin/issues/11983>`_
+
+    .. deprecated:: 4.3.0
+
+        This setting was removed.
+
+.. config:option:: $cfg['QueryWindowWidth']
+
+    :type: integer
+    :default: 550
+
+    .. deprecated:: 4.3.0
+
+        This setting was removed.
+
+.. config:option:: $cfg['QueryWindowHeight']
+
+    :type: integer
+    :default: 310
+
+    .. deprecated:: 4.3.0
+
+        This setting was removed.
+
 .. config:option:: $cfg['QueryHistoryDB']
 
     :type: boolean
     :default: false
+
+.. config:option:: $cfg['QueryWindowDefTab']
+
+    :type: string
+    :default: ``'sql'``
+
+    .. deprecated:: 4.3.0
+
+        This setting was removed.
 
 .. config:option:: $cfg['QueryHistoryMax']
 
@@ -3978,6 +4092,19 @@ reCaptcha using Turnstile
     $cfg['CaptchaLoginPublicKey'] = '0xxxxxxxxxxxxxxxxxxxxxx';
     $cfg['CaptchaLoginPrivateKey'] = '0x4AAAAAAAA_xx_xxxxxxxxxxxxxxxxxxxx';
     $cfg['CaptchaSiteVerifyURL'] = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
-    
-.. seealso:: `Cloudflare Dashboard <https://dash.cloudflare.com/>` 
-.. seealso:: `Turnstile Developer Guide <https://developers.cloudflare.com/turnstile/get-started/>` 
+
+.. seealso:: `Cloudflare Dashboard <https://dash.cloudflare.com/>`_
+.. seealso:: `Turnstile Developer Guide <https://developers.cloudflare.com/turnstile/get-started/>`_
+
+reCaptcha using Google reCaptcha v2/v3
+++++++++++++++++++++++++++++++++++++++
+
+.. code-block:: php
+
+    $cfg['CaptchaLoginPublicKey'] = 'xxxxxxxxxxxxxxxx-xxxxxxxxxxxx';
+    $cfg['CaptchaLoginPrivateKey'] = 'xxxxxxxxx-xxxxxxxxxxxxxx';
+    // Remove it if you dot not want the checkbox mode
+    $cfg['CaptchaMethod'] = 'checkbox';
+
+.. seealso:: `Google reCaptcha Developer's Guide <https://developers.google.com/recaptcha/intro>`_
+.. seealso:: `Google reCaptcha types <https://developers.google.com/recaptcha/docs/versions>`_

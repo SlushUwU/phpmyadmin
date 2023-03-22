@@ -37,28 +37,26 @@ class TableStatsSvg extends TableStats
      * @see TableStatsSvg::setWidthTable
      * @see TableStatsSvg::setHeightTable
      *
-     * @param Svg       $diagram         The current SVG image document
-     * @param string    $db              The database name
-     * @param string    $tableName       The table name
-     * @param string    $font            Font face
-     * @param int       $fontSize        The font size
-     * @param int       $pageNumber      Page number
-     * @param int|float $same_wide_width The max. width among tables
-     * @param bool      $showKeys        Whether to display keys or not
-     * @param bool      $tableDimension  Whether to display table position or not
-     * @param bool      $offline         Whether the coordinates are sent
+     * @param Svg    $diagram        The current SVG image document
+     * @param string $db             The database name
+     * @param string $tableName      The table name
+     * @param string $font           Font face
+     * @param int    $fontSize       The font size
+     * @param int    $pageNumber     Page number
+     * @param bool   $showKeys       Whether to display keys or not
+     * @param bool   $tableDimension Whether to display table position or not
+     * @param bool   $offline        Whether the coordinates are sent
      */
     public function __construct(
-        $diagram,
-        $db,
-        $tableName,
-        $font,
-        $fontSize,
-        $pageNumber,
-        &$same_wide_width,
-        $showKeys = false,
-        $tableDimension = false,
-        $offline = false,
+        Svg $diagram,
+        string $db,
+        string $tableName,
+        string $font,
+        int $fontSize,
+        int $pageNumber,
+        bool $showKeys = false,
+        bool $tableDimension = false,
+        bool $offline = false,
     ) {
         parent::__construct($diagram, $db, $pageNumber, $tableName, $showKeys, $tableDimension, $offline);
 
@@ -67,11 +65,6 @@ class TableStatsSvg extends TableStats
         // setWidth must me after setHeight, because title
         // can include table height which changes table width
         $this->setWidthTable($font, $fontSize);
-        if ($same_wide_width >= $this->width) {
-            return;
-        }
-
-        $same_wide_width = $this->width;
     }
 
     /**
@@ -94,7 +87,7 @@ class TableStatsSvg extends TableStats
      * @param string $font     The font size
      * @param int    $fontSize The font size
      */
-    private function setWidthTable($font, $fontSize): void
+    private function setWidthTable(string $font, int $fontSize): void
     {
         foreach ($this->fields as $field) {
             $this->width = max(
@@ -116,7 +109,7 @@ class TableStatsSvg extends TableStats
      *
      * @param int $fontSize font size
      */
-    private function setHeightTable($fontSize): void
+    private function setHeightTable(int $fontSize): void
     {
         $this->heightCell = $fontSize + 4;
         $this->height = (count($this->fields) + 1) * $this->heightCell;
@@ -129,7 +122,7 @@ class TableStatsSvg extends TableStats
      *
      * @param bool $showColor Whether to display color
      */
-    public function tableDraw($showColor): void
+    public function tableDraw(bool $showColor): void
     {
         $this->diagram->printElement(
             'rect',

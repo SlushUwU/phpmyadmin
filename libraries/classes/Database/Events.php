@@ -62,9 +62,11 @@ class Events
         'MINUTE_SECOND',
     ];
 
-    /** @param ResponseRenderer $response */
-    public function __construct(private DatabaseInterface $dbi, private Template $template, private $response)
-    {
+    public function __construct(
+        private DatabaseInterface $dbi,
+        private Template $template,
+        private ResponseRenderer $response,
+    ) {
     }
 
     /**
@@ -295,15 +297,14 @@ class Events
      *
      * @return array|null Data necessary to create the editor.
      */
-    public function getDataFromName($name): array|null
+    public function getDataFromName(string $name): array|null
     {
         $retval = [];
         $columns = '`EVENT_NAME`, `STATUS`, `EVENT_TYPE`, `EXECUTE_AT`, '
                  . '`INTERVAL_VALUE`, `INTERVAL_FIELD`, `STARTS`, `ENDS`, '
                  . '`EVENT_DEFINITION`, `ON_COMPLETION`, `DEFINER`, `EVENT_COMMENT`';
-        $where = 'EVENT_SCHEMA ' . Util::getCollateForIS() . '='
-                 . "'" . $this->dbi->escapeString($GLOBALS['db']) . "' "
-                 . "AND EVENT_NAME='" . $this->dbi->escapeString($name) . "'";
+        $where = 'EVENT_SCHEMA ' . Util::getCollateForIS() . '=' . $this->dbi->quoteString($GLOBALS['db'])
+                 . ' AND EVENT_NAME=' . $this->dbi->quoteString($name);
         $query = 'SELECT ' . $columns . ' FROM `INFORMATION_SCHEMA`.`EVENTS` WHERE ' . $where . ';';
         $item = $this->dbi->fetchSingleRow($query);
         if (! $item) {
@@ -349,7 +350,7 @@ class Events
      *
      * @return string   HTML code for the editor.
      */
-    public function getEditorForm($mode, $operation, array $item): string
+    public function getEditorForm(string $mode, string $operation, array $item): string
     {
         if ($operation === 'change') {
             if ($item['item_type'] === 'RECURRING') {
@@ -414,21 +415,15 @@ class Events
                 }
 
                 if (! empty($_POST['item_starts'])) {
-                    $query .= "STARTS '"
-                        . $this->dbi->escapeString($_POST['item_starts'])
-                        . "' ";
+                    $query .= 'STARTS ' . $this->dbi->quoteString($_POST['item_starts']) . ' ';
                 }
 
                 if (! empty($_POST['item_ends'])) {
-                    $query .= "ENDS '"
-                        . $this->dbi->escapeString($_POST['item_ends'])
-                        . "' ";
+                    $query .= 'ENDS ' . $this->dbi->quoteString($_POST['item_ends']) . ' ';
                 }
             } else {
                 if (! empty($_POST['item_execute_at'])) {
-                    $query .= "AT '"
-                        . $this->dbi->escapeString($_POST['item_execute_at'])
-                        . "' ";
+                    $query .= 'AT ' . $this->dbi->quoteString($_POST['item_execute_at']) . ' ';
                 } else {
                     $GLOBALS['errors'][] = __('You must provide a valid execution time for the event.');
                 }
@@ -453,7 +448,7 @@ class Events
         }
 
         if (! empty($_POST['item_comment'])) {
-            $query .= "COMMENT '" . $this->dbi->escapeString($_POST['item_comment']) . "' ";
+            $query .= 'COMMENT ' . $this->dbi->quoteString($_POST['item_comment']) . ' ';
         }
 
         $query .= 'DO ';
@@ -479,7 +474,7 @@ class Events
      *
      * @return array
      */
-    private function checkResult($createStatement, array $errors): array
+    private function checkResult(string|null $createStatement, array $errors): array
     {
         // OMG, this is really bad! We dropped the query,
         // failed to create a new one
@@ -503,7 +498,7 @@ class Events
      * @param string     $db        Database
      * @param string     $operation Operation 'change' or ''
      */
-    private function sendEditor($mode, array|null $item, $title, $db, $operation): void
+    private function sendEditor(string $mode, array|null $item, string $title, string $db, string $operation): void
     {
         if ($item !== null) {
             $editor = $this->getEditorForm($mode, $operation, $item);
@@ -599,13 +594,13 @@ class Events
     {
         if (! $GLOBALS['cfg']['Server']['DisableIS']) {
             $query = QueryGenerator::getInformationSchemaEventsRequest(
-                $this->dbi->escapeString($db),
-                $name === '' ? null : $this->dbi->escapeString($name),
+                $this->dbi->quoteString($db),
+                $name === '' ? null : $this->dbi->quoteString($name),
             );
         } else {
             $query = 'SHOW EVENTS FROM ' . Util::backquote($db);
             if ($name !== '') {
-                $query .= " WHERE `Name` = '" . $this->dbi->escapeString($name) . "'";
+                $query .= ' WHERE `Name` = ' . $this->dbi->quoteString($name);
             }
         }
 

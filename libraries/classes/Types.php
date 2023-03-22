@@ -26,13 +26,8 @@ use function strncasecmp;
  */
 class Types
 {
-    /** @var DatabaseInterface Database interface */
-    private DatabaseInterface $dbi;
-
-    /** @param DatabaseInterface $dbi Database interface instance */
-    public function __construct($dbi)
+    public function __construct(private DatabaseInterface $dbi)
     {
-        $this->dbi = $dbi;
     }
 
     /**
@@ -55,7 +50,7 @@ class Types
      *
      * @param string $op operator name
      */
-    public function isUnaryOperator($op): bool
+    public function isUnaryOperator(string $op): bool
     {
         return in_array($op, $this->getUnaryOperators());
     }
@@ -164,7 +159,7 @@ class Types
      *
      * @return string[]
      */
-    public function getTypeOperators($type, $null): array
+    public function getTypeOperators(string $type, bool $null): array
     {
         $ret = [];
         $class = $this->getTypeClass($type);
@@ -189,18 +184,18 @@ class Types
     /**
      * Returns operators for given type as html options
      *
-     * @param string $type             Type of field
-     * @param bool   $null             Whether field can be NULL
-     * @param string $selectedOperator Option to be selected
+     * @param string      $type             Type of field
+     * @param bool        $null             Whether field can be NULL
+     * @param string|null $selectedOperator Option to be selected
      *
      * @return string Generated Html
      */
-    public function getTypeOperatorsHtml($type, $null, $selectedOperator = null): string
+    public function getTypeOperatorsHtml(string $type, bool $null, string|null $selectedOperator = null): string
     {
         $html = '';
 
         foreach ($this->getTypeOperators($type, $null) as $fc) {
-            if (isset($selectedOperator) && $selectedOperator == $fc) {
+            if ($selectedOperator !== null && $selectedOperator === $fc) {
                 $selected = ' selected="selected"';
             } else {
                 $selected = '';
@@ -219,7 +214,7 @@ class Types
      *
      * @param string $type The data type to get a description.
      */
-    public function getTypeDescription($type): string
+    public function getTypeDescription(string $type): string
     {
         return match (mb_strtoupper($type)) {
             'TINYINT' => __('A 1-byte integer, signed range is -128 to 127, unsigned range is 0 to 255'),
@@ -365,9 +360,9 @@ class Types
      *
      * @param string $type The data type to get a class.
      */
-    public function getTypeClass($type): string
+    public function getTypeClass(string $type): string
     {
-        return match (mb_strtoupper((string) $type)) {
+        return match (mb_strtoupper($type)) {
             'TINYINT',
             'SMALLINT',
             'MEDIUMINT',
@@ -425,7 +420,7 @@ class Types
      *
      * @return string[]
      */
-    public function getFunctionsClass($class): array
+    public function getFunctionsClass(string $class): array
     {
         $isMariaDB = $this->dbi->isMariaDB();
         $serverVersion = $this->dbi->getVersion();
@@ -613,7 +608,7 @@ class Types
      *
      * @return string[]
      */
-    public function getFunctions($type): array
+    public function getFunctions(string $type): array
     {
         $class = $this->getTypeClass($type);
 
@@ -668,7 +663,7 @@ class Types
      * VARCHAR, TINYINT, TEXT and DATE are listed first, based on
      * estimated popularity.
      *
-     * @return array
+     * @return string[]|array<string, string[]>
      */
     public function getColumns(): array
     {
@@ -804,7 +799,7 @@ class Types
      *
      * @return string[] min and max values
      */
-    public function getIntegerRange($type, $signed = true): array
+    public function getIntegerRange(string $type, bool $signed = true): array
     {
         $min_max_data = [
             'unsigned' => [

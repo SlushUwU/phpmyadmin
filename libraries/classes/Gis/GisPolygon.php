@@ -76,7 +76,7 @@ class GisPolygon extends GisGeometry
      * @param array  $scale_data Array containing data related to scaling
      */
     public function prepareRowAsPng(
-        $spatial,
+        string $spatial,
         string $label,
         array $color,
         array $scale_data,
@@ -92,7 +92,7 @@ class GisPolygon extends GisGeometry
         $points_arr = [];
         $wkt_rings = explode('),(', $polygon);
         foreach ($wkt_rings as $wkt_ring) {
-            $ring = $this->extractPoints($wkt_ring, $scale_data, true);
+            $ring = $this->extractPoints1dLinear($wkt_ring, $scale_data);
             $points_arr = array_merge($points_arr, $ring);
         }
 
@@ -119,11 +119,10 @@ class GisPolygon extends GisGeometry
      * @param string $label      Label for the GIS POLYGON object
      * @param int[]  $color      Color for the GIS POLYGON object
      * @param array  $scale_data Array containing data related to scaling
-     * @param TCPDF  $pdf
      *
      * @return TCPDF the modified TCPDF instance
      */
-    public function prepareRowAsPdf($spatial, string $label, array $color, array $scale_data, $pdf): TCPDF
+    public function prepareRowAsPdf(string $spatial, string $label, array $color, array $scale_data, TCPDF $pdf): TCPDF
     {
         // Trim to remove leading 'POLYGON((' and trailing '))'
         $polygon = mb_substr($spatial, 9, -2);
@@ -133,7 +132,7 @@ class GisPolygon extends GisGeometry
         $points_arr = [];
 
         foreach ($wkt_rings as $wkt_ring) {
-            $ring = $this->extractPoints($wkt_ring, $scale_data, true);
+            $ring = $this->extractPoints1dLinear($wkt_ring, $scale_data);
             $points_arr = array_merge($points_arr, $ring);
         }
 
@@ -159,7 +158,7 @@ class GisPolygon extends GisGeometry
      *
      * @return string the code related to a row in the GIS dataset
      */
-    public function prepareRowAsSvg($spatial, string $label, array $color, array $scale_data): string
+    public function prepareRowAsSvg(string $spatial, string $label, array $color, array $scale_data): string
     {
         $polygon_options = [
             'name' => $label,
@@ -196,15 +195,14 @@ class GisPolygon extends GisGeometry
      * Prepares JavaScript related to a row in the GIS dataset
      * to visualize it with OpenLayers.
      *
-     * @param string $spatial    GIS POLYGON object
-     * @param int    $srid       Spatial reference ID
-     * @param string $label      Label for the GIS POLYGON object
-     * @param int[]  $color      Color for the GIS POLYGON object
-     * @param array  $scale_data Array containing data related to scaling
+     * @param string $spatial GIS POLYGON object
+     * @param int    $srid    Spatial reference ID
+     * @param string $label   Label for the GIS POLYGON object
+     * @param int[]  $color   Color for the GIS POLYGON object
      *
      * @return string JavaScript related to a row in the GIS dataset
      */
-    public function prepareRowAsOl($spatial, int $srid, string $label, array $color, array $scale_data): string
+    public function prepareRowAsOl(string $spatial, int $srid, string $label, array $color): string
     {
         $color[] = 0.8;
         $fill_style = ['color' => $color];
@@ -212,32 +210,25 @@ class GisPolygon extends GisGeometry
             'color' => [0, 0, 0],
             'width' => 0.5,
         ];
-        $row = 'var style = new ol.style.Style({'
+        $style = 'new ol.style.Style({'
             . 'fill: new ol.style.Fill(' . json_encode($fill_style) . '),'
             . 'stroke: new ol.style.Stroke(' . json_encode($stroke_style) . ')';
         if ($label !== '') {
             $text_style = ['text' => $label];
-            $row .= ',text: new ol.style.Text(' . json_encode($text_style) . ')';
+            $style .= ',text: new ol.style.Text(' . json_encode($text_style) . ')';
         }
 
-        $row .= '});';
-
-        if ($srid === 0) {
-            $srid = 4326;
-        }
-
-        $row .= $this->getBoundsForOl($srid, $scale_data);
+        $style .= '})';
 
         // Trim to remove leading 'POLYGON((' and trailing '))'
-        $polygon = mb_substr($spatial, 9, -2);
+        $wktCoordinates = mb_substr($spatial, 9, -2);
+        $olGeometry = $this->toOpenLayersObject(
+            'ol.geom.Polygon',
+            $this->extractPoints2d($wktCoordinates, null),
+            $srid,
+        );
 
-        // Separate outer and inner polygons
-        $parts = explode('),(', $polygon);
-
-        return $row . $this->getPolygonForOpenLayers($parts, $srid)
-            . 'var feature = new ol.Feature({geometry: polygon});'
-            . 'feature.setStyle(style);'
-            . 'vectorLayer.addFeature(feature);';
+        return $this->addGeometryToLayer($olGeometry, $style);
     }
 
     /**
@@ -248,9 +239,9 @@ class GisPolygon extends GisGeometry
      *
      * @return string the code to draw the ring
      */
-    private function drawPath($polygon, array $scale_data): string
+    private function drawPath(string $polygon, array $scale_data): string
     {
-        $points_arr = $this->extractPoints($polygon, $scale_data);
+        $points_arr = $this->extractPoints1d($polygon, $scale_data);
 
         $row = ' M ' . $points_arr[0][0] . ', ' . $points_arr[0][1];
         $other_points = array_slice($points_arr, 1, count($points_arr) - 2);
@@ -272,7 +263,7 @@ class GisPolygon extends GisGeometry
      *
      * @return string WKT with the set of parameters passed by the GIS editor
      */
-    public function generateWkt(array $gis_data, $index, $empty = ''): string
+    public function generateWkt(array $gis_data, int $index, string|null $empty = ''): string
     {
         $no_of_lines = $gis_data[$index]['POLYGON']['no_of_lines'] ?? 1;
         if ($no_of_lines < 1) {
@@ -484,7 +475,7 @@ class GisPolygon extends GisGeometry
         $coords = ['no_of_lines' => count($wkt_rings)];
 
         foreach ($wkt_rings as $j => $wkt_ring) {
-            $points = $this->extractPoints($wkt_ring, null);
+            $points = $this->extractPoints1d($wkt_ring, null);
             $no_of_points = count($points);
             $coords[$j] = ['no_of_points' => $no_of_points];
             for ($i = 0; $i < $no_of_points; $i++) {

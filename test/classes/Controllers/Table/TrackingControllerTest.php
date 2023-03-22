@@ -13,7 +13,8 @@ use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\DbiDummy;
 use PhpMyAdmin\Tests\Stubs\ResponseRenderer;
-use PhpMyAdmin\Tracking;
+use PhpMyAdmin\Tracking\Tracking;
+use PhpMyAdmin\Tracking\TrackingChecker;
 
 /** @covers \PhpMyAdmin\Controllers\Table\TrackingController */
 class TrackingControllerTest extends AbstractTestCase
@@ -37,7 +38,6 @@ class TrackingControllerTest extends AbstractTestCase
         $GLOBALS['db'] = 'test_db';
         $GLOBALS['table'] = 'test_table';
         $GLOBALS['text_dir'] = 'ltr';
-        $GLOBALS['PMA_PHP_SELF'] = 'index.php';
         $GLOBALS['cfg']['Server']['DisableIS'] = true;
         $GLOBALS['cfg']['Server']['tracking_default_statements'] = 'CREATE TABLE,ALTER TABLE,DROP TABLE';
 
@@ -45,10 +45,18 @@ class TrackingControllerTest extends AbstractTestCase
 
         $response = new ResponseRenderer();
         $template = new Template();
+        $trackingChecker = $this->createStub(TrackingChecker::class);
         (new TrackingController(
             $response,
             $template,
-            new Tracking(new SqlQueryForm($template, $this->dbi), $template, new Relation($this->dbi), $this->dbi),
+            new Tracking(
+                new SqlQueryForm($template, $this->dbi),
+                $template,
+                new Relation($this->dbi),
+                $this->dbi,
+                $trackingChecker,
+            ),
+            $trackingChecker,
         ))($this->createStub(ServerRequest::class));
 
         $main = $template->render('table/tracking/main', [
@@ -60,7 +68,6 @@ class TrackingControllerTest extends AbstractTestCase
             ],
             'db' => $GLOBALS['db'],
             'table' => $GLOBALS['table'],
-            'selectable_tables_num_rows' => 0,
             'selectable_tables_entries' => [],
             'selected_table' => null,
             'last_version' => 0,

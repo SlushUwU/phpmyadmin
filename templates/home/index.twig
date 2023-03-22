@@ -50,7 +50,7 @@
 
                   <li id="li_select_mysql_collation" class="list-group-item">
                     <form method="post" action="{{ url('/collation-connection') }}" class="row row-cols-lg-auto align-items-center disableAjax">
-                      {{ get_hidden_inputs(null, null, 4, 'collation_connection') }}
+                      {{ get_hidden_inputs('', '', 'collation_connection') }}
                       <div class="col-12">
                         <label for="collationConnectionSelect" class="col-form-label">
                           {{ get_image('s_asci') }}
@@ -143,6 +143,26 @@
                           </button>
                         </div>
                       </div>
+
+                      {% for theme in themes %}
+                        {% if theme.is_active and theme.color_modes|length > 1 %}
+                          <div class="col-12">
+                            <select class="form-select autosubmit" name="themeColorMode" aria-label="{{ 'Color mode for the theme'|trans }}">
+                              {% for color_mode in theme.color_modes %}
+                                <option value="{{ color_mode }}"{{ theme.color_mode == color_mode ? ' selected' }}>
+                                  {%- if color_mode == 'light' -%}
+                                    {% trans %}Light{% context %}Light color mode of the theme{% endtrans %}
+                                  {%- elseif color_mode == 'dark' -%}
+                                    {% trans %}Dark{% context %}Dark color mode of the theme{% endtrans %}
+                                  {%- else -%}
+                                    {{ color_mode|title }}
+                                  {%- endif -%}
+                                </option>
+                              {% endfor %}
+                            </select>
+                          </div>
+                        {% endif %}
+                      {% endfor %}
                     </form>
                   </li>
                 {% endif %}

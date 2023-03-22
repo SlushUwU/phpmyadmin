@@ -8,7 +8,6 @@ use PhpMyAdmin\Dbal\ResultInterface;
 use PhpMyAdmin\Html\Generator;
 use PhpMyAdmin\Http\ServerRequest;
 use PhpMyAdmin\Query\Compatibility;
-use PhpMyAdmin\Query\Utilities;
 use PhpMyAdmin\SqlParser\Components\Expression;
 use PhpMyAdmin\SqlParser\Context;
 use PhpMyAdmin\SqlParser\Token;
@@ -20,7 +19,6 @@ use function _pgettext;
 use function abs;
 use function array_key_exists;
 use function array_map;
-use function array_merge;
 use function array_shift;
 use function array_unique;
 use function bin2hex;
@@ -53,7 +51,6 @@ use function mb_detect_encoding;
 use function mb_strlen;
 use function mb_strpos;
 use function mb_strrpos;
-use function mb_strstr;
 use function mb_strtolower;
 use function mb_substr;
 use function number_format;
@@ -100,7 +97,7 @@ class Util
      *
      * @param string $value Configuration option name
      */
-    public static function showIcons($value): bool
+    public static function showIcons(string $value): bool
     {
         return in_array($GLOBALS['cfg'][$value], ['icons', 'both']);
     }
@@ -110,7 +107,7 @@ class Util
      *
      * @param string $value Configuration option name
      */
-    public static function showText($value): bool
+    public static function showText(string $value): bool
     {
         return in_array($GLOBALS['cfg'][$value], ['text', 'both']);
     }
@@ -222,121 +219,6 @@ class Util
         return self::getMySQLDocuURL('');
     }
 
-    /**
-     * Check the correct row count
-     *
-     * @param string $db    the db name
-     * @param array  $table the table infos
-     *
-     * @return int the possibly modified row count
-     */
-    private static function checkRowCount($db, array $table): int
-    {
-        $rowCount = 0;
-
-        if ($table['Rows'] === null) {
-            // Do not check exact row count here,
-            // if row count is invalid possibly the table is defect
-            // and this would break the navigation panel;
-            // but we can check row count if this is a view or the
-            // information_schema database
-            // since Table::countRecords() returns a limited row count
-            // in this case.
-
-            // set this because Table::countRecords() can use it
-            $tableIsView = $table['TABLE_TYPE'] === 'VIEW';
-
-            if ($tableIsView || Utilities::isSystemSchema($db)) {
-                $rowCount = $GLOBALS['dbi']
-                    ->getTable($db, $table['Name'])
-                    ->countRecords();
-            }
-        }
-
-        return $rowCount;
-    }
-
-    /**
-     * returns array with tables of given db with extended information and grouped
-     *
-     * @param string $db
-     *
-     * @return array (recursive) grouped table list
-     */
-    public static function getTableList($db): array
-    {
-        $sep = $GLOBALS['cfg']['NavigationTreeTableSeparator'];
-
-        $tables = $GLOBALS['dbi']->getTablesFull($db);
-
-        if ($GLOBALS['cfg']['NaturalOrder']) {
-            uksort($tables, 'strnatcasecmp');
-        }
-
-        if (count($tables) < 1) {
-            return $tables;
-        }
-
-        $default = [
-            'Name' => '',
-            'Rows' => 0,
-            'Comment' => '',
-            'disp_name' => '',
-        ];
-
-        $tableGroups = [];
-
-        foreach ($tables as $tableName => $table) {
-            $table['Rows'] = self::checkRowCount($db, $table);
-
-            // in $group we save the reference to the place in $table_groups
-            // where to store the table info
-            if ($GLOBALS['cfg']['NavigationTreeEnableGrouping'] && $sep && mb_strstr($tableName, $sep)) {
-                $parts = explode($sep, $tableName);
-
-                $group =& $tableGroups;
-                $i = 0;
-                $groupNameFull = '';
-                $partsCount = count($parts) - 1;
-
-                while (($i < $partsCount) && ($i < $GLOBALS['cfg']['NavigationTreeTableLevel'])) {
-                    $groupName = $parts[$i] . $sep;
-                    $groupNameFull .= $groupName;
-
-                    if (! isset($group[$groupName])) {
-                        $group[$groupName] = [];
-                        $group[$groupName]['is' . $sep . 'group'] = true;
-                        $group[$groupName]['tab' . $sep . 'count'] = 1;
-                        $group[$groupName]['tab' . $sep . 'group'] = $groupNameFull;
-                    } elseif (! isset($group[$groupName]['is' . $sep . 'group'])) {
-                        $table = $group[$groupName];
-                        $group[$groupName] = [];
-                        $group[$groupName][$groupName] = $table;
-                        $group[$groupName]['is' . $sep . 'group'] = true;
-                        $group[$groupName]['tab' . $sep . 'count'] = 1;
-                        $group[$groupName]['tab' . $sep . 'group'] = $groupNameFull;
-                    } else {
-                        $group[$groupName]['tab' . $sep . 'count']++;
-                    }
-
-                    $group =& $group[$groupName];
-                    $i++;
-                }
-            } else {
-                if (! isset($tableGroups[$tableName])) {
-                    $tableGroups[$tableName] = [];
-                }
-
-                $group =& $tableGroups;
-            }
-
-            $table['disp_name'] = $table['Name'];
-            $group[$tableName] = array_merge($default, $table);
-        }
-
-        return $tableGroups;
-    }
-
     /* ----------------------- Set of misc functions ----------------------- */
 
     /**
@@ -351,7 +233,7 @@ class Util
      *
      * @param Stringable|string|null $identifier the database, table or field name to "backquote"
      */
-    public static function backquote($identifier): string
+    public static function backquote(Stringable|string|null $identifier): string
     {
         return static::backquoteCompat($identifier, 'NONE', true);
     }
@@ -371,9 +253,9 @@ class Util
      * @param bool|null              $doIt          a flag to bypass this function (used by dump functions)
      */
     public static function backquoteCompat(
-        $identifier,
+        Stringable|string|null $identifier,
         string $compatibility = 'MSSQL',
-        $doIt = true,
+        bool|null $doIt = true,
     ): string {
         $identifier = (string) $identifier;
         if ($identifier === '' || $identifier === '*') {
@@ -403,7 +285,7 @@ class Util
      *
      * @return array|null the formatted value and its unit
      */
-    public static function formatByteDown($value, $limes = 6, $comma = 0): array|null
+    public static function formatByteDown(float|int|string|null $value, int $limes = 6, int $comma = 0): array|null
     {
         if ($value === null) {
             return null;
@@ -485,10 +367,10 @@ class Util
      */
     public static function formatNumber(
         float|int|string $value,
-        $digitsLeft = 3,
-        $digitsRight = 0,
-        $onlyDown = false,
-        $noTrailingZero = true,
+        int $digitsLeft = 3,
+        int $digitsRight = 0,
+        bool $onlyDown = false,
+        bool $noTrailingZero = true,
     ): string {
         if ($value == 0) {
             return '0';
@@ -613,49 +495,30 @@ class Util
      *
      * @return string   the formatted date
      */
-    public static function localisedDate($timestamp = -1, $format = ''): string
+    public static function localisedDate(int $timestamp = -1, string $format = ''): string
     {
         $month = [
-            /* l10n: Short month name */
-            __('Jan'),
-            /* l10n: Short month name */
-            __('Feb'),
-            /* l10n: Short month name */
-            __('Mar'),
-            /* l10n: Short month name */
-            __('Apr'),
-            /* l10n: Short month name */
-            _pgettext('Short month name', 'May'),
-            /* l10n: Short month name */
-            __('Jun'),
-            /* l10n: Short month name */
-            __('Jul'),
-            /* l10n: Short month name */
-            __('Aug'),
-            /* l10n: Short month name */
-            __('Sep'),
-            /* l10n: Short month name */
-            __('Oct'),
-            /* l10n: Short month name */
-            __('Nov'),
-            /* l10n: Short month name */
-            __('Dec'),
+            _pgettext('Short month name for January', 'Jan'),
+            _pgettext('Short month name for February', 'Feb'),
+            _pgettext('Short month name for March', 'Mar'),
+            _pgettext('Short month name for April', 'Apr'),
+            _pgettext('Short month name for May', 'May'),
+            _pgettext('Short month name for June', 'Jun'),
+            _pgettext('Short month name for July', 'Jul'),
+            _pgettext('Short month name for August', 'Aug'),
+            _pgettext('Short month name for September', 'Sep'),
+            _pgettext('Short month name for October', 'Oct'),
+            _pgettext('Short month name for November', 'Nov'),
+            _pgettext('Short month name for December', 'Dec'),
         ];
         $dayOfWeek = [
-            /* l10n: Short week day name for Sunday */
             _pgettext('Short week day name for Sunday', 'Sun'),
-            /* l10n: Short week day name for Monday */
-            __('Mon'),
-            /* l10n: Short week day name for Tuesday */
-            __('Tue'),
-            /* l10n: Short week day name for Wednesday */
-            __('Wed'),
-            /* l10n: Short week day name for Thursday */
-            __('Thu'),
-            /* l10n: Short week day name for Friday */
-            __('Fri'),
-            /* l10n: Short week day name for Saturday */
-            __('Sat'),
+            _pgettext('Short week day name for Monday', 'Mon'),
+            _pgettext('Short week day name for Tuesday', 'Tue'),
+            _pgettext('Short week day name for Wednesday', 'Wed'),
+            _pgettext('Short week day name for Thursday', 'Thu'),
+            _pgettext('Short week day name for Friday', 'Fri'),
+            _pgettext('Short week day name for Saturday', 'Sat'),
         ];
 
         if ($format == '') {
@@ -670,18 +533,18 @@ class Util
         $date = (string) preg_replace(
             '@%[aA]@',
             // phpcs:ignore Generic.PHP.DeprecatedFunctions
-            $dayOfWeek[(int) @strftime('%w', (int) $timestamp)],
+            $dayOfWeek[(int) @strftime('%w', $timestamp)],
             $format,
         );
         $date = (string) preg_replace(
             '@%[bB]@',
             // phpcs:ignore Generic.PHP.DeprecatedFunctions
-            $month[(int) @strftime('%m', (int) $timestamp) - 1],
+            $month[(int) @strftime('%m', $timestamp) - 1],
             $date,
         );
 
         /* Fill in AM/PM */
-        $hours = (int) date('H', (int) $timestamp);
+        $hours = (int) date('H', $timestamp);
         if ($hours >= 12) {
             $amPm = _pgettext('AM/PM indication in time', 'PM');
         } else {
@@ -693,11 +556,11 @@ class Util
         // Can return false on windows for Japanese language
         // See https://github.com/phpmyadmin/phpmyadmin/issues/15830
         // phpcs:ignore Generic.PHP.DeprecatedFunctions
-        $ret = @strftime($date, (int) $timestamp);
+        $ret = @strftime($date, $timestamp);
         // Some OSes such as Win8.1 Traditional Chinese version did not produce UTF-8
         // output here. See https://github.com/phpmyadmin/phpmyadmin/issues/10598
         if ($ret === false || mb_detect_encoding($ret, 'UTF-8', true) !== 'UTF-8') {
-            return date('Y-m-d H:i:s', (int) $timestamp);
+            return date('Y-m-d H:i:s', $timestamp);
         }
 
         return $ret;
@@ -710,7 +573,7 @@ class Util
      *
      * @return array<int, string> the parameter/value pairs, for example [0] db=sakila
      */
-    public static function splitURLQuery($url): array
+    public static function splitURLQuery(string $url): array
     {
         // decode encoded url separators
         $separator = Url::getArgSeparator();
@@ -739,7 +602,7 @@ class Util
      *
      * @return string the formatted value
      */
-    public static function timespanFormat($seconds): string
+    public static function timespanFormat(int $seconds): string
     {
         $days = floor($seconds / 86400);
         if ($days > 0) {
@@ -778,7 +641,7 @@ class Util
      * @psalm-return array{string|null, string}
      */
     private static function getConditionValue(
-        $row,
+        string|int|float|null $row,
         FieldMetadata $meta,
         int $fieldsCount,
         string $conditionKey,
@@ -823,8 +686,7 @@ class Util
             $conditionValue = "= b'"
                 . self::printableBitValue((int) $row, $meta->length) . "'";
         } else {
-            $conditionValue = '= \''
-                . $GLOBALS['dbi']->escapeString((string) $row) . '\'';
+            $conditionValue = '= ' . $GLOBALS['dbi']->quoteString((string) $row);
         }
 
         return [$conditionValue, $condition];
@@ -842,12 +704,13 @@ class Util
      * @psalm-param array<int, mixed> $row
      *
      * @return array the calculated condition and whether condition is unique
+     * @psalm-return array{string, bool, array}
      */
     public static function getUniqueCondition(
-        $fieldsCount,
+        int $fieldsCount,
         array $fieldsMeta,
         array $row,
-        $forceUnique = false,
+        bool $forceUnique = false,
         string|bool $restrictToTable = false,
         array $expressions = [],
     ): array {
@@ -1002,16 +865,16 @@ class Util
      * @param string $prompt      The prompt to display (sometimes empty)
      */
     public static function pageselector(
-        $name,
-        $rows,
-        $pageNow = 1,
-        $nbTotalPage = 1,
-        $showAll = 200,
-        $sliceStart = 5,
-        $sliceEnd = 5,
-        $percent = 20,
-        $range = 10,
-        $prompt = '',
+        string $name,
+        int $rows,
+        int $pageNow = 1,
+        int $nbTotalPage = 1,
+        int $showAll = 200,
+        int $sliceStart = 5,
+        int $sliceEnd = 5,
+        int $percent = 20,
+        int $range = 10,
+        string $prompt = '',
     ): string {
         $increment = floor($nbTotalPage / $percent);
         $pageNowMinusRange = $pageNow - $range;
@@ -1141,7 +1004,7 @@ class Util
      *
      * @return int $page_num
      */
-    public static function getPageFromPosition($pos, $maxCount): int
+    public static function getPageFromPosition(int $pos, int $maxCount): int
     {
         return (int) floor($pos / $maxCount) + 1;
     }
@@ -1251,7 +1114,7 @@ class Util
      * @return array associative array containing type, spec_in_brackets
      *          and possibly enum_set_values (another array)
      */
-    public static function extractColumnSpec($columnSpecification): array
+    public static function extractColumnSpec(string $columnSpecification): array
     {
         $firstBracketPos = mb_strpos($columnSpecification, '(');
         if ($firstBracketPos) {
@@ -1389,7 +1252,7 @@ class Util
      *
      * @return string|bool Title for the $cfg value
      */
-    public static function getTitleForTarget($target): string|bool
+    public static function getTitleForTarget(string $target): string|bool
     {
         $mapping = [
             'structure' => __('Structure'),
@@ -1416,7 +1279,7 @@ class Util
      *
      * @return string script name corresponding to the config word
      */
-    public static function getScriptNameForOption($target, string $location): string
+    public static function getScriptNameForOption(string $target, string $location): string
     {
         return Url::getFromRoute(self::getUrlForOption($target, $location));
     }
@@ -1434,7 +1297,7 @@ class Util
      *
      * @return string The URL corresponding to the config word
      */
-    public static function getUrlForOption($target, string $location): string
+    public static function getUrlForOption(string $target, string $location): string
     {
         if ($location === 'server') {
             // Values for $cfg['DefaultTabServer']
@@ -1603,7 +1466,7 @@ class Util
      *
      * @return mixed   An HTML snippet or an array of datatypes.
      */
-    public static function getSupportedDatatypes($html = false, $selected = ''): mixed
+    public static function getSupportedDatatypes(bool $html = false, string $selected = ''): mixed
     {
         if ($html) {
             $retval = Generator::getSupportedDatatypes($selected);
@@ -1709,14 +1572,14 @@ class Util
             return false;
         }
 
-        $query .= " AND '%s' LIKE `TABLE_SCHEMA`";
+        $query .= ' AND %s LIKE `TABLE_SCHEMA`';
         $schemaPrivileges = $GLOBALS['dbi']->fetchValue(
             sprintf(
                 $query,
                 'SCHEMA_PRIVILEGES',
                 $username,
                 $priv,
-                $GLOBALS['dbi']->escapeString($db),
+                $GLOBALS['dbi']->quoteString($db),
             ),
         );
         if ($schemaPrivileges) {
@@ -1726,15 +1589,15 @@ class Util
         // If a table name was also provided and we still didn't
         // find any valid privileges, try table-wise privileges.
         if ($tbl !== null) {
-            $query .= " AND TABLE_NAME='%s'";
+            $query .= ' AND TABLE_NAME=%s';
             $tablePrivileges = $GLOBALS['dbi']->fetchValue(
                 sprintf(
                     $query,
                     'TABLE_PRIVILEGES',
                     $username,
                     $priv,
-                    $GLOBALS['dbi']->escapeString($db),
-                    $GLOBALS['dbi']->escapeString($tbl),
+                    $GLOBALS['dbi']->quoteString($db),
+                    $GLOBALS['dbi']->quoteString($tbl),
                 ),
             );
             if ($tablePrivileges) {
@@ -1778,7 +1641,7 @@ class Util
      *
      * @return string[]
      */
-    public static function parseEnumSetValues($definition, $escapeHtml = true): array
+    public static function parseEnumSetValues(string $definition, bool $escapeHtml = true): array
     {
         $valuesString = htmlentities($definition, ENT_COMPAT, 'UTF-8');
         // There is a JS port of the below parser in functions.js
@@ -1828,11 +1691,11 @@ class Util
     /**
      * Return the list of tabs for the menu with corresponding names
      *
-     * @param string $level 'server', 'db' or 'table' level
+     * @param string|null $level 'server', 'db' or 'table' level
      *
      * @return array|null list of tabs for the menu
      */
-    public static function getMenuTabList($level = null): array|null
+    public static function getMenuTabList(string|null $level = null): array|null
     {
         $tabList = [
             'server' => [
@@ -1881,7 +1744,7 @@ class Util
             ],
         ];
 
-        if ($level == null) {
+        if ($level === null) {
             return $tabList;
         }
 
@@ -1901,7 +1764,7 @@ class Util
      *
      * @return string time, datetime or timestamp strings with fractional seconds
      */
-    public static function addMicroseconds($value): string
+    public static function addMicroseconds(string $value): string
     {
         if ($value === '' || $value === 'CURRENT_TIMESTAMP' || $value === 'current_timestamp()') {
             return $value;
@@ -2164,7 +2027,7 @@ class Util
      *
      * @return array list of tables
      */
-    public static function getTablesWhenOpen($db, ResultInterface $dbInfoResult): array
+    public static function getTablesWhenOpen(string $db, ResultInterface $dbInfoResult): array
     {
         $sotCache = [];
         $tables = [];
@@ -2224,10 +2087,7 @@ class Util
                 }
 
                 if (count($names) > 0) {
-                    $tables = array_merge(
-                        $tables,
-                        $GLOBALS['dbi']->getTablesFull($db, $names),
-                    );
+                    $tables += $GLOBALS['dbi']->getTablesFull($db, $names);
                 }
 
                 if ($GLOBALS['cfg']['NaturalOrder']) {
@@ -2273,7 +2133,7 @@ class Util
      *
      * @param mixed $value Value to convert
      */
-    public static function requestString($value): string
+    public static function requestString(mixed $value): string
     {
         while (is_array($value) || is_object($value)) {
             if (is_object($value)) {
@@ -2316,7 +2176,7 @@ class Util
      *
      * @param string $format Date format string
      */
-    public static function date($format): string
+    public static function date(string $format): string
     {
         return date($format);
     }
@@ -2343,7 +2203,7 @@ class Util
      *
      * @return mixed Searched value
      */
-    public static function getValueByKey(array $array, string|array $path, $default = null): mixed
+    public static function getValueByKey(array $array, string|array $path, mixed $default = null): mixed
     {
         if (is_string($path)) {
             $path = explode('.', $path);
@@ -2372,7 +2232,7 @@ class Util
      *
      * @return string Link to be displayed in the table header
      */
-    public static function sortableTableHeader($title, $sort, $initialSortOrder = 'ASC'): string
+    public static function sortableTableHeader(string $title, string $sort, string $initialSortOrder = 'ASC'): string
     {
         $requestedSort = 'table';
         $requestedSortOrder = $futureSortOrder = $initialSortOrder;
@@ -2463,7 +2323,7 @@ class Util
      *
      * @param mixed $input input to check
      */
-    public static function isInteger($input): bool
+    public static function isInteger(mixed $input): bool
     {
         return is_scalar($input) && ctype_digit((string) $input);
     }

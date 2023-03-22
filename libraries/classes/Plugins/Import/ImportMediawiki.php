@@ -327,7 +327,7 @@ class ImportMediawiki extends ImportPlugin
      *
      * @param string $table_name reference to the name of the table
      */
-    private function setTableName(&$table_name): void
+    private function setTableName(string &$table_name): void
     {
         if (! empty($table_name)) {
             return;
@@ -378,17 +378,11 @@ class ImportMediawiki extends ImportPlugin
      */
     private function executeImportTables(array &$tables, array $analyses, array &$sqlStatements): void
     {
-        // $db_name : The currently selected database name, if applicable
-        //            No backquotes
-        // $options : An associative array of options
-        [$db_name, $options] = $this->getDbnameAndOptions($GLOBALS['db'], 'mediawiki_DB');
-
-        // Array of SQL strings
-        // Non-applicable parameters
-        $create = null;
+        $db_name = $GLOBALS['db'] !== '' ? $GLOBALS['db'] : 'mediawiki_DB';
+        $createDb = $GLOBALS['db'] === '';
 
         // Create and execute necessary SQL statements from data
-        $this->import->buildSql($db_name, $tables, $analyses, $create, $options, $sqlStatements);
+        $this->import->buildSql($db_name, $tables, $analyses, createDb:$createDb, sqlData:$sqlStatements);
     }
 
     /**
@@ -400,7 +394,7 @@ class ImportMediawiki extends ImportPlugin
      *
      * @return string with replacements
      */
-    private function delimiterReplace($replace, $subject): string
+    private function delimiterReplace(string $replace, string $subject): string
     {
         // String that will be returned
         $cleaned = '';
@@ -486,7 +480,7 @@ class ImportMediawiki extends ImportPlugin
      *
      * @return array
      */
-    private function explodeMarkup($text): array
+    private function explodeMarkup(string $text): array
     {
         $separator = '||';
         $placeholder = "\x00";
@@ -521,7 +515,7 @@ class ImportMediawiki extends ImportPlugin
      *
      * @param bool $analyze status
      */
-    private function setAnalyze($analyze): void
+    private function setAnalyze(bool $analyze): void
     {
         $this->analyze = $analyze;
     }
@@ -531,7 +525,7 @@ class ImportMediawiki extends ImportPlugin
      *
      * @param string $cell Cell
      */
-    private function getCellData($cell): mixed
+    private function getCellData(string $cell): mixed
     {
         // A cell could contain both parameters and data
         $cell_data = explode('|', $cell, 2);

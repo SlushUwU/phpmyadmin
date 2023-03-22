@@ -308,7 +308,7 @@ class ConfigFileTest extends AbstractTestCase
         $this->assertEquals($localhost_value, $flat_default_config['Servers/1/host']);
 
         $settings = new Settings([]);
-        $cfg = $settings->toArray();
+        $cfg = $settings->asArray();
 
         $this->assertGreaterThanOrEqual(100, count($cfg));
         $this->assertGreaterThanOrEqual(count($cfg), count($flat_default_config));
@@ -353,7 +353,7 @@ class ConfigFileTest extends AbstractTestCase
      */
     public function testGetDbEntry(): void
     {
-        $cfg_db = include ROOT_PATH . 'libraries/config.values.php';
+        $cfg_db = $this->object->getAllowedValues();
         // verify that $cfg_db read from config.values.php is valid
         $this->assertGreaterThanOrEqual(20, count($cfg_db));
 

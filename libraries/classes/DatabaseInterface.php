@@ -20,6 +20,7 @@ use PhpMyAdmin\Query\Compatibility;
 use PhpMyAdmin\Query\Generator as QueryGenerator;
 use PhpMyAdmin\Query\Utilities;
 use PhpMyAdmin\SqlParser\Context;
+use PhpMyAdmin\Tracking\Tracker;
 use PhpMyAdmin\Utils\SessionCache;
 use stdClass;
 
@@ -352,10 +353,10 @@ class DatabaseInterface implements DbalInterface
      */
     public function getTablesFull(
         string $database,
-        $table = '',
+        string|array $table = '',
         bool $tableIsGroup = false,
         int $limitOffset = 0,
-        $limitCount = false,
+        bool|int $limitCount = false,
         string $sortBy = 'Name',
         string $sortOrder = 'ASC',
         string|null $tableType = null,
@@ -601,11 +602,12 @@ class DatabaseInterface implements DbalInterface
      */
     public function getVirtualTables(string $db): array
     {
-        $tablesFull = array_keys($this->getTablesFull($db));
+        /** @var string[] $tablesFull */
+        $tablesFull = array_column($this->getTablesFull($db), 'TABLE_NAME');
         $views = [];
 
         foreach ($tablesFull as $table) {
-            $table = $this->getTable($db, (string) $table);
+            $table = $this->getTable($db, $table);
             if (! $table->isView()) {
                 continue;
             }
@@ -638,7 +640,7 @@ class DatabaseInterface implements DbalInterface
         string $sortBy = 'SCHEMA_NAME',
         string $sortOrder = 'ASC',
         int $limitOffset = 0,
-        $limitCount = false,
+        bool|int $limitCount = false,
     ): array {
         $sortOrder = strtoupper($sortOrder);
 
@@ -864,7 +866,7 @@ class DatabaseInterface implements DbalInterface
      * @param bool   $full     whether to return full info or only column names
      * @psalm-param ConnectionType $connectionType
      *
-     * @return array<string, array> array indexed by column names
+     * @return array[] array indexed by column names
      */
     public function getColumns(
         string $database,
@@ -878,7 +880,7 @@ class DatabaseInterface implements DbalInterface
             null,
             $full,
         );
-        /** @var array<string, array> $fields */
+        /** @var array[] $fields */
         $fields = $this->fetchResult($sql, 'Field', null, $connectionType);
 
         return $this->attachIndexInfoToColumns($database, $table, $fields);
@@ -887,11 +889,11 @@ class DatabaseInterface implements DbalInterface
     /**
      * Attach index information to the column definition
      *
-     * @param string               $database name of database
-     * @param string               $table    name of table to retrieve columns from
-     * @param array<string, array> $fields   column array indexed by their names
+     * @param string  $database name of database
+     * @param string  $table    name of table to retrieve columns from
+     * @param array[] $fields   column array indexed by their names
      *
-     * @return array<string, array> Column defintions with index information
+     * @return array[] Column defintions with index information
      */
     private function attachIndexInfoToColumns(
         string $database,
@@ -910,7 +912,7 @@ class DatabaseInterface implements DbalInterface
             }
 
             foreach ($indexes as $index) {
-                if (! $index->hasColumn($field)) {
+                if (! $index->hasColumn((string) $field)) {
                     continue;
                 }
 
@@ -1158,7 +1160,7 @@ class DatabaseInterface implements DbalInterface
      */
     public function fetchValue(
         string $query,
-        $field = 0,
+        int|string $field = 0,
         int $connectionType = Connection::TYPE_USER,
     ): string|false|null {
         $result = $this->tryQuery($query, $connectionType, self::QUERY_BUFFERED, false);
@@ -1203,7 +1205,7 @@ class DatabaseInterface implements DbalInterface
      * @param array|string    $row   Row to process
      * @param string|int|null $value Which column to return
      */
-    private function fetchValueOrValueByIndex(array|string $row, $value): mixed
+    private function fetchValueOrValueByIndex(array|string $row, string|int|null $value): mixed
     {
         return $value === null ? $row : $row[$value];
     }
@@ -1273,8 +1275,8 @@ class DatabaseInterface implements DbalInterface
      */
     public function fetchResult(
         string $query,
-        $key = null,
-        $value = null,
+        string|int|array|null $key = null,
+        string|int|null $value = null,
         int $connectionType = Connection::TYPE_USER,
     ): array {
         $resultRows = [];
@@ -1615,7 +1617,7 @@ class DatabaseInterface implements DbalInterface
      * @param string|DatabaseName $dbname database name to select
      * @psalm-param ConnectionType $connectionType
      */
-    public function selectDb($dbname, int $connectionType = Connection::TYPE_USER): bool
+    public function selectDb(string|DatabaseName $dbname, int $connectionType = Connection::TYPE_USER): bool
     {
         if (! isset($this->connections[$connectionType])) {
             return false;

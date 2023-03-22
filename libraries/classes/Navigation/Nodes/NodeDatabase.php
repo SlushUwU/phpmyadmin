@@ -23,6 +23,8 @@ class NodeDatabase extends Node
 {
     /**
      * The number of hidden items in this database
+     *
+     * @var int<0, max>
      */
     protected int $hiddenCount = 0;
 
@@ -37,7 +39,7 @@ class NodeDatabase extends Node
      * @param bool   $isGroup Whether this object has been created
      *                        while grouping nodes
      */
-    public function __construct($name, $type = Node::OBJECT, $isGroup = false)
+    public function __construct(string $name, int $type = Node::OBJECT, bool $isGroup = false)
     {
         parent::__construct($name, $type, $isGroup);
 
@@ -66,7 +68,7 @@ class NodeDatabase extends Node
      * @param string $searchClause A string used to filter the results of
      *                             the query
      */
-    public function getPresence($type = '', $searchClause = ''): int
+    public function getPresence(string $type = '', string $searchClause = ''): int
     {
         if (isset($this->presenceCounts[$type][$searchClause])) {
             return $this->presenceCounts[$type][$searchClause];
@@ -89,7 +91,7 @@ class NodeDatabase extends Node
      * @param string $searchClause A string used to filter the results of
      *                             the query
      */
-    private function getTableOrViewCount($which, string $searchClause): int
+    private function getTableOrViewCount(string $which, string $searchClause): int
     {
         if ($which === 'tables') {
             $condition = 'IN';
@@ -240,7 +242,7 @@ class NodeDatabase extends Node
      */
     private function getWhereClauseForSearch(
         string $searchClause,
-        $columnName,
+        string $columnName,
     ): string {
         return Util::backquote($columnName) . ' LIKE '
             . $GLOBALS['dbi']->quoteString('%' . $GLOBALS['dbi']->escapeMysqlWildcards($searchClause) . '%');
@@ -305,7 +307,7 @@ class NodeDatabase extends Node
      *
      * @return array Array containing hidden items of given type
      */
-    public function getHiddenItems($type): array
+    public function getHiddenItems(string $type): array
     {
         $relationParameters = $this->relation->getRelationParameters();
         if ($relationParameters->navigationItemsHidingFeature === null || $relationParameters->user === null) {
@@ -338,7 +340,7 @@ class NodeDatabase extends Node
      *
      * @return array
      */
-    private function getTablesOrViews($which, int $pos, string $searchClause): array
+    private function getTablesOrViews(string $which, int $pos, string $searchClause): array
     {
         if ($which === 'tables') {
             $condition = 'IN';
@@ -592,18 +594,16 @@ class NodeDatabase extends Node
 
     /**
      * Sets the number of hidden items in this database
-     *
-     * @param int $count hidden item count
      */
-    public function setHiddenCount($count): void
+    public function setHiddenCount(int $count): void
     {
-        $this->hiddenCount = $count;
+        $this->hiddenCount = $count >= 1 ? $count : 0;
     }
 
     /**
      * Returns the number of hidden items in this database
      *
-     * @return int hidden item count
+     * @return int<0, max>
      */
     public function getHiddenCount(): int
     {

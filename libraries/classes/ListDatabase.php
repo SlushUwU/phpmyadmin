@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin;
 
+use PhpMyAdmin\Query\Utilities;
+
 use function array_merge;
 use function is_array;
 use function is_string;
@@ -34,6 +36,26 @@ class ListDatabase extends ListAbstract
         $this->build();
     }
 
+    /** @return array<int, array<string, bool|string>> */
+    public function getList(): array
+    {
+        $selected = $this->getDefault();
+
+        $list = [];
+        foreach ($this as $eachItem) {
+            if (Utilities::isSystemSchema($eachItem)) {
+                continue;
+            }
+
+            $list[] = [
+                'name' => $eachItem,
+                'is_selected' => $selected === $eachItem,
+            ];
+        }
+
+        return $list;
+    }
+
     /**
      * checks if the configuration wants to hide some databases
      */
@@ -55,11 +77,11 @@ class ListDatabase extends ListAbstract
     /**
      * retrieves database list from server
      *
-     * @param string $like_db_name usually a db_name containing wildcards
+     * @param string|null $like_db_name usually a db_name containing wildcards
      *
      * @return array
      */
-    protected function retrieve($like_db_name = null): array
+    protected function retrieve(string|null $like_db_name = null): array
     {
         $database_list = [];
         $command = '';
@@ -157,6 +179,6 @@ class ListDatabase extends ListAbstract
             return $GLOBALS['db'];
         }
 
-        return $this->getEmpty();
+        return parent::getDefault();
     }
 }

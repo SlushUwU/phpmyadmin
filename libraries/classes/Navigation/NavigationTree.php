@@ -135,8 +135,7 @@ class NavigationTree
      */
     private bool $largeGroupWarning = false;
 
-    /** @param Template $template */
-    public function __construct(private $template, private DatabaseInterface $dbi)
+    public function __construct(private Template $template, private DatabaseInterface $dbi)
     {
         $checkUserPrivileges = new CheckUserPrivileges($this->dbi);
         $checkUserPrivileges->getPrivileges();
@@ -296,7 +295,7 @@ class NavigationTree
      *
      * @return array
      */
-    private function parsePath($string): array
+    private function parsePath(string $string): array
     {
         $path = explode('.', $string);
         foreach ($path as $key => $value) {
@@ -321,7 +320,7 @@ class NavigationTree
         foreach ($data as $db) {
             $node = NodeFactory::getInstance(NodeDatabase::class, $db);
             if (isset($hiddenCounts[$db])) {
-                $node->setHiddenCount($hiddenCounts[$db]);
+                $node->setHiddenCount((int) $hiddenCounts[$db]);
             }
 
             $this->tree->addChild($node);
@@ -656,7 +655,7 @@ class NavigationTree
      *
      * @param Node $node The node to group
      */
-    public function groupNode($node): void
+    public function groupNode(Node $node): void
     {
         if ($node->type != Node::CONTAINER || ! $GLOBALS['cfg']['NavigationTreeEnableExpansion']) {
             return;
