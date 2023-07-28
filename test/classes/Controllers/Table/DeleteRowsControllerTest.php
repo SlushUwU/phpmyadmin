@@ -9,8 +9,9 @@ use PhpMyAdmin\Http\ServerRequest;
 use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\ResponseRenderer;
+use PHPUnit\Framework\Attributes\CoversClass;
 
-/** @covers \PhpMyAdmin\Controllers\Table\DeleteRowsController */
+#[CoversClass(DeleteRowsController::class)]
 class DeleteRowsControllerTest extends AbstractTestCase
 {
     public function testDeleteRowsController(): void
@@ -21,7 +22,7 @@ class DeleteRowsControllerTest extends AbstractTestCase
         $GLOBALS['db'] = 'test_db';
         $GLOBALS['table'] = 'test_table';
         $GLOBALS['urlParams'] = [];
-        $GLOBALS['cfg']['Server'] = $GLOBALS['config']->defaultServer;
+        $GLOBALS['cfg']['Server'] = $GLOBALS['config']->getSettings()->Servers[1]->asArray();
         $GLOBALS['cfg']['Server']['DisableIS'] = true;
         $_POST = [
             'db' => 'test_db',
@@ -33,7 +34,7 @@ class DeleteRowsControllerTest extends AbstractTestCase
 
         $dummyDbi = $this->createDbiDummy();
         $dummyDbi->addSelectDb('test_db');
-        $dummyDbi->addResult('DELETE FROM `test_table` WHERE `test_table`.`id` = 3 LIMIT 1;', []);
+        $dummyDbi->addResult('DELETE FROM `test_table` WHERE `test_table`.`id` = 3 LIMIT 1;', true);
         $dummyDbi->addSelectDb('test_db');
         $dummyDbi->addResult(
             'SELECT * FROM `test_db`.`test_table` LIMIT 0, 25',
@@ -50,9 +51,7 @@ class DeleteRowsControllerTest extends AbstractTestCase
         $GLOBALS['dbi'] = $dbi;
 
         $request = $this->createStub(ServerRequest::class);
-        $request->method('hasBodyParam')->willReturnMap([
-            ['original_sql_query', true],
-        ]);
+        $request->method('hasBodyParam')->willReturnMap([['original_sql_query', true]]);
         $request->method('getParsedBodyParam')->willReturnMap([
             ['original_sql_query', '', 'SELECT * FROM `test_db`.`test_table`'],
         ]);
@@ -61,7 +60,11 @@ class DeleteRowsControllerTest extends AbstractTestCase
         (new DeleteRowsController($response, new Template(), $dbi))($request);
         $actual = $response->getHTMLResult();
         $this->assertStringContainsString(
-            '<div class="alert alert-success" role="alert">Your SQL query has been executed successfully.</div>',
+            '<div class="alert alert-success border-top-0 border-start-0 border-end-0 rounded-bottom-0 mb-0"'
+            . ' role="alert">' . "\n"
+            . '  <img src="themes/dot.gif" title="" alt="" class="icon ic_s_success">'
+            . ' Your SQL query has been executed successfully.' . "\n"
+            . '</div>',
             $actual,
         );
         $this->assertStringContainsString('DELETE FROM `test_table` WHERE `test_table`.`id` = 3 LIMIT 1;', $actual);

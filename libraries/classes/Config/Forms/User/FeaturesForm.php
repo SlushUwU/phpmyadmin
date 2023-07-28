@@ -13,7 +13,7 @@ use function __;
 
 class FeaturesForm extends BaseForm
 {
-    /** @return array */
+    /** @return mixed[] */
     public static function getForms(): array
     {
         $result = [
@@ -47,12 +47,7 @@ class FeaturesForm extends BaseForm
                 'TextareaRows',
                 'LongtextDoubleTextarea',
             ],
-            'Page_titles' => [
-                'TitleDefault',
-                'TitleTable',
-                'TitleDatabase',
-                'TitleServer',
-            ],
+            'Page_titles' => ['TitleDefault', 'TitleTable', 'TitleDatabase', 'TitleServer'],
             'Warnings' => [
                 'PmaNoRelation_DisableWarning',
                 'SuhosinDisableWarning',

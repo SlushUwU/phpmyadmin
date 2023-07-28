@@ -30,11 +30,11 @@ final class SetVariableController extends AbstractController
     /**
      * Handle the AJAX request for setting value for a single variable
      *
-     * @param array $vars Request parameters
+     * @param mixed[] $vars Request parameters
      */
     public function __invoke(ServerRequest $request, array $vars): void
     {
-        if (! $this->response->isAjax()) {
+        if (! $request->isAjax()) {
             return;
         }
 
@@ -50,15 +50,12 @@ final class SetVariableController extends AbstractController
                 $matches,
             )
         ) {
-            $exp = [
-                'kb' => 1,
-                'kib' => 1,
-                'mb' => 2,
-                'mib' => 2,
-                'gb' => 3,
-                'gib' => 3,
-            ];
+            $exp = ['kb' => 1, 'kib' => 1, 'mb' => 2, 'mib' => 2, 'gb' => 3, 'gib' => 3];
             $value = (float) $matches[1] * 1024 ** $exp[mb_strtolower($matches[3])];
+        } elseif (
+            $variableType === 'integer'
+        ) {
+            $value = (int) $value;
         } else {
             $value = $this->dbi->quoteString($value);
         }
@@ -69,8 +66,8 @@ final class SetVariableController extends AbstractController
             // Some values are rounded down etc.
             $varValue = $this->dbi->fetchSingleRow(
                 'SHOW GLOBAL VARIABLES WHERE Variable_name='
-                . $this->dbi->quoteString($variableName)
-                . ';',
+                    . $this->dbi->quoteString($variableName)
+                    . ';',
                 DatabaseInterface::FETCH_NUM,
             );
             [$formattedValue, $isHtmlFormatted] = $this->formatVariable($variableName, $varValue[1]);
@@ -94,7 +91,7 @@ final class SetVariableController extends AbstractController
      * @param string     $name  variable name
      * @param int|string $value variable value
      *
-     * @return array formatted string and bool if string is HTML formatted
+     * @return mixed[] formatted string and bool if string is HTML formatted
      */
     private function formatVariable(string $name, int|string $value): array
     {
@@ -111,10 +108,7 @@ final class SetVariableController extends AbstractController
                 $formattedValue = trim(
                     $this->template->render(
                         'server/variables/format_variable',
-                        [
-                            'valueTitle' => Util::formatNumber($value, 0),
-                            'value' => implode(' ', $bytes),
-                        ],
+                        ['valueTitle' => Util::formatNumber($value, 0), 'value' => implode(' ', $bytes)],
                     ),
                 );
             } else {
@@ -122,9 +116,6 @@ final class SetVariableController extends AbstractController
             }
         }
 
-        return [
-            $formattedValue,
-            $isHtmlFormatted,
-        ];
+        return [$formattedValue, $isHtmlFormatted];
     }
 }

@@ -8,8 +8,7 @@ use PhpMyAdmin\ConfigStorage\Relation;
 use PhpMyAdmin\ConfigStorage\RelationParameters;
 use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\Dbal\Connection;
-use PhpMyAdmin\Export;
-use PhpMyAdmin\FieldMetadata;
+use PhpMyAdmin\Export\Export;
 use PhpMyAdmin\Plugins\Export\ExportSql;
 use PhpMyAdmin\Properties\Options\Groups\OptionsPropertyMainGroup;
 use PhpMyAdmin\Properties\Options\Groups\OptionsPropertyRootGroup;
@@ -23,10 +22,13 @@ use PhpMyAdmin\Properties\Options\OptionsPropertyGroup;
 use PhpMyAdmin\Properties\Plugins\ExportPluginProperties;
 use PhpMyAdmin\Table;
 use PhpMyAdmin\Tests\AbstractTestCase;
+use PhpMyAdmin\Tests\FieldHelper;
 use PhpMyAdmin\Tests\Stubs\DummyResult;
 use PhpMyAdmin\Transformations;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Group;
 use ReflectionMethod;
-use stdClass;
+use ReflectionProperty;
 
 use function ob_get_clean;
 use function ob_start;
@@ -39,10 +41,8 @@ use const MYSQLI_TYPE_LONG;
 use const MYSQLI_TYPE_STRING;
 use const MYSQLI_UNIQUE_KEY_FLAG;
 
-/**
- * @covers \PhpMyAdmin\Plugins\Export\ExportSql
- * @group medium
- */
+#[CoversClass(ExportSql::class)]
+#[Group('medium')]
 class ExportSqlTest extends AbstractTestCase
 {
     protected ExportSql $object;
@@ -90,7 +90,7 @@ class ExportSqlTest extends AbstractTestCase
         unset($this->object);
     }
 
-    /** @group medium */
+    #[Group('medium')]
     public function testSetPropertiesWithHideSql(): void
     {
         // test with hide structure and hide sql as true
@@ -105,7 +105,7 @@ class ExportSqlTest extends AbstractTestCase
         $this->assertNull($properties->getOptions());
     }
 
-    /** @group medium */
+    #[Group('medium')]
     public function testSetProperties(): void
     {
         // test with hide structure and hide sql as false
@@ -131,7 +131,7 @@ class ExportSqlTest extends AbstractTestCase
             'relwork' => true,
             'mimework' => true,
         ]);
-        $_SESSION = ['relation' => [$GLOBALS['server'] => $relationParameters->toArray()]];
+        (new ReflectionProperty(Relation::class, 'cache'))->setValue(null, $relationParameters);
 
         $method = new ReflectionMethod(ExportSql::class, 'setProperties');
         $properties = $method->invoke($this->object, null);
@@ -201,10 +201,7 @@ class ExportSqlTest extends AbstractTestCase
         $this->assertInstanceOf(SelectPropertyItem::class, $property);
 
         $this->assertEquals(
-            [
-                'v1' => 'v1',
-                'v2' => 'v2',
-            ],
+            ['v1' => 'v1', 'v2' => 'v2'],
             $property->getValues(),
         );
 
@@ -600,9 +597,7 @@ class ExportSqlTest extends AbstractTestCase
                 ['SHOW CREATE EVENT `db`.`f2`', 'Create Event', Connection::TYPE_USER, 'f2event'],
             ]));
         $dbi->expects($this->any())->method('quoteString')
-            ->will($this->returnCallback(static function (string $string) {
-                return "'" . $string . "'";
-            }));
+            ->will($this->returnCallback(static fn (string $string): string => "'" . $string . "'"));
 
         $GLOBALS['dbi'] = $dbi;
 
@@ -687,9 +682,7 @@ class ExportSqlTest extends AbstractTestCase
             ->disableOriginalConstructor()
             ->getMock();
         $dbi->expects($this->any())->method('quoteString')
-            ->will($this->returnCallback(static function (string $string) {
-                return "'" . $string . "'";
-            }));
+            ->will($this->returnCallback(static fn (string $string): string => "'" . $string . "'"));
 
         $dbi->expects($this->any())
             ->method('getColumns')
@@ -729,9 +722,7 @@ class ExportSqlTest extends AbstractTestCase
             ->disableOriginalConstructor()
             ->getMock();
         $dbi->expects($this->any())->method('quoteString')
-            ->will($this->returnCallback(static function (string $string) {
-                return "'" . $string . "'";
-            }));
+            ->will($this->returnCallback(static fn (string $string): string => "'" . $string . "'"));
 
         $dbi->expects($this->any())
             ->method('getColumns')
@@ -761,7 +752,7 @@ class ExportSqlTest extends AbstractTestCase
         );
     }
 
-    /** @group medium */
+    #[Group('medium')]
     public function testGetTableDef(): void
     {
         $GLOBALS['sql_compatibility'] = 'MSSQL';
@@ -810,7 +801,7 @@ SQL;
         // phpcs:enable
         $dbiDummy->addResult($isViewQuery, []);
         $dbiDummy->addResult($isViewQuery, []);
-        $dbiDummy->addResult('USE `db`', []);
+        $dbiDummy->addResult('USE `db`', true);
         $dbiDummy->addResult(
             'SHOW CREATE TABLE `db`.`table`',
             [['table', $createTableStatement]],
@@ -862,7 +853,7 @@ SQL;
         $dbiDummy->addResult('SHOW TABLE STATUS FROM `db` WHERE Name = \'table\'', []);
         $dbiDummy->addResult($isViewQuery, []);
         $dbiDummy->addResult($isViewQuery, []);
-        $dbiDummy->addResult('USE `db`', []);
+        $dbiDummy->addResult('USE `db`', true);
         $dbiDummy->addResult('SHOW CREATE TABLE `db`.`table`', []);
         $dbiDummy->addErrorCode('error occurred');
 
@@ -880,15 +871,15 @@ SQL;
 
     public function testGetTableComments(): void
     {
-        $_SESSION['relation'] = [];
-        $_SESSION['relation'][$GLOBALS['server']] = RelationParameters::fromArray([
+        $relationParameters = RelationParameters::fromArray([
             'relwork' => true,
             'commwork' => true,
             'mimework' => true,
             'db' => 'database',
             'relation' => 'rel',
             'column_info' => 'col',
-        ])->toArray();
+        ]);
+        (new ReflectionProperty(Relation::class, 'cache'))->setValue(null, $relationParameters);
         $GLOBALS['sql_include_comments'] = true;
 
         $dbi = $this->getMockBuilder(DatabaseInterface::class)
@@ -901,19 +892,8 @@ SQL;
         $dbi->expects($this->exactly(2))
             ->method('fetchResult')
             ->willReturnOnConsecutiveCalls(
-                [
-                    'foo' => [
-                        'foreign_table' => 'ftable',
-                        'foreign_field' => 'ffield',
-                    ],
-                ],
-                [
-                    'fieldname' => [
-                        'values' => 'test-',
-                        'transformation' => 'testfoo',
-                        'mimetype' => 'test<',
-                    ],
-                ],
+                ['foo' => ['foreign_table' => 'ftable', 'foreign_field' => 'ffield']],
+                ['fieldname' => ['values' => 'test-', 'transformation' => 'testfoo', 'mimetype' => 'test<']],
             );
 
         $GLOBALS['dbi'] = $dbi;
@@ -937,7 +917,7 @@ SQL;
         );
     }
 
-    /** @group medium */
+    #[Group('medium')]
     public function testExportStructure(): void
     {
         $GLOBALS['sql_compatibility'] = 'MSSQL';
@@ -1053,48 +1033,51 @@ SQL;
         $this->assertStringContainsString('CREATE TABLE `test_table`', $result);
     }
 
-    /** @group medium */
+    #[Group('medium')]
     public function testExportData(): void
     {
         $dbi = $this->getMockBuilder(DatabaseInterface::class)
             ->disableOriginalConstructor()
             ->getMock();
 
-        $flags = [];
-        $a = new stdClass();
-        $a->name = 'name';
-        $a->length = 2;
-        $flags[] = new FieldMetadata(MYSQLI_TYPE_LONG, 0, $a);
-
-        $a = new stdClass();
-        $a->name = 'name';
-        $a->length = 2;
-        $flags[] = new FieldMetadata(-1, MYSQLI_NUM_FLAG, $a);
-
-        $a = new stdClass();
-        $a->name = 'name';
-        $a->length = 2;
-        $a->charsetnr = 63;
-        $flags[] = new FieldMetadata(MYSQLI_TYPE_STRING, 0, $a);
-
-        $a = new stdClass();
-        $a->name = 'name';
-        $a->length = 2;
-        $a->charsetnr = 63;
-        $flags[] = new FieldMetadata(MYSQLI_TYPE_STRING, 0, $a);
-
-        $a = new stdClass();
-        $a->name = 'name';
-        $a->length = 2;
-        $a->charsetnr = 63;
-        $flags[] = new FieldMetadata(MYSQLI_TYPE_BLOB, 0, $a);
+        $fields = [
+            FieldHelper::fromArray([
+                'type' => MYSQLI_TYPE_LONG,
+                'name' => 'name',
+                'length' => 2,
+            ]),
+            FieldHelper::fromArray([
+                'type' => -1,
+                'flags' => MYSQLI_NUM_FLAG,
+                'name' => 'name',
+                'length' => 2,
+            ]),
+            FieldHelper::fromArray([
+                'type' => MYSQLI_TYPE_STRING,
+                'name' => 'name',
+                'length' => 2,
+                'charsetnr' => 63,
+            ]),
+            FieldHelper::fromArray([
+                'type' => MYSQLI_TYPE_STRING,
+                'name' => 'name',
+                'length' => 2,
+                'charsetnr' => 63,
+            ]),
+            FieldHelper::fromArray([
+                'type' => MYSQLI_TYPE_BLOB,
+                'name' => 'name',
+                'length' => 2,
+                'charsetnr' => 63,
+            ]),
+        ];
 
         $resultStub = $this->createMock(DummyResult::class);
 
         $dbi->expects($this->once())
             ->method('getFieldsMeta')
             ->with($resultStub)
-            ->will($this->returnValue($flags));
+            ->will($this->returnValue($fields));
 
         $dbi->expects($this->once())
             ->method('tryQuery')
@@ -1108,33 +1091,25 @@ SQL;
         $resultStub->expects($this->exactly(2))
             ->method('fetchRow')
             ->willReturnOnConsecutiveCalls(
-                [
-                    null,
-                    'test',
-                    '10',
-                    '6',
-                    "\x00\x0a\x0d\x1a",
-                ],
+                [null, 'test', '10', '6', "\x00\x0a\x0d\x1a"],
                 [],
             );
         $dbi->expects($this->any())->method('quoteString')
-            ->will($this->returnCallback(static function (string $string) {
-                return "'" . $string . "'";
-            }));
+            ->will($this->returnCallback(static fn (string $string): string => "'" . $string . "'"));
 
-        $_table = $this->getMockBuilder(Table::class)
+        $tableObj = $this->getMockBuilder(Table::class)
             ->disableOriginalConstructor()
             ->getMock();
-        $_table->expects($this->once())
+        $tableObj->expects($this->once())
             ->method('isMerge')
             ->will($this->returnValue(false));
-        $_table->expects($this->once())
+        $tableObj->expects($this->once())
             ->method('isView')
             ->will($this->returnValue(false));
 
         $dbi->expects($this->any())
             ->method('getTable')
-            ->will($this->returnValue($_table));
+            ->will($this->returnValue($tableObj));
 
         $GLOBALS['dbi'] = $dbi;
         $GLOBALS['sql_compatibility'] = 'MSSQL';
@@ -1172,36 +1147,40 @@ SQL;
         $this->assertStringContainsString('SET IDENTITY_INSERT &quot;table&quot; OFF;', $result);
     }
 
-    /** @group medium */
+    #[Group('medium')]
     public function testExportDataWithUpdate(): void
     {
         $dbi = $this->getMockBuilder(DatabaseInterface::class)
             ->disableOriginalConstructor()
             ->getMock();
 
-        $flags = [];
-        $a = new stdClass();
-        $a->name = 'name';
-        $a->orgname = 'pma';
-        $a->table = 'tbl';
-        $a->orgtable = 'tbl';
-        $a->length = 2;
-        $flags[] = new FieldMetadata(MYSQLI_TYPE_FLOAT, MYSQLI_PRI_KEY_FLAG, $a);
-
-        $a = new stdClass();
-        $a->name = 'name';
-        $a->orgname = 'pma';
-        $a->table = 'tbl';
-        $a->orgtable = 'tbl';
-        $a->length = 2;
-        $flags[] = new FieldMetadata(MYSQLI_TYPE_FLOAT, MYSQLI_UNIQUE_KEY_FLAG, $a);
+        $fields = [
+            FieldHelper::fromArray([
+                'type' => MYSQLI_TYPE_FLOAT,
+                'flags' => MYSQLI_PRI_KEY_FLAG,
+                'name' => 'name',
+                'orgname' => 'pma',
+                'table' => 'tbl',
+                'orgtable' => 'tbl',
+                'length' => 2,
+            ]),
+            FieldHelper::fromArray([
+                'type' => MYSQLI_TYPE_FLOAT,
+                'flags' => MYSQLI_UNIQUE_KEY_FLAG,
+                'name' => 'name',
+                'orgname' => 'pma',
+                'table' => 'tbl',
+                'orgtable' => 'tbl',
+                'length' => 2,
+            ]),
+        ];
 
         $resultStub = $this->createMock(DummyResult::class);
 
         $dbi->expects($this->once())
             ->method('getFieldsMeta')
             ->with($resultStub)
-            ->will($this->returnValue($flags));
+            ->will($this->returnValue($fields));
 
         $dbi->expects($this->once())
             ->method('tryQuery')
@@ -1215,26 +1194,23 @@ SQL;
         $resultStub->expects($this->exactly(2))
             ->method('fetchRow')
             ->willReturnOnConsecutiveCalls(
-                [
-                    null,
-                    null,
-                ],
+                [null, null],
                 [],
             );
 
-        $_table = $this->getMockBuilder(Table::class)
+        $tableObj = $this->getMockBuilder(Table::class)
             ->disableOriginalConstructor()
             ->getMock();
-        $_table->expects($this->once())
+        $tableObj->expects($this->once())
             ->method('isMerge')
             ->will($this->returnValue(false));
-        $_table->expects($this->once())
+        $tableObj->expects($this->once())
             ->method('isView')
             ->will($this->returnValue(false));
 
         $dbi->expects($this->any())
             ->method('getTable')
-            ->will($this->returnValue($_table));
+            ->will($this->returnValue($tableObj));
         $dbi->expects($this->any())->method('escapeString')
             ->will($this->returnArgument(0));
 
@@ -1270,19 +1246,19 @@ SQL;
             ->disableOriginalConstructor()
             ->getMock();
 
-        $_table = $this->getMockBuilder(Table::class)
+        $tableObj = $this->getMockBuilder(Table::class)
             ->disableOriginalConstructor()
             ->getMock();
-        $_table->expects($this->once())
+        $tableObj->expects($this->once())
             ->method('isMerge')
             ->will($this->returnValue(false));
-        $_table->expects($this->once())
+        $tableObj->expects($this->once())
             ->method('isView')
             ->will($this->returnValue(true));
 
         $dbi->expects($this->any())
             ->method('getTable')
-            ->will($this->returnValue($_table));
+            ->will($this->returnValue($tableObj));
         $dbi->expects($this->any())->method('escapeString')
             ->will($this->returnArgument(0));
 
@@ -1321,19 +1297,19 @@ SQL;
             ->method('getError')
             ->will($this->returnValue('err'));
 
-        $_table = $this->getMockBuilder(Table::class)
+        $tableObj = $this->getMockBuilder(Table::class)
             ->disableOriginalConstructor()
             ->getMock();
-        $_table->expects($this->once())
+        $tableObj->expects($this->once())
             ->method('isMerge')
             ->will($this->returnValue(false));
-        $_table->expects($this->once())
+        $tableObj->expects($this->once())
             ->method('isView')
             ->will($this->returnValue(false));
 
         $dbi->expects($this->any())
             ->method('getTable')
-            ->will($this->returnValue($_table));
+            ->will($this->returnValue($tableObj));
         $dbi->expects($this->any())->method('escapeString')
             ->will($this->returnArgument(0));
 
@@ -1404,10 +1380,7 @@ SQL;
         $aliases = [
             'a' => [
                 'alias' => 'aliastest',
-                'tables' => [
-                    'foo' => ['alias' => 'qwerty'],
-                    'bar' => ['alias' => 'f'],
-                ],
+                'tables' => ['foo' => ['alias' => 'qwerty'], 'bar' => ['alias' => 'f']],
             ],
         ];
         $db = 'a';
@@ -1438,17 +1411,8 @@ SQL;
             'a' => [
                 'alias' => 'aliastest',
                 'tables' => [
-                    'foo' => [
-                        'alias' => 'qwerty',
-                        'columns' => [
-                            'baz' => 'p',
-                            'pqr' => 'pphymdain',
-                        ],
-                    ],
-                    'bar' => [
-                        'alias' => 'f',
-                        'columns' => ['xy' => 'n'],
-                    ],
+                    'foo' => ['alias' => 'qwerty', 'columns' => ['baz' => 'p', 'pqr' => 'pphymdain']],
+                    'bar' => ['alias' => 'f', 'columns' => ['xy' => 'n']],
                 ],
             ],
         ];
@@ -1480,23 +1444,14 @@ SQL;
             'a' => [
                 'alias' => 'aliastest',
                 'tables' => [
-                    'foo' => [
-                        'alias' => 'bartest',
-                        'columns' => [
-                            'baz' => 'p',
-                            'pqr' => 'pphymdain',
-                        ],
-                    ],
-                    'bar' => [
-                        'alias' => 'f',
-                        'columns' => ['xy' => 'n'],
-                    ],
+                    'foo' => ['alias' => 'bartest', 'columns' => ['baz' => 'p', 'pqr' => 'pphymdain']],
+                    'bar' => ['alias' => 'f', 'columns' => ['xy' => 'n']],
                 ],
             ],
         ];
 
         $db = 'a';
-        $sql_query = "CREATE TABLE IF NOT EXISTS foo (\n"
+        $sqlQuery = "CREATE TABLE IF NOT EXISTS foo (\n"
             . "baz tinyint(3) unsigned NOT NULL COMMENT 'Primary Key',\n"
             . 'xyz varchar(255) COLLATE latin1_general_ci NOT NULL '
             . "COMMENT 'xyz',\n"
@@ -1506,7 +1461,7 @@ SQL;
             . "REFERENCES dept_master (baz)\n"
             . ') ENGINE=InnoDB  DEFAULT CHARSET=latin1 COLLATE='
             . "latin1_general_ci COMMENT='List' AUTO_INCREMENT=5";
-        $result = $this->object->replaceWithAliases($sql_query, $aliases, $db);
+        $result = $this->object->replaceWithAliases($sqlQuery, $aliases, $db);
 
         $this->assertEquals(
             "CREATE TABLE IF NOT EXISTS `bartest` (\n" .
@@ -1518,7 +1473,7 @@ SQL;
             $result,
         );
 
-        $result = $this->object->replaceWithAliases($sql_query, [], '');
+        $result = $this->object->replaceWithAliases($sqlQuery, [], '');
 
         $this->assertEquals(
             "CREATE TABLE IF NOT EXISTS foo (\n" .
@@ -1530,7 +1485,8 @@ SQL;
             $result,
         );
 
-        $sql_query = 'CREATE TRIGGER `BEFORE_bar_INSERT` '
+        $sqlQuery = 'DELIMITER $$' . "\n"
+            . 'CREATE TRIGGER `BEFORE_bar_INSERT` '
             . 'BEFORE INSERT ON `bar` '
             . 'FOR EACH ROW BEGIN '
             . 'SET @cnt=(SELECT count(*) FROM bar WHERE '
@@ -1539,7 +1495,7 @@ SQL;
             . 'IF @cnt<>0 THEN '
             . 'SET NEW.xy=1; '
             . 'END IF; END';
-        $result = $this->object->replaceWithAliases($sql_query, $aliases, $db);
+        $result = $this->object->replaceWithAliases($sqlQuery, $aliases, $db);
 
         $this->assertEquals(
             'CREATE TRIGGER `BEFORE_bar_INSERT` BEFORE INSERT ON `f` FOR EACH ROW BEGIN ' .

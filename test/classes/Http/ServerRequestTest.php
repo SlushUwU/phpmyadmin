@@ -4,19 +4,21 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Http;
 
+use PhpMyAdmin\Http\Factory\ServerRequestFactory;
 use PhpMyAdmin\Http\ServerRequest;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ServerRequestInterface;
 
-/** @covers \PhpMyAdmin\Http\ServerRequest */
+#[CoversClass(ServerRequest::class)]
 class ServerRequestTest extends TestCase
 {
     /**
      * @param array<string, string> $get
      * @param array<string, string> $post
-     *
-     * @dataProvider providerForTestGetRoute
      */
+    #[DataProvider('providerForTestGetRoute')]
     public function testGetRoute(string $expected, array $get, array $post): void
     {
         $requestStub = $this->createStub(ServerRequestInterface::class);
@@ -88,5 +90,65 @@ class ServerRequestTest extends TestCase
         $this->assertFalse($request->has('key3'));
         $this->assertTrue($request->hasQueryParam('key4'));
         $this->assertTrue($request->has('key4'));
+    }
+
+    /**
+     * @psalm-param array<string, string> $headers
+     * @psalm-param array<string, string>|null $body
+     */
+    #[DataProvider('isAjaxProvider')]
+    public function testIsAjax(bool $expected, string $method, string $uri, array $headers, array|null $body): void
+    {
+        $request = ServerRequestFactory::create()->createServerRequest($method, $uri)->withParsedBody($body);
+        foreach ($headers as $name => $value) {
+            $request = $request->withAddedHeader($name, $value);
+        }
+
+        $this->assertSame($expected, $request->isAjax());
+    }
+
+    /** @return iterable<int, array{bool, string, string, array<string, string>, array<string, string>|null}> */
+    public static function isAjaxProvider(): iterable
+    {
+        return [
+            [true, 'GET', 'http://example.com/index.php?route=/&ajax_request=1', [], null],
+            [true, 'GET', 'http://example.com/index.php?route=/&ajax_request=0', [], null],
+            [true, 'GET', 'http://example.com/index.php?route=/&ajax_request=true', [], null],
+            [true, 'GET', 'http://example.com/index.php?route=/', ['X-Requested-With' => 'XMLHttpRequest'], null],
+            [
+                true,
+                'GET',
+                'http://example.com/index.php?route=/&ajax_request=1',
+                ['X-Requested-With' => 'XMLHttpRequest'],
+                null,
+            ],
+            [false, 'GET', 'http://example.com/index.php?route=/', [], null],
+            [true, 'POST', 'http://example.com/index.php?route=/&ajax_request=1', [], []],
+            [true, 'POST', 'http://example.com/index.php?route=/', ['X-Requested-With' => 'XMLHttpRequest'], []],
+            [
+                true,
+                'POST',
+                'http://example.com/index.php?route=/&ajax_request=1',
+                ['X-Requested-With' => 'XMLHttpRequest'],
+                [],
+            ],
+            [true, 'POST', 'http://example.com/index.php?route=/&ajax_request=1', [], ['ajax_request' => '1']],
+            [
+                true,
+                'POST',
+                'http://example.com/index.php?route=/&ajax_request=1',
+                ['X-Requested-With' => 'XMLHttpRequest'],
+                ['ajax_request' => '1'],
+            ],
+            [
+                true,
+                'POST',
+                'http://example.com/index.php?route=/',
+                ['X-Requested-With' => 'XMLHttpRequest'],
+                ['ajax_request' => '1'],
+            ],
+            [true, 'POST', 'http://example.com/index.php?route=/', [], ['ajax_request' => '1']],
+            [false, 'POST', 'http://example.com/index.php?route=/', [], []],
+        ];
     }
 }

@@ -9,8 +9,9 @@ use PhpMyAdmin\Http\ServerRequest;
 use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\ResponseRenderer;
+use PHPUnit\Framework\Attributes\CoversClass;
 
-/** @covers \PhpMyAdmin\Controllers\Table\DropColumnConfirmationController */
+#[CoversClass(DropColumnConfirmationController::class)]
 class DropColumnConfirmationControllerTest extends AbstractTestCase
 {
     protected function setUp(): void
@@ -69,10 +70,7 @@ class DropColumnConfirmationControllerTest extends AbstractTestCase
 
         $this->assertSame(400, $response->getHttpResponseCode());
         $this->assertFalse($response->hasSuccessState());
-        $this->assertSame([
-            'isErrorResponse' => true,
-            'message' => 'No column selected.',
-        ], $response->getJSONResult());
+        $this->assertSame(['isErrorResponse' => true, 'message' => 'No column selected.'], $response->getJSONResult());
         $this->assertSame('', $response->getHTMLResult());
     }
 

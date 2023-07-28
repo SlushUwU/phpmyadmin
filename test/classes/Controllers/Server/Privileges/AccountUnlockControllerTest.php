@@ -13,9 +13,10 @@ use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\DummyResult;
 use PhpMyAdmin\Tests\Stubs\ResponseRenderer;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\MockObject\Stub;
 
-/** @covers \PhpMyAdmin\Controllers\Server\Privileges\AccountUnlockController */
+#[CoversClass(AccountUnlockController::class)]
 class AccountUnlockControllerTest extends AbstractTestCase
 {
     /** @var DatabaseInterface&Stub */
@@ -42,10 +43,10 @@ class AccountUnlockControllerTest extends AbstractTestCase
         $this->dbiStub->method('escapeString')->willReturnArgument(0);
 
         $this->requestStub = $this->createStub(ServerRequest::class);
+        $this->requestStub->method('isAjax')->willReturn(true);
         $this->requestStub->method('getParsedBodyParam')->willReturnOnConsecutiveCalls('test.user', 'test.host');
 
         $this->responseRendererStub = new ResponseRenderer();
-        $this->responseRendererStub->setAjax(false);
 
         $this->controller = new AccountUnlockController(
             $this->responseRendererStub,
@@ -62,7 +63,6 @@ class AccountUnlockControllerTest extends AbstractTestCase
         ($this->controller)($this->requestStub);
 
         $message = Message::success('The account test.user@test.host has been successfully unlocked.');
-        $this->assertTrue($this->responseRendererStub->isAjax());
         $this->assertEquals(200, $this->responseRendererStub->getHttpResponseCode());
         $this->assertTrue($this->responseRendererStub->hasSuccessState());
         $this->assertEquals(['message' => $message->getDisplay()], $this->responseRendererStub->getJSONResult());
@@ -77,7 +77,6 @@ class AccountUnlockControllerTest extends AbstractTestCase
         ($this->controller)($this->requestStub);
 
         $message = Message::error('Invalid account.');
-        $this->assertTrue($this->responseRendererStub->isAjax());
         $this->assertEquals(400, $this->responseRendererStub->getHttpResponseCode());
         $this->assertFalse($this->responseRendererStub->hasSuccessState());
         $this->assertEquals(['message' => $message->getDisplay()], $this->responseRendererStub->getJSONResult());
@@ -90,7 +89,6 @@ class AccountUnlockControllerTest extends AbstractTestCase
         ($this->controller)($this->requestStub);
 
         $message = Message::error('Account locking is not supported.');
-        $this->assertTrue($this->responseRendererStub->isAjax());
         $this->assertEquals(400, $this->responseRendererStub->getHttpResponseCode());
         $this->assertFalse($this->responseRendererStub->hasSuccessState());
         $this->assertEquals(['message' => $message->getDisplay()], $this->responseRendererStub->getJSONResult());

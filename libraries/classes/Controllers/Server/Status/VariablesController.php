@@ -48,7 +48,6 @@ class VariablesController extends AbstractController
         $this->addScriptFiles([
             'server/status/variables.js',
             'vendor/jquery/jquery.tablesorter.js',
-            'server/status/sorter.js',
         ]);
 
         $flush = $request->getParsedBodyParam('flush');
@@ -63,11 +62,7 @@ class VariablesController extends AbstractController
                     continue;
                 }
 
-                $categories[$sectionId] = [
-                    'id' => $sectionId,
-                    'name' => $sectionName,
-                    'is_selected' => false,
-                ];
+                $categories[$sectionId] = ['id' => $sectionId, 'name' => $sectionName, 'is_selected' => false];
                 if (! $filterCategory || $filterCategory !== $sectionId) {
                     continue;
                 }
@@ -77,10 +72,7 @@ class VariablesController extends AbstractController
 
             $links = [];
             foreach ($this->data->links as $sectionName => $sectionLinks) {
-                $links[$sectionName] = [
-                    'name' => 'status_' . $sectionName,
-                    'links' => $sectionLinks,
-                ];
+                $links[$sectionName] = ['name' => 'status_' . $sectionName, 'links' => $sectionLinks];
             }
 
             $descriptions = $this->getDescriptions();
@@ -121,10 +113,7 @@ class VariablesController extends AbstractController
                 }
 
                 foreach ($this->data->links[$name] as $linkName => $linkUrl) {
-                    $variables[$name]['description_doc'][] = [
-                        'name' => $linkName,
-                        'url' => $linkUrl,
-                    ];
+                    $variables[$name]['description_doc'][] = ['name' => $linkName, 'url' => $linkUrl];
                 }
             }
         }
@@ -147,11 +136,7 @@ class VariablesController extends AbstractController
      */
     private function flush(string $flush): void
     {
-        $flushCommands = [
-            'STATUS',
-            'TABLES',
-            'QUERY CACHE',
-        ];
+        $flushCommands = ['STATUS', 'TABLES', 'QUERY CACHE'];
 
         if (! in_array($flush, $flushCommands)) {
             return;
@@ -160,7 +145,7 @@ class VariablesController extends AbstractController
         $this->dbi->query('FLUSH ' . $flush . ';');
     }
 
-    /** @return array */
+    /** @return mixed[] */
     private function getAlerts(): array
     {
         // name => max value before alert
@@ -223,7 +208,7 @@ class VariablesController extends AbstractController
     /**
      * Returns a list of variable descriptions
      *
-     * @return array
+     * @return mixed[]
      */
     private function getDescriptions(): array
     {

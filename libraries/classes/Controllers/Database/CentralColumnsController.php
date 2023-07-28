@@ -13,6 +13,7 @@ use PhpMyAdmin\Http\ServerRequest;
 use PhpMyAdmin\Message;
 use PhpMyAdmin\ResponseRenderer;
 use PhpMyAdmin\Template;
+use Webmozart\Assert\Assert;
 
 use function __;
 use function is_bool;
@@ -53,7 +54,7 @@ class CentralColumnsController extends AbstractController
         }
 
         if ($request->hasBodyParam('add_new_column')) {
-            $tmp_msg = $this->addNewColumn([
+            $tmpMsg = $this->addNewColumn([
                 'col_name' => $request->getParsedBodyParam('col_name'),
                 'col_default' => $request->getParsedBodyParam('col_default'),
                 'col_default_sel' => $request->getParsedBodyParam('col_default_sel'),
@@ -75,7 +76,7 @@ class CentralColumnsController extends AbstractController
         }
 
         if ($request->hasBodyParam('add_column')) {
-            $tmp_msg = $this->addColumn([
+            $tmpMsg = $this->addColumn([
                 'table-select' => $request->getParsedBodyParam('table-select'),
                 'column-select' => $request->getParsedBodyParam('column-select'),
             ]);
@@ -117,7 +118,7 @@ class CentralColumnsController extends AbstractController
         }
 
         if ($request->hasBodyParam('delete_save')) {
-            $tmp_msg = $this->deleteSave([
+            $tmpMsg = $this->deleteSave([
                 'db' => $request->getParsedBodyParam('db'),
                 'col_name' => $request->getParsedBodyParam('col_name'),
             ]);
@@ -141,14 +142,14 @@ class CentralColumnsController extends AbstractController
         $GLOBALS['message'] = Message::success(
             sprintf(__('Showing rows %1$s - %2$s.'), $pos + 1, $pos + $GLOBALS['num_cols']),
         );
-        if (! isset($tmp_msg) || $tmp_msg === true) {
+        if (! isset($tmpMsg) || $tmpMsg === true) {
             return;
         }
 
-        $GLOBALS['message'] = $tmp_msg;
+        $GLOBALS['message'] = $tmpMsg;
     }
 
-    /** @param array $params Request parameters */
+    /** @param mixed[] $params Request parameters */
     public function main(array $params): void
     {
         $GLOBALS['text_dir'] ??= null;
@@ -175,9 +176,9 @@ class CentralColumnsController extends AbstractController
     }
 
     /**
-     * @param array $params Request parameters
+     * @param mixed[] $params Request parameters
      *
-     * @return array JSON
+     * @return mixed[] JSON
      */
     public function getColumnList(array $params): array
     {
@@ -185,7 +186,7 @@ class CentralColumnsController extends AbstractController
     }
 
     /**
-     * @param array $params Request parameters
+     * @param mixed[] $params Request parameters
      *
      * @return true|Message
      */
@@ -211,7 +212,7 @@ class CentralColumnsController extends AbstractController
     }
 
     /**
-     * @param array $params Request parameters
+     * @param mixed[] $params Request parameters
      *
      * @return true|Message
      */
@@ -237,7 +238,7 @@ class CentralColumnsController extends AbstractController
     }
 
     /**
-     * @param array $params Request parameters
+     * @param mixed[] $params Request parameters
      *
      * @return true|Message
      */
@@ -250,16 +251,18 @@ class CentralColumnsController extends AbstractController
         );
     }
 
-    /** @param array $params Request parameters */
+    /** @param mixed[] $params Request parameters */
     public function editPage(array $params): void
     {
+        Assert::isArray($params['selected_fld']);
+        Assert::allString($params['selected_fld']);
         $rows = $this->centralColumns->getHtmlForEditingPage($params['selected_fld'], $params['db']);
 
         $this->render('database/central_columns/edit', ['rows' => $rows]);
     }
 
     /**
-     * @param array $params Request parameters
+     * @param mixed[] $params Request parameters
      *
      * @return true|Message
      */
@@ -269,7 +272,7 @@ class CentralColumnsController extends AbstractController
     }
 
     /**
-     * @param array $params Request parameters
+     * @param mixed[] $params Request parameters
      *
      * @return true|Message
      */
@@ -277,6 +280,9 @@ class CentralColumnsController extends AbstractController
     {
         $name = [];
         parse_str($params['col_name'], $name);
+
+        Assert::isArray($name['selected_fld']);
+        Assert::allString($name['selected_fld']);
 
         return $this->centralColumns->deleteColumnsFromList($params['db'], $name['selected_fld'], false);
     }

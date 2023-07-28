@@ -6,9 +6,10 @@ namespace PhpMyAdmin\Tests\Properties\Options;
 
 use PhpMyAdmin\Properties\Options\OptionsPropertyOneItem;
 use PhpMyAdmin\Tests\AbstractTestCase;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\MockObject\MockObject;
 
-/** @covers \PhpMyAdmin\Properties\Options\OptionsPropertyOneItem */
+#[CoversClass(OptionsPropertyOneItem::class)]
 class OptionsPropertyOneItemTest extends AbstractTestCase
 {
     /** @var OptionsPropertyOneItem&MockObject  */
@@ -44,10 +45,7 @@ class OptionsPropertyOneItemTest extends AbstractTestCase
         $this->stub->setValues([1, 2]);
 
         $this->assertEquals(
-            [
-                1,
-                2,
-            ],
+            [1, 2],
             $this->stub->getValues(),
         );
     }

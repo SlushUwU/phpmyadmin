@@ -26,7 +26,7 @@ class FileListing
      * @param string $dir        directory to list
      * @param string $expression regular expression to match files
      *
-     * @return array|bool sorted file list on success, false on failure
+     * @return mixed[]|bool sorted file list on success, false on failure
      */
     public function getDirContent(string $dir, string $expression = ''): array|bool
     {
@@ -84,10 +84,7 @@ class FileListing
 
         $template = new Template();
 
-        return $template->render('file_select_options', [
-            'filesList' => $list,
-            'active' => $active,
-        ]);
+        return $template->render('file_select_options', ['filesList' => $list, 'active' => $active]);
     }
 
     /**

@@ -4,22 +4,25 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Gis;
 
+use PhpMyAdmin\Gis\Ds\ScaleData;
 use PhpMyAdmin\Gis\GisPolygon;
-use PhpMyAdmin\Gis\ScaleData;
 use PhpMyAdmin\Image\ImageWrapper;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
+use PHPUnit\Framework\Attributes\RequiresPhpExtension;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 use TCPDF;
 
-/**
- * @covers \PhpMyAdmin\Gis\GisPolygon
- * @runTestsInSeparateProcesses
- * @preserveGlobalState disabled
- */
+#[CoversClass(GisPolygon::class)]
+#[PreserveGlobalState(false)]
+#[RunTestsInSeparateProcesses]
 class GisPolygonTest extends GisGeomTestCase
 {
     /**
      * Provide some common data to data providers
      *
-     * @return array common data for data providers
+     * @return mixed[][]
      */
     private static function getData(): array
     {
@@ -28,45 +31,18 @@ class GisPolygonTest extends GisGeomTestCase
                 'no_of_lines' => 2,
                 0 => [
                     'no_of_points' => 5,
-                    0 => [
-                        'x' => 35,
-                        'y' => 10,
-                    ],
-                    1 => [
-                        'x' => 10,
-                        'y' => 20,
-                    ],
-                    2 => [
-                        'x' => 15,
-                        'y' => 40,
-                    ],
-                    3 => [
-                        'x' => 45,
-                        'y' => 45,
-                    ],
-                    4 => [
-                        'x' => 35,
-                        'y' => 10,
-                    ],
+                    0 => ['x' => 35, 'y' => 10],
+                    1 => ['x' => 10, 'y' => 20],
+                    2 => ['x' => 15, 'y' => 40],
+                    3 => ['x' => 45, 'y' => 45],
+                    4 => ['x' => 35, 'y' => 10],
                 ],
                 1 => [
                     'no_of_points' => 4,
-                    0 => [
-                        'x' => 20,
-                        'y' => 30,
-                    ],
-                    1 => [
-                        'x' => 35,
-                        'y' => 32,
-                    ],
-                    2 => [
-                        'x' => 30,
-                        'y' => 20,
-                    ],
-                    3 => [
-                        'x' => 20,
-                        'y' => 30,
-                    ],
+                    0 => ['x' => 20, 'y' => 30],
+                    1 => ['x' => 35, 'y' => 32],
+                    2 => ['x' => 30, 'y' => 20],
+                    3 => ['x' => 20, 'y' => 30],
                 ],
             ],
         ];
@@ -75,17 +51,16 @@ class GisPolygonTest extends GisGeomTestCase
     /**
      * Test for generateWkt
      *
-     * @param array<mixed> $gis_data
-     * @param int          $index    index in $gis_data
-     * @param string|null  $empty    empty parameter
-     * @param string       $output   expected output
-     *
-     * @dataProvider providerForTestGenerateWkt
+     * @param array<mixed> $gisData
+     * @param int          $index   index in $gis_data
+     * @param string|null  $empty   empty parameter
+     * @param string       $output  expected output
      */
-    public function testGenerateWkt(array $gis_data, int $index, string|null $empty, string $output): void
+    #[DataProvider('providerForTestGenerateWkt')]
+    public function testGenerateWkt(array $gisData, int $index, string|null $empty, string $output): void
     {
         $object = GisPolygon::singleton();
-        $this->assertEquals($output, $object->generateWkt($gis_data, $index, $empty));
+        $this->assertEquals($output, $object->generateWkt($gisData, $index, $empty));
     }
 
     /**
@@ -95,9 +70,7 @@ class GisPolygonTest extends GisGeomTestCase
      */
     public static function providerForTestGenerateWkt(): array
     {
-        $temp = [
-            0 => self::getData(),
-        ];
+        $temp = [0 => self::getData()];
 
         $temp1 = $temp;
         unset($temp1[0]['POLYGON'][1][3]['y']);
@@ -109,47 +82,17 @@ class GisPolygonTest extends GisGeomTestCase
         $temp3[0]['POLYGON'][1]['no_of_points'] = 3;
 
         return [
-            [
-                $temp,
-                0,
-                null,
-                'POLYGON((35 10,10 20,15 40,45 45,35 10),(20 30,35 32,30 20,20 30))',
-            ],
+            [$temp, 0, null, 'POLYGON((35 10,10 20,15 40,45 45,35 10),(20 30,35 32,30 20,20 30))'],
             // values at undefined index
-            [
-                $temp,
-                1,
-                null,
-                'POLYGON(( , , , ))',
-            ],
+            [$temp, 1, null, 'POLYGON(( , , , ))'],
             // if a coordinate is missing, default is empty string
-            [
-                $temp1,
-                0,
-                null,
-                'POLYGON((35 10,10 20,15 40,45 45,35 10),(20 30,35 32,30 20,20 ))',
-            ],
+            [$temp1, 0, null, 'POLYGON((35 10,10 20,15 40,45 45,35 10),(20 30,35 32,30 20,20 ))'],
             // missing coordinates are replaced with provided values (3rd parameter)
-            [
-                $temp1,
-                0,
-                '0',
-                'POLYGON((35 10,10 20,15 40,45 45,35 10),(20 30,35 32,30 20,20 0))',
-            ],
+            [$temp1, 0, '0', 'POLYGON((35 10,10 20,15 40,45 45,35 10),(20 30,35 32,30 20,20 0))'],
             // should have at least one ring
-            [
-                $temp2,
-                0,
-                '0',
-                'POLYGON((35 10,10 20,15 40,45 45,35 10))',
-            ],
+            [$temp2, 0, '0', 'POLYGON((35 10,10 20,15 40,45 45,35 10))'],
             // a ring should have at least four points
-            [
-                $temp3,
-                0,
-                '0',
-                'POLYGON((35 10,10 20,15 40,45 45,35 10),(20 30,35 32,30 20,20 30))',
-            ],
+            [$temp3, 0, '0', 'POLYGON((35 10,10 20,15 40,45 45,35 10),(20 30,35 32,30 20,20 30))'],
         ];
     }
 
@@ -158,9 +101,8 @@ class GisPolygonTest extends GisGeomTestCase
      *
      * @param string       $wkt    point in WKT form
      * @param array<mixed> $params expected output array
-     *
-     * @dataProvider providerForTestGenerateParams
      */
+    #[DataProvider('providerForTestGenerateParams')]
     public function testGenerateParams(string $wkt, array $params): void
     {
         $object = GisPolygon::singleton();
@@ -177,209 +119,7 @@ class GisPolygonTest extends GisGeomTestCase
         return [
             [
                 '\'POLYGON((35 10,10 20,15 40,45 45,35 10),(20 30,35 32,30 20,20 30))\',124',
-                [
-                    'srid' => 124,
-                    0 => self::getData(),
-                ],
-            ],
-        ];
-    }
-
-    /**
-     * test for Area
-     *
-     * @param array $ring array of points forming the ring
-     * @param float $area area of the ring
-     *
-     * @dataProvider providerForTestArea
-     */
-    public function testArea(array $ring, float $area): void
-    {
-        $object = GisPolygon::singleton();
-        $this->assertEquals($area, $object->area($ring));
-    }
-
-    /**
-     * data provider for testArea
-     *
-     * @return array data for testArea
-     */
-    public static function providerForTestArea(): array
-    {
-        return [
-            [
-                [
-                    0 => [
-                        'x' => 35,
-                        'y' => 10,
-                    ],
-                    1 => [
-                        'x' => 10,
-                        'y' => 10,
-                    ],
-                    2 => [
-                        'x' => 15,
-                        'y' => 40,
-                    ],
-                ],
-                -375.00,
-            ],
-            // first point of the ring repeated as the last point
-            [
-                [
-                    0 => [
-                        'x' => 35,
-                        'y' => 10,
-                    ],
-                    1 => [
-                        'x' => 10,
-                        'y' => 10,
-                    ],
-                    2 => [
-                        'x' => 15,
-                        'y' => 40,
-                    ],
-                    3 => [
-                        'x' => 35,
-                        'y' => 10,
-                    ],
-                ],
-                -375.00,
-            ],
-            // anticlockwise gives positive area
-            [
-                [
-                    0 => [
-                        'x' => 15,
-                        'y' => 40,
-                    ],
-                    1 => [
-                        'x' => 10,
-                        'y' => 10,
-                    ],
-                    2 => [
-                        'x' => 35,
-                        'y' => 10,
-                    ],
-                ],
-                375.00,
-            ],
-        ];
-    }
-
-    /**
-     * test for isPointInsidePolygon
-     *
-     * @param array $point    x, y coordinates of the point
-     * @param array $polygon  array of points forming the ring
-     * @param bool  $isInside output
-     *
-     * @dataProvider providerForTestIsPointInsidePolygon
-     */
-    public function testIsPointInsidePolygon(array $point, array $polygon, bool $isInside): void
-    {
-        $object = GisPolygon::singleton();
-        $this->assertEquals($isInside, $object->isPointInsidePolygon($point, $polygon));
-    }
-
-    /**
-     * data provider for testIsPointInsidePolygon
-     *
-     * @return array data for testIsPointInsidePolygon
-     */
-    public static function providerForTestIsPointInsidePolygon(): array
-    {
-        $ring = [
-            0 => [
-                'x' => 35,
-                'y' => 10,
-            ],
-            1 => [
-                'x' => 10,
-                'y' => 10,
-            ],
-            2 => [
-                'x' => 15,
-                'y' => 40,
-            ],
-            3 => [
-                'x' => 35,
-                'y' => 10,
-            ],
-        ];
-
-        return [
-            // point inside the ring
-            [
-                [
-                    'x' => 20,
-                    'y' => 15,
-                ],
-                $ring,
-                true,
-            ],
-            // point on an edge of the ring
-            [
-                [
-                    'x' => 20,
-                    'y' => 10,
-                ],
-                $ring,
-                false,
-            ],
-            // point on a vertex of the ring
-            [
-                [
-                    'x' => 10,
-                    'y' => 10,
-                ],
-                $ring,
-                false,
-            ],
-            // point outside the ring
-            [
-                [
-                    'x' => 5,
-                    'y' => 10,
-                ],
-                $ring,
-                false,
-            ],
-        ];
-    }
-
-    /**
-     * test for getPointOnSurface
-     *
-     * @param array $ring array of points forming the ring
-     *
-     * @dataProvider providerForTestGetPointOnSurface
-     */
-    public function testGetPointOnSurface(array $ring): void
-    {
-        $object = GisPolygon::singleton();
-        $point = $object->getPointOnSurface($ring);
-        $this->assertIsArray($point);
-        $this->assertTrue($object->isPointInsidePolygon($point, $ring));
-    }
-
-    /**
-     * data provider for testGetPointOnSurface
-     *
-     * @return array data for testGetPointOnSurface
-     */
-    public static function providerForTestGetPointOnSurface(): array
-    {
-        $temp = self::getData();
-        unset($temp['POLYGON'][0]['no_of_points']);
-        unset($temp['POLYGON'][1]['no_of_points']);
-
-        return [
-            [
-                $temp['POLYGON'][0],
-            ],
-            [
-                $temp['POLYGON'][1],
+                ['srid' => 124, 0 => self::getData()],
             ],
         ];
     }
@@ -388,36 +128,29 @@ class GisPolygonTest extends GisGeomTestCase
      * test scaleRow method
      *
      * @param string    $spatial spatial data of a row
-     * @param ScaleData $min_max expected results
-     *
-     * @dataProvider providerForTestScaleRow
+     * @param ScaleData $minMax  expected results
      */
-    public function testScaleRow(string $spatial, ScaleData $min_max): void
+    #[DataProvider('providerForTestScaleRow')]
+    public function testScaleRow(string $spatial, ScaleData $minMax): void
     {
         $object = GisPolygon::singleton();
-        $this->assertEquals($min_max, $object->scaleRow($spatial));
+        $this->assertEquals($minMax, $object->scaleRow($spatial));
     }
 
     /**
      * data provider for testScaleRow
      *
-     * @return array data for testScaleRow
+     * @return array<array{string, ScaleData}>
      */
     public static function providerForTestScaleRow(): array
     {
         return [
-            [
-                'POLYGON((123 0,23 30,17 63,123 0))',
-                new ScaleData(123, 17, 63, 0),
-            ],
-            [
-                'POLYGON((35 10,10 20,15 40,45 45,35 10),(20 30,35 32,30 20,20 30)))',
-                new ScaleData(45, 10, 45, 10),
-            ],
+            ['POLYGON((123 0,23 30,17 63,123 0))', new ScaleData(123, 17, 63, 0)],
+            ['POLYGON((35 10,10 20,15 40,45 45,35 10),(20 30,35 32,30 20,20 30)))', new ScaleData(45, 10, 45, 10)],
         ];
     }
 
-    /** @requires extension gd */
+    #[RequiresPhpExtension('gd')]
     public function testPrepareRowAsPng(): void
     {
         $object = GisPolygon::singleton();
@@ -442,22 +175,21 @@ class GisPolygonTest extends GisGeomTestCase
     /**
      * test case for prepareRowAsPdf() method
      *
-     * @param string $spatial    GIS POLYGON object
-     * @param string $label      label for the GIS POLYGON object
-     * @param int[]  $color      color for the GIS POLYGON object
-     * @param array  $scale_data array containing data related to scaling
-     *
-     * @dataProvider providerForPrepareRowAsPdf
+     * @param string                   $spatial   GIS POLYGON object
+     * @param string                   $label     label for the GIS POLYGON object
+     * @param int[]                    $color     color for the GIS POLYGON object
+     * @param array<string, int|float> $scaleData array containing data related to scaling
      */
+    #[DataProvider('providerForPrepareRowAsPdf')]
     public function testPrepareRowAsPdf(
         string $spatial,
         string $label,
         array $color,
-        array $scale_data,
+        array $scaleData,
         TCPDF $pdf,
     ): void {
         $object = GisPolygon::singleton();
-        $return = $object->prepareRowAsPdf($spatial, $label, $color, $scale_data, $pdf);
+        $return = $object->prepareRowAsPdf($spatial, $label, $color, $scaleData, $pdf);
 
         $fileExpected = $this->testDir . '/polygon-expected.pdf';
         $fileActual = $this->testDir . '/polygon-actual.pdf';
@@ -468,7 +200,7 @@ class GisPolygonTest extends GisGeomTestCase
     /**
      * data provider for testPrepareRowAsPdf() test case
      *
-     * @return array test data for testPrepareRowAsPdf() test case
+     * @return array<array{string, string, int[], array<string, int|float>, TCPDF}>
      */
     public static function providerForPrepareRowAsPdf(): array
     {
@@ -488,14 +220,13 @@ class GisPolygonTest extends GisGeomTestCase
     /**
      * test case for prepareRowAsSvg() method
      *
-     * @param string $spatial   GIS POLYGON object
-     * @param string $label     label for the GIS POLYGON object
-     * @param int[]  $color     color for the GIS POLYGON object
-     * @param array  $scaleData array containing data related to scaling
-     * @param string $output    expected output
-     *
-     * @dataProvider providerForPrepareRowAsSvg
+     * @param string             $spatial   GIS POLYGON object
+     * @param string             $label     label for the GIS POLYGON object
+     * @param int[]              $color     color for the GIS POLYGON object
+     * @param array<string, int> $scaleData array containing data related to scaling
+     * @param string             $output    expected output
      */
+    #[DataProvider('providerForPrepareRowAsSvg')]
     public function testPrepareRowAsSvg(
         string $spatial,
         string $label,
@@ -511,7 +242,7 @@ class GisPolygonTest extends GisGeomTestCase
     /**
      * data provider for testPrepareRowAsSvg() test case
      *
-     * @return array test data for testPrepareRowAsSvg() test case
+     * @return array<array{string, string, int[], array<string, int>, string}>
      */
     public static function providerForPrepareRowAsSvg(): array
     {
@@ -520,12 +251,7 @@ class GisPolygonTest extends GisGeomTestCase
                 'POLYGON((123 0,23 30,17 63,123 0),(99 12,30 35,25 55,99 12))',
                 'svg',
                 [176, 46, 224],
-                [
-                    'x' => 12,
-                    'y' => 69,
-                    'scale' => 2,
-                    'height' => 150,
-                ],
+                ['x' => 12, 'y' => 69, 'scale' => 2, 'height' => 150],
                 '<path d=" M 222, 288 L 22, 228 L 10, 162 Z  M 174, 264 L 36, 218 L 26, 178 Z " name="svg" id="svg12'
                 . '34567890" class="polygon vector" stroke="black" stroke-width="0.5" fill="#b02ee0" fill-rule="evenod'
                 . 'd" fill-opacity="0.8"/>',
@@ -541,9 +267,8 @@ class GisPolygonTest extends GisGeomTestCase
      * @param string $label   label for the GIS POLYGON object
      * @param int[]  $color   color for the GIS POLYGON object
      * @param string $output  expected output
-     *
-     * @dataProvider providerForPrepareRowAsOl
      */
+    #[DataProvider('providerForPrepareRowAsOl')]
     public function testPrepareRowAsOl(
         string $spatial,
         int $srid,
@@ -559,7 +284,7 @@ class GisPolygonTest extends GisGeomTestCase
     /**
      * data provider for testPrepareRowAsOl() test case
      *
-     * @return array test data for testPrepareRowAsOl() test case
+     * @return array<array{string, int, string, int[], string}>
      */
     public static function providerForPrepareRowAsOl(): array
     {
@@ -574,50 +299,6 @@ class GisPolygonTest extends GisGeomTestCase
                 . 'le({fill: new ol.style.Fill({"color":[176,46,224,0.8]}),stroke: new ol.style.St'
                 . 'roke({"color":[0,0,0],"width":0.5}),text: new ol.style.Text({"text":"Ol"})}));v'
                 . 'ectorSource.addFeature(feature);',
-            ],
-        ];
-    }
-
-    /**
-     * test case for isOuterRing() method
-     *
-     * @param array $ring coordinates of the points in a ring
-     *
-     * @dataProvider providerForIsOuterRing
-     */
-    public function testIsOuterRing(array $ring): void
-    {
-        $object = GisPolygon::singleton();
-        $this->assertTrue($object->isOuterRing($ring));
-    }
-
-    /**
-     * data provider for testIsOuterRing() test case
-     *
-     * @return array test data for testIsOuterRing() test case
-     */
-    public static function providerForIsOuterRing(): array
-    {
-        return [
-            [
-                [
-                    [
-                        'x' => 0,
-                        'y' => 0,
-                    ],
-                    [
-                        'x' => 0,
-                        'y' => 1,
-                    ],
-                    [
-                        'x' => 1,
-                        'y' => 1,
-                    ],
-                    [
-                        'x' => 1,
-                        'y' => 0,
-                    ],
-                ],
             ],
         ];
     }

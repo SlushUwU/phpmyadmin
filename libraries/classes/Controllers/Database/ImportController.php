@@ -10,8 +10,8 @@ use PhpMyAdmin\Controllers\AbstractController;
 use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\Encoding;
 use PhpMyAdmin\Http\ServerRequest;
-use PhpMyAdmin\Import;
 use PhpMyAdmin\Import\Ajax;
+use PhpMyAdmin\Import\Import;
 use PhpMyAdmin\Message;
 use PhpMyAdmin\Plugins;
 use PhpMyAdmin\ResponseRenderer;
@@ -26,8 +26,12 @@ use function is_numeric;
 
 final class ImportController extends AbstractController
 {
-    public function __construct(ResponseRenderer $response, Template $template, private DatabaseInterface $dbi)
-    {
+    public function __construct(
+        ResponseRenderer $response,
+        Template $template,
+        private DatabaseInterface $dbi,
+        private PageSettings $pageSettings,
+    ) {
         parent::__construct($response, $template);
     }
 
@@ -36,9 +40,9 @@ final class ImportController extends AbstractController
         $GLOBALS['SESSION_KEY'] ??= null;
         $GLOBALS['errorUrl'] ??= null;
 
-        $pageSettings = new PageSettings('Import');
-        $pageSettingsErrorHtml = $pageSettings->getErrorHTML();
-        $pageSettingsHtml = $pageSettings->getHTML();
+        $this->pageSettings->init('Import');
+        $pageSettingsErrorHtml = $this->pageSettings->getErrorHTML();
+        $pageSettingsHtml = $this->pageSettings->getHTML();
 
         $this->addScriptFiles(['import.js']);
 
@@ -55,7 +59,7 @@ final class ImportController extends AbstractController
 
         $importList = Plugins::getImport('database');
 
-        if (empty($importList)) {
+        if ($importList === []) {
             $this->response->addHTML(Message::error(__(
                 'Could not load import plugins, please check your installation!',
             ))->getDisplay());
@@ -75,13 +79,11 @@ final class ImportController extends AbstractController
         $charsets = Charsets::getCharsets($this->dbi, $GLOBALS['cfg']['Server']['DisableIS']);
 
         $idKey = $_SESSION[$GLOBALS['SESSION_KEY']]['handler']::getIdKey();
-        $hiddenInputs = [
-            $idKey => $uploadId,
-            'import_type' => 'database',
-            'db' => $GLOBALS['db'],
-        ];
+        $hiddenInputs = [$idKey => $uploadId, 'import_type' => 'database', 'db' => $GLOBALS['db']];
 
-        $default = isset($_GET['format']) ? (string) $_GET['format'] : Plugins::getDefault('Import', 'format');
+        $default = $request->hasQueryParam('format')
+            ? (string) $request->getQueryParam('format')
+            : Plugins::getDefault('Import', 'format');
         $choice = Plugins::getChoice($importList, $default);
         $options = Plugins::getOptions('Import', $importList);
         $skipQueriesDefault = Plugins::getDefault('Import', 'skip_queries');

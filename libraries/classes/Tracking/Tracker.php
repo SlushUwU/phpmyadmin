@@ -8,7 +8,9 @@ declare(strict_types=1);
 namespace PhpMyAdmin\Tracking;
 
 use PhpMyAdmin\Cache;
+use PhpMyAdmin\ConfigStorage\Features\TrackingFeature;
 use PhpMyAdmin\ConfigStorage\Relation;
+use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\Dbal\Connection;
 use PhpMyAdmin\Plugins;
 use PhpMyAdmin\Plugins\Export\ExportSql;
@@ -25,19 +27,12 @@ use PhpMyAdmin\Util;
 
 use function array_values;
 use function count;
-use function explode;
 use function intval;
-use function is_array;
-use function mb_strpos;
 use function mb_strstr;
-use function mb_substr;
 use function preg_quote;
 use function preg_replace;
-use function rtrim;
 use function serialize;
 use function sprintf;
-use function str_replace;
-use function strtotime;
 use function substr;
 use function trim;
 
@@ -53,7 +48,7 @@ class Tracker
     /**
      * Cache to avoid quering tracking status multiple times.
      *
-     * @var array
+     * @var mixed[]
      */
     protected static array $trackingCache = [];
 
@@ -89,30 +84,6 @@ class Tracker
     }
 
     /**
-     * Parses the name of a table from a SQL statement substring.
-     *
-     * @param string $string part of SQL statement
-     *
-     * @return string the name of table
-     */
-    protected static function getTableName(string $string): string
-    {
-        if (mb_strstr($string, '.')) {
-            $temp = explode('.', $string);
-            $tableName = $temp[1];
-        } else {
-            $tableName = $string;
-        }
-
-        $str = explode("\n", $tableName);
-        $tableName = $str[0];
-
-        $tableName = str_replace([';', '`'], '', $tableName);
-
-        return trim($tableName);
-    }
-
-    /**
      * Gets the tracking status of a table, is it active or disabled ?
      *
      * @param string $dbName    name of database
@@ -142,12 +113,12 @@ class Tracker
         }
 
         $sqlQuery = sprintf(
-            'SELECT tracking_active FROM %s.%s WHERE db_name = \'%s\' AND table_name = \'%s\''
+            'SELECT tracking_active FROM %s.%s WHERE db_name = %s AND table_name = %s'
                 . ' ORDER BY version DESC LIMIT 1',
             Util::backquote($trackingFeature->database),
             Util::backquote($trackingFeature->tracking),
-            $GLOBALS['dbi']->escapeString($dbName),
-            $GLOBALS['dbi']->escapeString($tableName),
+            $GLOBALS['dbi']->quoteString($dbName, Connection::TYPE_CONTROL),
+            $GLOBALS['dbi']->quoteString($tableName, Connection::TYPE_CONTROL),
         );
 
         $result = $GLOBALS['dbi']->fetchValue($sqlQuery, 0, Connection::TYPE_CONTROL) == 1;
@@ -212,27 +183,25 @@ class Tracker
         // int indices to reduce size
         $columns = array_values($columns);
         // remove Privileges to reduce size
+        /** @infection-ignore-all */
         for ($i = 0, $nb = count($columns); $i < $nb; $i++) {
             unset($columns[$i]['Privileges']);
         }
 
         $indexes = $GLOBALS['dbi']->getTableIndexes($dbName, $tableName);
 
-        $snapshot = [
-            'COLUMNS' => $columns,
-            'INDEXES' => $indexes,
-        ];
+        $snapshot = ['COLUMNS' => $columns, 'INDEXES' => $indexes];
         $snapshot = serialize($snapshot);
 
         // Get DROP TABLE / DROP VIEW and CREATE TABLE SQL statements
         $createSql = '';
 
-        if ($GLOBALS['cfg']['Server']['tracking_add_drop_table'] == true && $isView === false) {
+        if ($GLOBALS['cfg']['Server']['tracking_add_drop_table'] == true && ! $isView) {
             $createSql .= self::getLogComment()
                 . 'DROP TABLE IF EXISTS ' . Util::backquote($tableName) . ";\n";
         }
 
-        if ($GLOBALS['cfg']['Server']['tracking_add_drop_view'] == true && $isView === true) {
+        if ($GLOBALS['cfg']['Server']['tracking_add_drop_view'] == true && $isView) {
             $createSql .= self::getLogComment()
                 . 'DROP VIEW IF EXISTS ' . Util::backquote($tableName) . ";\n";
         }
@@ -248,53 +217,24 @@ class Tracker
         $sqlQuery = sprintf(
             '/*NOTRACK*/' . "\n" . 'INSERT INTO %s.%s (db_name, table_name, version,'
                 . ' date_created, date_updated, schema_snapshot, schema_sql, data_sql, tracking)'
-                . ' values (\'%s\', \'%s\', \'%s\', \'%s\', \'%s\', \'%s\', \'%s\', \'%s\', \'%s\')',
+                . ' values (%s, %s, %s, %s, %s, %s, %s, %s, %s)',
             Util::backquote($trackingFeature->database),
             Util::backquote($trackingFeature->tracking),
-            $GLOBALS['dbi']->escapeString($dbName),
-            $GLOBALS['dbi']->escapeString($tableName),
-            $GLOBALS['dbi']->escapeString($version),
-            $GLOBALS['dbi']->escapeString($date),
-            $GLOBALS['dbi']->escapeString($date),
-            $GLOBALS['dbi']->escapeString($snapshot),
-            $GLOBALS['dbi']->escapeString($createSql),
-            $GLOBALS['dbi']->escapeString("\n"),
-            $GLOBALS['dbi']->escapeString($trackingSet),
+            $GLOBALS['dbi']->quoteString($dbName, Connection::TYPE_CONTROL),
+            $GLOBALS['dbi']->quoteString($tableName, Connection::TYPE_CONTROL),
+            $GLOBALS['dbi']->quoteString($version, Connection::TYPE_CONTROL),
+            $GLOBALS['dbi']->quoteString($date, Connection::TYPE_CONTROL),
+            $GLOBALS['dbi']->quoteString($date, Connection::TYPE_CONTROL),
+            $GLOBALS['dbi']->quoteString($snapshot, Connection::TYPE_CONTROL),
+            $GLOBALS['dbi']->quoteString($createSql, Connection::TYPE_CONTROL),
+            $GLOBALS['dbi']->quoteString("\n", Connection::TYPE_CONTROL),
+            $GLOBALS['dbi']->quoteString($trackingSet, Connection::TYPE_CONTROL),
         );
 
         $GLOBALS['dbi']->queryAsControlUser($sqlQuery);
 
         // Deactivate previous version
         return self::deactivateTracking($dbName, $tableName, (string) ((int) $version - 1));
-    }
-
-    /**
-     * Removes all tracking data for a table or a version of a table
-     *
-     * @param string $dbName    name of database
-     * @param string $tableName name of table
-     * @param string $version   version
-     */
-    public static function deleteTracking(string $dbName, string $tableName, string $version = ''): bool
-    {
-        $relation = new Relation($GLOBALS['dbi']);
-        $trackingFeature = $relation->getRelationParameters()->trackingFeature;
-        if ($trackingFeature === null) {
-            return false;
-        }
-
-        $sqlQuery = sprintf(
-            '/*NOTRACK*/' . "\n" . 'DELETE FROM %s.%s WHERE `db_name` = \'%s\' AND `table_name` = \'%s\'',
-            Util::backquote($trackingFeature->database),
-            Util::backquote($trackingFeature->tracking),
-            $GLOBALS['dbi']->escapeString($dbName),
-            $GLOBALS['dbi']->escapeString($tableName),
-        );
-        if ($version) {
-            $sqlQuery .= " AND `version` = '" . $GLOBALS['dbi']->escapeString($version) . "'";
-        }
-
-        return (bool) $GLOBALS['dbi']->queryAsControlUser($sqlQuery);
     }
 
     /**
@@ -337,18 +277,18 @@ class Tracker
         $sqlQuery = sprintf(
             '/*NOTRACK*/' . "\n" . 'INSERT INTO %s.%s (db_name, table_name, version,'
                 . ' date_created, date_updated, schema_snapshot, schema_sql, data_sql, tracking)'
-                . ' values (\'%s\', \'%s\', \'%s\', \'%s\', \'%s\', \'%s\', \'%s\', \'%s\', \'%s\')',
+                . ' values (%s, %s, %s, %s, %s, %s, %s, %s, %s)',
             Util::backquote($trackingFeature->database),
             Util::backquote($trackingFeature->tracking),
-            $GLOBALS['dbi']->escapeString($dbName),
-            $GLOBALS['dbi']->escapeString(''),
-            $GLOBALS['dbi']->escapeString($version),
-            $GLOBALS['dbi']->escapeString($date),
-            $GLOBALS['dbi']->escapeString($date),
-            $GLOBALS['dbi']->escapeString(''),
-            $GLOBALS['dbi']->escapeString($createSql),
-            $GLOBALS['dbi']->escapeString("\n"),
-            $GLOBALS['dbi']->escapeString($trackingSet),
+            $GLOBALS['dbi']->quoteString($dbName, Connection::TYPE_CONTROL),
+            $GLOBALS['dbi']->quoteString('', Connection::TYPE_CONTROL),
+            $GLOBALS['dbi']->quoteString($version, Connection::TYPE_CONTROL),
+            $GLOBALS['dbi']->quoteString($date, Connection::TYPE_CONTROL),
+            $GLOBALS['dbi']->quoteString($date, Connection::TYPE_CONTROL),
+            $GLOBALS['dbi']->quoteString('', Connection::TYPE_CONTROL),
+            $GLOBALS['dbi']->quoteString($createSql, Connection::TYPE_CONTROL),
+            $GLOBALS['dbi']->quoteString("\n", Connection::TYPE_CONTROL),
+            $GLOBALS['dbi']->quoteString($trackingSet, Connection::TYPE_CONTROL),
         );
 
         return (bool) $GLOBALS['dbi']->queryAsControlUser($sqlQuery);
@@ -375,76 +315,17 @@ class Tracker
         }
 
         $sqlQuery = sprintf(
-            'UPDATE %s.%s SET `tracking_active` = \'%d\''
-                . ' WHERE `db_name` = \'%s\' AND `table_name` = \'%s\' AND `version` = \'%s\'',
+            'UPDATE %s.%s SET `tracking_active` = %d'
+                . ' WHERE `db_name` = %s AND `table_name` = %s AND `version` = %s',
             Util::backquote($trackingFeature->database),
             Util::backquote($trackingFeature->tracking),
             $newState,
-            $GLOBALS['dbi']->escapeString($dbName),
-            $GLOBALS['dbi']->escapeString($tableName),
-            $GLOBALS['dbi']->escapeString($version),
+            $GLOBALS['dbi']->quoteString($dbName, Connection::TYPE_CONTROL),
+            $GLOBALS['dbi']->quoteString($tableName, Connection::TYPE_CONTROL),
+            $GLOBALS['dbi']->quoteString($version, Connection::TYPE_CONTROL),
         );
 
         return (bool) $GLOBALS['dbi']->queryAsControlUser($sqlQuery);
-    }
-
-    /**
-     * Changes tracking data of a table.
-     *
-     * @param string       $dbName    name of database
-     * @param string       $tableName name of table
-     * @param string       $version   version
-     * @param string       $type      type of data(DDL || DML)
-     * @param string|array $newData   the new tracking data
-     */
-    public static function changeTrackingData(
-        string $dbName,
-        string $tableName,
-        string $version,
-        string $type,
-        string|array $newData,
-    ): bool {
-        $relation = new Relation($GLOBALS['dbi']);
-
-        if ($type === 'DDL') {
-            $saveTo = 'schema_sql';
-        } elseif ($type === 'DML') {
-            $saveTo = 'data_sql';
-        } else {
-            return false;
-        }
-
-        $date = Util::date('Y-m-d H:i:s');
-
-        $newDataProcessed = '';
-        if (is_array($newData)) {
-            foreach ($newData as $data) {
-                $newDataProcessed .= '# log ' . $date . ' ' . $data['username']
-                    . $GLOBALS['dbi']->escapeString($data['statement']) . "\n";
-            }
-        } else {
-            $newDataProcessed = $newData;
-        }
-
-        $trackingFeature = $relation->getRelationParameters()->trackingFeature;
-        if ($trackingFeature === null) {
-            return false;
-        }
-
-        $sqlQuery = sprintf(
-            'UPDATE %s.%s SET `%s` = \'%s\' WHERE `db_name` = \'%s\' AND `table_name` = \'%s\' AND `version` = \'%s\'',
-            Util::backquote($trackingFeature->database),
-            Util::backquote($trackingFeature->tracking),
-            $saveTo,
-            $newDataProcessed,
-            $GLOBALS['dbi']->escapeString($dbName),
-            $GLOBALS['dbi']->escapeString($tableName),
-            $GLOBALS['dbi']->escapeString($version),
-        );
-
-        $result = $GLOBALS['dbi']->queryAsControlUser($sqlQuery);
-
-        return (bool) $result;
     }
 
     /**
@@ -490,11 +371,11 @@ class Tracker
         }
 
         $sqlQuery = sprintf(
-            'SELECT MAX(version) FROM %s.%s WHERE `db_name` = \'%s\' AND `table_name` = \'%s\'',
+            'SELECT MAX(version) FROM %s.%s WHERE `db_name` = %s AND `table_name` = %s',
             Util::backquote($trackingFeature->database),
             Util::backquote($trackingFeature->tracking),
-            $GLOBALS['dbi']->escapeString($dbname),
-            $GLOBALS['dbi']->escapeString($tablename),
+            $GLOBALS['dbi']->quoteString($dbname, Connection::TYPE_CONTROL),
+            $GLOBALS['dbi']->quoteString($tablename, Connection::TYPE_CONTROL),
         );
 
         if ($statement != '') {
@@ -513,152 +394,6 @@ class Tracker
     }
 
     /**
-     * Gets the record of a tracking job.
-     *
-     * @param string $dbname    name of database
-     * @param string $tablename name of table
-     * @param string $version   version number
-     *
-     * @return array<string, array<int, array<string, string>>|string|null>
-     * @psalm-return array{
-     *   date_from: string,
-     *   date_to: string,
-     *   ddlog: list<array{date: string, username: string, statement: string}>,
-     *   dmlog: list<array{date: string, username: string, statement: string}>,
-     *   tracking: string|null,
-     *   schema_snapshot: string|null
-     * }|array<never, never>
-     */
-    public static function getTrackedData(string $dbname, string $tablename, string $version): array
-    {
-        $relation = new Relation($GLOBALS['dbi']);
-        $trackingFeature = $relation->getRelationParameters()->trackingFeature;
-        if ($trackingFeature === null) {
-            return [];
-        }
-
-        $sqlQuery = sprintf(
-            'SELECT * FROM %s.%s WHERE `db_name` = \'%s\'',
-            Util::backquote($trackingFeature->database),
-            Util::backquote($trackingFeature->tracking),
-            $GLOBALS['dbi']->escapeString($dbname),
-        );
-        if ($tablename !== '') {
-            $sqlQuery .= " AND `table_name` = '"
-                . $GLOBALS['dbi']->escapeString($tablename) . "' ";
-        }
-
-        $sqlQuery .= " AND `version` = '" . $GLOBALS['dbi']->escapeString($version)
-            . "' ORDER BY `version` DESC LIMIT 1";
-
-        $mixed = $GLOBALS['dbi']->queryAsControlUser($sqlQuery)->fetchAssoc();
-
-        // PHP 7.4 fix for accessing array offset on null
-        if ($mixed === []) {
-            $mixed = [
-                'schema_sql' => null,
-                'data_sql' => null,
-                'tracking' => null,
-                'schema_snapshot' => null,
-            ];
-        }
-
-        // Parse log
-        $logSchemaEntries = explode('# log ', (string) $mixed['schema_sql']);
-        $logDataEntries = explode('# log ', (string) $mixed['data_sql']);
-
-        $ddlDateFrom = $date = Util::date('Y-m-d H:i:s');
-
-        $ddlog = [];
-        $firstIteration = true;
-
-        // Iterate tracked data definition statements
-        // For each log entry we want to get date, username and statement
-        foreach ($logSchemaEntries as $logEntry) {
-            if (trim($logEntry) == '') {
-                continue;
-            }
-
-            $date = mb_substr($logEntry, 0, 19);
-            $username = mb_substr(
-                $logEntry,
-                20,
-                mb_strpos($logEntry, "\n") - 20,
-            );
-            if ($firstIteration) {
-                $ddlDateFrom = $date;
-                $firstIteration = false;
-            }
-
-            $statement = rtrim((string) mb_strstr($logEntry, "\n"));
-
-            $ddlog[] = [
-                'date' => $date,
-                'username' => $username,
-                'statement' => $statement,
-            ];
-        }
-
-        $dateFrom = $ddlDateFrom;
-        $ddlDateTo = $date;
-
-        $dmlDateFrom = $dateFrom;
-
-        $dmlog = [];
-        $firstIteration = true;
-
-        // Iterate tracked data manipulation statements
-        // For each log entry we want to get date, username and statement
-        foreach ($logDataEntries as $logEntry) {
-            if (trim($logEntry) == '') {
-                continue;
-            }
-
-            $date = mb_substr($logEntry, 0, 19);
-            $username = mb_substr(
-                $logEntry,
-                20,
-                mb_strpos($logEntry, "\n") - 20,
-            );
-            if ($firstIteration) {
-                $dmlDateFrom = $date;
-                $firstIteration = false;
-            }
-
-            $statement = rtrim((string) mb_strstr($logEntry, "\n"));
-
-            $dmlog[] = [
-                'date' => $date,
-                'username' => $username,
-                'statement' => $statement,
-            ];
-        }
-
-        $dmlDateTo = $date;
-
-        // Define begin and end of date range for both logs
-        $data = [];
-        if (strtotime($ddlDateFrom) <= strtotime($dmlDateFrom)) {
-            $data['date_from'] = $ddlDateFrom;
-        } else {
-            $data['date_from'] = $dmlDateFrom;
-        }
-
-        if (strtotime($ddlDateTo) >= strtotime($dmlDateTo)) {
-            $data['date_to'] = $ddlDateTo;
-        } else {
-            $data['date_to'] = $dmlDateTo;
-        }
-
-        $data['ddlog'] = $ddlog;
-        $data['dmlog'] = $dmlog;
-        $data['tracking'] = $mixed['tracking'];
-        $data['schema_snapshot'] = $mixed['schema_snapshot'];
-
-        return $data;
-    }
-
-    /**
      * Parses a query. Gets
      *  - statement identifier (UPDATE, ALTER TABLE, ...)
      *  - type of statement, is it part of DDL or DML ?
@@ -666,7 +401,7 @@ class Tracker
      *
      * @param string $query query
      *
-     * @return array containing identifier, type and tablename.
+     * @return mixed[] containing identifier, type and tablename.
      *
      * @todo: using PMA SQL Parser when possible
      * @todo: support multi-table/view drops
@@ -808,7 +543,7 @@ class Tracker
             return;
         }
 
-        if (! (substr($query, -1) === ';')) {
+        if (substr($query, -1) !== ';') {
             $query .= ";\n";
         }
 
@@ -817,6 +552,16 @@ class Tracker
         // $dbname can be empty, for example when coming from Synchronize
         // and this is a query for the remote server
         if ($dbname === '') {
+            return;
+        }
+
+        $relation = new Relation($GLOBALS['dbi']);
+        $trackingFeature = $relation->getRelationParameters()->trackingFeature;
+        if ($trackingFeature === null) {
+            return;
+        }
+
+        if (! self::isAnyTrackingInProgress($GLOBALS['dbi'], $trackingFeature, $dbname)) {
             return;
         }
 
@@ -890,21 +635,21 @@ class Tracker
 
         // Mark it as untouchable
         $sqlQuery = sprintf(
-            '/*NOTRACK*/' . "\n" . 'UPDATE %s.%s SET %s = CONCAT(%s, \'' . "\n" . '%s\'), `date_updated` = \'%s\'',
+            '/*NOTRACK*/' . "\n" . 'UPDATE %s.%s SET %s = CONCAT(%s, %s), `date_updated` = %s',
             Util::backquote($trackingFeature->database),
             Util::backquote($trackingFeature->tracking),
             Util::backquote($saveTo),
             Util::backquote($saveTo),
-            $GLOBALS['dbi']->escapeString($query),
-            $date,
+            $GLOBALS['dbi']->quoteString("\n" . $query, Connection::TYPE_CONTROL),
+            $GLOBALS['dbi']->quoteString($date, Connection::TYPE_CONTROL),
         );
 
         // If table was renamed we have to change
         // the tablename attribute in pma_tracking too
         if ($result['identifier'] === 'RENAME TABLE') {
-            $sqlQuery .= ', `table_name` = \''
-                . $GLOBALS['dbi']->escapeString($result['tablename_after_rename'])
-                . '\' ';
+            $sqlQuery .= ', `table_name` = '
+                . $GLOBALS['dbi']->quoteString($result['tablename_after_rename'], Connection::TYPE_CONTROL)
+                . ' ';
         }
 
         // Save the tracking information only for
@@ -912,12 +657,31 @@ class Tracker
         //     2. the table / view
         //     3. the statements
         // we want to track
-        $sqlQuery .= " WHERE FIND_IN_SET('" . $result['identifier'] . "',tracking) > 0" .
-        " AND `db_name` = '" . $GLOBALS['dbi']->escapeString($dbname) . "' " .
-        " AND `table_name` = '"
-        . $GLOBALS['dbi']->escapeString($result['tablename']) . "' " .
-        " AND `version` = '" . $GLOBALS['dbi']->escapeString((string) $version) . "' ";
+        $sqlQuery .= sprintf(
+            " WHERE FIND_IN_SET('" . $result['identifier'] . "',tracking) > 0" .
+            ' AND `db_name` = %s ' .
+            ' AND `table_name` = %s ' .
+            ' AND `version` = %s ',
+            $GLOBALS['dbi']->quoteString($dbname, Connection::TYPE_CONTROL),
+            $GLOBALS['dbi']->quoteString($result['tablename'], Connection::TYPE_CONTROL),
+            $GLOBALS['dbi']->quoteString((string) $version, Connection::TYPE_CONTROL),
+        );
 
         $GLOBALS['dbi']->queryAsControlUser($sqlQuery);
+    }
+
+    private static function isAnyTrackingInProgress(
+        DatabaseInterface $dbi,
+        TrackingFeature $trackingFeature,
+        string $dbname,
+    ): bool {
+        $sqlQuery = sprintf(
+            '/*NOTRACK*/ SELECT 1 FROM %s.%s WHERE tracking_active = 1 AND db_name = %s LIMIT 1',
+            Util::backquote($trackingFeature->database),
+            Util::backquote($trackingFeature->tracking),
+            $dbi->quoteString($dbname, Connection::TYPE_CONTROL),
+        );
+
+        return $dbi->queryAsControlUser($sqlQuery)->fetchValue() !== false;
     }
 }

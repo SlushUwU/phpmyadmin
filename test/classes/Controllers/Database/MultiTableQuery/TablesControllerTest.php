@@ -9,8 +9,9 @@ use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\Http\ServerRequest;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\DbiDummy;
+use PHPUnit\Framework\Attributes\CoversClass;
 
-/** @covers \PhpMyAdmin\Controllers\Database\MultiTableQuery\TablesController */
+#[CoversClass(TablesController::class)]
 class TablesControllerTest extends AbstractTestCase
 {
     protected DatabaseInterface $dbi;
@@ -38,10 +39,7 @@ class TablesControllerTest extends AbstractTestCase
 
     public function testGetForeignKeyConstrainsForTable(): void
     {
-        $_GET['tables'] = [
-            'table1',
-            'table2',
-        ];
+        $_GET['tables'] = ['table1', 'table2'];
         $_GET['db'] = 'test';
 
         /** @var TablesController $multiTableQueryController */

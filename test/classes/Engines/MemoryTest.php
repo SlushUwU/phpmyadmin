@@ -6,8 +6,9 @@ namespace PhpMyAdmin\Tests\Engines;
 
 use PhpMyAdmin\Engines\Memory;
 use PhpMyAdmin\Tests\AbstractTestCase;
+use PHPUnit\Framework\Attributes\CoversClass;
 
-/** @covers \PhpMyAdmin\Engines\Memory */
+#[CoversClass(Memory::class)]
 class MemoryTest extends AbstractTestCase
 {
     protected Memory $object;
@@ -43,9 +44,7 @@ class MemoryTest extends AbstractTestCase
     {
         $this->assertEquals(
             $this->object->getVariables(),
-            [
-                'max_heap_table_size' => ['type' => 1],
-            ],
+            ['max_heap_table_size' => ['type' => 1]],
         );
     }
 }

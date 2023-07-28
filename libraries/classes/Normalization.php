@@ -72,7 +72,7 @@ class Normalization
         $type = '';
         $selectColHtml = '';
         foreach ($columns as $def) {
-            $column = (string) $def['Field'];
+            $column = $def['Field'];
             if (isset($def['Type'])) {
                 $extractedColumnSpec = Util::extractColumnSpec($def['Type']);
                 $type = $extractedColumnSpec['type'];
@@ -101,10 +101,10 @@ class Normalization
     /**
      * get the html of the form to add the new column to given table
      *
-     * @param int    $numFields  number of columns to add
-     * @param string $db         current database
-     * @param string $table      current table
-     * @param array  $columnMeta array containing default values for the fields
+     * @param int     $numFields  number of columns to add
+     * @param string  $db         current database
+     * @param string  $table      current table
+     * @param mixed[] $columnMeta array containing default values for the fields
      *
      * @return string HTML
      */
@@ -124,6 +124,7 @@ class Normalization
         }
 
         $commentsMap = $this->relation->getComments($db, $table);
+        /** @infection-ignore-all */
         for ($columnNumber = 0; $columnNumber < $numFields; $columnNumber++) {
             $contentCells[$columnNumber] = [
                 'column_number' => $columnNumber,
@@ -148,10 +149,7 @@ class Normalization
         foreach ($charsets as $charset) {
             $collationsList = [];
             foreach ($collations[$charset->getName()] as $collation) {
-                $collationsList[] = [
-                    'name' => $collation->getName(),
-                    'description' => $collation->getDescription(),
-                ];
+                $collationsList[] = ['name' => $collation->getName(), 'description' => $collation->getDescription()];
             }
 
             $charsetsList[] = [
@@ -196,11 +194,10 @@ class Normalization
     {
         $step = 1;
         $stepTxt = __('Make all columns atomic');
-        $html = "<h3 class='text-center'>"
-            . __('First step of normalization (1NF)') . '</h3>';
-        $html .= "<div id='mainContent' data-normalizeto='" . $normalizedTo . "'>"
-            . '<fieldset class="pma-fieldset">'
-            . '<legend>' . __('Step 1.') . $step . ' ' . $stepTxt . '</legend>'
+        $html = '<h3>' . __('First step of normalization (1NF)') . '</h3>';
+        $html .= '<div class="card" id="mainContent" data-normalizeto="' . $normalizedTo . '">'
+            . '<div class="card-header">' . __('Step 1.') . $step . ' ' . $stepTxt . '</div>'
+            . '<div class="card-body">'
             . '<h4>' . __(
                 'Do you have any column which can be split into more than one column?'
                 . ' For example: address can be split into street, city, country and zip.',
@@ -228,8 +225,7 @@ class Normalization
             . "</span><input id='numField' type='number' value='2'>"
             . '<input type="submit" class="btn btn-primary" id="splitGo" value="' . __('Go') . '"></div>'
             . "<div id='newCols'></div>"
-            . '</fieldset><fieldset class="pma-fieldset tblFooters">'
-            . '</fieldset>'
+            . '</div><div class="card-footer"></div>'
             . '</div>';
 
         return $html;
@@ -312,12 +308,7 @@ class Normalization
             . '<input class="btn btn-secondary" type="submit" value="' . __('No redundant column')
             . '" onclick="goToFinish1NF();">';
 
-        return [
-            'legendText' => $legendText,
-            'headText' => $headText,
-            'subText' => $subText,
-            'extra' => $extra,
-        ];
+        return ['legendText' => $legendText, 'headText' => $headText, 'subText' => $subText, 'extra' => $extra];
     }
 
     /**
@@ -459,8 +450,8 @@ class Normalization
     /**
      * build the html for showing the tables to have in order to put current table in 2NF
      *
-     * @param array  $partialDependencies array containing all the dependencies
-     * @param string $table               current table
+     * @param mixed[] $partialDependencies array containing all the dependencies
+     * @param string  $table               current table
      *
      * @return string HTML
      */
@@ -492,10 +483,10 @@ class Normalization
     /**
      * create/alter the tables needed for 2NF
      *
-     * @param array  $partialDependencies array containing all the partial dependencies
-     * @param object $tablesName          name of new tables
-     * @param string $table               current table
-     * @param string $db                  current database
+     * @param mixed[] $partialDependencies array containing all the partial dependencies
+     * @param object  $tablesName          name of new tables
+     * @param string  $table               current table
+     * @param string  $db                  current database
      *
      * @return array{legendText: string, headText: string, queryError: bool, extra: Message}
      */
@@ -514,11 +505,7 @@ class Normalization
             htmlspecialchars($table),
         ) . '</h3>';
         if (count($partialDependencies) === 1) {
-            return [
-                'legendText' => __('End of step'),
-                'headText' => $headText,
-                'queryError' => false,
-            ];
+            return ['legendText' => __('End of step'), 'headText' => $headText, 'queryError' => false];
         }
 
         $message = '';
@@ -588,11 +575,11 @@ class Normalization
      * build the html for showing the new tables to have in order
      * to put given tables in 3NF
      *
-     * @param object $dependencies containing all the dependencies
-     * @param array  $tables       tables formed after 2NF and need to convert to 3NF
-     * @param string $db           current database
+     * @param object  $dependencies containing all the dependencies
+     * @param mixed[] $tables       tables formed after 2NF and need to convert to 3NF
+     * @param string  $db           current database
      *
-     * @return array containing html and the list of new tables
+     * @return mixed[] containing html and the list of new tables
      */
     public function getHtmlForNewTables3NF(object $dependencies, array $tables, string $db): array
     {
@@ -640,27 +627,20 @@ class Normalization
                     . '( <u>' . htmlspecialchars($key) . '</u>'
                     . (count($dependents) > 0 ? ', ' : '')
                     . htmlspecialchars(implode(', ', $dependents)) . ' )';
-                $newTables[$table][$tableName] = [
-                    'pk' => $key,
-                    'nonpk' => implode(', ', $dependents),
-                ];
+                $newTables[$table][$tableName] = ['pk' => $key, 'nonpk' => implode(', ', $dependents)];
                 $i++;
                 $tableName = 'table' . $i;
             }
         }
 
-        return [
-            'html' => $html,
-            'newTables' => $newTables,
-            'success' => true,
-        ];
+        return ['html' => $html, 'newTables' => $newTables, 'success' => true];
     }
 
     /**
      * create new tables or alter existing to get 3NF
      *
-     * @param array  $newTables list of new tables to be created
-     * @param string $db        current database
+     * @param mixed[] $newTables list of new tables to be created
+     * @param string  $db        current database
      *
      * @return array{legendText: string, headText: string, queryError: string|false, extra?: string}
      */
@@ -670,12 +650,8 @@ class Normalization
         $dropCols = false;
         $error = false;
         $headText = '<h3>' . __('The third step of normalization is complete.') . '</h3>';
-        if (count($newTables) === 0) {
-            return [
-                'legendText' => __('End of step'),
-                'headText' => $headText,
-                'queryError' => false,
-            ];
+        if ($newTables === []) {
+            return ['legendText' => __('End of step'), 'headText' => $headText, 'queryError' => false];
         }
 
         $message = '';
@@ -808,10 +784,7 @@ class Normalization
         }
 
         $query2 = trim($query2, ',');
-        $queries = [
-            $query1,
-            $query2,
-        ];
+        $queries = [$query1, $query2];
         $this->dbi->selectDb($db);
         foreach ($queries as $query) {
             if (! $this->dbi->tryQuery($query)) {
@@ -825,17 +798,14 @@ class Normalization
             }
         }
 
-        return [
-            'queryError' => $error,
-            'message' => $message,
-        ];
+        return ['queryError' => $error, 'message' => $message];
     }
 
     /**
      * build html for 3NF step 1 to find the transitive dependencies
      *
-     * @param string $db     current database
-     * @param array  $tables tables formed after 2NF and need to process for 3NF
+     * @param string  $db     current database
+     * @param mixed[] $tables tables formed after 2NF and need to process for 3NF
      *
      * @return array{legendText: string, headText: string, subText: string, extra: string}
      */
@@ -905,12 +875,7 @@ class Normalization
             $extra = '<h3>' . __('Table is already in Third normal form!') . '</h3>';
         }
 
-        return [
-            'legendText' => $legendText,
-            'headText' => $headText,
-            'subText' => $subText,
-            'extra' => $extra,
-        ];
+        return ['legendText' => $legendText, 'headText' => $headText, 'subText' => $subText, 'extra' => $extra];
     }
 
     /**
@@ -1070,7 +1035,7 @@ class Normalization
     /**
      * find all the possible partial keys
      *
-     * @param array $primaryKey array containing all the column present in primary key
+     * @param mixed[] $primaryKey array containing all the column present in primary key
      *
      * @return string[] containing all the possible partial keys(subset of primary key)
      */

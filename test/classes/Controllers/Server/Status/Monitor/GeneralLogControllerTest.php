@@ -13,8 +13,9 @@ use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\DbiDummy;
 use PhpMyAdmin\Tests\Stubs\ResponseRenderer;
+use PHPUnit\Framework\Attributes\CoversClass;
 
-/** @covers \PhpMyAdmin\Controllers\Server\Status\Monitor\GeneralLogController */
+#[CoversClass(GeneralLogController::class)]
 class GeneralLogControllerTest extends AbstractTestCase
 {
     protected DatabaseInterface $dbi;
@@ -48,20 +49,11 @@ class GeneralLogControllerTest extends AbstractTestCase
 
     public function testGeneralLog(): void
     {
-        $value = [
-            'sql_text' => 'insert sql_text',
-            '#' => 10,
-            'argument' => 'argument argument2',
-        ];
+        $value = ['sql_text' => 'insert sql_text', '#' => 10, 'argument' => 'argument argument2'];
 
-        $value2 = [
-            'sql_text' => 'update sql_text',
-            '#' => 11,
-            'argument' => 'argument3 argument4',
-        ];
+        $value2 = ['sql_text' => 'update sql_text', '#' => 11, 'argument' => 'argument3 argument4'];
 
         $response = new ResponseRenderer();
-        $response->setAjax(true);
 
         $controller = new GeneralLogController(
             $response,
@@ -72,6 +64,7 @@ class GeneralLogControllerTest extends AbstractTestCase
         );
 
         $request = $this->createStub(ServerRequest::class);
+        $request->method('isAjax')->willReturn(true);
         $request->method('getParsedBodyParam')->willReturnMap([
             ['time_start', null, '0'],
             ['time_end', null, '10'],
@@ -83,15 +76,8 @@ class GeneralLogControllerTest extends AbstractTestCase
         $this->dummyDbi->assertAllSelectsConsumed();
         $ret = $response->getJSONResult();
 
-        $resultRows = [
-            $value,
-            $value2,
-        ];
-        $resultSum = [
-            'argument' => 10,
-            'TOTAL' => 21,
-            'argument3' => 11,
-        ];
+        $resultRows = [$value, $value2];
+        $resultSum = ['argument' => 10, 'TOTAL' => 21, 'argument3' => 11];
 
         $this->assertEquals(2, $ret['message']['numRows']);
         $this->assertEquals($resultRows, $ret['message']['rows']);

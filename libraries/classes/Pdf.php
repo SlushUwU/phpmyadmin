@@ -20,10 +20,10 @@ use function strtr;
  */
 class Pdf extends TCPDF
 {
-    /** @var array */
+    /** @var mixed[] */
     public array $footerset = [];
 
-    /** @var array */
+    /** @var mixed[] */
     public array $alias = [];
 
     /**
@@ -43,6 +43,8 @@ class Pdf extends TCPDF
      * @param false|int $pdfa        If not false, set the document to PDF/A mode and the good version (1 or 3)
      *
      * @throws Exception
+     *
+     * @infection-ignore-all
      */
     public function __construct(
         string $orientation = 'P',
@@ -112,7 +114,7 @@ class Pdf extends TCPDF
      */
     public function _putpages(): void
     {
-        if (count($this->alias) > 0) {
+        if ($this->alias !== []) {
             $nbPages = count($this->pages);
             for ($n = 1; $n <= $nbPages; $n++) {
                 $this->pages[$n] = strtr($this->pages[$n], $this->alias);
@@ -127,14 +129,14 @@ class Pdf extends TCPDF
     /**
      * Displays an error message
      *
-     * @param string $error_message the error message
+     * @param string $errorMessage the error message
      */
     // phpcs:ignore PSR1.Methods.CamelCapsMethodName.NotCamelCaps
-    public function Error($error_message = ''): void
+    public function Error(mixed $errorMessage = ''): never
     {
         echo Message::error(
-            __('Error while creating PDF:') . ' ' . $error_message,
+            __('Error while creating PDF:') . ' ' . $errorMessage,
         )->getDisplay();
-        exit;
+        ResponseRenderer::getInstance()->callExit();
     }
 }

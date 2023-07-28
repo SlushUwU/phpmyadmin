@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace PhpMyAdmin\Dbal;
 
 use PhpMyAdmin\Config\Settings\Server;
+use PhpMyAdmin\Identifiers\DatabaseName;
 
 /**
  * Contract for every database extension supported by phpMyAdmin
@@ -17,7 +18,7 @@ interface DbiExtension
     /**
      * Connects to the database server.
      */
-    public function connect(string $user, string $password, Server $server): Connection|null;
+    public function connect(Server $server): Connection|null;
 
     /**
      * selects given database

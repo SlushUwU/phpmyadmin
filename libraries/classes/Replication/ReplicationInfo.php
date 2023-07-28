@@ -6,19 +6,13 @@ namespace PhpMyAdmin\Replication;
 
 use PhpMyAdmin\DatabaseInterface;
 
-use function count;
 use function explode;
 use function sprintf;
 
 final class ReplicationInfo
 {
     /** @var string[] */
-    public array $primaryVariables = [
-        'File',
-        'Position',
-        'Binlog_Do_DB',
-        'Binlog_Ignore_DB',
-    ];
+    public array $primaryVariables = ['File', 'Position', 'Binlog_Do_DB', 'Binlog_Ignore_DB'];
 
     /** @var string[] */
     public array $replicaVariables = [
@@ -57,19 +51,19 @@ final class ReplicationInfo
         'Seconds_Behind_Master',
     ];
 
-    /** @var array */
+    /** @var mixed[] */
     private array $primaryStatus = [];
 
-    /** @var array */
+    /** @var mixed[] */
     private array $replicaStatus = [];
 
-    /** @var array */
+    /** @var mixed[] */
     private array $multiPrimaryStatus = [];
 
-    /** @var array */
+    /** @var mixed[] */
     private array $primaryInfo = [];
 
-    /** @var array */
+    /** @var mixed[] */
     private array $replicaInfo = [];
 
     public function __construct(private DatabaseInterface $dbi)
@@ -101,6 +95,7 @@ final class ReplicationInfo
         $this->primaryStatus = $this->dbi->fetchResult('SHOW MASTER STATUS');
     }
 
+    /** @return mixed[] */
     public function getPrimaryStatus(): array
     {
         return $this->primaryStatus;
@@ -111,6 +106,7 @@ final class ReplicationInfo
         $this->replicaStatus = $this->dbi->fetchResult('SHOW SLAVE STATUS');
     }
 
+    /** @return mixed[] */
     public function getReplicaStatus(): array
     {
         return $this->replicaStatus;
@@ -126,6 +122,11 @@ final class ReplicationInfo
         $this->dbi->query(sprintf('SET @@default_master_connection = %s', $this->dbi->quoteString($connection)));
     }
 
+    /**
+     * @param mixed[] $status
+     *
+     * @return mixed[]
+     */
     private static function fill(array $status, string $key): array
     {
         if (empty($status[0][$key])) {
@@ -139,7 +140,7 @@ final class ReplicationInfo
     {
         $this->primaryInfo = ['status' => false];
 
-        if (count($this->primaryStatus) > 0) {
+        if ($this->primaryStatus !== []) {
             $this->primaryInfo['status'] = true;
         }
 
@@ -151,7 +152,7 @@ final class ReplicationInfo
         $this->primaryInfo['Ignore_DB'] = self::fill($this->primaryStatus, 'Binlog_Ignore_DB');
     }
 
-    /** @return array */
+    /** @return mixed[] */
     public function getPrimaryInfo(): array
     {
         return $this->primaryInfo;
@@ -161,7 +162,7 @@ final class ReplicationInfo
     {
         $this->replicaInfo = ['status' => false];
 
-        if (count($this->replicaStatus) > 0) {
+        if ($this->replicaStatus !== []) {
             $this->replicaInfo['status'] = true;
         }
 
@@ -177,7 +178,7 @@ final class ReplicationInfo
         $this->replicaInfo['Wild_Ignore_Table'] = self::fill($this->replicaStatus, 'Replicate_Wild_Ignore_Table');
     }
 
-    /** @return array */
+    /** @return mixed[] */
     public function getReplicaInfo(): array
     {
         return $this->replicaInfo;

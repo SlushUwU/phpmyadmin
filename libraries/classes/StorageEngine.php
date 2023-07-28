@@ -66,15 +66,15 @@ class StorageEngine
     /** @param string $engine The engine ID */
     public function __construct(string $engine)
     {
-        $storage_engines = self::getStorageEngines();
-        if (empty($storage_engines[$engine])) {
+        $storageEngines = self::getStorageEngines();
+        if (empty($storageEngines[$engine])) {
             return;
         }
 
         $this->engine = $engine;
-        $this->title = $storage_engines[$engine]['Engine'];
-        $this->comment = ($storage_engines[$engine]['Comment'] ?? '');
-        $this->support = match ($storage_engines[$engine]['Support']) {
+        $this->title = $storageEngines[$engine]['Engine'];
+        $this->comment = ($storageEngines[$engine]['Comment'] ?? '');
+        $this->support = match ($storageEngines[$engine]['Support']) {
             'DEFAULT' => self::SUPPORT_DEFAULT,
             'YES' => self::SUPPORT_YES,
             'DISABLED' => self::SUPPORT_DISABLED,
@@ -85,16 +85,16 @@ class StorageEngine
     /**
      * Returns array of storage engines
      *
-     * @return array[] array of storage engines
+     * @return mixed[][] array of storage engines
      *
      * @staticvar array $storage_engines storage engines
      */
     public static function getStorageEngines(): array
     {
-        static $storage_engines = null;
+        static $storageEngines = null;
 
-        if ($storage_engines == null) {
-            $storage_engines = $GLOBALS['dbi']->fetchResult('SHOW STORAGE ENGINES', 'Engine');
+        if ($storageEngines == null) {
+            $storageEngines = $GLOBALS['dbi']->fetchResult('SHOW STORAGE ENGINES', 'Engine');
             if (! $GLOBALS['dbi']->isMariaDB() && $GLOBALS['dbi']->getVersion() >= 50708) {
                 $disabled = (string) SessionCache::get(
                     'disabled_storage_engines',
@@ -104,16 +104,16 @@ class StorageEngine
                     )
                 );
                 foreach (explode(',', $disabled) as $engine) {
-                    if (! isset($storage_engines[$engine])) {
+                    if (! isset($storageEngines[$engine])) {
                         continue;
                     }
 
-                    $storage_engines[$engine]['Support'] = 'DISABLED';
+                    $storageEngines[$engine]['Support'] = 'DISABLED';
                 }
             }
         }
 
-        return $storage_engines;
+        return $storageEngines;
     }
 
     /**
@@ -269,9 +269,9 @@ class StorageEngine
             return true;
         }
 
-        $storage_engines = self::getStorageEngines();
+        $storageEngines = self::getStorageEngines();
 
-        return isset($storage_engines[$engine]);
+        return isset($storageEngines[$engine]);
     }
 
     /**
@@ -299,10 +299,8 @@ class StorageEngine
                   . '    <td class="font-monospace text-end">';
             switch ($details['type']) {
                 case self::DETAILS_TYPE_SIZE:
-                    $parsed_size = $this->resolveTypeSize($details['value']);
-                    if ($parsed_size !== null) {
-                        $ret .= $parsed_size[0] . '&nbsp;' . $parsed_size[1];
-                    }
+                    $parsedSize = $this->resolveTypeSize($details['value']);
+                    $ret .= $parsedSize[0] . '&nbsp;' . $parsedSize[1];
 
                     break;
                 case self::DETAILS_TYPE_NUMERIC:
@@ -338,9 +336,10 @@ class StorageEngine
      *
      * @param int|string $value Value to format
      *
-     * @return array|null the formatted value and its unit
+     * @return string[] the formatted value and its unit
+     * @psalm-return array{string, string}
      */
-    public function resolveTypeSize(int|string $value): array|null
+    public function resolveTypeSize(int|string $value): array
     {
         return Util::formatByteDown($value);
     }
@@ -348,7 +347,7 @@ class StorageEngine
     /**
      * Returns array with detailed info about engine specific server variables
      *
-     * @return array array with detailed info about specific engine server variables
+     * @return mixed[] array with detailed info about specific engine server variables
      */
     public function getVariablesStatus(): array
     {
@@ -361,31 +360,31 @@ class StorageEngine
             $like = '';
         }
 
-        $mysql_vars = [];
+        $mysqlVars = [];
 
-        $sql_query = 'SHOW GLOBAL VARIABLES ' . $like . ';';
-        $res = $GLOBALS['dbi']->query($sql_query);
+        $sqlQuery = 'SHOW GLOBAL VARIABLES ' . $like . ';';
+        $res = $GLOBALS['dbi']->query($sqlQuery);
         foreach ($res as $row) {
             if (isset($variables[$row['Variable_name']])) {
-                $mysql_vars[$row['Variable_name']] = $variables[$row['Variable_name']];
+                $mysqlVars[$row['Variable_name']] = $variables[$row['Variable_name']];
             } elseif (! $like && mb_stripos($row['Variable_name'], $this->engine) !== 0) {
                 continue;
             }
 
-            $mysql_vars[$row['Variable_name']]['value'] = $row['Value'];
+            $mysqlVars[$row['Variable_name']]['value'] = $row['Value'];
 
-            if (empty($mysql_vars[$row['Variable_name']]['title'])) {
-                $mysql_vars[$row['Variable_name']]['title'] = $row['Variable_name'];
+            if (empty($mysqlVars[$row['Variable_name']]['title'])) {
+                $mysqlVars[$row['Variable_name']]['title'] = $row['Variable_name'];
             }
 
-            if (isset($mysql_vars[$row['Variable_name']]['type'])) {
+            if (isset($mysqlVars[$row['Variable_name']]['type'])) {
                 continue;
             }
 
-            $mysql_vars[$row['Variable_name']]['type'] = self::DETAILS_TYPE_PLAINTEXT;
+            $mysqlVars[$row['Variable_name']]['type'] = self::DETAILS_TYPE_PLAINTEXT;
         }
 
-        return $mysql_vars;
+        return $mysqlVars;
     }
 
     /**
@@ -430,7 +429,7 @@ class StorageEngine
      * engine. This function should be overridden when extending this class
      * for a particular engine.
      *
-     * @return array The list of variables.
+     * @return mixed[] The list of variables.
      */
     public function getVariables(): array
     {

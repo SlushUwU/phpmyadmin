@@ -1,9 +1,10 @@
-<fieldset class="pma-fieldset index_info">
-  <legend id="index_header">
+<div class="card index_info">
+  <div class="card-header" id="index_header">
     {% trans 'Indexes' %}
     {{ show_mysql_docu('optimizing-database-structure') }}
-  </legend>
+  </div>
 
+  <div class="card-body">
   {% if indexes is not empty %}
     {{ indexes_duplicates|raw }}
 
@@ -42,12 +43,12 @@
               <td rowspan="{{ columns_count }}" class="d-print-none">
                 {% if index.getName() == 'PRIMARY' %}
                   {% set index_params = {
-                    'sql_query': 'ALTER TABLE ' ~ backquote(table) ~ ' DROP PRIMARY KEY;',
+                    'sql_query': 'ALTER TABLE ' ~ backquote(url_params.table) ~ ' DROP PRIMARY KEY;',
                     'message_to_show': 'The primary key has been dropped.'|trans
                   } %}
                 {% else %}
                   {% set index_params = {
-                    'sql_query': 'ALTER TABLE ' ~ backquote(table) ~ ' DROP INDEX ' ~ backquote(index.getName()) ~ ';',
+                    'sql_query': 'ALTER TABLE ' ~ backquote(url_params.table) ~ ' DROP INDEX ' ~ backquote(index.getName()) ~ ';',
                     'message_to_show': 'Index %s has been dropped.'|trans|format(index.getName())
                   } %}
                 {% endif %}
@@ -91,4 +92,5 @@
   {% else %}
     <div class="no_indexes_defined">{{ 'No index defined!'|trans|notice }}</div>
   {% endif %}
-</fieldset>
+  </div>
+</div>

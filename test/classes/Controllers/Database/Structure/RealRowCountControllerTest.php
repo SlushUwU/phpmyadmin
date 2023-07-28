@@ -11,10 +11,11 @@ use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\DbiDummy;
 use PhpMyAdmin\Tests\Stubs\ResponseRenderer as ResponseStub;
+use PHPUnit\Framework\Attributes\CoversClass;
 
 use function json_encode;
 
-/** @covers \PhpMyAdmin\Controllers\Database\Structure\RealRowCountController */
+#[CoversClass(RealRowCountController::class)]
 class RealRowCountControllerTest extends AbstractTestCase
 {
     protected DatabaseInterface $dbi;
@@ -39,18 +40,19 @@ class RealRowCountControllerTest extends AbstractTestCase
         $GLOBALS['db'] = 'world';
 
         $response = new ResponseStub();
-        $response->setAjax(true);
 
         $_REQUEST['table'] = 'City';
+        $request = $this->createStub(ServerRequest::class);
+        $request->method('isAjax')->willReturn(true);
 
-        (new RealRowCountController($response, new Template(), $this->dbi))($this->createStub(ServerRequest::class));
+        (new RealRowCountController($response, new Template(), $this->dbi))($request);
 
         $json = $response->getJSONResult();
         $this->assertEquals('4,079', $json['real_row_count']);
 
         $_REQUEST['real_row_count_all'] = 'on';
 
-        (new RealRowCountController($response, new Template(), $this->dbi))($this->createStub(ServerRequest::class));
+        (new RealRowCountController($response, new Template(), $this->dbi))($request);
 
         $json = $response->getJSONResult();
         $expected = [

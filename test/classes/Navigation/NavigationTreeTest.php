@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Navigation;
 
+use PhpMyAdmin\ConfigStorage\Relation;
 use PhpMyAdmin\Navigation\NavigationTree;
 use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\AbstractTestCase;
+use PHPUnit\Framework\Attributes\CoversClass;
 
-/** @covers \PhpMyAdmin\Navigation\NavigationTree */
+#[CoversClass(NavigationTree::class)]
 class NavigationTreeTest extends AbstractTestCase
 {
     protected NavigationTree $object;
@@ -38,7 +40,7 @@ class NavigationTreeTest extends AbstractTestCase
         $GLOBALS['db'] = 'db';
         $GLOBALS['table'] = '';
 
-        $this->object = new NavigationTree(new Template(), $GLOBALS['dbi']);
+        $this->object = new NavigationTree(new Template(), $GLOBALS['dbi'], new Relation($GLOBALS['dbi']));
     }
 
     /**
@@ -104,7 +106,7 @@ class NavigationTreeTest extends AbstractTestCase
         $dbi = $this->createDatabaseInterface($dummyDbi);
         $GLOBALS['dbi'] = $dbi;
 
-        $object = new NavigationTree(new Template(), $dbi);
+        $object = new NavigationTree(new Template(), $dbi, new Relation($dbi));
         $result = $object->renderState();
         $this->assertStringContainsString('<li class="first navGroup">', $result);
         $this->assertStringContainsString('functions' . "\n", $result);

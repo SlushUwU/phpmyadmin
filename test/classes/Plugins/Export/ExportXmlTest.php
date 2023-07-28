@@ -6,7 +6,7 @@ namespace PhpMyAdmin\Tests\Plugins\Export;
 
 use PhpMyAdmin\ConfigStorage\Relation;
 use PhpMyAdmin\DatabaseInterface;
-use PhpMyAdmin\Export;
+use PhpMyAdmin\Export\Export;
 use PhpMyAdmin\Plugins\Export\ExportXml;
 use PhpMyAdmin\Properties\Options\Groups\OptionsPropertyMainGroup;
 use PhpMyAdmin\Properties\Options\Groups\OptionsPropertyRootGroup;
@@ -16,16 +16,16 @@ use PhpMyAdmin\Properties\Plugins\ExportPluginProperties;
 use PhpMyAdmin\Table;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Transformations;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Group;
 use ReflectionMethod;
 use ReflectionProperty;
 
 use function ob_get_clean;
 use function ob_start;
 
-/**
- * @covers \PhpMyAdmin\Plugins\Export\ExportXml
- * @group medium
- */
+#[CoversClass(ExportXml::class)]
+#[Group('medium')]
 class ExportXmlTest extends AbstractTestCase
 {
     protected ExportXml $object;
@@ -65,7 +65,7 @@ class ExportXmlTest extends AbstractTestCase
         unset($this->object);
     }
 
-    /** @group medium */
+    #[Group('medium')]
     public function testSetProperties(): void
     {
         $method = new ReflectionMethod(ExportXml::class, 'setProperties');
@@ -166,7 +166,7 @@ class ExportXmlTest extends AbstractTestCase
         $this->assertInstanceOf(BoolPropertyItem::class, $property);
     }
 
-    /** @group medium */
+    #[Group('medium')]
     public function testExportHeader(): void
     {
         $GLOBALS['xml_export_functions'] = 1;
@@ -183,15 +183,8 @@ class ExportXmlTest extends AbstractTestCase
         $GLOBALS['db'] = 'd<"b';
 
         $result = [
-            0 => [
-                'DEFAULT_COLLATION_NAME' => 'utf8_general_ci',
-                'DEFAULT_CHARACTER_SET_NAME' => 'utf-8',
-
-            ],
-            'table' => [
-                null,
-                '"tbl"',
-            ],
+            0 => ['DEFAULT_COLLATION_NAME' => 'utf8_general_ci', 'DEFAULT_CHARACTER_SET_NAME' => 'utf-8'],
+            'table' => [null, '"tbl"'],
         ];
         $dbi = $this->getMockBuilder(DatabaseInterface::class)
             ->disableOriginalConstructor()
@@ -280,30 +273,14 @@ class ExportXmlTest extends AbstractTestCase
             ->disableOriginalConstructor()
             ->getMock();
 
-        $result_1 = [
-            [
-                'DEFAULT_COLLATION_NAME' => 'utf8_general_ci',
-                'DEFAULT_CHARACTER_SET_NAME' => 'utf-8',
+        $result1 = [['DEFAULT_COLLATION_NAME' => 'utf8_general_ci', 'DEFAULT_CHARACTER_SET_NAME' => 'utf-8']];
+        $result2 = ['t1' => [null, '"tbl"']];
 
-            ],
-        ];
-        $result_2 = [
-            't1' => [
-                null,
-                '"tbl"',
-            ],
-        ];
-
-        $result_3 = [
-            't2' => [
-                null,
-                '"tbl"',
-            ],
-        ];
+        $result3 = ['t2' => [null, '"tbl"']];
 
         $dbi->expects($this->exactly(3))
             ->method('fetchResult')
-            ->willReturnOnConsecutiveCalls($result_1, $result_2, $result_3);
+            ->willReturnOnConsecutiveCalls($result1, $result2, $result3);
 
         $dbi->expects($this->exactly(2))
             ->method('fetchValue')
@@ -315,10 +292,7 @@ class ExportXmlTest extends AbstractTestCase
 
         $GLOBALS['dbi'] = $dbi;
 
-        $GLOBALS['tables'] = [
-            't1',
-            't2',
-        ];
+        $GLOBALS['tables'] = ['t1', 't2'];
 
         ob_start();
         $this->assertTrue(

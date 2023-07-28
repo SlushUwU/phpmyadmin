@@ -23,7 +23,6 @@ use function __;
 use function array_flip;
 use function array_keys;
 use function array_search;
-use function count;
 use function explode;
 use function function_exists;
 use function gettype;
@@ -63,14 +62,14 @@ class FormDisplay
      * [ Form_name ] is an array of form errors
      * [path] is a string storing error associated with single field
      *
-     * @var array
+     * @var mixed[]
      */
     private array $errors = [];
 
     /**
      * Paths changed so that they can be used as HTML ids, indexed by paths
      *
-     * @var array
+     * @var mixed[]
      */
     private array $translatedPaths = [];
 
@@ -78,7 +77,7 @@ class FormDisplay
      * Server paths change indexes so we define maps from current server
      * path to the first one, indexed by work path
      *
-     * @var array
+     * @var mixed[]
      */
     private array $systemPaths = [];
 
@@ -95,7 +94,7 @@ class FormDisplay
     /**
      * Dictionary with disallowed user preferences keys
      *
-     * @var array
+     * @var mixed[]
      */
     private array $userprefsDisallow = [];
 
@@ -125,7 +124,7 @@ class FormDisplay
      * Registers form in form manager
      *
      * @param string   $formName Form name
-     * @param array    $form     Form data
+     * @param mixed[]  $form     Form data
      * @param int|null $serverId 0 if new server, validation; >= 1 if editing a server
      */
     public function registerForm(string $formName, array $form, int|null $serverId = null): void
@@ -155,7 +154,7 @@ class FormDisplay
         }
 
         // save forms
-        if (count($this->forms) > 0) {
+        if ($this->forms !== []) {
             return $this->save(array_keys($this->forms), $allowPartialSave);
         }
 
@@ -187,7 +186,7 @@ class FormDisplay
         $errors = Validator::validate($this->configFile, $paths, $values, false);
 
         // change error keys from canonical paths to work paths
-        if (is_array($errors) && count($errors) > 0) {
+        if (is_array($errors) && $errors !== []) {
             $this->errors = [];
             foreach ($errors as $path => $errorList) {
                 $workPath = array_search($path, $this->systemPaths);
@@ -207,10 +206,10 @@ class FormDisplay
     /**
      * Outputs HTML for forms
      *
-     * @param bool        $showButtons  whether show submit and reset button
-     * @param string|null $formAction   action attribute for the form
-     * @param array|null  $hiddenFields array of form hidden fields (key: field
-     *                                  name)
+     * @param bool         $showButtons  whether show submit and reset button
+     * @param string|null  $formAction   action attribute for the form
+     * @param mixed[]|null $hiddenFields array of form hidden fields (key: field
+     *                                 name)
      *
      * @return string HTML for forms
      */
@@ -318,8 +317,8 @@ class FormDisplay
      * @param bool|null $userPrefsAllow whether user preferences are enabled
      *                                  for this field (null - no support,
      *                                  true/false - enabled/disabled)
-     * @param array     $jsDefault      array which stores JavaScript code
-     *                                  to be displayed
+     * @param mixed[]   $jsDefault      array which stores JavaScript code
+     *                                to be displayed
      *
      * @return string|null HTML for input field
      */
@@ -512,7 +511,7 @@ class FormDisplay
      * Validates select field and casts $value to correct type
      *
      * @param string|bool $value   Current value
-     * @param array       $allowed List of allowed values
+     * @param mixed[]     $allowed List of allowed values
      */
     private function validateSelect(string|bool &$value, array $allowed): bool
     {
@@ -761,8 +760,8 @@ class FormDisplay
     /**
      * Sets field comments and warnings based on current environment
      *
-     * @param string $systemPath Path to settings
-     * @param array  $opts       Chosen options
+     * @param string  $systemPath Path to settings
+     * @param mixed[] $opts       Chosen options
      */
     private function setComments(string $systemPath, array &$opts): void
     {
@@ -778,15 +777,6 @@ class FormDisplay
                 );
             }
 
-            if (! function_exists('recode_string')) {
-                $opts['values']['recode'] .= ' (' . __('unavailable') . ')';
-                $comment .= ($comment ? ', ' : '') . sprintf(
-                    __('"%s" requires %s extension'),
-                    'recode',
-                    'recode',
-                );
-            }
-
             /* mbstring is always there thanks to polyfill */
             $opts['comment'] = $comment;
             $opts['comment_warning'] = true;
@@ -796,18 +786,9 @@ class FormDisplay
         if ($systemPath === 'ZipDump' || $systemPath === 'GZipDump' || $systemPath === 'BZipDump') {
             $comment = '';
             $funcs = [
-                'ZipDump' => [
-                    'zip_open',
-                    'gzcompress',
-                ],
-                'GZipDump' => [
-                    'gzopen',
-                    'gzencode',
-                ],
-                'BZipDump' => [
-                    'bzopen',
-                    'bzcompress',
-                ],
+                'ZipDump' => ['zip_open', 'gzcompress'],
+                'GZipDump' => ['gzopen', 'gzencode'],
+                'BZipDump' => ['bzopen', 'bzcompress'],
             ];
             if (! function_exists($funcs[$systemPath][0])) {
                 $comment = sprintf(
@@ -848,8 +829,8 @@ class FormDisplay
     /**
      * Copy items of an array to $_POST variable
      *
-     * @param array  $postValues List of parameters
-     * @param string $key        Array key
+     * @param mixed[] $postValues List of parameters
+     * @param string  $key        Array key
      */
     private function fillPostArrayParameters(array $postValues, string $key): void
     {

@@ -15,8 +15,10 @@ use PhpMyAdmin\Plugins;
 use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\ResponseRenderer;
+use PhpMyAdmin\UserPreferences;
+use PHPUnit\Framework\Attributes\CoversClass;
 
-/** @covers \PhpMyAdmin\Controllers\Table\ExportController */
+#[CoversClass(ExportController::class)]
 class ExportControllerTest extends AbstractTestCase
 {
     protected function setUp(): void
@@ -33,7 +35,7 @@ class ExportControllerTest extends AbstractTestCase
 
         $GLOBALS['db'] = 'test_db';
         $GLOBALS['table'] = 'test_table';
-        $GLOBALS['cfg']['Server'] = $GLOBALS['config']->defaultServer;
+        $GLOBALS['cfg']['Server'] = $GLOBALS['config']->getSettings()->Servers[1]->asArray();
         $GLOBALS['cfg']['Server']['DisableIS'] = true;
         $GLOBALS['single_table'] = '1';
 
@@ -43,7 +45,8 @@ class ExportControllerTest extends AbstractTestCase
         $GLOBALS['dbi'] = $dbi;
 
         $response = new ResponseRenderer();
-        $pageSettings = new PageSettings('Export');
+        $pageSettings = new PageSettings(new UserPreferences($GLOBALS['dbi']));
+        $pageSettings->init('Export');
         $template = new Template();
         $exportList = Plugins::getExport('table', true);
 
@@ -103,6 +106,7 @@ class ExportControllerTest extends AbstractTestCase
             $response,
             $template,
             new Options(new Relation($dbi), new TemplateModel($dbi)),
+            $pageSettings,
         ))($this->createStub(ServerRequest::class));
         $this->assertSame($expected, $response->getHTMLResult());
     }

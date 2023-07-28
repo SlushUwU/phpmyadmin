@@ -12,8 +12,9 @@ use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\ResponseRenderer;
 use PhpMyAdmin\Transformations;
+use PHPUnit\Framework\Attributes\CoversClass;
 
-/** @covers \PhpMyAdmin\Controllers\Table\AddFieldController */
+#[CoversClass(AddFieldController::class)]
 class AddFieldControllerTest extends AbstractTestCase
 {
     public function testInvoke(): void
@@ -21,7 +22,7 @@ class AddFieldControllerTest extends AbstractTestCase
         $GLOBALS['db'] = 'test_db';
         $GLOBALS['table'] = 'test_table';
         $GLOBALS['regenerate'] = null;
-        $GLOBALS['cfg']['Server'] = $GLOBALS['config']->defaultServer;
+        $GLOBALS['cfg']['Server'] = $GLOBALS['config']->getSettings()->Servers[1]->asArray();
         $_POST = [
             'db' => 'test_db',
             'table' => 'test_table',

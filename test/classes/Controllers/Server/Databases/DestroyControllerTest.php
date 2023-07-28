@@ -13,10 +13,11 @@ use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\ResponseRenderer;
 use PhpMyAdmin\Transformations;
+use PHPUnit\Framework\Attributes\CoversClass;
 
 use function __;
 
-/** @covers \PhpMyAdmin\Controllers\Server\Databases\DestroyController */
+#[CoversClass(DestroyController::class)]
 class DestroyControllerTest extends AbstractTestCase
 {
     protected function setUp(): void
@@ -36,7 +37,6 @@ class DestroyControllerTest extends AbstractTestCase
             ->getMock();
 
         $response = new ResponseRenderer();
-        $response->setAjax(true);
 
         $GLOBALS['cfg']['AllowUserDropDatabase'] = true;
 
@@ -48,7 +48,10 @@ class DestroyControllerTest extends AbstractTestCase
             new RelationCleanup($dbi, new Relation($dbi)),
         );
 
-        $controller($this->createStub(ServerRequest::class));
+        $request = $this->createStub(ServerRequest::class);
+        $request->method('isAjax')->willReturn(true);
+
+        $controller($request);
         $actual = $response->getJSONResult();
 
         $this->assertArrayHasKey('message', $actual);

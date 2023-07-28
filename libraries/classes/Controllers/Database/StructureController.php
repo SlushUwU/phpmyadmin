@@ -62,7 +62,7 @@ class StructureController extends AbstractController
     /** @var int Number of tables */
     protected int $totalNumTables = 0;
 
-    /** @var array Tables in the database */
+    /** @var mixed[] Tables in the database */
     protected array $tables = [];
 
     /** @var bool whether stats show or not */
@@ -77,6 +77,7 @@ class StructureController extends AbstractController
         private Replication $replication,
         private DatabaseInterface $dbi,
         private TrackingChecker $trackingChecker,
+        private PageSettings $pageSettings,
     ) {
         parent::__construct($response, $template);
 
@@ -88,11 +89,7 @@ class StructureController extends AbstractController
      */
     private function getDatabaseInfo(ServerRequest $request): void
     {
-        [
-            $tables,
-            $numTables,
-            $totalNumTables,
-        ] = Util::getDbInfo($request, $GLOBALS['db']);
+        [$tables, $numTables, $totalNumTables] = Util::getDbInfo($request, $GLOBALS['db']);
 
         $this->tables = $tables;
         $this->numTables = $numTables;
@@ -121,10 +118,7 @@ class StructureController extends AbstractController
     {
         $GLOBALS['errorUrl'] ??= null;
 
-        $parameters = [
-            'sort' => $_REQUEST['sort'] ?? null,
-            'sort_order' => $_REQUEST['sort_order'] ?? null,
-        ];
+        $parameters = ['sort' => $_REQUEST['sort'] ?? null, 'sort_order' => $_REQUEST['sort_order'] ?? null];
 
         $this->checkParameters(['db']);
 
@@ -154,15 +148,12 @@ class StructureController extends AbstractController
         $this->replicationInfo->load($request->getParsedBodyParam('primary_connection'));
         $replicaInfo = $this->replicationInfo->getReplicaInfo();
 
-        $pageSettings = new PageSettings('DbStructure');
-        $this->response->addHTML($pageSettings->getErrorHTML());
-        $this->response->addHTML($pageSettings->getHTML());
+        $this->pageSettings->init('DbStructure');
+        $this->response->addHTML($this->pageSettings->getErrorHTML());
+        $this->response->addHTML($this->pageSettings->getHTML());
 
         if ($this->numTables > 0) {
-            $urlParams = [
-                'pos' => $this->position,
-                'db' => $GLOBALS['db'],
-            ];
+            $urlParams = ['pos' => $this->position, 'db' => $GLOBALS['db']];
             if (isset($parameters['sort'])) {
                 $urlParams['sort'] = $parameters['sort'];
             }
@@ -184,7 +175,7 @@ class StructureController extends AbstractController
         }
 
         $createTable = '';
-        if ($this->dbIsSystemSchema === false) {
+        if (! $this->dbIsSystemSchema) {
             $checkUserPrivileges = new CheckUserPrivileges($this->dbi);
             $checkUserPrivileges->getPrivileges();
 
@@ -196,12 +187,12 @@ class StructureController extends AbstractController
             'has_tables' => $this->numTables > 0,
             'list_navigator_html' => $listNavigator ?? '',
             'table_list_html' => $tableList ?? '',
-            'is_system_schema' => $this->dbIsSystemSchema === true,
+            'is_system_schema' => $this->dbIsSystemSchema,
             'create_table_html' => $createTable,
         ]);
     }
 
-    /** @param array $replicaInfo */
+    /** @param mixed[] $replicaInfo */
     protected function displayTableList(array $replicaInfo): string
     {
         $html = '';
@@ -234,10 +225,7 @@ class StructureController extends AbstractController
             $inputClass = ['checkall'];
 
             // Sets parameters for links
-            $tableUrlParams = [
-                'db' => $GLOBALS['db'],
-                'table' => $currentTable['TABLE_NAME'],
-            ];
+            $tableUrlParams = ['db' => $GLOBALS['db'], 'table' => $currentTable['TABLE_NAME']];
             // do not list the previous table's size info for a view
 
             [
@@ -444,10 +432,7 @@ class StructureController extends AbstractController
             $this->dbi->getDbCollation($GLOBALS['db']),
         );
         if ($collation !== null) {
-            $databaseCollation = [
-                'name' => $collation->getName(),
-                'description' => $collation->getDescription(),
-            ];
+            $databaseCollation = ['name' => $collation->getName(), 'description' => $collation->getDescription()];
             $databaseCharset = $collation->getCharset();
         }
 
@@ -525,10 +510,10 @@ class StructureController extends AbstractController
     /**
      * Returns whether the row count is approximated
      *
-     * @param array $currentTable array containing details about the table
-     * @param bool  $tableIsView  whether the table is a view
+     * @param mixed[] $currentTable array containing details about the table
+     * @param bool    $tableIsView  whether the table is a view
      *
-     * @return array
+     * @return mixed[]
      */
     protected function isRowCountApproximated(
         array $currentTable,
@@ -564,19 +549,16 @@ class StructureController extends AbstractController
             }
         }
 
-        return [
-            $approxRows,
-            $showSuperscript,
-        ];
+        return [$approxRows, $showSuperscript];
     }
 
     /**
      * Returns the replication status of the table.
      *
-     * @param array  $replicaInfo
-     * @param string $table       table name
+     * @param mixed[] $replicaInfo
+     * @param string  $table       table name
      *
-     * @return array
+     * @return mixed[]
      */
     protected function getReplicationStatus(array $replicaInfo, string $table): array
     {
@@ -599,10 +581,7 @@ class StructureController extends AbstractController
                 || $this->hasTable($replicaInfo['Wild_Ignore_Table'], $table);
         }
 
-        return [
-            $do,
-            $ignored,
-        ];
+        return [$do, $ignored];
     }
 
     /**
@@ -612,10 +591,8 @@ class StructureController extends AbstractController
      */
     protected function checkFavoriteTable(string $currentTable): bool
     {
-        // ensure $_SESSION['tmpval']['favoriteTables'] is initialized
-        RecentFavoriteTable::getInstance('favorite');
-        $favoriteTables = $_SESSION['tmpval']['favoriteTables'][$GLOBALS['server']] ?? [];
-        foreach ($favoriteTables as $value) {
+        $recentFavoriteTables = RecentFavoriteTable::getInstance('favorite');
+        foreach ($recentFavoriteTables->getTables() as $value) {
             if ($value['db'] == $GLOBALS['db'] && $value['table'] == $currentTable) {
                 return true;
             }
@@ -627,8 +604,8 @@ class StructureController extends AbstractController
     /**
      * Find table with truename
      *
-     * @param array  $db       DB to look into
-     * @param string $truename Table name
+     * @param mixed[] $db       DB to look into
+     * @param string  $truename Table name
      */
     protected function hasTable(array $db, string $truename): bool
     {
@@ -653,11 +630,11 @@ class StructureController extends AbstractController
      *
      * @internal param bool $table_is_view whether table is view or not
      *
-     * @param array $currentTable current table
-     * @param int   $sumSize      total table size
-     * @param int   $overheadSize overhead size
+     * @param mixed[] $currentTable current table
+     * @param int     $sumSize      total table size
+     * @param int     $overheadSize overhead size
      *
-     * @return array
+     * @return mixed[]
      */
     protected function getStuffForEngineTypeTable(
         array $currentTable,
@@ -769,15 +746,15 @@ class StructureController extends AbstractController
     /**
      * Get values for ARIA/MARIA tables
      *
-     * @param array  $currentTable      current table
-     * @param int    $sumSize           sum size
-     * @param int    $overheadSize      overhead size
-     * @param string $formattedSize     formatted size
-     * @param string $unit              unit
-     * @param string $formattedOverhead overhead formatted
-     * @param string $overheadUnit      overhead unit
+     * @param mixed[] $currentTable      current table
+     * @param int     $sumSize           sum size
+     * @param int     $overheadSize      overhead size
+     * @param string  $formattedSize     formatted size
+     * @param string  $unit              unit
+     * @param string  $formattedOverhead overhead formatted
+     * @param string  $overheadUnit      overhead unit
      *
-     * @return array
+     * @return mixed[]
      */
     protected function getValuesForAriaTable(
         array $currentTable,
@@ -801,33 +778,21 @@ class StructureController extends AbstractController
             $sumSize += $tblsize;
             [$formattedSize, $unit] = Util::formatByteDown($tblsize, 3, $tblsize > 0 ? 1 : 0);
             if (isset($currentTable['Data_free']) && $currentTable['Data_free'] > 0) {
-                [$formattedOverhead, $overheadUnit] = Util::formatByteDown(
-                    $currentTable['Data_free'],
-                    3,
-                    1,
-                );
+                [$formattedOverhead, $overheadUnit] = Util::formatByteDown($currentTable['Data_free'], 3, 1);
                 $overheadSize += $currentTable['Data_free'];
             }
         }
 
-        return [
-            $currentTable,
-            $formattedSize,
-            $unit,
-            $formattedOverhead,
-            $overheadUnit,
-            $overheadSize,
-            $sumSize,
-        ];
+        return [$currentTable, $formattedSize, $unit, $formattedOverhead, $overheadUnit, $overheadSize, $sumSize];
     }
 
     /**
      * Get values for InnoDB table
      *
-     * @param array $currentTable current table
-     * @param int   $sumSize      sum size
+     * @param mixed[] $currentTable current table
+     * @param int     $sumSize      sum size
      *
-     * @return array
+     * @return mixed[]
      */
     protected function getValuesForInnodbTable(
         array $currentTable,
@@ -856,21 +821,16 @@ class StructureController extends AbstractController
             [$formattedSize, $unit] = Util::formatByteDown($tblsize, 3, ($tblsize > 0 ? 1 : 0));
         }
 
-        return [
-            $currentTable,
-            $formattedSize,
-            $unit,
-            $sumSize,
-        ];
+        return [$currentTable, $formattedSize, $unit, $sumSize];
     }
 
     /**
      * Get values for Mroonga table
      *
-     * @param array $currentTable current table
-     * @param int   $sumSize      sum size
+     * @param mixed[] $currentTable current table
+     * @param int     $sumSize      sum size
      *
-     * @return array
+     * @return mixed[]
      */
     protected function getValuesForMroongaTable(
         array $currentTable,
@@ -886,11 +846,6 @@ class StructureController extends AbstractController
             [$formattedSize, $unit] = Util::formatByteDown($tblsize, 3, ($tblsize > 0 ? 1 : 0));
         }
 
-        return [
-            $currentTable,
-            $formattedSize,
-            $unit,
-            $sumSize,
-        ];
+        return [$currentTable, $formattedSize, $unit, $sumSize];
     }
 }

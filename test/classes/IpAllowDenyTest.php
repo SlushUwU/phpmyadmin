@@ -6,8 +6,10 @@ namespace PhpMyAdmin\Tests;
 
 use PhpMyAdmin\Core;
 use PhpMyAdmin\IpAllowDeny;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 
-/** @covers \PhpMyAdmin\IpAllowDeny */
+#[CoversClass(IpAllowDeny::class)]
 class IpAllowDenyTest extends AbstractTestCase
 {
     private IpAllowDeny $ipAllowDeny;
@@ -38,9 +40,8 @@ class IpAllowDenyTest extends AbstractTestCase
      * @param string|null $header   header
      * @param string|bool $expected expected result
      * @param string      $proxyip  proxyip
-     *
-     * @dataProvider proxyIPs
      */
+    #[DataProvider('proxyIPs')]
     public function testGetIp(
         string|null $remote,
         string|null $header,
@@ -77,48 +78,23 @@ class IpAllowDenyTest extends AbstractTestCase
     /**
      * Data provider for Core::getIp tests
      *
-     * @return array
+     * @return mixed[]
      */
     public static function proxyIPs(): array
     {
         return [
             // Nothing set
-            [
-                null,
-                null,
-                false,
-            ],
+            [null, null, false],
             // Remote IP set
-            [
-                '101.0.0.25',
-                null,
-                '101.0.0.25',
-            ],
+            ['101.0.0.25', null, '101.0.0.25'],
             // Proxy
-            [
-                '101.0.0.25',
-                '192.168.10.10',
-                '192.168.10.10',
-            ],
+            ['101.0.0.25', '192.168.10.10', '192.168.10.10'],
             // Several proxies
-            [
-                '101.0.0.25',
-                '192.168.10.1, 192.168.100.100',
-                '192.168.10.1',
-            ],
+            ['101.0.0.25', '192.168.10.1, 192.168.100.100', '192.168.10.1'],
             // Invalid proxy
-            [
-                '101.0.0.25',
-                'invalid',
-                false,
-            ],
+            ['101.0.0.25', 'invalid', false],
             // Direct IP with proxy enabled
-            [
-                '101.0.0.25',
-                '192.168.10.10',
-                '101.0.0.25',
-                '10.10.10.10',
-            ],
+            ['101.0.0.25', '192.168.10.10', '101.0.0.25', '10.10.10.10'],
         ];
     }
 

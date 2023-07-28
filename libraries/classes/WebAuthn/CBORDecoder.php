@@ -126,6 +126,7 @@ final class CBORDecoder
     private function getList(DataStream $stream, int $value): array
     {
         $list = [];
+        /** @infection-ignore-all */
         for ($i = 0; $i < $value; $i++) {
             /** @psalm-suppress MixedAssignment */
             $list[] = $this->wellFormed($stream);
@@ -142,6 +143,7 @@ final class CBORDecoder
     private function getMap(DataStream $stream, int $value): array
     {
         $map = [];
+        /** @infection-ignore-all */
         for ($i = 0; $i < $value; $i++) {
             /** @psalm-suppress MixedAssignment, MixedArrayOffset */
             $map[$this->wellFormed($stream)] = $this->wellFormed($stream);
@@ -158,8 +160,11 @@ final class CBORDecoder
     }
 
     /** @throws WebAuthnException */
-    private function getFloatNumberOrSimpleValue(DataStream $stream, int $value, int $additionalInformation): mixed
-    {
+    private function getFloatNumberOrSimpleValue(
+        DataStream $stream,
+        int $value,
+        int $additionalInformation,
+    ): int|bool|float|null {
         switch ($additionalInformation) {
             case 20:
                 return true;

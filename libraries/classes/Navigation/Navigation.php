@@ -18,6 +18,7 @@ use PhpMyAdmin\Server\Select;
 use PhpMyAdmin\Template;
 use PhpMyAdmin\Theme\Theme;
 use PhpMyAdmin\Url;
+use PhpMyAdmin\UserPreferences;
 use PhpMyAdmin\Util;
 
 use function __;
@@ -40,7 +41,7 @@ class Navigation
 
     public function __construct(private Template $template, private Relation $relation, private DatabaseInterface $dbi)
     {
-        $this->tree = new NavigationTree($this->template, $this->dbi);
+        $this->tree = new NavigationTree($this->template, $this->dbi, $this->relation);
     }
 
     /**
@@ -84,11 +85,12 @@ class Navigation
             }
 
             if ($GLOBALS['cfg']['NavigationDisplayServers'] && count($GLOBALS['cfg']['Servers']) > 1) {
-                $serverSelect = Select::render(true, true);
+                $serverSelect = Select::render(true);
             }
 
             if (! defined('PMA_DISABLE_NAVI_SETTINGS')) {
-                $pageSettings = new PageSettings('Navi', 'pma_navigation_settings');
+                $pageSettings = new PageSettings(new UserPreferences($this->dbi));
+                $pageSettings->init('Navi', 'pma_navigation_settings');
                 $response->addHTML($pageSettings->getErrorHTML());
                 $navigationSettings = $pageSettings->getHTML();
             }
@@ -213,6 +215,7 @@ class Navigation
         ]);
     }
 
+    /** @return mixed[] */
     private function getHiddenItems(string $database): array
     {
         $navigationItemsHidingFeature = $this->relation->getRelationParameters()->navigationItemsHidingFeature;

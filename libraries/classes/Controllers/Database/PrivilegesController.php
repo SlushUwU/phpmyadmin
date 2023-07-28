@@ -10,9 +10,9 @@ namespace PhpMyAdmin\Controllers\Database;
 use PhpMyAdmin\CheckUserPrivileges;
 use PhpMyAdmin\Controllers\AbstractController;
 use PhpMyAdmin\DatabaseInterface;
-use PhpMyAdmin\Dbal\DatabaseName;
-use PhpMyAdmin\Dbal\InvalidDatabaseName;
 use PhpMyAdmin\Http\ServerRequest;
+use PhpMyAdmin\Identifiers\DatabaseName;
+use PhpMyAdmin\Identifiers\InvalidDatabaseName;
 use PhpMyAdmin\Message;
 use PhpMyAdmin\ResponseRenderer;
 use PhpMyAdmin\Server\Privileges;
@@ -39,9 +39,9 @@ class PrivilegesController extends AbstractController
     public function __invoke(ServerRequest $request): void
     {
         try {
-            $db = DatabaseName::fromValue($request->getParam('db'));
+            $db = DatabaseName::from($request->getParam('db'));
             if ($this->dbi->getLowerCaseNames() === 1) {
-                $db = DatabaseName::fromValue(mb_strtolower($db->getName()));
+                $db = DatabaseName::from(mb_strtolower($db->getName()));
             }
         } catch (InvalidDatabaseName $exception) {
             $this->response->addHTML(Message::error($exception->getMessage())->getDisplay());
@@ -61,10 +61,7 @@ class PrivilegesController extends AbstractController
         $isCreateUser = $this->dbi->isCreateUser();
 
         if (! $this->dbi->isSuperUser() && ! $isGrantUser && ! $isCreateUser) {
-            $this->render('server/sub_page_header', [
-                'type' => 'privileges',
-                'is_image' => false,
-            ]);
+            $this->render('server/sub_page_header', ['type' => 'privileges', 'is_image' => false]);
             $this->response->addHTML(
                 Message::error(__('No Privileges'))
                     ->getDisplay(),

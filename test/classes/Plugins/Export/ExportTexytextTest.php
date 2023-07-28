@@ -7,7 +7,7 @@ namespace PhpMyAdmin\Tests\Plugins\Export;
 use PhpMyAdmin\ConfigStorage\Relation;
 use PhpMyAdmin\ConfigStorage\RelationParameters;
 use PhpMyAdmin\DatabaseInterface;
-use PhpMyAdmin\Export;
+use PhpMyAdmin\Export\Export;
 use PhpMyAdmin\Plugins\Export\ExportTexytext;
 use PhpMyAdmin\Properties\Options\Groups\OptionsPropertyMainGroup;
 use PhpMyAdmin\Properties\Options\Groups\OptionsPropertyRootGroup;
@@ -18,16 +18,16 @@ use PhpMyAdmin\Properties\Plugins\ExportPluginProperties;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\DbiDummy;
 use PhpMyAdmin\Transformations;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Group;
 use ReflectionMethod;
 use ReflectionProperty;
 
 use function ob_get_clean;
 use function ob_start;
 
-/**
- * @covers \PhpMyAdmin\Plugins\Export\ExportTexytext
- * @group medium
- */
+#[CoversClass(ExportTexytext::class)]
+#[Group('medium')]
 class ExportTexytextTest extends AbstractTestCase
 {
     protected DatabaseInterface $dbi;
@@ -260,16 +260,7 @@ class ExportTexytextTest extends AbstractTestCase
             ->disableOriginalConstructor()
             ->getMock();
 
-        $keys = [
-            [
-                'Non_unique' => 0,
-                'Column_name' => 'cname',
-            ],
-            [
-                'Non_unique' => 1,
-                'Column_name' => 'cname2',
-            ],
-        ];
+        $keys = [['Non_unique' => 0, 'Column_name' => 'cname'], ['Non_unique' => 1, 'Column_name' => 'cname2']];
 
         $dbi->expects($this->once())
             ->method('getTableIndexes')
@@ -279,19 +270,8 @@ class ExportTexytextTest extends AbstractTestCase
         $dbi->expects($this->exactly(2))
             ->method('fetchResult')
             ->willReturnOnConsecutiveCalls(
-                [
-                    'fname' => [
-                        'foreign_table' => '<ftable',
-                        'foreign_field' => 'ffield>',
-                    ],
-                ],
-                [
-                    'fname' => [
-                        'values' => 'test-',
-                        'transformation' => 'testfoo',
-                        'mimetype' => 'test<',
-                    ],
-                ],
+                ['fname' => ['foreign_table' => '<ftable', 'foreign_field' => 'ffield>']],
+                ['fname' => ['values' => 'test-', 'transformation' => 'testfoo', 'mimetype' => 'test<']],
             );
 
         $dbi->expects($this->once())
@@ -302,10 +282,7 @@ class ExportTexytextTest extends AbstractTestCase
                 ),
             );
 
-        $columns = [
-            'Field' => 'fname',
-            'Comment' => 'comm',
-        ];
+        $columns = ['Field' => 'fname', 'Comment' => 'comm'];
 
         $dbi->expects($this->exactly(2))
             ->method('getColumns')
@@ -320,17 +297,17 @@ class ExportTexytextTest extends AbstractTestCase
             ->with(['Field' => 'fname', 'Comment' => 'comm'], ['cname'])
             ->will($this->returnValue('1'));
 
-        $_SESSION['relation'] = [];
-        $_SESSION['relation'][$GLOBALS['server']] = RelationParameters::fromArray([
+        $relationParameters = RelationParameters::fromArray([
             'relwork' => true,
             'commwork' => true,
             'mimework' => true,
             'db' => 'database',
             'relation' => 'rel',
             'column_info' => 'col',
-        ])->toArray();
+        ]);
+        (new ReflectionProperty(Relation::class, 'cache'))->setValue(null, $relationParameters);
 
-        $result = $this->object->getTableDef('db', 'table', 'example.com', true, true, true);
+        $result = $this->object->getTableDef('db', 'table', true, true, true);
 
         $this->assertStringContainsString('1|&lt;ftable (ffield&gt;)|comm|Test&lt;', $result);
     }
@@ -347,9 +324,9 @@ class ExportTexytextTest extends AbstractTestCase
             [
                 'TRIGGER_SCHEMA' => 'database',
                 'TRIGGER_NAME' => 'tna"me',
-                'EVENT_MANIPULATION' => 'manip&',
+                'EVENT_MANIPULATION' => 'DELETE',
                 'EVENT_OBJECT_TABLE' => 'ta<ble',
-                'ACTION_TIMING' => 'ac>t',
+                'ACTION_TIMING' => 'BEFORE',
                 'ACTION_STATEMENT' => 'def',
                 'EVENT_OBJECT_SCHEMA' => 'database',
                 'DEFINER' => 'test_user@localhost',
@@ -364,7 +341,7 @@ class ExportTexytextTest extends AbstractTestCase
 
         $result = $this->object->getTriggers('database', 'ta<ble');
 
-        $this->assertStringContainsString('|tna"me|ac>t|manip&|def', $result);
+        $this->assertStringContainsString('|tna"me|BEFORE|DELETE|def', $result);
 
         $this->assertStringContainsString('|Name|Time|Event|Definition', $result);
     }
@@ -475,33 +452,22 @@ class ExportTexytextTest extends AbstractTestCase
 
     public function testFormatOneColumnDefinition(): void
     {
-        $cols = [
-            'Null' => 'Yes',
-            'Field' => 'field',
-            'Key' => 'PRI',
-            'Type' => 'set(abc)enum123',
-        ];
+        $cols = ['Null' => 'Yes', 'Field' => 'field', 'Key' => 'PRI', 'Type' => 'set(abc)enum123'];
 
-        $unique_keys = ['field'];
+        $uniqueKeys = ['field'];
 
         $this->assertEquals(
             '|//**field**//|set(abc)|Yes|NULL',
-            $this->object->formatOneColumnDefinition($cols, $unique_keys),
+            $this->object->formatOneColumnDefinition($cols, $uniqueKeys),
         );
 
-        $cols = [
-            'Null' => 'NO',
-            'Field' => 'fields',
-            'Key' => 'COMP',
-            'Type' => '',
-            'Default' => 'def',
-        ];
+        $cols = ['Null' => 'NO', 'Field' => 'fields', 'Key' => 'COMP', 'Type' => '', 'Default' => 'def'];
 
-        $unique_keys = ['field'];
+        $uniqueKeys = ['field'];
 
         $this->assertEquals(
             '|fields|&amp;nbsp;|No|def',
-            $this->object->formatOneColumnDefinition($cols, $unique_keys),
+            $this->object->formatOneColumnDefinition($cols, $uniqueKeys),
         );
     }
 }

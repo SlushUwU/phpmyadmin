@@ -5,16 +5,18 @@ declare(strict_types=1);
 namespace PhpMyAdmin\Tests\Table;
 
 use PhpMyAdmin\ConfigStorage\Relation;
-use PhpMyAdmin\FieldMetadata;
 use PhpMyAdmin\Table\ColumnsDefinition;
 use PhpMyAdmin\Tests\AbstractTestCase;
+use PhpMyAdmin\Tests\FieldHelper;
 use PhpMyAdmin\Transformations;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 use function array_merge;
 
 use const MYSQLI_TYPE_STRING;
 
-/** @covers \PhpMyAdmin\Table\ColumnsDefinition */
+#[CoversClass(ColumnsDefinition::class)]
 class ColumnsDefinitionTest extends AbstractTestCase
 {
     public function testDisplayForm(): void
@@ -75,7 +77,6 @@ SQL;
         $GLOBALS['col_priv'] = true;
         $GLOBALS['is_reload_priv'] = true;
         $GLOBALS['mime_map'] = null;
-        $_SESSION['relation'] = [];
 
         $actual = $columnsDefinition->displayForm('/table/structure/save', 1, null, ['actor_id'], [$columnMeta]);
 
@@ -103,10 +104,10 @@ SQL;
             'fields_meta' => [$columnMeta],
             'is_backup' => true,
             'move_columns' => [
-                new FieldMetadata(MYSQLI_TYPE_STRING, 0, (object) ['name' => 'actor_id']),
-                new FieldMetadata(MYSQLI_TYPE_STRING, 0, (object) ['name' => 'first_name']),
-                new FieldMetadata(MYSQLI_TYPE_STRING, 0, (object) ['name' => 'last_name']),
-                new FieldMetadata(MYSQLI_TYPE_STRING, 0, (object) ['name' => 'last_update']),
+                FieldHelper::fromArray(['type' => MYSQLI_TYPE_STRING, 'name' => 'actor_id']),
+                FieldHelper::fromArray(['type' => MYSQLI_TYPE_STRING, 'name' => 'first_name']),
+                FieldHelper::fromArray(['type' => MYSQLI_TYPE_STRING, 'name' => 'last_name']),
+                FieldHelper::fromArray(['type' => MYSQLI_TYPE_STRING, 'name' => 'last_update']),
             ],
             'available_mime' => [],
             'mime_map' => [],
@@ -210,9 +211,8 @@ SQL;
      * @param array $expected   expected result
      * @phpstan-param array<string, string|null> $columnMeta
      * @phpstan-param array<string, string> $expected
-     *
-     * @dataProvider providerColumnMetaDefault
      */
+    #[DataProvider('providerColumnMetaDefault')]
     public function testDecorateColumnMetaDefault(array $columnMeta, array $expected): void
     {
         $result = ColumnsDefinition::decorateColumnMetaDefault($columnMeta);
@@ -223,80 +223,37 @@ SQL;
     /**
      * Data provider for testDecorateColumnMetaDefault
      *
-     * @return array
+     * @return mixed[]
      * @psalm-return array<string, array{array<string, string|null>, array<string, string>}>
      */
     public static function providerColumnMetaDefault(): array
     {
         return [
             'when Default is null and Null is YES' => [
-                [
-                    'Default' => null,
-                    'Null' => 'YES',
-                ],
-                [
-                    'DefaultType' => 'NULL',
-                    'DefaultValue' => '',
-                ],
+                ['Default' => null, 'Null' => 'YES'],
+                ['DefaultType' => 'NULL', 'DefaultValue' => ''],
             ],
             'when Default is null and Null is NO' => [
-                [
-                    'Default' => null,
-                    'Null' => 'NO',
-                ],
-                [
-                    'DefaultType' => 'NONE',
-                    'DefaultValue' => '',
-                ],
+                ['Default' => null, 'Null' => 'NO'],
+                ['DefaultType' => 'NONE', 'DefaultValue' => ''],
             ],
             'when Default is CURRENT_TIMESTAMP' => [
                 ['Default' => 'CURRENT_TIMESTAMP'],
-                [
-                    'DefaultType' => 'CURRENT_TIMESTAMP',
-                    'DefaultValue' => '',
-                ],
+                ['DefaultType' => 'CURRENT_TIMESTAMP', 'DefaultValue' => ''],
             ],
             'when Default is current_timestamp' => [
                 ['Default' => 'current_timestamp()'],
-                [
-                    'DefaultType' => 'CURRENT_TIMESTAMP',
-                    'DefaultValue' => '',
-                ],
+                ['DefaultType' => 'CURRENT_TIMESTAMP', 'DefaultValue' => ''],
             ],
-            'when Default is UUID' => [
-                ['Default' => 'UUID'],
-                [
-                    'DefaultType' => 'UUID',
-                    'DefaultValue' => '',
-                ],
-            ],
-            'when Default is uuid()' => [
-                ['Default' => 'uuid()'],
-                [
-                    'DefaultType' => 'UUID',
-                    'DefaultValue' => '',
-                ],
-            ],
+            'when Default is UUID' => [['Default' => 'UUID'], ['DefaultType' => 'UUID', 'DefaultValue' => '']],
+            'when Default is uuid()' => [['Default' => 'uuid()'], ['DefaultType' => 'UUID', 'DefaultValue' => '']],
             'when Default is anything else and Type is text' => [
-                [
-                    'Default' => '"some\/thing"',
-                    'Type' => 'text',
-                ],
-                [
-                    'Default' => 'some/thing',
-                    'DefaultType' => 'USER_DEFINED',
-                    'DefaultValue' => '"some\/thing"',
-                ],
+                ['Default' => '"some\/thing"', 'Type' => 'text'],
+                ['Default' => 'some/thing', 'DefaultType' => 'USER_DEFINED', 'DefaultValue' => '"some\/thing"'],
             ],
             'when Default is anything else and Type is not text' => [
-                [
-                    'Default' => '"some\/thing"',
-                    'Type' => 'something',
-                ],
-                [
-                    'DefaultType' => 'USER_DEFINED',
-                    'DefaultValue' => '"some\/thing"',
-                ],
+                ['Default' => '"some\/thing"', 'Type' => 'something'],
+                ['DefaultType' => 'USER_DEFINED', 'DefaultValue' => '"some\/thing"'],
             ],
         ];
     }

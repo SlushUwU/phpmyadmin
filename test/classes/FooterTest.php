@@ -8,13 +8,16 @@ use ArrayIterator;
 use PhpMyAdmin\ErrorHandler;
 use PhpMyAdmin\Footer;
 use PhpMyAdmin\Template;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Group;
+use ReflectionProperty;
 
 use function json_encode;
 
-/** @covers \PhpMyAdmin\Footer */
+#[CoversClass(Footer::class)]
 class FooterTest extends AbstractTestCase
 {
-    /** @var array store private attributes of PhpMyAdmin\Footer */
+    /** @var mixed[] store private attributes of PhpMyAdmin\Footer */
     public array $privates = [];
 
     protected Footer $object;
@@ -47,7 +50,7 @@ class FooterTest extends AbstractTestCase
         unset($GLOBALS['error_message']);
         unset($GLOBALS['sql_query']);
         $GLOBALS['errorHandler'] = new ErrorHandler();
-        unset($_POST);
+        $_POST = [];
     }
 
     /**
@@ -63,23 +66,14 @@ class FooterTest extends AbstractTestCase
 
     /**
      * Test for getDebugMessage
-     *
-     * @group medium
      */
+    #[Group('medium')]
     public function testGetDebugMessage(): void
     {
         $GLOBALS['cfg']['DBG']['sql'] = true;
         $_SESSION['debug']['queries'] = [
-            [
-                'count' => 1,
-                'time' => 0.2,
-                'query' => 'SELECT * FROM `pma_bookmark` WHERE 1',
-            ],
-            [
-                'count' => 1,
-                'time' => 2.5,
-                'query' => 'SELECT * FROM `db` WHERE 1',
-            ],
+            ['count' => 1, 'time' => 0.2, 'query' => 'SELECT * FROM `pma_bookmark` WHERE 1'],
+            ['count' => 1, 'time' => 2.5, 'query' => 'SELECT * FROM `db` WHERE 1'],
         ];
 
         $this->assertEquals(
@@ -119,10 +113,7 @@ class FooterTest extends AbstractTestCase
         );
     }
 
-    /**
-     * Test for footer when ajax enabled
-     */
-    public function testAjax(): void
+    public function testGetDisplayWhenAjaxIsEnabled(): void
     {
         $footer = new Footer();
         $footer->setAjax(true);
@@ -142,16 +133,15 @@ class FooterTest extends AbstractTestCase
     {
         $footer = new Footer();
         $this->assertStringContainsString(
-            '<script data-cfasync="false" type="text/javascript">',
+            '<script data-cfasync="false">',
             $footer->getScripts()->getDisplay(),
         );
     }
 
     /**
      * Test for displaying footer
-     *
-     * @group medium
      */
+    #[Group('medium')]
     public function testDisplay(): void
     {
         $footer = new Footer();
@@ -176,5 +166,17 @@ class FooterTest extends AbstractTestCase
             . "\n  </div>\n  </body>\n</html>\n",
             $footer->getDisplay(),
         );
+    }
+
+    public function testSetAjax(): void
+    {
+        $isAjax = new ReflectionProperty(Footer::class, 'isAjax');
+        $footer = new Footer();
+
+        $this->assertFalse($isAjax->getValue($footer));
+        $footer->setAjax(true);
+        $this->assertTrue($isAjax->getValue($footer));
+        $footer->setAjax(false);
+        $this->assertFalse($isAjax->getValue($footer));
     }
 }

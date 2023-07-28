@@ -4,20 +4,23 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Controllers\Database;
 
+use PhpMyAdmin\Config\PageSettings;
 use PhpMyAdmin\ConfigStorage\Relation;
 use PhpMyAdmin\Controllers\Database\StructureController;
 use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\Http\ServerRequest;
+use PhpMyAdmin\RecentFavoriteTable;
 use PhpMyAdmin\Replication\Replication;
 use PhpMyAdmin\Table;
 use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\ResponseRenderer as ResponseStub;
 use PhpMyAdmin\Tracking\TrackingChecker;
+use PHPUnit\Framework\Attributes\CoversClass;
 use ReflectionClass;
 use ReflectionException;
 
-/** @covers \PhpMyAdmin\Controllers\Database\StructureController */
+#[CoversClass(StructureController::class)]
 class StructureControllerTest extends AbstractTestCase
 {
     private ResponseStub $response;
@@ -80,6 +83,7 @@ class StructureControllerTest extends AbstractTestCase
             $this->replication,
             $GLOBALS['dbi'],
             $this->createStub(TrackingChecker::class),
+            $this->createStub(PageSettings::class),
         );
         // Showing statistics
         $property = $class->getProperty('isShowStats');
@@ -95,10 +99,7 @@ class StructureControllerTest extends AbstractTestCase
         ];
         [$currentTable, , , $sumSize] = $method->invokeArgs(
             $controller,
-            [
-                $currentTable,
-                10,
-            ],
+            [$currentTable, 10],
         );
 
         $this->assertTrue($currentTable['COUNTED']);
@@ -108,10 +109,7 @@ class StructureControllerTest extends AbstractTestCase
         $currentTable['ENGINE'] = 'MYISAM';
         [$currentTable, , , $sumSize] = $method->invokeArgs(
             $controller,
-            [
-                $currentTable,
-                10,
-            ],
+            [$currentTable, 10],
         );
 
         $this->assertFalse($currentTable['COUNTED']);
@@ -124,6 +122,7 @@ class StructureControllerTest extends AbstractTestCase
             $this->replication,
             $GLOBALS['dbi'],
             $this->createStub(TrackingChecker::class),
+            $this->createStub(PageSettings::class),
         );
 
         $currentTable['ENGINE'] = 'InnoDB';
@@ -152,6 +151,7 @@ class StructureControllerTest extends AbstractTestCase
             $this->replication,
             $GLOBALS['dbi'],
             $this->createStub(TrackingChecker::class),
+            $this->createStub(PageSettings::class),
         );
         // Showing statistics
         $property = $class->getProperty('isShowStats');
@@ -159,23 +159,10 @@ class StructureControllerTest extends AbstractTestCase
         $property = $class->getProperty('dbIsSystemSchema');
         $property->setValue($controller, true);
 
-        $currentTable = [
-            'Data_length' => 16384,
-            'Index_length' => 0,
-            'Name' => 'table',
-            'Data_free' => 300,
-        ];
+        $currentTable = ['Data_length' => 16384, 'Index_length' => 0, 'Name' => 'table', 'Data_free' => 300];
         [$currentTable, , , , , $overheadSize, $sumSize] = $method->invokeArgs(
             $controller,
-            [
-                $currentTable,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-            ],
+            [$currentTable, 0, 0, 0, 0, 0, 0],
         );
         $this->assertEquals(6, $currentTable['Rows']);
         $this->assertEquals(16384, $sumSize);
@@ -184,15 +171,7 @@ class StructureControllerTest extends AbstractTestCase
         unset($currentTable['Data_free']);
         [$currentTable, , , , , $overheadSize] = $method->invokeArgs(
             $controller,
-            [
-                $currentTable,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-            ],
+            [$currentTable, 0, 0, 0, 0, 0, 0],
         );
         $this->assertEquals(0, $overheadSize);
 
@@ -203,18 +182,11 @@ class StructureControllerTest extends AbstractTestCase
             $this->replication,
             $GLOBALS['dbi'],
             $this->createStub(TrackingChecker::class),
+            $this->createStub(PageSettings::class),
         );
         [$currentTable, , , , , , $sumSize] = $method->invokeArgs(
             $controller,
-            [
-                $currentTable,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-            ],
+            [$currentTable, 0, 0, 0, 0, 0, 0],
         );
         $this->assertEquals(0, $sumSize);
 
@@ -225,18 +197,11 @@ class StructureControllerTest extends AbstractTestCase
             $this->replication,
             $GLOBALS['dbi'],
             $this->createStub(TrackingChecker::class),
+            $this->createStub(PageSettings::class),
         );
         [$currentTable] = $method->invokeArgs(
             $controller,
-            [
-                $currentTable,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-            ],
+            [$currentTable, 0, 0, 0, 0, 0, 0],
         );
         $this->assertArrayNotHasKey('Row', $currentTable);
     }
@@ -256,6 +221,7 @@ class StructureControllerTest extends AbstractTestCase
             $this->replication,
             $GLOBALS['dbi'],
             $this->createStub(TrackingChecker::class),
+            $this->createStub(PageSettings::class),
         );
 
         // When parameter $db is empty
@@ -284,6 +250,26 @@ class StructureControllerTest extends AbstractTestCase
         $class = new ReflectionClass(StructureController::class);
         $method = $class->getMethod('checkFavoriteTable');
 
+        $dbiDummy = $this->createDbiDummy();
+        $dbi = $this->createDatabaseInterface($dbiDummy);
+
+        $GLOBALS['db'] = 'sakila';
+        $GLOBALS['dbi'] = $dbi;
+
+        $dbiDummy->removeDefaultResults();
+        $dbiDummy->addResult(
+            'SHOW COLUMNS FROM `sakila`.`country`',
+            [
+                ['country_id', 'smallint(5) unsigned', 'NO', 'PRI', null, 'auto_increment'],
+            ],
+            ['Field', 'Type', 'Null', 'Key', 'Default', 'Extra'],
+        );
+        $dbiDummy->addResult(
+            'SHOW INDEXES FROM `sakila`.`country`',
+            [],
+            ['Table', 'Non_unique', 'Key_name', 'Column_name'],
+        );
+
         $controller = new StructureController(
             $this->response,
             $this->template,
@@ -291,21 +277,26 @@ class StructureControllerTest extends AbstractTestCase
             $this->replication,
             $GLOBALS['dbi'],
             $this->createStub(TrackingChecker::class),
+            $this->createStub(PageSettings::class),
         );
 
-        $_SESSION['tmpval']['favoriteTables'][$GLOBALS['server']] = [
+        $recentFavoriteTables = RecentFavoriteTable::getInstance('favorite');
+        $this->assertSame([], $recentFavoriteTables->getTables());
+        $recentFavoriteTables->remove('sakila', 'country');
+        $recentFavoriteTables->add('sakila', 'country');
+        $this->assertSame([
             [
-                'db' => 'db',
-                'table' => 'table',
+                'db' => 'sakila',
+                'table' => 'country',
             ],
-        ];
+        ], $recentFavoriteTables->getTables());
 
         $this->assertFalse(
             $method->invokeArgs($controller, ['']),
         );
 
         $this->assertTrue(
-            $method->invokeArgs($controller, ['table']),
+            $method->invokeArgs($controller, ['country']),
         );
     }
 
@@ -322,6 +313,7 @@ class StructureControllerTest extends AbstractTestCase
             $this->replication,
             $GLOBALS['dbi'],
             $this->createStub(TrackingChecker::class),
+            $this->createStub(PageSettings::class),
         );
         // Showing statistics
         $class = new ReflectionClass(StructureController::class);
@@ -380,20 +372,12 @@ class StructureControllerTest extends AbstractTestCase
         $structureController = $GLOBALS['containerBuilder']->get(StructureController::class);
 
         $this->assertSame(
-            [
-                [],
-                '',
-                '',
-                0,
-            ],
+            [[], '', '', 0],
             $this->callFunction(
                 $structureController,
                 StructureController::class,
                 'getValuesForMroongaTable',
-                [
-                    [],
-                    0,
-                ],
+                [[], 0],
             ),
         );
 
@@ -407,35 +391,18 @@ class StructureControllerTest extends AbstractTestCase
         );
 
         $this->assertSame(
-            [
-                [
-                    'Data_length' => 45,
-                    'Index_length' => 60,
-                ],
-                '105',
-                'B',
-                105,
-            ],
+            [['Data_length' => 45, 'Index_length' => 60], '105', 'B', 105],
             $this->callFunction(
                 $structureController,
                 StructureController::class,
                 'getValuesForMroongaTable',
-                [
-                    [
-                        'Data_length' => 45,
-                        'Index_length' => 60,
-                    ],
-                    0,
-                ],
+                [['Data_length' => 45, 'Index_length' => 60], 0],
             ),
         );
 
         $this->assertSame(
             [
-                [
-                    'Data_length' => 45,
-                    'Index_length' => 60,
-                ],
+                ['Data_length' => 45, 'Index_length' => 60],
                 '105',
                 'B',
                 180, //105 + 75
@@ -444,13 +411,7 @@ class StructureControllerTest extends AbstractTestCase
                 $structureController,
                 StructureController::class,
                 'getValuesForMroongaTable',
-                [
-                    [
-                        'Data_length' => 45,
-                        'Index_length' => 60,
-                    ],
-                    75,
-                ],
+                [['Data_length' => 45, 'Index_length' => 60], 75],
             ),
         );
     }

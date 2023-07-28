@@ -94,10 +94,7 @@ class Menu
         // Filter out any tabs that are not allowed
         $tabs = array_intersect_key($tabs, $allowedTabs);
 
-        return $this->template->render('top_menu', [
-            'tabs' => $tabs,
-            'url_params' => $urlParams,
-        ]);
+        return $this->template->render('top_menu', ['tabs' => $tabs, 'url_params' => $urlParams]);
     }
 
     /**
@@ -105,7 +102,7 @@ class Menu
      *
      * @param string $level 'server', 'db' or 'table' level
      *
-     * @return array list of allowed tabs
+     * @return mixed[] list of allowed tabs
      */
     private function getAllowedTabs(string $level): array
     {
@@ -206,11 +203,11 @@ class Menu
     /**
      * Returns the table tabs as an array
      *
-     * @return array Data for generating table tabs
+     * @return mixed[] Data for generating table tabs
      */
     private function getTableTabs(): array
     {
-        $route = Common::getRequest()->getRoute();
+        $route = Application::getRequest()->getRoute();
 
         $isSystemSchema = Utilities::isSystemSchema($this->db);
         $tableIsView = $this->dbi->getTable($this->db, $this->table)
@@ -235,10 +232,7 @@ class Menu
         $tabs['structure']['icon'] = 'b_props';
         $tabs['structure']['route'] = '/table/structure';
         $tabs['structure']['text'] = __('Structure');
-        $tabs['structure']['active'] = in_array($route, [
-            '/table/relation',
-            '/table/structure',
-        ]);
+        $tabs['structure']['active'] = in_array($route, ['/table/relation', '/table/structure']);
 
         $tabs['sql']['icon'] = 'b_sql';
         $tabs['sql']['route'] = '/table/sql';
@@ -248,11 +242,7 @@ class Menu
         $tabs['search']['icon'] = 'b_search';
         $tabs['search']['text'] = __('Search');
         $tabs['search']['route'] = '/table/search';
-        $tabs['search']['active'] = in_array($route, [
-            '/table/find-replace',
-            '/table/search',
-            '/table/zoom-search',
-        ]);
+        $tabs['search']['active'] = in_array($route, ['/table/find-replace', '/table/search', '/table/zoom-search']);
 
         if (! $isSystemSchema && (! $tableIsView || $updatableView)) {
             $tabs['insert']['icon'] = 'b_insrow';
@@ -313,10 +303,10 @@ class Menu
         }
 
         if (! $isSystemSchema && Util::currentUserHasPrivilege('TRIGGER', $this->db, $this->table) && ! $tableIsView) {
-            $tabs['triggers']['route'] = '/table/triggers';
+            $tabs['triggers']['route'] = '/triggers';
             $tabs['triggers']['text'] = __('Triggers');
             $tabs['triggers']['icon'] = 'b_triggers';
-            $tabs['triggers']['active'] = $route === '/table/triggers';
+            $tabs['triggers']['active'] = $route === '/triggers';
         }
 
         return $tabs;
@@ -325,11 +315,11 @@ class Menu
     /**
      * Returns the db tabs as an array
      *
-     * @return array Data for generating db tabs
+     * @return mixed[] Data for generating db tabs
      */
     private function getDbTabs(): array
     {
-        $route = Common::getRequest()->getRoute();
+        $route = Application::getRequest()->getRoute();
 
         $isSystemSchema = Utilities::isSystemSchema($this->db);
         $numTables = count($this->dbi->getTables($this->db));
@@ -361,7 +351,7 @@ class Menu
         $tabs['query']['text'] = __('Query');
         $tabs['query']['icon'] = 's_db';
         $tabs['query']['route'] = '/database/multi-table-query';
-        $tabs['query']['active'] = $route === '/database/multi-table-query' || $route === '/database/qbe';
+        $tabs['query']['active'] = $route === '/database/multi-table-query';
         if ($numTables == 0) {
             $tabs['query']['warning'] = __('Database seems to be empty!');
         }
@@ -406,10 +396,10 @@ class Menu
             }
 
             if (Util::currentUserHasPrivilege('TRIGGER', $this->db)) {
-                $tabs['triggers']['route'] = '/database/triggers';
+                $tabs['triggers']['route'] = '/triggers';
                 $tabs['triggers']['text'] = __('Triggers');
                 $tabs['triggers']['icon'] = 'b_triggers';
-                $tabs['triggers']['active'] = $route === '/database/triggers';
+                $tabs['triggers']['active'] = $route === '/triggers';
             }
         }
 
@@ -440,21 +430,18 @@ class Menu
     /**
      * Returns the server tabs as an array
      *
-     * @return array Data for generating server tabs
+     * @return mixed[] Data for generating server tabs
      */
     private function getServerTabs(): array
     {
-        $route = Common::getRequest()->getRoute();
+        $route = Application::getRequest()->getRoute();
 
         $isSuperUser = $this->dbi->isSuperUser();
         $isCreateOrGrantUser = $this->dbi->isGrantUser() || $this->dbi->isCreateUser();
         if (SessionCache::has('binary_logs')) {
             $binaryLogs = SessionCache::get('binary_logs');
         } else {
-            $binaryLogs = $this->dbi->fetchResult(
-                'SHOW MASTER LOGS',
-                'Log_name',
-            );
+            $binaryLogs = $this->dbi->fetchResult('SHOW MASTER LOGS', 'Log_name');
             SessionCache::set('binary_logs', $binaryLogs);
         }
 
@@ -486,10 +473,7 @@ class Menu
             $tabs['rights']['icon'] = 's_rights';
             $tabs['rights']['route'] = '/server/privileges';
             $tabs['rights']['text'] = __('User accounts');
-            $tabs['rights']['active'] = in_array($route, [
-                '/server/privileges',
-                '/server/user-groups',
-            ]);
+            $tabs['rights']['active'] = in_array($route, ['/server/privileges', '/server/user-groups']);
         }
 
         $tabs['export']['icon'] = 'b_export';

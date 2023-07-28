@@ -6,17 +6,18 @@ namespace PhpMyAdmin\Tests\Controllers\Table;
 
 use PhpMyAdmin\Controllers\Table\GisVisualizationController;
 use PhpMyAdmin\Core;
-use PhpMyAdmin\FieldMetadata;
 use PhpMyAdmin\Http\ServerRequest;
 use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\AbstractTestCase;
+use PhpMyAdmin\Tests\FieldHelper;
 use PhpMyAdmin\Tests\Stubs\ResponseRenderer;
 use PhpMyAdmin\Url;
+use PHPUnit\Framework\Attributes\CoversClass;
 
 use const MYSQLI_TYPE_GEOMETRY;
 use const MYSQLI_TYPE_VAR_STRING;
 
-/** @covers \PhpMyAdmin\Controllers\Table\GisVisualizationController */
+#[CoversClass(GisVisualizationController::class)]
 class GisVisualizationControllerTest extends AbstractTestCase
 {
     public function testGisVisualizationController(): void
@@ -40,8 +41,8 @@ class GisVisualizationControllerTest extends AbstractTestCase
             [['POINT', 'POINT(100 250)']],
             ['name', 'shape'],
             [
-                new FieldMetadata(MYSQLI_TYPE_VAR_STRING, 0, (object) []),
-                new FieldMetadata(MYSQLI_TYPE_GEOMETRY, 0, (object) []),
+                FieldHelper::fromArray(['type' => MYSQLI_TYPE_VAR_STRING]),
+                FieldHelper::fromArray(['type' => MYSQLI_TYPE_GEOMETRY]),
             ],
         );
         $dummyDbi->addResult(

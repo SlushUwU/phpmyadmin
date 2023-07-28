@@ -6,8 +6,9 @@ namespace PhpMyAdmin\Tests\Engines;
 
 use PhpMyAdmin\Engines\Ndbcluster;
 use PhpMyAdmin\Tests\AbstractTestCase;
+use PHPUnit\Framework\Attributes\CoversClass;
 
-/** @covers \PhpMyAdmin\Engines\Ndbcluster */
+#[CoversClass(Ndbcluster::class)]
 class NdbclusterTest extends AbstractTestCase
 {
     protected Ndbcluster $object;
@@ -43,9 +44,7 @@ class NdbclusterTest extends AbstractTestCase
     {
         $this->assertEquals(
             $this->object->getVariables(),
-            [
-                'ndb_connectstring' => [],
-            ],
+            ['ndb_connectstring' => []],
         );
     }
 

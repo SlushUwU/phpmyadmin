@@ -13,8 +13,9 @@ use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\DbiDummy;
 use PhpMyAdmin\Tests\Stubs\ResponseRenderer;
+use PHPUnit\Framework\Attributes\CoversClass;
 
-/** @covers \PhpMyAdmin\Controllers\Server\Status\Monitor\LogVarsController */
+#[CoversClass(LogVarsController::class)]
 class LogVarsControllerTest extends AbstractTestCase
 {
     protected DatabaseInterface $dbi;
@@ -56,7 +57,6 @@ class LogVarsControllerTest extends AbstractTestCase
         ];
 
         $response = new ResponseRenderer();
-        $response->setAjax(true);
 
         $controller = new LogVarsController(
             $response,
@@ -67,9 +67,8 @@ class LogVarsControllerTest extends AbstractTestCase
         );
 
         $request = $this->createStub(ServerRequest::class);
-        $request->method('getParsedBodyParam')->willReturnMap([
-            ['varName', null, 'varName'],
-        ]);
+        $request->method('isAjax')->willReturn(true);
+        $request->method('getParsedBodyParam')->willReturnMap([['varName', null, 'varName']]);
 
         $this->dummyDbi->addSelectDb('mysql');
         $controller($request);

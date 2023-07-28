@@ -10,6 +10,7 @@ namespace PhpMyAdmin\Plugins\Schema;
 use PhpMyAdmin\ConfigStorage\Relation;
 use PhpMyAdmin\Font;
 use PhpMyAdmin\Index;
+use PhpMyAdmin\ResponseRenderer;
 use PhpMyAdmin\Util;
 
 use function array_flip;
@@ -31,10 +32,10 @@ abstract class TableStats
 {
     public mixed $displayfield;
 
-    /** @var array */
+    /** @var mixed[] */
     public array $fields = [];
 
-    /** @var array */
+    /** @var mixed[] */
     public array $primary = [];
 
     public int|float $x = 0;
@@ -91,20 +92,20 @@ abstract class TableStats
         $result = $GLOBALS['dbi']->tryQuery($sql);
         if (! $result || ! $result->numRows()) {
             $this->showMissingTableError();
-            exit;
+            ResponseRenderer::getInstance()->callExit();
         }
 
         if ($this->showKeys) {
             $indexes = Index::getFromTable($GLOBALS['dbi'], $this->tableName, $this->db);
-            $all_columns = [];
+            $allColumns = [];
             foreach ($indexes as $index) {
-                $all_columns = array_merge(
-                    $all_columns,
+                $allColumns = array_merge(
+                    $allColumns,
                     array_flip(array_keys($index->getColumns())),
                 );
             }
 
-            $this->fields = array_keys($all_columns);
+            $this->fields = array_keys($allColumns);
         } else {
             $this->fields = $result->fetchAllColumn();
         }

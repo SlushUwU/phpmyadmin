@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace PhpMyAdmin\Tests;
 
 use PhpMyAdmin\FieldMetadata;
-use stdClass;
+use PHPUnit\Framework\Attributes\CoversClass;
 
 use const MYSQLI_BLOB_FLAG;
 use const MYSQLI_NUM_FLAG;
@@ -13,12 +13,12 @@ use const MYSQLI_TYPE_FLOAT;
 use const MYSQLI_TYPE_INT24;
 use const MYSQLI_TYPE_STRING;
 
-/** @covers \PhpMyAdmin\FieldMetadata */
+#[CoversClass(FieldMetadata::class)]
 class FieldMetadataTest extends AbstractTestCase
 {
     public function testEmptyConstruct(): void
     {
-        $fm = new FieldMetadata(-1, 0, (object) []);
+        $fm = FieldHelper::fromArray(['type' => -1]);
         $this->assertSame('', $fm->getMappedType());
         $this->assertFalse($fm->isBinary());
         $this->assertFalse($fm->isEnum());
@@ -34,9 +34,7 @@ class FieldMetadataTest extends AbstractTestCase
 
     public function testIsBinary(): void
     {
-        $obj = new stdClass();
-        $obj->charsetnr = 63;
-        $fm = new FieldMetadata(MYSQLI_TYPE_STRING, 0, $obj);
+        $fm = FieldHelper::fromArray(['type' => MYSQLI_TYPE_STRING, 'charsetnr' => 63]);
         $this->assertTrue($fm->isBinary());
         $this->assertFalse($fm->isEnum());
         $this->assertFalse($fm->isUniqueKey());
@@ -51,7 +49,7 @@ class FieldMetadataTest extends AbstractTestCase
 
     public function testIsNumeric(): void
     {
-        $fm = new FieldMetadata(MYSQLI_TYPE_INT24, MYSQLI_NUM_FLAG, (object) []);
+        $fm = FieldHelper::fromArray(['type' => MYSQLI_TYPE_INT24, 'flags' => MYSQLI_NUM_FLAG]);
         $this->assertSame('int', $fm->getMappedType());
         $this->assertFalse($fm->isBinary());
         $this->assertFalse($fm->isEnum());
@@ -68,7 +66,7 @@ class FieldMetadataTest extends AbstractTestCase
 
     public function testIsBlob(): void
     {
-        $fm = new FieldMetadata(-1, MYSQLI_BLOB_FLAG, (object) []);
+        $fm = FieldHelper::fromArray(['type' => -1, 'flags' => MYSQLI_BLOB_FLAG]);
         $this->assertSame('', $fm->getMappedType());
         $this->assertFalse($fm->isBinary());
         $this->assertFalse($fm->isEnum());
@@ -84,7 +82,7 @@ class FieldMetadataTest extends AbstractTestCase
 
     public function testIsNumericFloat(): void
     {
-        $fm = new FieldMetadata(MYSQLI_TYPE_FLOAT, MYSQLI_NUM_FLAG, (object) []);
+        $fm = FieldHelper::fromArray(['type' => MYSQLI_TYPE_FLOAT, 'flags' => MYSQLI_NUM_FLAG]);
         $this->assertSame('real', $fm->getMappedType());
         $this->assertFalse($fm->isBinary());
         $this->assertFalse($fm->isEnum());

@@ -12,17 +12,18 @@ use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\ResponseRenderer;
 use PhpMyAdmin\Transformations;
+use PHPUnit\Framework\Attributes\CoversClass;
 
 use function array_merge;
 
-/** @covers \PhpMyAdmin\Controllers\Table\CreateController */
+#[CoversClass(CreateController::class)]
 class CreateControllerTest extends AbstractTestCase
 {
     public function testCreateController(): void
     {
         $GLOBALS['db'] = 'test_db';
         $GLOBALS['table'] = 'new_test_table';
-        $GLOBALS['cfg']['Server'] = $GLOBALS['config']->defaultServer;
+        $GLOBALS['cfg']['Server'] = $GLOBALS['config']->getSettings()->Servers[1]->asArray();
         $_POST = ['db' => 'test_db', 'table' => 'new_test_table', 'num_fields' => '2'];
 
         $dummyDbi = $this->createDbiDummy();

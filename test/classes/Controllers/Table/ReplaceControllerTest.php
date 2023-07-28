@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace PhpMyAdmin\Tests\Controllers\Table;
 
 use PhpMyAdmin\CheckUserPrivileges;
+use PhpMyAdmin\Config\PageSettings;
 use PhpMyAdmin\ConfigStorage\Relation;
 use PhpMyAdmin\ConfigStorage\RelationCleanup;
 use PhpMyAdmin\ConfigStorage\RelationParameters;
@@ -22,9 +23,11 @@ use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\DbiDummy;
 use PhpMyAdmin\Tests\Stubs\ResponseRenderer;
 use PhpMyAdmin\Transformations;
+use PHPUnit\Framework\Attributes\CoversClass;
+use ReflectionProperty;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 
-/** @covers \PhpMyAdmin\Controllers\Table\ReplaceController */
+#[CoversClass(ReplaceController::class)]
 class ReplaceControllerTest extends AbstractTestCase
 {
     protected DatabaseInterface $dbi;
@@ -46,8 +49,7 @@ class ReplaceControllerTest extends AbstractTestCase
         $GLOBALS['cfg']['Server']['user'] = 'user';
         $GLOBALS['cfg']['Server']['DisableIS'] = false;
 
-        $_SESSION['relation'] = [];
-        $_SESSION['relation'][$GLOBALS['server']] = RelationParameters::fromArray([
+        $relationParameters = RelationParameters::fromArray([
             'table_coords' => 'table_name',
             'displaywork' => true,
             'db' => 'information_schema',
@@ -62,7 +64,8 @@ class ReplaceControllerTest extends AbstractTestCase
             'bookmark' => 'bookmark',
             'uiprefswork' => true,
             'table_uiprefs' => 'table_uiprefs',
-        ])->toArray();
+        ]);
+        (new ReflectionProperty(Relation::class, 'cache'))->setValue(null, $relationParameters);
     }
 
     public function testReplace(): void
@@ -71,39 +74,21 @@ class ReplaceControllerTest extends AbstractTestCase
         $_POST['db'] = $GLOBALS['db'];
         $_POST['table'] = $GLOBALS['table'];
         $_POST['ajax_request'] = 'true';
-        $_POST['clause_is_unique'] = 1;
-        $_POST['where_clause'] = [
-            '`test`.`ser` = 2',
-            '`test`.`ser` = 1',
-        ];
-        $_POST['rel_fields_list'] = '';
-        $_POST['do_transformations'] = true;
-        $_POST['transform_fields_list'] = '0%5Bvc%5D=sss%20s%20s&1%5Bvc%5D=zzff%20s%20sf%0A';
         $_POST['relational_display'] = 'K';
         $_POST['goto'] = 'index.php?route=/sql';
-        $_POST['submit_type'] = 'save';
-        $_POST['fields'] = [
-            'multi_edit' => [
-                0 => ['zzff s sf'],
-                1 => ['sss s s'],
-            ],
-        ];
-        $_POST['fields_name'] = [
-            'multi_edit' => [
-                0 => ['vc'],
-                1 => ['vc'],
-            ],
-        ];
-        $_POST['fields_null'] = [
-            'multi_edit' => [
-                0 => [],
-                1 => [],
-            ],
-        ];
 
         $request = $this->createStub(ServerRequest::class);
         $request->method('getParsedBodyParam')->willReturnMap([
             ['sql_query', null, ''],
+            ['clause_is_unique', null, 1],
+            ['where_clause', [], ['`test`.`ser` = 2', '`test`.`ser` = 1']],
+            ['rel_fields_list', '', ''],
+            ['do_transformations', null, true],
+            ['transform_fields_list', '', '0%5Bvc%5D=sss%20s%20s&1%5Bvc%5D=zzff%20s%20sf%0A'],
+            ['submit_type', '', 'save'],
+            ['fields', [], ['multi_edit' => [0 => ['zzff s sf'], 1 => ['sss s s']]]],
+            ['fields_name', [], ['multi_edit' => [0 => ['vc'], 1 => ['vc']]]],
+            ['fields_null', [], ['multi_edit' => [0 => [], 1 => []]]],
         ]);
 
         $dummyDbi = $this->createDbiDummy();
@@ -121,6 +106,7 @@ class ReplaceControllerTest extends AbstractTestCase
             $dbi,
         );
 
+        $pageSettings = $this->createStub(PageSettings::class);
         $sqlController = new SqlController(
             $response,
             $template,
@@ -134,6 +120,7 @@ class ReplaceControllerTest extends AbstractTestCase
             ),
             new CheckUserPrivileges($dbi),
             $dbi,
+            $pageSettings,
         );
         $GLOBALS['containerBuilder'] = $this->createStub(ContainerBuilder::class);
         $GLOBALS['containerBuilder']->method('get')->willReturn($sqlController);
@@ -155,7 +142,6 @@ class ReplaceControllerTest extends AbstractTestCase
     {
         $GLOBALS['urlParams'] = [];
         $GLOBALS['goto'] = 'index.php?route=/sql';
-        $_POST['insert_rows'] = 5;
         $_POST['sql_query'] = 'SELECT 1';
         $GLOBALS['cfg']['InsertRows'] = 2;
         $GLOBALS['cfg']['Server']['host'] = 'host.tld';
@@ -179,7 +165,13 @@ class ReplaceControllerTest extends AbstractTestCase
         );
 
         $request = $this->createStub(ServerRequest::class);
-        $changeController = new ChangeController($response, $template, $insertEdit, $relation);
+        $request->method('getParsedBodyParam')->willReturnMap([
+            ['insert_rows', null, 5],
+            ['sql_query', '', 'SELECT 1'],
+        ]);
+
+        $pageSettings = $this->createStub(PageSettings::class);
+        $changeController = new ChangeController($response, $template, $insertEdit, $relation, $pageSettings);
         $GLOBALS['containerBuilder'] = $this->createStub(ContainerBuilder::class);
         $GLOBALS['containerBuilder']->method('get')->willReturn($changeController);
 
@@ -202,6 +194,59 @@ class ReplaceControllerTest extends AbstractTestCase
             'Continue insertion with         <input type="number" '
             . 'name="insert_rows" id="insert_rows" value="5" min="1">',
             $output,
+        );
+    }
+
+    /**
+     * Test for getParamsForUpdateOrInsert
+     */
+    public function testGetParamsForUpdateOrInsert(): void
+    {
+        $request1 = $this->createStub(ServerRequest::class);
+        $request1->method('getParsedBodyParam')->willReturnMap([
+            ['where_clause', null, 'LIMIT 1'],
+            ['submit_type', null, 'showinsert'],
+        ]);
+
+        $replaceController = new ReplaceController(
+            $this->createStub(ResponseRenderer::class),
+            $this->createStub(Template::class),
+            $this->createStub(InsertEdit::class),
+            $this->createStub(Transformations::class),
+            $this->createStub(Relation::class),
+            $this->createStub(DatabaseInterface::class),
+        );
+
+        /** @var array $result */
+        $result = $this->callFunction(
+            $replaceController,
+            ReplaceController::class,
+            'getParamsForUpdateOrInsert',
+            [$request1],
+        );
+
+        $this->assertEquals(
+            [['LIMIT 1'], true, true],
+            $result,
+        );
+
+        // case 2 (else)
+        $request2 = $this->createStub(ServerRequest::class);
+        $request2->method('getParsedBodyParam')->willReturnMap([
+            ['fields', null, ['multi_edit' => ['a' => 'b', 'c' => 'd']]],
+        ]);
+
+        /** @var array $result */
+        $result = $this->callFunction(
+            $replaceController,
+            ReplaceController::class,
+            'getParamsForUpdateOrInsert',
+            [$request2],
+        );
+
+        $this->assertEquals(
+            [['a', 'c'], false, true],
+            $result,
         );
     }
 }

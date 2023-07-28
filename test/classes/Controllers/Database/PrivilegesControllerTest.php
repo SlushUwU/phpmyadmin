@@ -13,11 +13,11 @@ use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\DbiDummy;
 use PhpMyAdmin\Tests\Stubs\ResponseRenderer;
 use PhpMyAdmin\Url;
+use PHPUnit\Framework\Attributes\CoversClass;
 
 use function __;
-use function _pgettext;
 
-/** @covers \PhpMyAdmin\Controllers\Database\PrivilegesController */
+#[CoversClass(PrivilegesController::class)]
 class PrivilegesControllerTest extends AbstractTestCase
 {
     protected DatabaseInterface $dbi;
@@ -64,9 +64,7 @@ class PrivilegesControllerTest extends AbstractTestCase
             ->willReturn($privileges);
 
         $request = $this->createStub(ServerRequest::class);
-        $request->method('getParam')->willReturnMap([
-            ['db', null, 'test_db'],
-        ]);
+        $request->method('getParam')->willReturnMap([['db', null, 'test_db']]);
 
         $response = new ResponseRenderer();
         (new PrivilegesController(
@@ -108,20 +106,12 @@ class PrivilegesControllerTest extends AbstractTestCase
             __('Action'),
             $actual,
         );
-
-        //_pgettext('Create new user', 'New')
-        $this->assertStringContainsString(
-            _pgettext('Create new user', 'New'),
-            $actual,
-        );
     }
 
     public function testWithInvalidDatabaseName(): void
     {
         $request = $this->createStub(ServerRequest::class);
-        $request->method('getParam')->willReturnMap([
-            ['db', null, ''],
-        ]);
+        $request->method('getParam')->willReturnMap([['db', null, '']]);
 
         $response = new ResponseRenderer();
         (new PrivilegesController(

@@ -5,13 +5,16 @@ declare(strict_types=1);
 namespace PhpMyAdmin\Tests\Controllers;
 
 use PhpMyAdmin\Controllers\AbstractController;
+use PhpMyAdmin\Exceptions\ExitException;
 use PhpMyAdmin\Html\MySQLDocumentation;
 use PhpMyAdmin\Message;
 use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\ResponseRenderer;
+use PHPUnit\Framework\Attributes\CoversClass;
+use Throwable;
 
-/** @covers \PhpMyAdmin\Controllers\AbstractController */
+#[CoversClass(AbstractController::class)]
 class AbstractControllerTest extends AbstractTestCase
 {
     protected function setUp(): void
@@ -45,7 +48,12 @@ class AbstractControllerTest extends AbstractTestCase
         $message .= '[br]';
         $expected = Message::error($message)->getDisplay();
 
-        $controller->testCheckParameters(['param1', 'param2']);
+        try {
+            $controller->testCheckParameters(['param1', 'param2']);
+        } catch (Throwable $throwable) {
+        }
+
+        $this->assertInstanceOf(ExitException::class, $throwable ?? null);
         $this->assertSame($expected, $response->getHTMLResult());
         $this->assertSame(400, $response->getHttpResponseCode());
     }
@@ -91,10 +99,7 @@ class AbstractControllerTest extends AbstractTestCase
         $this->assertSame(404, $response->getHttpResponseCode());
         $this->assertFalse($response->hasSuccessState());
         $this->assertSame('', $response->getHTMLResult());
-        $this->assertSame([
-            'isErrorResponse' => true,
-            'message' => 'Error message.',
-        ], $response->getJSONResult());
+        $this->assertSame(['isErrorResponse' => true, 'message' => 'Error message.'], $response->getJSONResult());
     }
 
     public function testSendErrorResponseWithHtml(): void

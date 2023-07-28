@@ -4,17 +4,19 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Display;
 
+use PhpMyAdmin\Display\DeleteLinkEnum;
 use PhpMyAdmin\Display\DisplayParts;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
-/** @covers \PhpMyAdmin\Display\DisplayParts */
+#[CoversClass(DisplayParts::class)]
 class DisplayPartsTest extends TestCase
 {
     public function testFromArray(): void
     {
         $displayParts = DisplayParts::fromArray([
             'hasEditLink' => true,
-            'deleteLink' => DisplayParts::DELETE_ROW,
+            'deleteLink' => DeleteLinkEnum::DELETE_ROW,
             'hasSortLink' => true,
             'hasNavigationBar' => true,
             'hasBookmarkForm' => true,
@@ -22,7 +24,7 @@ class DisplayPartsTest extends TestCase
             'hasPrintLink' => true,
         ]);
         $this->assertTrue($displayParts->hasEditLink);
-        $this->assertSame(DisplayParts::DELETE_ROW, $displayParts->deleteLink);
+        $this->assertSame(DeleteLinkEnum::DELETE_ROW, $displayParts->deleteLink);
         $this->assertTrue($displayParts->hasSortLink);
         $this->assertTrue($displayParts->hasNavigationBar);
         $this->assertTrue($displayParts->hasBookmarkForm);
@@ -34,7 +36,7 @@ class DisplayPartsTest extends TestCase
     {
         $displayParts = DisplayParts::fromArray([]);
         $this->assertFalse($displayParts->hasEditLink);
-        $this->assertSame(DisplayParts::NO_DELETE, $displayParts->deleteLink);
+        $this->assertSame(DeleteLinkEnum::NO_DELETE, $displayParts->deleteLink);
         $this->assertFalse($displayParts->hasSortLink);
         $this->assertFalse($displayParts->hasNavigationBar);
         $this->assertFalse($displayParts->hasBookmarkForm);
@@ -43,7 +45,7 @@ class DisplayPartsTest extends TestCase
 
         $displayParts = $displayParts->with([
             'hasEditLink' => true,
-            'deleteLink' => DisplayParts::KILL_PROCESS,
+            'deleteLink' => DeleteLinkEnum::KILL_PROCESS,
             'hasSortLink' => true,
             'hasNavigationBar' => true,
             'hasBookmarkForm' => true,
@@ -51,7 +53,7 @@ class DisplayPartsTest extends TestCase
             'hasPrintLink' => true,
         ]);
         $this->assertTrue($displayParts->hasEditLink);
-        $this->assertSame(DisplayParts::KILL_PROCESS, $displayParts->deleteLink);
+        $this->assertSame(DeleteLinkEnum::KILL_PROCESS, $displayParts->deleteLink);
         $this->assertTrue($displayParts->hasSortLink);
         $this->assertTrue($displayParts->hasNavigationBar);
         $this->assertTrue($displayParts->hasBookmarkForm);
@@ -60,7 +62,7 @@ class DisplayPartsTest extends TestCase
 
         $displayParts = $displayParts->with([]);
         $this->assertTrue($displayParts->hasEditLink);
-        $this->assertSame(DisplayParts::KILL_PROCESS, $displayParts->deleteLink);
+        $this->assertSame(DeleteLinkEnum::KILL_PROCESS, $displayParts->deleteLink);
         $this->assertTrue($displayParts->hasSortLink);
         $this->assertTrue($displayParts->hasNavigationBar);
         $this->assertTrue($displayParts->hasBookmarkForm);

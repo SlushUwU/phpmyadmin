@@ -116,11 +116,11 @@ class ExportYaml extends ExportPlugin
     /**
      * Outputs the content of a table in JSON format
      *
-     * @param string $db       database name
-     * @param string $table    table name
-     * @param string $errorUrl the url to go back in case of error
-     * @param string $sqlQuery SQL query for obtaining data
-     * @param array  $aliases  Aliases of db/table/columns
+     * @param string  $db       database name
+     * @param string  $table    table name
+     * @param string  $errorUrl the url to go back in case of error
+     * @param string  $sqlQuery SQL query for obtaining data
+     * @param mixed[] $aliases  Aliases of db/table/columns
      */
     public function exportData(
         string $db,
@@ -129,41 +129,38 @@ class ExportYaml extends ExportPlugin
         string $sqlQuery,
         array $aliases = [],
     ): bool {
-        $db_alias = $db;
-        $table_alias = $table;
-        $this->initAlias($aliases, $db_alias, $table_alias);
-        $result = $GLOBALS['dbi']->query(
-            $sqlQuery,
-            Connection::TYPE_USER,
-            DatabaseInterface::QUERY_UNBUFFERED,
-        );
+        $dbAlias = $db;
+        $tableAlias = $table;
+        $this->initAlias($aliases, $dbAlias, $tableAlias);
+        $result = $GLOBALS['dbi']->query($sqlQuery, Connection::TYPE_USER, DatabaseInterface::QUERY_UNBUFFERED);
 
-        $columns_cnt = $result->numFields();
+        $columnsCnt = $result->numFields();
         $fieldsMeta = $GLOBALS['dbi']->getFieldsMeta($result);
 
         $columns = [];
         foreach ($fieldsMeta as $i => $field) {
-            $col_as = $field->name;
-            if (! empty($aliases[$db]['tables'][$table]['columns'][$col_as])) {
-                $col_as = $aliases[$db]['tables'][$table]['columns'][$col_as];
+            $colAs = $field->name;
+            if (! empty($aliases[$db]['tables'][$table]['columns'][$colAs])) {
+                $colAs = $aliases[$db]['tables'][$table]['columns'][$colAs];
             }
 
-            $columns[$i] = $col_as;
+            $columns[$i] = $colAs;
         }
 
-        $record_cnt = 0;
+        $recordCnt = 0;
         while ($record = $result->fetchRow()) {
-            $record_cnt++;
+            $recordCnt++;
 
             // Output table name as comment if this is the first record of the table
-            if ($record_cnt == 1) {
-                $buffer = '# ' . $db_alias . '.' . $table_alias . "\n";
+            if ($recordCnt == 1) {
+                $buffer = '# ' . $dbAlias . '.' . $tableAlias . "\n";
                 $buffer .= '-' . "\n";
             } else {
                 $buffer = '-' . "\n";
             }
 
-            for ($i = 0; $i < $columns_cnt; $i++) {
+            /** @infection-ignore-all */
+            for ($i = 0; $i < $columnsCnt; $i++) {
                 if (! array_key_exists($i, $record)) {
                     continue;
                 }
@@ -180,18 +177,8 @@ class ExportYaml extends ExportPlugin
                 }
 
                 $record[$i] = str_replace(
-                    [
-                        '\\',
-                        '"',
-                        "\n",
-                        "\r",
-                    ],
-                    [
-                        '\\\\',
-                        '\"',
-                        '\n',
-                        '\r',
-                    ],
+                    ['\\', '"', "\n", "\r"],
+                    ['\\\\', '\"', '\n', '\r'],
                     $record[$i],
                 );
                 $buffer .= '  ' . $columns[$i] . ': "' . $record[$i] . '"' . "\n";

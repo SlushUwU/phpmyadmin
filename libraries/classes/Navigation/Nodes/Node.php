@@ -7,7 +7,8 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Navigation\Nodes;
 
-use PhpMyAdmin\ConfigStorage\Relation;
+use PhpMyAdmin\ConfigStorage\Features\NavigationItemsHidingFeature;
+use PhpMyAdmin\ConfigStorage\RelationParameters;
 use PhpMyAdmin\Dbal\Connection;
 use PhpMyAdmin\Html\Generator;
 use PhpMyAdmin\Util;
@@ -96,10 +97,7 @@ class Node
      *   title?: string
      * }
      */
-    public array $links = [
-        'text' => ['route' => '', 'params' => []],
-        'icon' => ['route' => '', 'params' => []],
-    ];
+    public array $links = ['text' => ['route' => '', 'params' => []], 'icon' => ['route' => '', 'params' => []]];
 
     /** @var string HTML title */
     public string $title = '';
@@ -117,8 +115,6 @@ class Node
      *          the branch at the third level of the tree
      */
     public int $pos3 = 0;
-
-    protected Relation $relation;
 
     /** @var string $displayName  display name for the navigation tree */
     public string|null $displayName = null;
@@ -145,7 +141,6 @@ class Node
         }
 
         $this->isGroup = $isGroup;
-        $this->relation = new Relation($GLOBALS['dbi']);
     }
 
     /**
@@ -173,13 +168,13 @@ class Node
     {
         if ($realName) {
             foreach ($this->children as $child) {
-                if ($child->realName == $name) {
+                if ($child->realName === $name) {
                     return $child;
                 }
             }
         } else {
             foreach ($this->children as $child) {
-                if ($child->name == $name && $child->isNew === false) {
+                if ($child->name === $name && ! $child->isNew) {
                     return $child;
                 }
             }
@@ -196,7 +191,7 @@ class Node
     public function removeChild(string $name): void
     {
         foreach ($this->children as $key => $child) {
-            if ($child->name == $name) {
+            if ($child->name === $name) {
                 unset($this->children[$key]);
                 break;
             }
@@ -220,6 +215,11 @@ class Node
         }
 
         $parent = $this->parent;
+        if ($parent === null) {
+            /** @infection-ignore-all */
+            return $parents;
+        }
+
         while ($parent !== null) {
             if (($parent->type != self::CONTAINER || $containers) && (! $parent->isGroup || $groups)) {
                 $parents[] = $parent;
@@ -277,7 +277,10 @@ class Node
      */
     public function hasSiblings(): bool
     {
-        $retval = false;
+        if ($this->parent === null) {
+            return false;
+        }
+
         $paths = $this->getPaths();
         if (count($paths['aPath_clean']) > 3) {
             return true;
@@ -285,12 +288,11 @@ class Node
 
         foreach ($this->parent->children as $child) {
             if ($child !== $this && ($child->type == self::OBJECT || $child->hasChildren(false))) {
-                $retval = true;
-                break;
+                return true;
             }
         }
 
-        return $retval;
+        return false;
     }
 
     /**
@@ -316,7 +318,7 @@ class Node
      * Returns the actual path and the virtual paths for a node
      * both as clean arrays and base64 encoded strings
      *
-     * @return array
+     * @return array{aPath: string, aPath_clean: string[], vPath: string, vPath_clean: string[]}
      */
     public function getPaths(): array
     {
@@ -340,12 +342,7 @@ class Node
         $vPath = implode('.', array_reverse($vPath));
         $vPathClean = array_reverse($vPathClean);
 
-        return [
-            'aPath' => $aPath,
-            'aPath_clean' => $aPathClean,
-            'vPath' => $vPath,
-            'vPath_clean' => $vPathClean,
-        ];
+        return ['aPath' => $aPath, 'aPath_clean' => $aPathClean, 'vPath' => $vPath, 'vPath_clean' => $vPathClean];
     }
 
     /**
@@ -358,10 +355,14 @@ class Node
      * @param int    $pos          The offset of the list within the results
      * @param string $searchClause A string used to filter the results of the query
      *
-     * @return array
+     * @return mixed[]
      */
-    public function getData(string $type, int $pos, string $searchClause = ''): array
-    {
+    public function getData(
+        RelationParameters $relationParameters,
+        string $type,
+        int $pos,
+        string $searchClause = '',
+    ): array {
         if (isset($GLOBALS['cfg']['Server']['DisableIS']) && ! $GLOBALS['cfg']['Server']['DisableIS']) {
             return $this->getDataFromInfoSchema($pos, $searchClause);
         }
@@ -486,15 +487,13 @@ class Node
      *
      * @param string $searchClause search clause
      *
-     * @return array array of databases
+     * @return mixed[] array of databases
      */
     private function getDatabasesToSearch(string $searchClause): array
     {
         $databases = [];
         if (! empty($searchClause)) {
-            $databases = [
-                '%' . $GLOBALS['dbi']->escapeString($searchClause) . '%',
-            ];
+            $databases = ['%' . $GLOBALS['dbi']->escapeString($searchClause) . '%'];
         } elseif (! empty($GLOBALS['cfg']['Server']['only_db'])) {
             $databases = $GLOBALS['cfg']['Server']['only_db'];
         } elseif (! empty($GLOBALS['dbs_to_test'])) {
@@ -532,9 +531,7 @@ class Node
 
         if (! empty($GLOBALS['cfg']['Server']['only_db'])) {
             if (is_string($GLOBALS['cfg']['Server']['only_db'])) {
-                $GLOBALS['cfg']['Server']['only_db'] = [
-                    $GLOBALS['cfg']['Server']['only_db'],
-                ];
+                $GLOBALS['cfg']['Server']['only_db'] = [$GLOBALS['cfg']['Server']['only_db']];
             }
 
             $whereClause .= 'AND (';
@@ -556,7 +553,7 @@ class Node
      *
      * @return string HTML for control buttons
      */
-    public function getHtmlForControlButtons(): string
+    public function getHtmlForControlButtons(NavigationItemsHidingFeature|null $navigationItemsHidingFeature): string
     {
         return '';
     }
@@ -612,11 +609,10 @@ class Node
     /**
      * Gets the count of hidden elements for each database
      *
-     * @return array|null array containing the count of hidden elements for each database
+     * @return mixed[]|null array containing the count of hidden elements for each database
      */
-    public function getNavigationHidingData(): array|null
+    public function getNavigationHidingData(NavigationItemsHidingFeature|null $navigationItemsHidingFeature): array|null
     {
-        $navigationItemsHidingFeature = $this->relation->getRelationParameters()->navigationItemsHidingFeature;
         if ($navigationItemsHidingFeature !== null) {
             $navTable = Util::backquote($navigationItemsHidingFeature->database)
                 . '.' . Util::backquote($navigationItemsHidingFeature->navigationHiding);
@@ -635,7 +631,7 @@ class Node
      * @param int    $pos          The offset of the list within the results.
      * @param string $searchClause A string used to filter the results of the query.
      *
-     * @return array
+     * @return mixed[]
      */
     private function getDataFromInfoSchema(int $pos, string $searchClause): array
     {
@@ -672,7 +668,7 @@ class Node
      * @param int    $pos          The offset of the list within the results.
      * @param string $searchClause A string used to filter the results of the query.
      *
-     * @return array
+     * @return mixed[]
      */
     private function getDataFromShowDatabases(int $pos, string $searchClause): array
     {
@@ -750,7 +746,7 @@ class Node
      * @param int    $pos          The offset of the list within the results.
      * @param string $searchClause A string used to filter the results of the query.
      *
-     * @return array
+     * @return mixed[]
      */
     private function getDataFromShowDatabasesLike(int $pos, string $searchClause): array
     {

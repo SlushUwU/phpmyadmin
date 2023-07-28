@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace PhpMyAdmin\Tests;
 
 use PhpMyAdmin\Font;
+use PHPUnit\Framework\Attributes\CoversClass;
 
-/** @covers \PhpMyAdmin\Font */
+#[CoversClass(Font::class)]
 class FontTest extends AbstractTestCase
 {
     private Font $font;
@@ -244,12 +245,7 @@ class FontTest extends AbstractTestCase
                 'a',
                 'arial',
                 10,
-                [
-                    [
-                        'chars' => 'a',
-                        'modifier' => 0.61,
-                    ],
-                ],
+                [['chars' => 'a', 'modifier' => 0.61]],
             ),
         );
 
@@ -260,12 +256,7 @@ class FontTest extends AbstractTestCase
                 'a',
                 'arial',
                 10,
-                [
-                    [
-                        'chars' => ['a'],
-                        'modifier' => 0.61,
-                    ],
-                ],
+                [['chars' => ['a'], 'modifier' => 0.61]],
             ),
         );
     }

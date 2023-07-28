@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace PhpMyAdmin\Tests;
 
 use PhpMyAdmin\Git;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Group;
 
 use function file_put_contents;
 use function mkdir;
@@ -16,10 +18,8 @@ use function unlink;
 
 use const DIRECTORY_SEPARATOR;
 
-/**
- * @covers \PhpMyAdmin\Git
- * @group git-revision
- */
+#[CoversClass(Git::class)]
+#[Group('git-revision')]
 class GitTest extends AbstractTestCase
 {
     protected Git $object;
@@ -66,13 +66,13 @@ class GitTest extends AbstractTestCase
         $_SESSION['git_location'] = '.cachedgitlocation';
         $_SESSION['is_git_revision'] = true;
 
-        $git_location = '';
+        $gitLocation = '';
 
-        $this->assertTrue($this->object->isGitRevision($git_location));
+        $this->assertTrue($this->object->isGitRevision($gitLocation));
 
         $this->assertFalse($this->object->hasGitInformation());
 
-        $this->assertEquals('.cachedgitlocation', $git_location);
+        $this->assertEquals('.cachedgitlocation', $gitLocation);
     }
 
     /**
@@ -82,15 +82,14 @@ class GitTest extends AbstractTestCase
     {
         $this->object = new Git(false);
         $this->assertFalse(
-            $this->object->isGitRevision($git_location),
+            $this->object->isGitRevision($gitLocation),
         );
     }
 
     /**
      * Test for isGitRevision
-     *
-     * @group git-revision
      */
+    #[Group('git-revision')]
     public function testIsGitRevisionLocalGitDir(): void
     {
         $this->assertFalse(
@@ -125,9 +124,8 @@ class GitTest extends AbstractTestCase
 
     /**
      * Test for isGitRevision
-     *
-     * @group git-revision
      */
+    #[Group('git-revision')]
     public function testIsGitRevisionExternalGitDir(): void
     {
         file_put_contents($this->testDir . '.git', 'gitdir: ' . $this->testDir . '.customgitdir');
@@ -163,9 +161,8 @@ class GitTest extends AbstractTestCase
 
     /**
      * Test for checkGitRevision packs folder
-     *
-     * @group git-revision
      */
+    #[Group('git-revision')]
     public function testCheckGitRevisionPacksFolder(): void
     {
         mkdir($this->testDir . '.git');
@@ -187,7 +184,7 @@ class GitTest extends AbstractTestCase
             '# pack-refs with: peeled fully-peeled sorted' . "\n" .
             'c1f2ff2eb0c3fda741f859913fd589379f4e4a8f refs/tags/4.3.10' . "\n" .
             '^6f2e60343b0a324c65f2d1411bf4bd03e114fb98' . "\n" .
-            '17bf8b7309919f8ac593d7c563b31472780ee83b refs/remotes/origin/master' . "\n",
+            '8d660283c5c88a04bac7a2b3aa9ad9eaff0fd05e refs/remotes/origin/master' . "\n",
         );
         mkdir($this->testDir . '.git/objects/pack', 0777, true);//default = 0777, recursive mode
 
@@ -195,44 +192,26 @@ class GitTest extends AbstractTestCase
 
         if (
             $commit === null
-            && ! isset($_SESSION['PMA_VERSION_REMOTECOMMIT_17bf8b7309919f8ac593d7c563b31472780ee83b'])
+            && ! isset($_SESSION['PMA_VERSION_REMOTECOMMIT_8d660283c5c88a04bac7a2b3aa9ad9eaff0fd05e'])
         ) {
             $this->markTestSkipped('Unable to get remote commit information.');
         }
 
         $this->assertIsArray($commit);
-        $this->assertArrayHasKey('hash', $commit);
-        $this->assertEquals('17bf8b7309919f8ac593d7c563b31472780ee83b', $commit['hash']);
-
-        $this->assertArrayHasKey('branch', $commit);
-        $this->assertEquals('master', $commit['branch']);
-
-        $this->assertArrayHasKey('message', $commit);
-        $this->assertIsString($commit['message']);
-
-        $this->assertArrayHasKey('is_remote_commit', $commit);
-        $this->assertIsBool($commit['is_remote_commit']);
-
-        $this->assertArrayHasKey('is_remote_branch', $commit);
-        $this->assertIsBool($commit['is_remote_branch']);
-
-        $this->assertArrayHasKey('author', $commit);
-        $this->assertIsArray($commit['author']);
-        $this->assertArrayHasKey('name', $commit['author']);
-        $this->assertArrayHasKey('email', $commit['author']);
-        $this->assertArrayHasKey('date', $commit['author']);
-        $this->assertIsString($commit['author']['name']);
-        $this->assertIsString($commit['author']['email']);
-        $this->assertIsString($commit['author']['date']);
-
-        $this->assertArrayHasKey('committer', $commit);
-        $this->assertIsArray($commit['committer']);
-        $this->assertArrayHasKey('name', $commit['committer']);
-        $this->assertArrayHasKey('email', $commit['committer']);
-        $this->assertArrayHasKey('date', $commit['committer']);
-        $this->assertIsString($commit['committer']['name']);
-        $this->assertIsString($commit['committer']['email']);
-        $this->assertIsString($commit['committer']['date']);
+        $this->assertSame('8d660283c5c88a04bac7a2b3aa9ad9eaff0fd05e', $commit['hash']);
+        $this->assertSame('master', $commit['branch']);
+        $this->assertSame(
+            'Update po files' . "\n\n" . '[ci skip]' . "\n\n" . 'Signed-off-by: phpMyAdmin bot <bot@phpmyadmin.net>',
+            $commit['message'],
+        );
+        $this->assertTrue($commit['is_remote_commit']);
+        $this->assertTrue($commit['is_remote_branch']);
+        $this->assertSame('phpMyAdmin bot', $commit['author']['name']);
+        $this->assertSame('bot@phpmyadmin.net', $commit['author']['email']);
+        $this->assertSame('2023-05-14T00:19:49Z', $commit['author']['date']);
+        $this->assertSame('phpMyAdmin bot', $commit['committer']['name']);
+        $this->assertSame('bot@phpmyadmin.net', $commit['committer']['email']);
+        $this->assertSame('2023-05-14T00:19:49Z', $commit['committer']['date']);
 
         rmdir($this->testDir . '.git/objects/pack');
         rmdir($this->testDir . '.git/objects');
@@ -244,9 +223,8 @@ class GitTest extends AbstractTestCase
 
     /**
      * Test for checkGitRevision packs folder
-     *
-     * @group git-revision
      */
+    #[Group('git-revision')]
     public function testCheckGitRevisionRefFile(): void
     {
         mkdir($this->testDir . '.git');
@@ -282,9 +260,8 @@ class GitTest extends AbstractTestCase
 
     /**
      * Test for checkGitRevision with packs as file
-     *
-     * @group git-revision
      */
+    #[Group('git-revision')]
     public function testCheckGitRevisionPacksFile(): void
     {
         mkdir($this->testDir . '.git');
@@ -306,7 +283,7 @@ class GitTest extends AbstractTestCase
             '# pack-refs with: peeled fully-peeled sorted' . "\n" .
             'c1f2ff2eb0c3fda741f859913fd589379f4e4a8f refs/tags/4.3.10' . "\n" .
             '^6f2e60343b0a324c65f2d1411bf4bd03e114fb98' . "\n" .
-            '17bf8b7309919f8ac593d7c563b31472780ee83b refs/remotes/origin/master' . "\n",
+            '8d660283c5c88a04bac7a2b3aa9ad9eaff0fd05e refs/remotes/origin/master' . "\n",
         );
         mkdir($this->testDir . '.git/objects/info', 0777, true);
         file_put_contents(
@@ -322,44 +299,26 @@ class GitTest extends AbstractTestCase
 
         if (
             $commit === null
-            && ! isset($_SESSION['PMA_VERSION_REMOTECOMMIT_17bf8b7309919f8ac593d7c563b31472780ee83b'])
+            && ! isset($_SESSION['PMA_VERSION_REMOTECOMMIT_8d660283c5c88a04bac7a2b3aa9ad9eaff0fd05e'])
         ) {
             $this->markTestSkipped('Unable to get remote commit information.');
         }
 
         $this->assertIsArray($commit);
-        $this->assertArrayHasKey('hash', $commit);
-        $this->assertEquals('17bf8b7309919f8ac593d7c563b31472780ee83b', $commit['hash']);
-
-        $this->assertArrayHasKey('branch', $commit);
-        $this->assertEquals('master', $commit['branch']);
-
-        $this->assertArrayHasKey('message', $commit);
-        $this->assertIsString($commit['message']);
-
-        $this->assertArrayHasKey('is_remote_commit', $commit);
-        $this->assertIsBool($commit['is_remote_commit']);
-
-        $this->assertArrayHasKey('is_remote_branch', $commit);
-        $this->assertIsBool($commit['is_remote_branch']);
-
-        $this->assertArrayHasKey('author', $commit);
-        $this->assertIsArray($commit['author']);
-        $this->assertArrayHasKey('name', $commit['author']);
-        $this->assertArrayHasKey('email', $commit['author']);
-        $this->assertArrayHasKey('date', $commit['author']);
-        $this->assertIsString($commit['author']['name']);
-        $this->assertIsString($commit['author']['email']);
-        $this->assertIsString($commit['author']['date']);
-
-        $this->assertArrayHasKey('committer', $commit);
-        $this->assertIsArray($commit['committer']);
-        $this->assertArrayHasKey('name', $commit['committer']);
-        $this->assertArrayHasKey('email', $commit['committer']);
-        $this->assertArrayHasKey('date', $commit['committer']);
-        $this->assertIsString($commit['committer']['name']);
-        $this->assertIsString($commit['committer']['email']);
-        $this->assertIsString($commit['committer']['date']);
+        $this->assertSame('8d660283c5c88a04bac7a2b3aa9ad9eaff0fd05e', $commit['hash']);
+        $this->assertSame('master', $commit['branch']);
+        $this->assertSame(
+            'Update po files' . "\n\n" . '[ci skip]' . "\n\n" . 'Signed-off-by: phpMyAdmin bot <bot@phpmyadmin.net>',
+            $commit['message'],
+        );
+        $this->assertTrue($commit['is_remote_commit']);
+        $this->assertTrue($commit['is_remote_branch']);
+        $this->assertSame('phpMyAdmin bot', $commit['author']['name']);
+        $this->assertSame('bot@phpmyadmin.net', $commit['author']['email']);
+        $this->assertSame('2023-05-14T00:19:49Z', $commit['author']['date']);
+        $this->assertSame('phpMyAdmin bot', $commit['committer']['name']);
+        $this->assertSame('bot@phpmyadmin.net', $commit['committer']['email']);
+        $this->assertSame('2023-05-14T00:19:49Z', $commit['committer']['date']);
 
         unlink($this->testDir . '.git/objects/info/packs');
         rmdir($this->testDir . '.git/objects/info');
@@ -465,16 +424,8 @@ class GitTest extends AbstractTestCase
         );
 
         $this->assertSame([
-            [
-                'name' => 'William Desportes',
-                'email' => 'williamdes@wdes.fr',
-                'date' => '2022-07-13 14:56:40 +0200',
-            ],
-            [
-                'name' => 'William Desportes',
-                'email' => 'williamdes@wdes.fr',
-                'date' => '2022-07-13 14:56:40 +0200',
-            ],
+            ['name' => 'William Desportes', 'email' => 'williamdes@wdes.fr', 'date' => '2022-07-13 14:56:40 +0200'],
+            ['name' => 'William Desportes', 'email' => 'williamdes@wdes.fr', 'date' => '2022-07-13 14:56:40 +0200'],
             'Remove ignore config.inc.php for psalm because '
                 . 'it fails the CI  Signed-off-by: William Desportes <williamdes@wdes.fr>',
         ], $extractedData);

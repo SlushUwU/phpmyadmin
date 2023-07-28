@@ -6,21 +6,11 @@ namespace PhpMyAdmin\Tests\Navigation\Nodes;
 
 use PhpMyAdmin\Navigation\Nodes\NodeTriggerContainer;
 use PhpMyAdmin\Tests\AbstractTestCase;
+use PHPUnit\Framework\Attributes\CoversClass;
 
-/** @covers \PhpMyAdmin\Navigation\Nodes\NodeTriggerContainer */
+#[CoversClass(NodeTriggerContainer::class)]
 class NodeTriggerContainerTest extends AbstractTestCase
 {
-    /**
-     * SetUp for test cases
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $GLOBALS['dbi'] = $this->createDatabaseInterface();
-        $GLOBALS['server'] = 0;
-    }
-
     /**
      * Test for __construct
      */
@@ -29,8 +19,8 @@ class NodeTriggerContainerTest extends AbstractTestCase
         $parent = new NodeTriggerContainer();
         $this->assertEquals(
             [
-                'text' => ['route' => '/database/triggers', 'params' => ['db' => null, 'table' => null]],
-                'icon' => ['route' => '/database/triggers', 'params' => ['db' => null, 'table' => null]],
+                'text' => ['route' => '/triggers', 'params' => ['db' => null, 'table' => null]],
+                'icon' => ['route' => '/triggers', 'params' => ['db' => null, 'table' => null]],
             ],
             $parent->links,
         );

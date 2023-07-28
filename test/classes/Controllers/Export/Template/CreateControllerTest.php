@@ -15,8 +15,10 @@ use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\DbiDummy;
 use PhpMyAdmin\Tests\Stubs\ResponseRenderer;
+use PHPUnit\Framework\Attributes\CoversClass;
+use ReflectionProperty;
 
-/** @covers \PhpMyAdmin\Controllers\Export\Template\CreateController */
+#[CoversClass(CreateController::class)]
 class CreateControllerTest extends AbstractTestCase
 {
     protected DatabaseInterface $dbi;
@@ -37,12 +39,12 @@ class CreateControllerTest extends AbstractTestCase
         $GLOBALS['server'] = 1;
         $GLOBALS['text_dir'] = 'ltr';
 
-        $_SESSION['relation'] = [];
-        $_SESSION['relation'][$GLOBALS['server']] = RelationParameters::fromArray([
+        $relationParameters = RelationParameters::fromArray([
             'exporttemplateswork' => true,
             'db' => 'db',
             'export_templates' => 'table',
-        ])->toArray();
+        ]);
+        (new ReflectionProperty(Relation::class, 'cache'))->setValue(null, $relationParameters);
 
         $GLOBALS['cfg']['Server']['user'] = 'user';
 

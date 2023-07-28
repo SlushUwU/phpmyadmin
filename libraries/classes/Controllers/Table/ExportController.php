@@ -29,6 +29,7 @@ class ExportController extends AbstractController
         ResponseRenderer $response,
         Template $template,
         private Options $export,
+        private PageSettings $pageSettings,
     ) {
         parent::__construct($response, $template);
     }
@@ -41,9 +42,9 @@ class ExportController extends AbstractController
         $GLOBALS['where_clause'] ??= null;
         $GLOBALS['unlim_num_rows'] ??= null;
 
-        $pageSettings = new PageSettings('Export');
-        $pageSettingsErrorHtml = $pageSettings->getErrorHTML();
-        $pageSettingsHtml = $pageSettings->getHTML();
+        $this->pageSettings->init('Export');
+        $pageSettingsErrorHtml = $this->pageSettings->getErrorHTML();
+        $pageSettingsHtml = $this->pageSettings->getHTML();
 
         $this->addScriptFiles(['export.js']);
 
@@ -65,17 +66,11 @@ class ExportController extends AbstractController
             if (! empty($parser->statements[0]) && ($parser->statements[0] instanceof SelectStatement)) {
                 // Checking if the WHERE clause has to be replaced.
                 if (! empty($GLOBALS['where_clause']) && is_array($GLOBALS['where_clause'])) {
-                    $GLOBALS['replaces'][] = [
-                        'WHERE',
-                        'WHERE (' . implode(') OR (', $GLOBALS['where_clause']) . ')',
-                    ];
+                    $GLOBALS['replaces'][] = ['WHERE', 'WHERE (' . implode(') OR (', $GLOBALS['where_clause']) . ')'];
                 }
 
                 // Preparing to remove the LIMIT clause.
-                $GLOBALS['replaces'][] = [
-                    'LIMIT',
-                    '',
-                ];
+                $GLOBALS['replaces'][] = ['LIMIT', ''];
 
                 // Replacing the clauses.
                 $GLOBALS['sql_query'] = Query::replaceClauses(
@@ -98,11 +93,11 @@ class ExportController extends AbstractController
             $GLOBALS['unlim_num_rows'] = 0;
         }
 
-        $GLOBALS['single_table'] = $_POST['single_table'] ?? $_GET['single_table'] ?? $GLOBALS['single_table'] ?? null;
+        $GLOBALS['single_table'] = $request->getParam('single_table') ?? $GLOBALS['single_table'] ?? null;
 
         $exportList = Plugins::getExport('table', isset($GLOBALS['single_table']));
 
-        if (empty($exportList)) {
+        if ($exportList === []) {
             $this->response->addHTML(Message::error(
                 __('Could not load export plugins, please check your installation!'),
             )->getDisplay());
@@ -111,8 +106,8 @@ class ExportController extends AbstractController
         }
 
         $exportType = 'table';
-        $isReturnBackFromRawExport = isset($_POST['export_type']) && $_POST['export_type'] === 'raw';
-        if (isset($_POST['raw_query']) || $isReturnBackFromRawExport) {
+        $isReturnBackFromRawExport = $request->getParsedBodyParam('export_type') === 'raw';
+        if ($request->hasBodyParam('raw_query') || $isReturnBackFromRawExport) {
             $exportType = 'raw';
         }
 

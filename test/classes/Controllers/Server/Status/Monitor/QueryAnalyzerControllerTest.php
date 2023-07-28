@@ -13,8 +13,9 @@ use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\DbiDummy;
 use PhpMyAdmin\Tests\Stubs\ResponseRenderer;
 use PhpMyAdmin\Utils\SessionCache;
+use PHPUnit\Framework\Attributes\CoversClass;
 
-/** @covers \PhpMyAdmin\Controllers\Server\Status\Monitor\QueryAnalyzerController */
+#[CoversClass(QueryAnalyzerController::class)]
 class QueryAnalyzerControllerTest extends AbstractTestCase
 {
     protected function setUp(): void
@@ -31,14 +32,9 @@ class QueryAnalyzerControllerTest extends AbstractTestCase
         $GLOBALS['cached_affected_rows'] = 'cached_affected_rows';
         SessionCache::set('profiling_supported', true);
 
-        $value = [
-            'sql_text' => 'insert sql_text',
-            '#' => 10,
-            'argument' => 'argument argument2',
-        ];
+        $value = ['sql_text' => 'insert sql_text', '#' => 10, 'argument' => 'argument argument2'];
 
         $response = new ResponseRenderer();
-        $response->setAjax(true);
 
         $dummyDbi = new DbiDummy();
         $dbi = $this->createDatabaseInterface($dummyDbi);
@@ -47,10 +43,8 @@ class QueryAnalyzerControllerTest extends AbstractTestCase
         $controller = new QueryAnalyzerController($response, new Template(), $statusData, new Monitor($dbi), $dbi);
 
         $request = $this->createStub(ServerRequest::class);
-        $request->method('getParsedBodyParam')->willReturnMap([
-            ['database', '', 'database'],
-            ['query', '', 'query'],
-        ]);
+        $request->method('isAjax')->willReturn(true);
+        $request->method('getParsedBodyParam')->willReturnMap([['database', '', 'database'], ['query', '', 'query']]);
 
         $dummyDbi->addSelectDb('mysql');
         $dummyDbi->addSelectDb('database');

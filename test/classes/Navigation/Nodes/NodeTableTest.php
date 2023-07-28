@@ -6,35 +6,20 @@ namespace PhpMyAdmin\Tests\Navigation\Nodes;
 
 use PhpMyAdmin\Navigation\Nodes\NodeTable;
 use PhpMyAdmin\Tests\AbstractTestCase;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 
-/** @covers \PhpMyAdmin\Navigation\Nodes\NodeTable */
+#[CoversClass(NodeTable::class)]
 class NodeTableTest extends AbstractTestCase
 {
-    /**
-     * SetUp for test cases
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $GLOBALS['dbi'] = $this->createDatabaseInterface();
-
-        $GLOBALS['server'] = 0;
-        $GLOBALS['cfg']['NavigationTreeDefaultTabTable'] = 'search';
-        $GLOBALS['cfg']['NavigationTreeDefaultTabTable2'] = 'insert';
-        $GLOBALS['cfg']['DefaultTabTable'] = 'browse';
-        $GLOBALS['cfg']['MaxNavigationItems'] = 250;
-        $GLOBALS['cfg']['NavigationTreeEnableGrouping'] = true;
-        $GLOBALS['cfg']['NavigationTreeDbSeparator'] = '_';
-        $GLOBALS['cfg']['NavigationTreeTableSeparator'] = '__';
-        $GLOBALS['cfg']['NavigationTreeTableLevel'] = 1;
-    }
-
     /**
      * Test for __construct
      */
     public function testConstructor(): void
     {
+        $GLOBALS['cfg']['NavigationTreeDefaultTabTable'] = 'search';
+        $GLOBALS['cfg']['NavigationTreeDefaultTabTable2'] = 'insert';
+
         $parent = new NodeTable('default');
         $this->assertEquals(
             [
@@ -53,9 +38,8 @@ class NodeTableTest extends AbstractTestCase
      *
      * @param string $target    target of the icon
      * @param string $imageName name of the image that should be set
-     *
-     * @dataProvider providerForTestIcon
      */
+    #[DataProvider('providerForTestIcon')]
     public function testIcon(string $target, string $imageName, string $imageTitle): void
     {
         $GLOBALS['cfg']['NavigationTreeDefaultTabTable'] = $target;
@@ -67,7 +51,7 @@ class NodeTableTest extends AbstractTestCase
     /**
      * Data provider for testIcon().
      *
-     * @return array data for testIcon()
+     * @return mixed[] data for testIcon()
      */
     public static function providerForTestIcon(): array
     {

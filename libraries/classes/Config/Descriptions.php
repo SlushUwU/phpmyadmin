@@ -27,14 +27,8 @@ class Descriptions
     public static function get(string $path, string $type = 'name'): string
     {
         $key = str_replace(
-            [
-                'Servers/1/',
-                '/',
-            ],
-            [
-                'Servers/',
-                '_',
-            ],
+            ['Servers/1/', '/'],
+            ['Servers/', '_'],
             $path,
         );
         $value = self::getString($key, $type);
@@ -335,6 +329,7 @@ class Descriptions
                 . 'storage). If disabled, this utilizes JS-routines to display query history '
                 . '(lost by window close).',
             ),
+            'AllowSharedBookmarks_desc' => __('Allow users to create bookmarks that are available for all other users'),
             'Servers_SessionTimeZone_desc' => __(
                 'Sets the effective timezone; possibly different than the one from your database server',
             ),
@@ -366,9 +361,6 @@ class Descriptions
             'Servers_MaxTableUiprefs_desc' => __(
                 'Limits number of table preferences which are stored in database, the oldest '
                 . 'records are automatically removed.',
-            ),
-            'Servers_savedsearches_desc' => __(
-                'Leave blank for no QBE saved searches support, suggested: [kbd]pma__savedsearches[/kbd].',
             ),
             'Servers_export_templates_desc' => __(
                 'Leave blank for no export template support, suggested: [kbd]pma__export_templates[/kbd].',
@@ -860,6 +852,7 @@ class Descriptions
             'ProtectBinary_name' => __('Protect binary columns'),
             'QueryHistoryDB_name' => __('Permanent query history'),
             'QueryHistoryMax_name' => __('Query history length'),
+            'AllowSharedBookmarks_name' => __('Allow shared bookmarks between users'),
             'RecodingEngine_name' => __('Recoding engine'),
             'RememberSorting_name' => __('Remember table\'s sorting'),
             'TablePrimaryKeyOrder_name' => __('Primary key default sort order'),
@@ -888,7 +881,6 @@ class Descriptions
             'Servers_host_name' => __('Server hostname'),
             'Servers_LogoutURL_name' => __('Logout URL'),
             'Servers_MaxTableUiprefs_name' => __('Maximal number of table preferences to store'),
-            'Servers_savedsearches_name' => __('QBE saved searches table'),
             'Servers_export_templates_name' => __('Export templates table'),
             'Servers_central_columns_name' => __('Central columns table'),
             'Servers_only_db_name' => __('Show only listed databases'),

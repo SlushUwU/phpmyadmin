@@ -36,6 +36,7 @@ final class PartitioningController extends AbstractController
         private DatabaseInterface $dbi,
         private CreateAddField $createAddField,
         private StructureController $structureController,
+        private PageSettings $pageSettings,
     ) {
         parent::__construct($response, $template);
     }
@@ -50,9 +51,9 @@ final class PartitioningController extends AbstractController
             return;
         }
 
-        $pageSettings = new PageSettings('TableStructure');
-        $this->response->addHTML($pageSettings->getErrorHTML());
-        $this->response->addHTML($pageSettings->getHTML());
+        $this->pageSettings->init('TableStructure');
+        $this->response->addHTML($this->pageSettings->getErrorHTML());
+        $this->response->addHTML($this->pageSettings->getHTML());
 
         $this->addScriptFiles(['table/structure.js']);
 
@@ -83,7 +84,7 @@ final class PartitioningController extends AbstractController
     private function extractPartitionDetails(): array|null
     {
         $createTable = (new Table($GLOBALS['table'], $GLOBALS['db'], $this->dbi))->showCreate();
-        if (! $createTable) {
+        if ($createTable === '') {
             return null;
         }
 
@@ -241,11 +242,11 @@ final class PartitioningController extends AbstractController
 
     private function updatePartitioning(): void
     {
-        $sql_query = 'ALTER TABLE ' . Util::backquote($GLOBALS['table']) . ' '
+        $sqlQuery = 'ALTER TABLE ' . Util::backquote($GLOBALS['table']) . ' '
             . $this->createAddField->getPartitionsDefinition();
 
         // Execute alter query
-        $result = $this->dbi->tryQuery($sql_query);
+        $result = $this->dbi->tryQuery($sqlQuery);
 
         if ($result === false) {
             $this->response->setRequestStatus(false);
@@ -264,7 +265,7 @@ final class PartitioningController extends AbstractController
         );
         $message->addParam($GLOBALS['table']);
         $this->response->addHTML(
-            Generator::getMessage($message, $sql_query, 'success'),
+            Generator::getMessage($message, $sqlQuery, 'success'),
         );
     }
 }

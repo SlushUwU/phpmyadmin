@@ -7,10 +7,12 @@ namespace PhpMyAdmin\Tests\Server;
 use PhpMyAdmin\Server\Select;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Util;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 use function __;
 
-/** @covers \PhpMyAdmin\Server\Select */
+#[CoversClass(Select::class)]
 class SelectTest extends AbstractTestCase
 {
     /**
@@ -60,23 +62,18 @@ class SelectTest extends AbstractTestCase
 
     /**
      * Test for Select::render
-     *
-     * @dataProvider renderDataProvider
      */
-    public function testRender(bool $not_only_options, bool $omit_fieldset): void
+    #[DataProvider('renderDataProvider')]
+    public function testRender(bool $notOnlyOptions): void
     {
-        if ($not_only_options) {
+        if ($notOnlyOptions) {
             $GLOBALS['cfg']['DisplayServersList'] = null;
         }
 
-        $html = Select::render($not_only_options, $omit_fieldset);
+        $html = Select::render($notOnlyOptions);
         $server = $GLOBALS['cfg']['Servers']['0'];
 
-        if ($not_only_options) {
-            if (! $omit_fieldset) {
-                $this->assertStringContainsString('</fieldset>', $html);
-            }
-
+        if ($notOnlyOptions) {
             $this->assertStringContainsString(
                 Util::getScriptNameForOption(
                     $GLOBALS['cfg']['DefaultTabServer'],
@@ -102,21 +99,12 @@ class SelectTest extends AbstractTestCase
         $this->assertStringContainsString($server['user'], $html);
     }
 
+    /** @return mixed[][] */
     public static function renderDataProvider(): array
     {
         return [
-            'only options, don\'t omit fieldset' => [
-                false,
-                false,
-            ],
-            'not only options, omits fieldset' => [
-                true,
-                true,
-            ],
-            'not only options, don\'t omit fieldset' => [
-                true,
-                false,
-            ],
+            'only options' => [false],
+            'not only options' => [true],
         ];
     }
 }

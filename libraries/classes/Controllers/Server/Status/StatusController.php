@@ -70,17 +70,11 @@ class StatusController extends AbstractController
             $primaryConnection = $request->getParsedBodyParam('primary_connection');
 
             if ($primaryInfo['status']) {
-                $replication .= $this->replicationGui->getHtmlForReplicationStatusTable(
-                    $primaryConnection,
-                    'primary',
-                );
+                $replication .= $this->replicationGui->getHtmlForReplicationStatusTable($primaryConnection, 'primary');
             }
 
             if ($replicaInfo['status']) {
-                $replication .= $this->replicationGui->getHtmlForReplicationStatusTable(
-                    $primaryConnection,
-                    'replica',
-                );
+                $replication .= $this->replicationGui->getHtmlForReplicationStatusTable($primaryConnection, 'replica');
             }
         }
 
@@ -102,7 +96,7 @@ class StatusController extends AbstractController
         return (int) $this->dbi->fetchValue('SELECT UNIX_TIMESTAMP() - ' . $this->data->status['Uptime']);
     }
 
-    /** @return array */
+    /** @return mixed[] */
     private function getTrafficInfo(): array
     {
         $hourFactor = 3600 / $this->data->status['Uptime'];
@@ -147,7 +141,7 @@ class StatusController extends AbstractController
         ];
     }
 
-    /** @return array */
+    /** @return mixed[] */
     private function getConnectionsInfo(): array
     {
         $hourFactor = 3600 / $this->data->status['Uptime'];

@@ -22,7 +22,6 @@ use function pack;
 use function preg_match;
 use function sprintf;
 use function str_replace;
-use function strcmp;
 use function strlen;
 use function strpos;
 use function substr;
@@ -69,26 +68,20 @@ class ZipExtension
             $errorMessage = __('Error in ZIP archive:') . ' ' . $this->zip->getStatusString();
             $this->zip->close();
 
-            return [
-                'error' => $errorMessage,
-                'data' => $fileData,
-            ];
+            return ['error' => $errorMessage, 'data' => $fileData];
         }
 
         if ($this->zip->numFiles === 0) {
             $errorMessage = __('No files found inside ZIP archive!');
             $this->zip->close();
 
-            return [
-                'error' => $errorMessage,
-                'data' => $fileData,
-            ];
+            return ['error' => $errorMessage, 'data' => $fileData];
         }
 
         /* Is the the zip really an ODS file? */
         $odsMediaType = 'application/vnd.oasis.opendocument.spreadsheet';
         $firstZipEntry = $this->zip->getFromIndex(0);
-        if (! strcmp($odsMediaType, (string) $firstZipEntry)) {
+        if ($odsMediaType === (string) $firstZipEntry) {
             $specificEntry = '/^content\.xml$/';
         }
 
@@ -96,10 +89,7 @@ class ZipExtension
             $fileData = $firstZipEntry;
             $this->zip->close();
 
-            return [
-                'error' => $errorMessage,
-                'data' => $fileData,
-            ];
+            return ['error' => $errorMessage, 'data' => $fileData];
         }
 
         /* Return the correct contents, not just the first entry */
@@ -118,10 +108,7 @@ class ZipExtension
 
         $this->zip->close();
 
-        return [
-            'error' => $errorMessage,
-            'data' => $fileData,
-        ];
+        return ['error' => $errorMessage, 'data' => $fileData];
     }
 
     /**
@@ -207,13 +194,12 @@ class ZipExtension
      * or if $data is an array and $name is an array, but they don't have the
      * same amount of elements.
      *
-     * @param array|string $data contents of the file/files
-     * @param array|string $name name of the file/files in the archive
-     * @param int          $time the current timestamp
+     * @param mixed[]|string $data contents of the file/files
+     * @param mixed[]|string $name name of the file/files in the archive
      *
      * @return string|false the ZIP file contents, or false if there was an error.
      */
-    public function createFile(array|string $data, array|string $name, int $time = 0): string|false
+    public function createFile(array|string $data, array|string $name): string|false
     {
         $datasec = []; // Array to store compressed data
         $ctrlDir = []; // Central directory

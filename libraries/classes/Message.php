@@ -60,13 +60,9 @@ class Message implements Stringable
     /**
      * message levels
      *
-     * @var array
+     * @var mixed[]
      */
-    public static array $level = [
-        self::SUCCESS => 'success',
-        self::NOTICE => 'notice',
-        self::ERROR => 'error',
-    ];
+    public static array $level = [self::SUCCESS => 'success', self::NOTICE => 'notice', self::ERROR => 'error'];
 
     /**
      * The message number
@@ -101,23 +97,23 @@ class Message implements Stringable
     /**
      * holds parameters
      *
-     * @var    array
+     * @var    mixed[]
      */
     protected array $params = [];
 
     /**
      * holds additional messages
      *
-     * @var    array
+     * @var    (string|Message)[]
      */
     protected array $addedMessages = [];
 
     /**
-     * @param string $string   The message to be displayed
-     * @param int    $number   A numeric representation of the type of message
-     * @param array  $params   An array of parameters to use in the message
-     * @param int    $sanitize A flag to indicate what to sanitize, see
-     *                         constant definitions above
+     * @param string  $string   The message to be displayed
+     * @param int     $number   A numeric representation of the type of message
+     * @param mixed[] $params   An array of parameters to use in the message
+     * @param int     $sanitize A flag to indicate what to sanitize, see
+     *                          constant definitions above
      */
     public function __construct(
         string $string = '',
@@ -517,7 +513,7 @@ class Message implements Stringable
     /**
      * set all params at once, usually used in conjunction with string
      *
-     * @param array    $params   parameters to set
+     * @param mixed[]  $params   parameters to set
      * @param bool|int $sanitize whether to sanitize params
      */
     public function setParams(array $params, bool|int $sanitize = false): void
@@ -532,7 +528,7 @@ class Message implements Stringable
     /**
      * return all parameters
      *
-     * @return array
+     * @return mixed[]
      */
     public function getParams(): array
     {
@@ -542,7 +538,7 @@ class Message implements Stringable
     /**
      * return all added messages
      *
-     * @return array
+     * @return (string|Message)[]
      */
     public function getAddedMessages(): array
     {
@@ -552,11 +548,14 @@ class Message implements Stringable
     /**
      * Sanitizes $message
      *
-     * @param mixed $message the message(s)
+     * @param T $message the message(s)
      *
-     * @return mixed  the sanitized message(s)
+     * @return string|mixed[]  the sanitized message(s)
+     * @psalm-return (T is array ? array : string)
+     *
+     * @template T of array|mixed
      */
-    public static function sanitize(mixed $message): mixed
+    public static function sanitize(mixed $message): string|array
     {
         if (is_array($message)) {
             foreach ($message as $key => $val) {
@@ -613,6 +612,7 @@ class Message implements Stringable
             $message = $this->getString();
         }
 
+        /** @infection-ignore-all */
         if ($this->isDisplayed()) {
             $message = $this->getMessageWithIcon($message);
         }
@@ -625,8 +625,8 @@ class Message implements Stringable
             $message = self::decodeBB($message);
         }
 
-        foreach ($this->getAddedMessages() as $add_message) {
-            $message .= $add_message;
+        foreach ($this->getAddedMessages() as $addMessage) {
+            $message .= $addMessage;
         }
 
         return $message;
@@ -689,16 +689,15 @@ class Message implements Stringable
 
         $template = new Template();
 
-        return $template->render('message', [
-            'context' => $context,
-            'message' => $this->getMessage(),
-        ]);
+        return $template->render('message', ['context' => $context, 'message' => $this->getMessage()]);
     }
 
     /**
      * sets and returns whether the message was displayed or not
      *
      * @param bool $isDisplayed whether to set displayed flag
+     *
+     * @infection-ignore-all
      */
     public function isDisplayed(bool $isDisplayed = false): bool
     {

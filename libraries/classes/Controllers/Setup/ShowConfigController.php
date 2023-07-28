@@ -17,8 +17,8 @@ final class ShowConfigController
 {
     public function __invoke(ServerRequest $request): void
     {
-        $form_display = new ConfigForm($GLOBALS['ConfigFile']);
-        $form_display->save(['Config']);
+        $formDisplay = new ConfigForm($GLOBALS['ConfigFile']);
+        $formDisplay->save(['Config']);
 
         $response = ResponseRenderer::getInstance();
         $response->disable();
@@ -36,8 +36,6 @@ final class ShowConfigController
             $GLOBALS['ConfigFile']->resetConfigData();
             // drop post data
             $response->generateHeader303('../setup/index.php' . Url::getCommonRaw(['route' => '/setup']));
-
-            return;
         }
 
         /** @var mixed $submitDownload */

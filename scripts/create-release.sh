@@ -169,6 +169,7 @@ cleanup_composer_vendors() {
         vendor/tecnickcom/tcpdf/.github/ \
         vendor/bacon/bacon-qr-code/phpunit.xml.dist \
         vendor/bacon/bacon-qr-code/test/ \
+        vendor/dasprid/enum/.github/ \
         vendor/dasprid/enum/phpunit.xml.dist \
         vendor/dasprid/enum/test/ \
         vendor/williamdes/mariadb-mysql-kbs/phpunit.xml \
@@ -200,6 +201,7 @@ cleanup_composer_vendors() {
         vendor/webmozart/assert/.php_cs \
         vendor/webmozart/assert/psalm.xml \
         vendor/twig/twig/src/Test/ \
+        vendor/psr/http-message/docs/ \
         vendor/psr/log/Psr/Log/Test/ \
         vendor/psr/http-factory/.pullapprove.yml \
         vendor/slim/psr7/MAINTAINERS.md \
@@ -233,6 +235,7 @@ cleanup_composer_vendors() {
         vendor/brick/math/SECURITY.md \
         vendor/brick/math/psalm-baseline.xml \
         vendor/brick/math/psalm.xml \
+        vendor/ramsey/collection/conventional-commits.json \
         vendor/ramsey/collection/SECURITY.md \
         vendor/spomky-labs/base64url/.github/ \
         vendor/spomky-labs/cbor-php/.php_cs.dist \
@@ -614,7 +617,7 @@ for kit in $KITS ; do
         # Template test files
         rm -r templates/test/
         rm phpunit.xml.* build.xml
-        rm .editorconfig .browserslistrc .eslintignore .jshintrc .eslintrc.json .stylelintrc.json psalm.xml psalm-baseline.xml phpstan.neon.dist phpstan-baseline.neon phpcs.xml.dist jest.config.cjs infection.json.dist
+        rm .editorconfig .browserslistrc .eslintignore .jshintrc .eslintrc.json .stylelintrc.json psalm.xml psalm-baseline.xml phpstan.neon.dist phpstan-baseline.neon phpcs.xml.dist jest.config.cjs infection.json5.dist
         # Gettext po files (if they were not removed by ./scripts/lang-cleanup.sh)
         rm -rf po
         # Documentation source code

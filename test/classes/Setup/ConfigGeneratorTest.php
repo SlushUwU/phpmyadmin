@@ -8,6 +8,8 @@ use PhpMyAdmin\Config\ConfigFile;
 use PhpMyAdmin\Setup\ConfigGenerator;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Version;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Group;
 use ReflectionClass;
 
 use function explode;
@@ -17,14 +19,13 @@ use function str_repeat;
 
 use const SODIUM_CRYPTO_SECRETBOX_KEYBYTES;
 
-/** @covers \PhpMyAdmin\Setup\ConfigGenerator */
+#[CoversClass(ConfigGenerator::class)]
 class ConfigGeneratorTest extends AbstractTestCase
 {
     /**
      * Test for ConfigGenerator::getConfigFile
-     *
-     * @group medium
      */
+    #[Group('medium')]
     public function testGetConfigFile(): void
     {
         unset($_SESSION['eol']);
@@ -33,18 +34,8 @@ class ConfigGeneratorTest extends AbstractTestCase
 
         $GLOBALS['server'] = 0;
         $cf = new ConfigFile();
-        $_SESSION['ConfigFile0'] = [
-            'a',
-            'b',
-            'c',
-        ];
-        $_SESSION['ConfigFile0']['Servers'] = [
-            [
-                1,
-                2,
-                3,
-            ],
-        ];
+        $_SESSION['ConfigFile0'] = ['a', 'b', 'c'];
+        $_SESSION['ConfigFile0']['Servers'] = [[1, 2, 3]];
 
         $cf->setPersistKeys(['1/', 2]);
 
@@ -95,11 +86,7 @@ class ConfigGeneratorTest extends AbstractTestCase
             $method->invoke(
                 null,
                 'var_name',
-                [
-                    1,
-                    2,
-                    3,
-                ],
+                [1, 2, 3],
                 "\n",
             ),
         );
@@ -110,10 +97,7 @@ class ConfigGeneratorTest extends AbstractTestCase
             $method->invoke(
                 null,
                 'var_name',
-                [
-                    '1a' => 'foo',
-                    'b' => 'bar',
-                ],
+                ['1a' => 'foo', 'b' => 'bar'],
                 "\n",
             ),
         );
@@ -152,21 +136,14 @@ class ConfigGeneratorTest extends AbstractTestCase
         $this->assertFalse(
             $method->invoke(
                 null,
-                [
-                    'a' => 1,
-                    'b' => 2,
-                ],
+                ['a' => 1, 'b' => 2],
             ),
         );
 
         $this->assertFalse(
             $method->invoke(
                 null,
-                [
-                    0 => 1,
-                    1 => 2,
-                    3 => 3,
-                ],
+                [0 => 1, 1 => 2, 3 => 3],
             ),
         );
 
@@ -180,11 +157,7 @@ class ConfigGeneratorTest extends AbstractTestCase
         $this->assertTrue(
             $method->invoke(
                 null,
-                [
-                    1,
-                    2,
-                    3,
-                ],
+                [1, 2, 3],
             ),
         );
     }
@@ -197,25 +170,13 @@ class ConfigGeneratorTest extends AbstractTestCase
         $reflection = new ReflectionClass(ConfigGenerator::class);
         $method = $reflection->getMethod('exportZeroBasedArray');
 
-        $arr = [
-            1,
-            2,
-            3,
-            4,
-        ];
+        $arr = [1, 2, 3, 4];
 
         $result = $method->invoke(null, $arr, "\n");
 
         $this->assertEquals('[1, 2, 3, 4]', $result);
 
-        $arr = [
-            1,
-            2,
-            3,
-            4,
-            7,
-            'foo',
-        ];
+        $arr = [1, 2, 3, 4, 7, 'foo'];
 
         $result = $method->invoke(null, $arr, "\n");
 

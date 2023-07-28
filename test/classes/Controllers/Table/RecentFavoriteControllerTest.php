@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Controllers\Table;
 
+use PhpMyAdmin\ConfigStorage\Relation;
 use PhpMyAdmin\Controllers\Sql\SqlController;
 use PhpMyAdmin\Controllers\Table\RecentFavoriteController;
 use PhpMyAdmin\DatabaseInterface;
@@ -13,13 +14,15 @@ use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\DbiDummy;
 use PhpMyAdmin\Tests\Stubs\ResponseRenderer;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
+use ReflectionProperty;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 
-/**
- * @covers \PhpMyAdmin\Controllers\Table\RecentFavoriteController
- * @runTestsInSeparateProcesses
- * @preserveGlobalState disabled
- */
+#[CoversClass(RecentFavoriteController::class)]
+#[PreserveGlobalState(false)]
+#[RunTestsInSeparateProcesses]
 class RecentFavoriteControllerTest extends AbstractTestCase
 {
     protected DatabaseInterface $dbi;
@@ -41,7 +44,7 @@ class RecentFavoriteControllerTest extends AbstractTestCase
         $GLOBALS['text_dir'] = 'ltr';
         $_REQUEST['db'] = 'test_db';
         $_REQUEST['table'] = 'test_table';
-        $_SESSION['relation'] = [];
+        (new ReflectionProperty(Relation::class, 'cache'))->setValue(null, null);
 
         $_SESSION['tmpval'] = [];
         $_SESSION['tmpval']['recentTables'][2] = [['db' => 'test_db', 'table' => 'test_table']];
@@ -72,7 +75,7 @@ class RecentFavoriteControllerTest extends AbstractTestCase
         $GLOBALS['text_dir'] = 'ltr';
         $_REQUEST['db'] = 'invalid_db';
         $_REQUEST['table'] = 'invalid_table';
-        $_SESSION['relation'] = [];
+        (new ReflectionProperty(Relation::class, 'cache'))->setValue(null, null);
 
         $_SESSION['tmpval'] = [];
         $_SESSION['tmpval']['recentTables'][2] = [['db' => 'invalid_db', 'table' => 'invalid_table']];

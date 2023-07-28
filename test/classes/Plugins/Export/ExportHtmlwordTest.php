@@ -7,7 +7,7 @@ namespace PhpMyAdmin\Tests\Plugins\Export;
 use PhpMyAdmin\ConfigStorage\Relation;
 use PhpMyAdmin\ConfigStorage\RelationParameters;
 use PhpMyAdmin\DatabaseInterface;
-use PhpMyAdmin\Export;
+use PhpMyAdmin\Export\Export;
 use PhpMyAdmin\Plugins\Export\ExportHtmlword;
 use PhpMyAdmin\Properties\Options\Groups\OptionsPropertyMainGroup;
 use PhpMyAdmin\Properties\Options\Groups\OptionsPropertyRootGroup;
@@ -19,6 +19,8 @@ use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\DbiDummy;
 use PhpMyAdmin\Tests\Stubs\DummyResult;
 use PhpMyAdmin\Transformations;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Group;
 use ReflectionMethod;
 use ReflectionProperty;
 
@@ -26,10 +28,8 @@ use function __;
 use function ob_get_clean;
 use function ob_start;
 
-/**
- * @covers \PhpMyAdmin\Plugins\Export\ExportHtmlword
- * @group medium
- */
+#[CoversClass(ExportHtmlword::class)]
+#[Group('medium')]
 class ExportHtmlwordTest extends AbstractTestCase
 {
     protected DatabaseInterface $dbi;
@@ -147,11 +147,7 @@ class ExportHtmlwordTest extends AbstractTestCase
         );
 
         $this->assertEquals(
-            [
-                'structure' => __('structure'),
-                'data' => __('data'),
-                'structure_and_data' => __('structure and data'),
-            ],
+            ['structure' => __('structure'), 'data' => __('data'), 'structure_and_data' => __('structure and data')],
             $property->getValues(),
         );
 
@@ -333,16 +329,7 @@ class ExportHtmlwordTest extends AbstractTestCase
 
         // case 1
 
-        $keys = [
-            [
-                'Non_unique' => 0,
-                'Column_name' => 'name1',
-            ],
-            [
-                'Non_unique' => 1,
-                'Column_name' => 'name2',
-            ],
-        ];
+        $keys = [['Non_unique' => 0, 'Column_name' => 'name1'], ['Non_unique' => 1, 'Column_name' => 'name2']];
 
         $dbi = $this->getMockBuilder(DatabaseInterface::class)
             ->disableOriginalConstructor()
@@ -383,16 +370,7 @@ class ExportHtmlwordTest extends AbstractTestCase
             ->setConstructorArgs([new Relation($GLOBALS['dbi']), new Export($GLOBALS['dbi']), new Transformations()])
             ->getMock();
 
-        $keys = [
-            [
-                'Non_unique' => 0,
-                'Column_name' => 'name1',
-            ],
-            [
-                'Non_unique' => 1,
-                'Column_name' => 'name2',
-            ],
-        ];
+        $keys = [['Non_unique' => 0, 'Column_name' => 'name1'], ['Non_unique' => 1, 'Column_name' => 'name2']];
 
         // case 1
 
@@ -406,13 +384,7 @@ class ExportHtmlwordTest extends AbstractTestCase
             ->method('fetchResult')
             ->willReturnOnConsecutiveCalls(
                 [],
-                [
-                    'fieldname' => [
-                        'values' => 'test-',
-                        'transformation' => 'testfoo',
-                        'mimetype' => 'test<',
-                    ],
-                ],
+                ['fieldname' => ['values' => 'test-', 'transformation' => 'testfoo', 'mimetype' => 'test<']],
             );
 
         $dbi->expects($this->once())
@@ -449,15 +421,15 @@ class ExportHtmlwordTest extends AbstractTestCase
             ->with($columns, ['name1'])
             ->will($this->returnValue('1'));
 
-        $_SESSION['relation'] = [];
-        $_SESSION['relation'][$GLOBALS['server']] = RelationParameters::fromArray([
+        $relationParameters = RelationParameters::fromArray([
             'relwork' => true,
             'commwork' => true,
             'mimework' => true,
             'db' => 'database',
             'relation' => 'rel',
             'column_info' => 'col',
-        ])->toArray();
+        ]);
+        (new ReflectionProperty(Relation::class, 'cache'))->setValue(null, $relationParameters);
 
         $result = $this->object->getTableDef('database', '', true, true, true);
 
@@ -484,19 +456,8 @@ class ExportHtmlwordTest extends AbstractTestCase
         $dbi->expects($this->exactly(2))
             ->method('fetchResult')
             ->willReturnOnConsecutiveCalls(
-                [
-                    'fieldname' => [
-                        'foreign_table' => 'ftable',
-                        'foreign_field' => 'ffield',
-                    ],
-                ],
-                [
-                    'field' => [
-                        'values' => 'test-',
-                        'transformation' => 'testfoo',
-                        'mimetype' => 'test<',
-                    ],
-                ],
+                ['fieldname' => ['foreign_table' => 'ftable', 'foreign_field' => 'ffield']],
+                ['field' => ['values' => 'test-', 'transformation' => 'testfoo', 'mimetype' => 'test<']],
             );
 
         $dbi->expects($this->once())
@@ -529,15 +490,15 @@ class ExportHtmlwordTest extends AbstractTestCase
         $GLOBALS['dbi'] = $dbi;
         $this->object->relation = new Relation($dbi);
 
-        $_SESSION['relation'] = [];
-        $_SESSION['relation'][$GLOBALS['server']] = RelationParameters::fromArray([
+        $relationParameters = RelationParameters::fromArray([
             'relwork' => true,
             'commwork' => true,
             'mimework' => true,
             'db' => 'database',
             'relation' => 'rel',
             'column_info' => 'col',
-        ])->toArray();
+        ]);
+        (new ReflectionProperty(Relation::class, 'cache'))->setValue(null, $relationParameters);
 
         $result = $this->object->getTableDef('database', '', true, true, true);
 
@@ -571,12 +532,12 @@ class ExportHtmlwordTest extends AbstractTestCase
 
         $GLOBALS['dbi'] = $dbi;
 
-        $_SESSION['relation'] = [];
-        $_SESSION['relation'][$GLOBALS['server']] = RelationParameters::fromArray([
+        $relationParameters = RelationParameters::fromArray([
             'db' => 'database',
             'relation' => 'rel',
             'column_info' => 'col',
-        ])->toArray();
+        ]);
+        (new ReflectionProperty(Relation::class, 'cache'))->setValue(null, $relationParameters);
 
         $result = $this->object->getTableDef('database', '', false, false, false);
 
@@ -602,9 +563,9 @@ class ExportHtmlwordTest extends AbstractTestCase
             [
                 'TRIGGER_SCHEMA' => 'database',
                 'TRIGGER_NAME' => 'tna"me',
-                'EVENT_MANIPULATION' => 'manip&',
+                'EVENT_MANIPULATION' => 'UPDATE',
                 'EVENT_OBJECT_TABLE' => 'table',
-                'ACTION_TIMING' => 'ac>t',
+                'ACTION_TIMING' => 'BEFORE',
                 'ACTION_STATEMENT' => 'def',
                 'EVENT_OBJECT_SCHEMA' => 'database',
                 'DEFINER' => 'test_user@localhost',
@@ -622,8 +583,8 @@ class ExportHtmlwordTest extends AbstractTestCase
 
         $this->assertStringContainsString(
             '<td class="print">tna&quot;me</td>' .
-            '<td class="print">ac&gt;t</td>' .
-            '<td class="print">manip&amp;</td>' .
+            '<td class="print">BEFORE</td>' .
+            '<td class="print">UPDATE</td>' .
             '<td class="print">def</td>',
             $result,
         );
@@ -741,37 +702,26 @@ class ExportHtmlwordTest extends AbstractTestCase
     {
         $method = new ReflectionMethod(ExportHtmlword::class, 'formatOneColumnDefinition');
 
-        $cols = [
-            'Null' => 'Yes',
-            'Field' => 'field',
-            'Key' => 'PRI',
-            'Type' => 'set(abc)enum123',
-        ];
+        $cols = ['Null' => 'Yes', 'Field' => 'field', 'Key' => 'PRI', 'Type' => 'set(abc)enum123'];
 
-        $unique_keys = ['field'];
+        $uniqueKeys = ['field'];
 
         $this->assertEquals(
             '<tr class="print-category"><td class="print"><em>' .
             '<strong>field</strong></em></td><td class="print">set(abc)</td>' .
             '<td class="print">Yes</td><td class="print">NULL</td>',
-            $method->invoke($this->object, $cols, $unique_keys),
+            $method->invoke($this->object, $cols, $uniqueKeys),
         );
 
-        $cols = [
-            'Null' => 'NO',
-            'Field' => 'fields',
-            'Key' => 'COMP',
-            'Type' => '',
-            'Default' => 'def',
-        ];
+        $cols = ['Null' => 'NO', 'Field' => 'fields', 'Key' => 'COMP', 'Type' => '', 'Default' => 'def'];
 
-        $unique_keys = ['field'];
+        $uniqueKeys = ['field'];
 
         $this->assertEquals(
             '<tr class="print-category"><td class="print">fields</td>' .
             '<td class="print">&amp;nbsp;</td><td class="print">No</td>' .
             '<td class="print">def</td>',
-            $method->invoke($this->object, $cols, $unique_keys),
+            $method->invoke($this->object, $cols, $uniqueKeys),
         );
     }
 }

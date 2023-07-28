@@ -283,7 +283,8 @@ class Util
      * @param int                   $limes the sensitiveness
      * @param int                   $comma the number of decimals to retain
      *
-     * @return array|null the formatted value and its unit
+     * @return string[]|null the formatted value and its unit
+     * @psalm-return ($value is null ? null : array{string, string})
      */
     public static function formatByteDown(float|int|string|null $value, int $limes = 6, int $comma = 0): array|null
     {
@@ -316,6 +317,7 @@ class Util
         $li = 10 ** $limes;
         $unit = $byteUnits[0];
 
+        /** @infection-ignore-all */
         for ($d = 6, $ex = 15; $d >= 1; $d--, $ex -= 3) {
             $unitSize = $li * 10 ** $ex;
             if (isset($byteUnits[$d]) && $value >= $unitSize) {
@@ -336,10 +338,7 @@ class Util
             $returnValue = self::formatNumber($value, 0);
         }
 
-        return [
-            trim($returnValue),
-            $unit,
-        ];
+        return [trim($returnValue), $unit];
     }
 
     /**
@@ -703,7 +702,7 @@ class Util
      * @param Expression[]    $expressions     An array of Expression instances.
      * @psalm-param array<int, mixed> $row
      *
-     * @return array the calculated condition and whether condition is unique
+     * @return mixed[] the calculated condition and whether condition is unique
      * @psalm-return array{string, bool, array}
      */
     public static function getUniqueCondition(
@@ -722,6 +721,7 @@ class Util
         $uniqueKeyArray = [];
         $nonPrimaryConditionArray = [];
 
+        /** @infection-ignore-all */
         for ($i = 0; $i < $fieldsCount; ++$i) {
             $meta = $fieldsMeta[$i];
 
@@ -820,11 +820,7 @@ class Util
 
         $whereClause = trim((string) preg_replace('|\s?AND$|', '', $preferredCondition));
 
-        return [
-            $whereClause,
-            $clauseIsUnique,
-            $conditionArray,
-        ];
+        return [$whereClause, $clauseIsUnique, $conditionArray];
     }
 
     /**
@@ -1111,7 +1107,7 @@ class Util
      *
      * @param string $columnSpecification Column specification
      *
-     * @return array associative array containing type, spec_in_brackets
+     * @return mixed[] associative array containing type, spec_in_brackets
      *          and possibly enum_set_values (another array)
      */
     public static function extractColumnSpec(string $columnSpecification): array
@@ -1457,35 +1453,25 @@ class Util
 
     /**
      * This function processes the datatypes supported by the DB,
-     * as specified in Types->getColumns() and either returns an array
-     * (useful for quickly checking if a datatype is supported)
-     * or an HTML snippet that creates a drop-down list.
+     * as specified in Types->getColumns() and returns an array
+     * (useful for quickly checking if a datatype is supported).
      *
-     * @param bool   $html     Whether to generate an html snippet or an array
-     * @param string $selected The value to mark as selected in HTML mode
-     *
-     * @return mixed   An HTML snippet or an array of datatypes.
+     * @return mixed[] An array of datatypes.
      */
-    public static function getSupportedDatatypes(bool $html = false, string $selected = ''): mixed
+    public static function getSupportedDatatypes(): array
     {
-        if ($html) {
-            $retval = Generator::getSupportedDatatypes($selected);
-        } else {
-            $retval = [];
-            foreach ($GLOBALS['dbi']->types->getColumns() as $value) {
-                if (is_array($value)) {
-                    foreach ($value as $subvalue) {
-                        if ($subvalue === '-') {
-                            continue;
-                        }
+        $retval = [];
+        foreach ($GLOBALS['dbi']->types->getColumns() as $value) {
+            if (is_array($value)) {
+                foreach ($value as $subvalue) {
+                    if ($subvalue === '-') {
+                        continue;
+                    }
 
-                        $retval[] = $subvalue;
-                    }
-                } else {
-                    if ($value !== '-') {
-                        $retval[] = $value;
-                    }
+                    $retval[] = $subvalue;
                 }
+            } elseif ($value !== '-') {
+                $retval[] = $value;
             }
         }
 
@@ -1496,7 +1482,7 @@ class Util
      * Returns a list of datatypes that are not (yet) handled by PMA.
      * Used by: /table/change and libraries/Routines.php
      *
-     * @return array list of datatypes
+     * @return mixed[] list of datatypes
      */
     public static function unsupportedDatatypes(): array
     {
@@ -1651,6 +1637,7 @@ class Util
         $inString = false;
         $buffer = '';
 
+        /** @infection-ignore-all */
         for ($i = 0, $length = mb_strlen($valuesString); $i < $length; $i++) {
             $curr = mb_substr($valuesString, $i, 1);
             $next = $i == mb_strlen($valuesString) - 1
@@ -1693,7 +1680,7 @@ class Util
      *
      * @param string|null $level 'server', 'db' or 'table' level
      *
-     * @return array|null list of tabs for the menu
+     * @return mixed[]|null list of tabs for the menu
      */
     public static function getMenuTabList(string|null $level = null): array|null
     {
@@ -1841,9 +1828,9 @@ class Util
     /**
      * Process the index data.
      *
-     * @param array $indexes index data
+     * @param mixed[] $indexes index data
      *
-     * @return array processes index data
+     * @return mixed[] processes index data
      */
     public static function processIndexData(array $indexes): array
     {
@@ -1886,12 +1873,7 @@ class Util
             $indexesData[$row['Key_name']][$row['Seq_in_index']]['Sub_part'] = $row['Sub_part'];
         }
 
-        return [
-            $primary,
-            $pkArray,
-            $indexesInfo,
-            $indexesData,
-        ];
+        return [$primary, $pkArray, $indexesInfo, $indexesData];
     }
 
     /**
@@ -1988,7 +1970,8 @@ class Util
                 // all tables in db
                 // - get the total number of tables
                 //  (needed for proper working of the MaxTableList feature)
-                $totalNumTables = count($GLOBALS['dbi']->getTables($db));
+                $tables = $GLOBALS['dbi']->getTables($db);
+                $totalNumTables = count($tables);
                 if ($isResultLimited) {
                     // fetch the details for a possible limited subset
                     $limitOffset = self::getTableListPosition($request, $db);
@@ -1999,7 +1982,7 @@ class Util
             // We must use union operator here instead of array_merge to preserve numerical keys
             $tables = $groupTable + $GLOBALS['dbi']->getTablesFull(
                 $db,
-                $groupWithSeparator !== false ? $groupWithSeparator : '',
+                $groupWithSeparator !== false ? $groupWithSeparator : $tables,
                 $groupWithSeparator !== false,
                 $limitOffset,
                 $limitCount,
@@ -2025,7 +2008,7 @@ class Util
      * @param string          $db           database name
      * @param ResultInterface $dbInfoResult result set
      *
-     * @return array list of tables
+     * @return mixed[] list of tables
      */
     public static function getTablesWhenOpen(string $db, ResultInterface $dbInfoResult): array
     {
@@ -2037,7 +2020,7 @@ class Util
         }
 
         // is there at least one "in use" table?
-        if (count($sotCache) > 0) {
+        if ($sotCache !== []) {
             $tblGroupSql = '';
             $whereAdded = false;
             if (
@@ -2086,7 +2069,7 @@ class Util
                     }
                 }
 
-                if (count($names) > 0) {
+                if ($names !== []) {
                     $tables += $GLOBALS['dbi']->getTablesFull($db, $names);
                 }
 
@@ -2156,6 +2139,7 @@ class Util
     {
         $result = '';
 
+        /** @infection-ignore-all */
         while (strlen($result) < $length) {
             // Get random byte and strip highest bit
             // to get ASCII only range
@@ -2197,9 +2181,9 @@ class Util
     /**
      * Access to a multidimensional array by dot notation
      *
-     * @param array        $array   List of values
-     * @param string|array $path    Path to searched value
-     * @param mixed        $default Default value
+     * @param mixed[]        $array   List of values
+     * @param string|mixed[] $path    Path to searched value
+     * @param mixed          $default Default value
      *
      * @return mixed Searched value
      */
@@ -2255,18 +2239,12 @@ class Util
                 $orderImg = ' ' . Generator::getImage(
                     's_asc',
                     __('Ascending'),
-                    [
-                        'class' => 'sort_arrow',
-                        'title' => '',
-                    ],
+                    ['class' => 'sort_arrow', 'title' => ''],
                 );
                 $orderImg .= ' ' . Generator::getImage(
                     's_desc',
                     __('Descending'),
-                    [
-                        'class' => 'sort_arrow hide',
-                        'title' => '',
-                    ],
+                    ['class' => 'sort_arrow hide', 'title' => ''],
                 );
                 // but on mouse over, show the reverse order (DESC)
                 $orderLinkParams['onmouseover'] = "$('.sort_arrow').toggle();";
@@ -2278,18 +2256,12 @@ class Util
                 $orderImg = ' ' . Generator::getImage(
                     's_asc',
                     __('Ascending'),
-                    [
-                        'class' => 'sort_arrow hide',
-                        'title' => '',
-                    ],
+                    ['class' => 'sort_arrow hide', 'title' => ''],
                 );
                 $orderImg .= ' ' . Generator::getImage(
                     's_desc',
                     __('Descending'),
-                    [
-                        'class' => 'sort_arrow',
-                        'title' => '',
-                    ],
+                    ['class' => 'sort_arrow', 'title' => ''],
                 );
                 // but on mouse over, show the reverse order (ASC)
                 $orderLinkParams['onmouseover'] = "$('.sort_arrow').toggle();";
@@ -2346,10 +2318,7 @@ class Util
                     continue;
                 }
 
-                [
-                    $keyName,
-                    $value,
-                ] = $keyValueArray;
+                [$keyName, $value] = $keyValueArray;
                 $value = trim(strtolower($value));
                 if (strtolower(trim($keyName)) === 'proto' && in_array($value, ['http', 'https'])) {
                     return $value;
@@ -2370,7 +2339,7 @@ class Util
             $disabled = ini_get('disable_functions');
             if (is_string($disabled)) {
                 $disabled = explode(',', $disabled);
-                $disabled = array_map(static fn (string $part) => trim($part), $disabled);
+                $disabled = array_map(trim(...), $disabled);
 
                 return ! in_array('error_reporting', $disabled);
             }

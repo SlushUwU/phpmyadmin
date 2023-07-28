@@ -17,7 +17,6 @@ use PhpMyAdmin\Util;
 
 use function __;
 use function sprintf;
-use function strlen;
 
 final class UserGroupsFormController extends AbstractController
 {
@@ -32,17 +31,20 @@ final class UserGroupsFormController extends AbstractController
 
     public function __invoke(ServerRequest $request): void
     {
-        $this->response->setAjax(true);
+        if (! $request->isAjax()) {
+            return;
+        }
 
-        if (! isset($_GET['username']) || strlen((string) $_GET['username']) === 0) {
+        /** @var string $username */
+        $username = $request->getQueryParam('username', '');
+
+        if ($username === '') {
             $this->response->setRequestStatus(false);
             $this->response->setHttpResponseCode(400);
             $this->response->addJSON('message', __('Missing parameter:') . ' username');
 
             return;
         }
-
-        $username = $_GET['username'];
 
         $checkUserPrivileges = new CheckUserPrivileges($this->dbi);
         $checkUserPrivileges->getPrivileges();

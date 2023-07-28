@@ -48,7 +48,7 @@ class DataDictionaryController extends AbstractController
                 $this->dbi->getTableIndexes($GLOBALS['db'], $tableName),
             );
 
-            [$foreigners, $hasRelation] = $this->relation->getRelationsAndStatus(
+            $foreigners = $this->relation->getRelationsAndStatus(
                 $relationParameters->relationFeature !== null,
                 $GLOBALS['db'],
                 $tableName,
@@ -62,7 +62,7 @@ class DataDictionaryController extends AbstractController
                 $extractedColumnSpec = Util::extractColumnSpec($row['Type']);
 
                 $relation = '';
-                if ($hasRelation) {
+                if ($foreigners !== []) {
                     $foreigner = $this->relation->searchColumnInForeigners($foreigners, $row['Field']);
                     if (is_array($foreigner) && isset($foreigner['foreign_table'], $foreigner['foreign_field'])) {
                         $relation = $foreigner['foreign_table'];
@@ -84,7 +84,7 @@ class DataDictionaryController extends AbstractController
                     'has_primary_key' => isset($primaryKeys[$row['Field']]),
                     'type' => $extractedColumnSpec['type'],
                     'print_type' => $extractedColumnSpec['print_type'],
-                    'is_nullable' => $row['Null'] !== '' && $row['Null'] !== 'NO',
+                    'is_nullable' => $row['Null'] !== 'NO',
                     'default' => $row['Default'] ?? null,
                     'comment' => $columnsComments[$row['Field']] ?? '',
                     'mime' => $mime,
@@ -95,7 +95,7 @@ class DataDictionaryController extends AbstractController
             $tables[$tableName] = [
                 'name' => $tableName,
                 'comment' => $showComment,
-                'has_relation' => $hasRelation,
+                'has_relation' => $foreigners !== [],
                 'has_mime' => $relationParameters->browserTransformationFeature !== null,
                 'columns' => $rows,
                 'indexes' => Index::getFromTable($this->dbi, $tableName, $GLOBALS['db']),

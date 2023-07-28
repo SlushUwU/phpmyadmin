@@ -5,11 +5,12 @@ declare(strict_types=1);
 namespace PhpMyAdmin\Tests\Controllers\Table;
 
 use PhpMyAdmin\Controllers\Table\ChartController;
-use PhpMyAdmin\FieldMetadata;
 use PhpMyAdmin\Http\ServerRequest;
 use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\AbstractTestCase;
+use PhpMyAdmin\Tests\FieldHelper;
 use PhpMyAdmin\Tests\Stubs\ResponseRenderer;
+use PHPUnit\Framework\Attributes\CoversClass;
 
 use const MYSQLI_NOT_NULL_FLAG;
 use const MYSQLI_NUM_FLAG;
@@ -17,7 +18,7 @@ use const MYSQLI_PRI_KEY_FLAG;
 use const MYSQLI_TYPE_DATE;
 use const MYSQLI_TYPE_LONG;
 
-/** @covers \PhpMyAdmin\Controllers\Table\ChartController */
+#[CoversClass(ChartController::class)]
 class ChartControllerTest extends AbstractTestCase
 {
     public function testChartController(): void
@@ -37,21 +38,24 @@ class ChartControllerTest extends AbstractTestCase
         $_REQUEST['pos'] = '0';
 
         $fieldsMeta = [
-            new FieldMetadata(
-                MYSQLI_TYPE_LONG,
-                MYSQLI_PRI_KEY_FLAG | MYSQLI_NUM_FLAG | MYSQLI_NOT_NULL_FLAG,
-                (object) ['name' => 'id', 'table' => 'table_for_chart'],
-            ),
-            new FieldMetadata(
-                MYSQLI_TYPE_LONG,
-                MYSQLI_NUM_FLAG | MYSQLI_NOT_NULL_FLAG,
-                (object) ['name' => 'amount', 'table' => 'table_for_chart'],
-            ),
-            new FieldMetadata(
-                MYSQLI_TYPE_DATE,
-                MYSQLI_NOT_NULL_FLAG,
-                (object) ['name' => 'date', 'table' => 'table_for_chart'],
-            ),
+            FieldHelper::fromArray([
+                'type' => MYSQLI_TYPE_LONG,
+                'flags' => MYSQLI_PRI_KEY_FLAG | MYSQLI_NUM_FLAG | MYSQLI_NOT_NULL_FLAG,
+                'name' => 'id',
+                'table' => 'table_for_chart',
+            ]),
+            FieldHelper::fromArray([
+                'type' => MYSQLI_TYPE_LONG,
+                'flags' => MYSQLI_NUM_FLAG | MYSQLI_NOT_NULL_FLAG,
+                'name' => 'amount',
+                'table' => 'table_for_chart',
+            ]),
+            FieldHelper::fromArray([
+                'type' => MYSQLI_TYPE_DATE,
+                'flags' => MYSQLI_NOT_NULL_FLAG,
+                'name' => 'date',
+                'table' => 'table_for_chart',
+            ]),
         ];
 
         $dummyDbi = $this->createDbiDummy();
@@ -60,12 +64,7 @@ class ChartControllerTest extends AbstractTestCase
         $dummyDbi->addSelectDb('test_db');
         $dummyDbi->addResult(
             'SELECT * FROM `test_db`.`table_for_chart`;',
-            [
-                ['1', '7', '2022-02-08'],
-                ['2', '5', '2022-02-09'],
-                ['3', '3', '2022-02-10'],
-                ['4', '9', '2022-02-11'],
-            ],
+            [['1', '7', '2022-02-08'], ['2', '5', '2022-02-09'], ['3', '3', '2022-02-10'], ['4', '9', '2022-02-11']],
             ['id', 'amount', 'date'],
             $fieldsMeta,
         );

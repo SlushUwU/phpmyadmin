@@ -10,33 +10,35 @@ use PhpMyAdmin\Http\ServerRequest;
 use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\ResponseRenderer;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
+use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 
 use function bin2hex;
 
-/** @covers \PhpMyAdmin\Controllers\Table\GetFieldController */
+#[CoversClass(GetFieldController::class)]
 class GetFieldControllerTest extends AbstractTestCase
 {
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
+    #[PreserveGlobalState(false)]
+    #[RunInSeparateProcess]
     public function testGetFieldController(): void
     {
         $GLOBALS['db'] = 'test_db';
         $GLOBALS['table'] = 'table_with_blob';
-        $_GET['transform_key'] = 'file';
-        $_GET['sql_query'] = 'SELECT * FROM `test_db`.`table_with_blob`';
-        $_GET['where_clause'] = '`table_with_blob`.`id` = 1';
-        $_GET['where_clause_sign'] = Core::signSqlQuery('`table_with_blob`.`id` = 1');
+
+        $request = $this->createStub(ServerRequest::class);
+        $request->method('getQueryParam')->willReturnMap([
+            ['transform_key', '', 'file' ],
+            ['sql_query', '', 'SELECT * FROM `test_db`.`table_with_blob`'],
+            ['where_clause', '', '`table_with_blob`.`id` = 1'],
+            ['where_clause_sign', '', Core::signSqlQuery('`table_with_blob`.`id` = 1')],
+        ]);
 
         $dummyDbi = $this->createDbiDummy();
         $dummyDbi->addSelectDb('test_db');
         $dummyDbi->addResult(
             'SHOW COLUMNS FROM `test_db`.`table_with_blob`',
-            [
-                ['id', 'int(11)', 'NO', 'PRI', null, 'auto_increment'],
-                ['file', 'blob', 'NO', '', null, ''],
-            ],
+            [['id', 'int(11)', 'NO', 'PRI', null, 'auto_increment'], ['file', 'blob', 'NO', '', null, '']],
             ['Field', 'Type', 'Null', 'Key', 'Default', 'Extra'],
         );
         $dummyDbi->addResult(
@@ -52,7 +54,7 @@ class GetFieldControllerTest extends AbstractTestCase
         $dbi = $this->createDatabaseInterface($dummyDbi);
         $GLOBALS['dbi'] = $dbi;
 
-        (new GetFieldController(new ResponseRenderer(), new Template(), $dbi))($this->createStub(ServerRequest::class));
+        (new GetFieldController(new ResponseRenderer(), new Template(), $dbi))($request);
         $this->expectOutputString('46494c45');
     }
 }

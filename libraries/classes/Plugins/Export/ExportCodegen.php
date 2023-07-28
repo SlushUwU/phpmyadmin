@@ -31,7 +31,7 @@ class ExportCodegen extends ExportPlugin
     /**
      * CodeGen Formats
      *
-     * @var array
+     * @var mixed[]
      */
     private array $cgFormats = [];
 
@@ -140,11 +140,11 @@ class ExportCodegen extends ExportPlugin
     /**
      * Outputs the content of a table in NHibernate format
      *
-     * @param string $db       database name
-     * @param string $table    table name
-     * @param string $errorUrl the url to go back in case of error
-     * @param string $sqlQuery SQL query for obtaining data
-     * @param array  $aliases  Aliases of db/table/columns
+     * @param string  $db       database name
+     * @param string  $table    table name
+     * @param string  $errorUrl the url to go back in case of error
+     * @param string  $sqlQuery SQL query for obtaining data
+     * @param mixed[] $aliases  Aliases of db/table/columns
      */
     public function exportData(
         string $db,
@@ -193,17 +193,17 @@ class ExportCodegen extends ExportPlugin
     /**
      * C# Handler
      *
-     * @param string $db      database name
-     * @param string $table   table name
-     * @param array  $aliases Aliases of db/table/columns
+     * @param string  $db      database name
+     * @param string  $table   table name
+     * @param mixed[] $aliases Aliases of db/table/columns
      *
      * @return string containing C# code lines, separated by "\n"
      */
     private function handleNHibernateCSBody(string $db, string $table, array $aliases = []): string
     {
-        $db_alias = $db;
-        $table_alias = $table;
-        $this->initAlias($aliases, $db_alias, $table_alias);
+        $dbAlias = $db;
+        $tableAlias = $table;
+        $this->initAlias($aliases, $dbAlias, $tableAlias);
 
         $result = $GLOBALS['dbi']->query(
             sprintf(
@@ -216,9 +216,9 @@ class ExportCodegen extends ExportPlugin
         /** @var TableProperty[] $tableProperties */
         $tableProperties = [];
         while ($row = $result->fetchRow()) {
-            $col_as = $this->getAlias($aliases, $row[0], 'col', $db, $table);
-            if (! empty($col_as)) {
-                $row[0] = $col_as;
+            $colAs = $this->getAlias($aliases, $row[0], 'col', $db, $table);
+            if (! empty($colAs)) {
+                $row[0] = $colAs;
             }
 
             $tableProperties[] = new TableProperty($row);
@@ -231,12 +231,12 @@ class ExportCodegen extends ExportPlugin
         $lines[] = 'using System.Collections;';
         $lines[] = 'using System.Collections.Generic;';
         $lines[] = 'using System.Text;';
-        $lines[] = 'namespace ' . self::cgMakeIdentifier($db_alias);
+        $lines[] = 'namespace ' . self::cgMakeIdentifier($dbAlias);
         $lines[] = '{';
         $lines[] = '    #region '
-            . self::cgMakeIdentifier($table_alias);
+            . self::cgMakeIdentifier($tableAlias);
         $lines[] = '    public class '
-            . self::cgMakeIdentifier($table_alias);
+            . self::cgMakeIdentifier($tableAlias);
         $lines[] = '    {';
         $lines[] = '        #region Member Variables';
         foreach ($tableProperties as $tableProperty) {
@@ -246,7 +246,7 @@ class ExportCodegen extends ExportPlugin
         $lines[] = '        #endregion';
         $lines[] = '        #region Constructors';
         $lines[] = '        public '
-            . self::cgMakeIdentifier($table_alias) . '() { }';
+            . self::cgMakeIdentifier($tableAlias) . '() { }';
         $temp = [];
         foreach ($tableProperties as $tableProperty) {
             if ($tableProperty->isPK()) {
@@ -257,7 +257,7 @@ class ExportCodegen extends ExportPlugin
         }
 
         $lines[] = '        public '
-            . self::cgMakeIdentifier($table_alias)
+            . self::cgMakeIdentifier($tableAlias)
             . '('
             . implode(', ', $temp)
             . ')';
@@ -295,9 +295,9 @@ class ExportCodegen extends ExportPlugin
     /**
      * XML Handler
      *
-     * @param string $db      database name
-     * @param string $table   table name
-     * @param array  $aliases Aliases of db/table/columns
+     * @param string  $db      database name
+     * @param string  $table   table name
+     * @param mixed[] $aliases Aliases of db/table/columns
      *
      * @return string containing XML code lines, separated by "\n"
      */
@@ -306,17 +306,17 @@ class ExportCodegen extends ExportPlugin
         string $table,
         array $aliases = [],
     ): string {
-        $db_alias = $db;
-        $table_alias = $table;
-        $this->initAlias($aliases, $db_alias, $table_alias);
+        $dbAlias = $db;
+        $tableAlias = $table;
+        $this->initAlias($aliases, $dbAlias, $tableAlias);
         $lines = [];
         $lines[] = '<?xml version="1.0" encoding="utf-8" ?>';
         $lines[] = '<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2" '
-            . 'namespace="' . self::cgMakeIdentifier($db_alias) . '" '
-            . 'assembly="' . self::cgMakeIdentifier($db_alias) . '">';
+            . 'namespace="' . self::cgMakeIdentifier($dbAlias) . '" '
+            . 'assembly="' . self::cgMakeIdentifier($dbAlias) . '">';
         $lines[] = '    <class '
-            . 'name="' . self::cgMakeIdentifier($table_alias) . '" '
-            . 'table="' . self::cgMakeIdentifier($table_alias) . '">';
+            . 'name="' . self::cgMakeIdentifier($tableAlias) . '" '
+            . 'table="' . self::cgMakeIdentifier($tableAlias) . '">';
         $result = $GLOBALS['dbi']->query(
             sprintf(
                 'DESC %s.%s',
@@ -326,9 +326,9 @@ class ExportCodegen extends ExportPlugin
         );
 
         while ($row = $result->fetchRow()) {
-            $col_as = $this->getAlias($aliases, $row[0], 'col', $db, $table);
-            if (! empty($col_as)) {
-                $row[0] = $col_as;
+            $colAs = $this->getAlias($aliases, $row[0], 'col', $db, $table);
+            if (! empty($colAs)) {
+                $row[0] = $colAs;
             }
 
             $tableProperty = new TableProperty($row);
@@ -362,7 +362,7 @@ class ExportCodegen extends ExportPlugin
     /**
      * Getter for CodeGen formats
      *
-     * @return array
+     * @return mixed[]
      */
     private function getCgFormats(): array
     {
@@ -372,10 +372,10 @@ class ExportCodegen extends ExportPlugin
     /**
      * Setter for CodeGen formats
      *
-     * @param array $CG_FORMATS contains CodeGen Formats
+     * @param mixed[] $cgFormats contains CodeGen Formats
      */
-    private function setCgFormats(array $CG_FORMATS): void
+    private function setCgFormats(array $cgFormats): void
     {
-        $this->cgFormats = $CG_FORMATS;
+        $this->cgFormats = $cgFormats;
     }
 }

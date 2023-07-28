@@ -10,10 +10,10 @@ use PhpMyAdmin\ConfigStorage\Relation;
 use PhpMyAdmin\ConfigStorage\RelationCleanup;
 use PhpMyAdmin\Controllers\AbstractController;
 use PhpMyAdmin\DatabaseInterface;
-use PhpMyAdmin\Dbal\DatabaseName;
-use PhpMyAdmin\Dbal\InvalidDatabaseName;
 use PhpMyAdmin\Html\Generator;
 use PhpMyAdmin\Http\ServerRequest;
+use PhpMyAdmin\Identifiers\DatabaseName;
+use PhpMyAdmin\Identifiers\InvalidDatabaseName;
 use PhpMyAdmin\Message;
 use PhpMyAdmin\Operations;
 use PhpMyAdmin\Plugins;
@@ -66,9 +66,9 @@ class OperationsController extends AbstractController
             $move = $request->hasBodyParam('db_rename');
 
             try {
-                $newDatabaseName = DatabaseName::fromValue($request->getParsedBodyParam('newname'));
+                $newDatabaseName = DatabaseName::from($request->getParsedBodyParam('newname'));
                 if ($this->dbi->getLowerCaseNames() === 1) {
-                    $newDatabaseName = DatabaseName::fromValue(mb_strtolower($newDatabaseName->getName()));
+                    $newDatabaseName = DatabaseName::from(mb_strtolower($newDatabaseName->getName()));
                 }
             } catch (InvalidDatabaseName $exception) {
                 $newDatabaseName = null;
@@ -121,19 +121,11 @@ class OperationsController extends AbstractController
                     );
 
                     // handle the views
-                    $this->operations->handleTheViews(
-                        $views,
-                        $move,
-                        $GLOBALS['db'],
-                        $newDatabaseName,
-                    );
+                    $this->operations->handleTheViews($views, $move, $GLOBALS['db'], $newDatabaseName);
 
                     // now that all tables exist, create all the accumulated constraints
                     if ($sqlConstraints !== []) {
-                        $this->operations->createAllAccumulatedConstraints(
-                            $sqlConstraints,
-                            $newDatabaseName,
-                        );
+                        $this->operations->createAllAccumulatedConstraints($sqlConstraints, $newDatabaseName);
                     }
 
                     if ($this->dbi->getVersion() >= 50100) {
@@ -186,13 +178,11 @@ class OperationsController extends AbstractController
                     /* Change database to be used */
                     if ($move) {
                         $GLOBALS['db'] = $newDatabaseName->getName();
+                    } elseif ($request->getParsedBodyParam('switch_to_new') === 'true') {
+                        $_SESSION['pma_switch_to_new'] = true;
+                        $GLOBALS['db'] = $newDatabaseName->getName();
                     } else {
-                        if ($request->getParsedBodyParam('switch_to_new') === 'true') {
-                            $_SESSION['pma_switch_to_new'] = true;
-                            $GLOBALS['db'] = $newDatabaseName->getName();
-                        } else {
-                            $_SESSION['pma_switch_to_new'] = false;
-                        }
+                        $_SESSION['pma_switch_to_new'] = false;
                     }
                 }
             }
@@ -201,7 +191,7 @@ class OperationsController extends AbstractController
              * Database has been successfully renamed/moved.  If in an Ajax request,
              * generate the output with {@link ResponseRenderer} and exit
              */
-            if ($this->response->isAjax()) {
+            if ($request->isAjax()) {
                 $this->response->setRequestStatus($GLOBALS['message']->isSuccess());
                 $this->response->addJSON('message', $GLOBALS['message']);
                 $this->response->addJSON('newname', $newDatabaseName?->getName() ?? '');

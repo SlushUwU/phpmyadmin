@@ -12,10 +12,11 @@ use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\ResponseRenderer;
 use PhpMyAdmin\Transformations;
+use PHPUnit\Framework\Attributes\CoversClass;
 
 use function json_encode;
 
-/** @covers \PhpMyAdmin\Controllers\Normalization\ThirdNormalForm\NewTablesController */
+#[CoversClass(NewTablesController::class)]
 class NewTablesControllerTest extends AbstractTestCase
 {
     public function testDefault(): void
@@ -23,27 +24,11 @@ class NewTablesControllerTest extends AbstractTestCase
         $GLOBALS['db'] = 'test_db';
         $GLOBALS['table'] = 'test_table';
         $tables = json_encode([
-            'test_table' => [
-                'event',
-                'event',
-                'event',
-                'event',
-                'NameOfVenue',
-                'event',
-                'period',
-                'event',
-                'event',
-            ],
+            'test_table' => ['event', 'event', 'event', 'event', 'NameOfVenue', 'event', 'period', 'event', 'event'],
         ]);
         $pd = json_encode([
             '' => [],
-            'event' => [
-                'TypeOfEvent',
-                'period',
-                'Start_time',
-                'NameOfVenue',
-                'LocationOfVenue',
-            ],
+            'event' => ['TypeOfEvent', 'period', 'Start_time', 'NameOfVenue', 'LocationOfVenue'],
             'NameOfVenue' => ['DateOfEvent'],
             'period' => ['NumberOfGuests'],
         ]);
@@ -53,10 +38,7 @@ class NewTablesControllerTest extends AbstractTestCase
         $response = new ResponseRenderer();
         $template = new Template();
         $request = $this->createStub(ServerRequest::class);
-        $request->method('getParsedBodyParam')->willReturnMap([
-            ['tables', null, $tables],
-            ['pd', null, $pd],
-        ]);
+        $request->method('getParsedBodyParam')->willReturnMap([['tables', null, $tables], ['pd', null, $pd]]);
 
         $controller = new NewTablesController(
             $response,

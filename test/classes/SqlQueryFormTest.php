@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests;
 
+use PhpMyAdmin\ConfigStorage\Relation;
 use PhpMyAdmin\ConfigStorage\RelationParameters;
 use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\Encoding;
@@ -12,11 +13,13 @@ use PhpMyAdmin\SqlQueryForm;
 use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\Stubs\DbiDummy;
 use PhpMyAdmin\Url;
+use PHPUnit\Framework\Attributes\CoversClass;
+use ReflectionProperty;
 
 use function __;
 use function htmlspecialchars;
 
-/** @covers \PhpMyAdmin\SqlQueryForm */
+#[CoversClass(SqlQueryForm::class)]
 class SqlQueryFormTest extends AbstractTestCase
 {
     protected DatabaseInterface $dbi;
@@ -38,16 +41,8 @@ class SqlQueryFormTest extends AbstractTestCase
         $this->dummyDbi = $this->createDbiDummy();
         $this->dummyDbi->addResult(
             'SHOW FULL COLUMNS FROM `PMA_db`.`PMA_table`',
-            [
-                [
-                    'field1',
-                    'Comment1',
-                ],
-            ],
-            [
-                'Field',
-                'Comment',
-            ],
+            [['field1', 'Comment1']],
+            ['Field', 'Comment'],
         );
 
         $this->dummyDbi->addResult(
@@ -78,15 +73,15 @@ class SqlQueryFormTest extends AbstractTestCase
         $GLOBALS['cfg']['CodemirrorEnable'] = true;
         $GLOBALS['cfg']['DefaultForeignKeyChecks'] = 'default';
 
-        $_SESSION['relation'] = [];
-        $_SESSION['relation'][0] = RelationParameters::fromArray([
+        $relationParameters = RelationParameters::fromArray([
             'table_coords' => 'table_name',
             'displaywork' => true,
             'db' => 'information_schema',
             'table_info' => 'table_info',
             'relwork' => true,
             'relation' => 'relation',
-        ])->toArray();
+        ]);
+        (new ReflectionProperty(Relation::class, 'cache'))->setValue(null, $relationParameters);
 
         $GLOBALS['cfg']['Server']['user'] = 'user';
         $GLOBALS['cfg']['Server']['pmadb'] = 'pmadb';
@@ -109,8 +104,8 @@ class SqlQueryFormTest extends AbstractTestCase
         );
 
         //validate 2: enable auto select text in textarea
-        $auto_sel = ' data-textarea-auto-select="true"';
-        $this->assertStringContainsString($auto_sel, $html);
+        $autoSel = ' data-textarea-auto-select="true"';
+        $this->assertStringContainsString($autoSel, $html);
 
         //validate 3: MySQLDocumentation::show
         $this->assertStringContainsString(

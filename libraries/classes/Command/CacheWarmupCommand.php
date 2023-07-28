@@ -6,7 +6,7 @@ namespace PhpMyAdmin\Command;
 
 use PhpMyAdmin\Config;
 use PhpMyAdmin\DatabaseInterface;
-use PhpMyAdmin\Routing;
+use PhpMyAdmin\Routing\Routing;
 use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\Stubs\DbiDummy;
 use RecursiveDirectoryIterator;
@@ -168,10 +168,10 @@ final class CacheWarmupCommand extends Command
             // Generate line map
             /** @psalm-suppress InternalMethod */
             $cacheFilename = $twigCache->generateKey($name, $twig->getTemplateClass($name));
-            $template_file = 'templates/' . $name;
-            $cache_file = str_replace($tmpDir, 'twig-templates', $cacheFilename);
+            $templateFile = 'templates/' . $name;
+            $cacheFile = str_replace($tmpDir, 'twig-templates', $cacheFilename);
             /** @psalm-suppress InternalMethod */
-            $replacements[$cache_file] = [$template_file, $template->getDebugInfo()];
+            $replacements[$cacheFile] = [$templateFile, $template->getDebugInfo()];
         }
 
         if (! $writeReplacements) {

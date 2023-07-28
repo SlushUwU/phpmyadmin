@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Selenium;
 
+use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\Attributes\Group;
+
 use function sleep;
 
-/** @coversNothing */
+#[CoversNothing]
 class ServerSettingsTest extends TestBase
 {
     /**
@@ -42,18 +45,14 @@ class ServerSettingsTest extends TestBase
         $this->moveto($ele);
         $ele->click();
 
-        $this->waitUntilElementIsPresent(
-            'xpath',
-            "//div[@class='alert alert-success' and contains(., 'Configuration has been saved')]",
-            5000,
-        );
+        $success = $this->waitUntilElementIsPresent('cssSelector', '.alert-success', 5000);
+        $this->assertStringContainsString('Configuration has been saved', $success->getText());
     }
 
     /**
      * Tests whether hiding a database works or not
-     *
-     * @group large
      */
+    #[Group('large')]
     public function testHideDatabase(): void
     {
         $this->createDatabase();
@@ -83,9 +82,8 @@ class ServerSettingsTest extends TestBase
 
     /**
      * Tests whether the various settings tabs are displayed when clicked
-     *
-     * @group large
      */
+    #[Group('large')]
     public function testSettingsTabsAreDisplayed(): void
     {
         $this->byPartialLinkText('SQL queries')->click();
@@ -112,9 +110,8 @@ class ServerSettingsTest extends TestBase
 
     /**
      * Tests if hiding the logo works or not
-     *
-     * @group large
      */
+    #[Group('large')]
     public function testHideLogo(): void
     {
         $this->byPartialLinkText('Navigation panel')->click();

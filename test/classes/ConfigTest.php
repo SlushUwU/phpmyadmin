@@ -6,10 +6,14 @@ namespace PhpMyAdmin\Tests;
 
 use PhpMyAdmin\Config;
 use PhpMyAdmin\Config\Settings;
+use PhpMyAdmin\Config\Settings\Server;
 use PhpMyAdmin\Dbal\Connection;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Depends;
+use PHPUnit\Framework\Attributes\Group;
+use ReflectionProperty;
 
-use function array_merge;
-use function array_replace_recursive;
 use function define;
 use function defined;
 use function file_exists;
@@ -18,6 +22,7 @@ use function fileperms;
 use function function_exists;
 use function gd_info;
 use function mb_strstr;
+use function md5;
 use function ob_end_clean;
 use function ob_get_contents;
 use function ob_start;
@@ -36,10 +41,8 @@ use const INFO_MODULES;
 use const PHP_OS;
 use const TEST_PATH;
 
-/**
- * @covers \PhpMyAdmin\Config
- * @psalm-import-type ConnectionType from Connection
- */
+/** @psalm-import-type ConnectionType from Connection */
+#[CoversClass(Config::class)]
 class ConfigTest extends AbstractTestCase
 {
     protected Config $object;
@@ -84,9 +87,6 @@ class ConfigTest extends AbstractTestCase
         unset($this->permTestObj);
     }
 
-    /**
-     * Test for load
-     */
     public function testLoadConfigs(): void
     {
         $defaultConfig = $this->createConfig();
@@ -103,70 +103,24 @@ class ConfigTest extends AbstractTestCase
         $config = new Config();
         $config->loadAndCheck($tmpConfig);
         $this->assertSame($defaultConfig->settings, $config->settings);
+        $this->assertEquals($defaultConfig->getSettings(), $config->getSettings());
 
-        $contents = '<?php' . "\n"
-                    . '$cfg[\'ProtectBinary\'] = true;';
+        $contents = <<<'PHP'
+<?php
+$cfg['environment'] = 'development';
+$cfg['UnknownKey'] = true;
+PHP;
         file_put_contents($tmpConfig, $contents);
 
         // Test loading a config changes the setup
         $config = new Config();
         $config->loadAndCheck($tmpConfig);
-        $defaultConfig->settings['ProtectBinary'] = true;
+        $defaultConfig->set('environment', 'development');
         $this->assertSame($defaultConfig->settings, $config->settings);
-        $defaultConfig->settings['ProtectBinary'] = 'blob';
-
-        // Teardown
-        unlink($tmpConfig);
-        $this->assertFalse(file_exists($tmpConfig));
-    }
-
-    /**
-     * Test for load
-     */
-    public function testLoadInvalidConfigs(): void
-    {
-        $defaultConfig = $this->createConfig();
-        $tmpConfig = tempnam('./', 'config.test.inc.php');
-        if ($tmpConfig === false) {
-            $this->markTestSkipped('Creating a temporary file does not work');
-        }
-
-        $this->assertFileExists($tmpConfig);
-
-        // end of setup
-
-        // Test loading an empty file does not change the default config
-        $config = new Config();
-        $config->loadAndCheck($tmpConfig);
-        $this->assertSame($defaultConfig->settings, $config->settings);
-
-        $contents = '<?php' . "\n"
-                    . '$cfg[\'fooBar\'] = true;';
-        file_put_contents($tmpConfig, $contents);
-
-        // Test loading a custom key config changes the setup
-        $config = new Config();
-        $config->loadAndCheck($tmpConfig);
-        $defaultConfig->settings['fooBar'] = true;
-        // Equals because of the key sorting
-        $this->assertEquals($defaultConfig->settings, $config->settings);
-        unset($defaultConfig->settings['fooBar']);
-
-        $contents = '<?php' . "\n"
-                    . '$cfg[\'/InValidKey\'] = true;' . "\n"
-                    . '$cfg[\'In/ValidKey\'] = true;' . "\n"
-                    . '$cfg[\'/InValid/Key\'] = true;' . "\n"
-                    . '$cfg[\'In/Valid/Key\'] = true;' . "\n"
-                    . '$cfg[\'ValidKey\'] = true;';
-        file_put_contents($tmpConfig, $contents);
-
-        // Test loading a custom key config changes the setup
-        $config = new Config();
-        $config->loadAndCheck($tmpConfig);
-        $defaultConfig->settings['ValidKey'] = true;
-        // Equals because of the key sorting
-        $this->assertEquals($defaultConfig->settings, $config->settings);
-        unset($defaultConfig->settings['ValidKey']);
+        $this->assertArrayHasKey('environment', $config->settings);
+        $this->assertSame($config->settings['environment'], 'development');
+        $this->assertArrayNotHasKey('UnknownKey', $config->settings);
+        $this->assertEquals($defaultConfig->getSettings(), $config->getSettings());
 
         // Teardown
         unlink($tmpConfig);
@@ -175,9 +129,8 @@ class ConfigTest extends AbstractTestCase
 
     /**
      * Test for CheckSystem
-     *
-     * @group medium
      */
+    #[Group('medium')]
     public function testCheckSystem(): void
     {
         $this->object->checkSystem();
@@ -211,9 +164,8 @@ class ConfigTest extends AbstractTestCase
      * @param string $os      Expected parsed OS (or null if none)
      * @param string $browser Expected parsed browser (or null if none)
      * @param string $version Expected browser version (or null if none)
-     *
-     * @dataProvider userAgentProvider
      */
+    #[DataProvider('userAgentProvider')]
     public function testCheckClient(
         string $agent,
         string $os,
@@ -223,14 +175,9 @@ class ConfigTest extends AbstractTestCase
         $_SERVER['HTTP_USER_AGENT'] = $agent;
         $this->object->checkClient();
         $this->assertEquals($os, $this->object->get('PMA_USR_OS'));
-        if ($os != null) {
-            $this->assertEquals(
-                $browser,
-                $this->object->get('PMA_USR_BROWSER_AGENT'),
-            );
-        }
+        $this->assertEquals($browser, $this->object->get('PMA_USR_BROWSER_AGENT'));
 
-        if ($version == null) {
+        if ($version === null) {
             return;
         }
 
@@ -243,41 +190,21 @@ class ConfigTest extends AbstractTestCase
     /**
      * user Agent Provider
      *
-     * @return array
+     * @return mixed[]
      */
     public static function userAgentProvider(): array
     {
         return [
-            [
-                'Opera/9.80 (X11; Linux x86_64; U; pl) Presto/2.7.62 Version/11.00',
-                'Linux',
-                'OPERA',
-                '9.80',
-            ],
+            ['Opera/9.80 (X11; Linux x86_64; U; pl) Presto/2.7.62 Version/11.00', 'Linux', 'OPERA', '9.80'],
             [
                 'Mozilla/5.0 (Macintosh; U; Intel Mac OS X; en-US) AppleWebKit/528.16 OmniWeb/622.8.0.112941',
                 'Mac',
                 'OMNIWEB',
                 '622',
             ],
-            [
-                'Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 5.1)',
-                'Win',
-                'IE',
-                '8.0',
-            ],
-            [
-                'Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Trident/5.0)',
-                'Win',
-                'IE',
-                '9.0',
-            ],
-            [
-                'Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.2; Win64; x64; Trident/6.0)',
-                'Win',
-                'IE',
-                '10.0',
-            ],
+            ['Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 5.1)', 'Win', 'IE', '8.0'],
+            ['Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Trident/5.0)', 'Win', 'IE', '9.0'],
+            ['Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.2; Win64; x64; Trident/6.0)', 'Win', 'IE', '10.0'],
             [
                 'Mozilla/5.0 (IE 11.0; Windows NT 6.3; Trident/7.0; .NET4.0E; .NET4.0C; rv:11.0) like Gecko',
                 'Win',
@@ -306,29 +233,14 @@ class ConfigTest extends AbstractTestCase
                 'SAFARI',
                 '5.0.419',
             ],
-            [
-                'Mozilla/5.0 (Windows; U; Win95; en-US; rv:1.9b) Gecko/20031208',
-                'Win',
-                'GECKO',
-                '1.9',
-            ],
+            ['Mozilla/5.0 (Windows; U; Win95; en-US; rv:1.9b) Gecko/20031208', 'Win', 'GECKO', '1.9'],
             [
                 'Mozilla/5.0 (compatible; Konqueror/4.5; NetBSD 5.0.2; X11; amd64; en_US) KHTML/4.5.4 (like Gecko)',
                 'Other',
                 'KONQUEROR',
             ],
-            [
-                'Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20100101 Firefox/5.0',
-                'Linux',
-                'FIREFOX',
-                '5.0',
-            ],
-            [
-                'Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20100101 Firefox/12.0',
-                'Linux',
-                'FIREFOX',
-                '12.0',
-            ],
+            ['Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20100101 Firefox/5.0', 'Linux', 'FIREFOX', '5.0'],
+            ['Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20100101 Firefox/12.0', 'Linux', 'FIREFOX', '12.0'],
             /** @todo Is this version really expected? */
             [
                 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/535.4+ (KHTML, like G'
@@ -366,8 +278,8 @@ class ConfigTest extends AbstractTestCase
 
         if (function_exists('gd_info')) {
             $this->object->checkGd2();
-            $gd_nfo = gd_info();
-            if (mb_strstr($gd_nfo['GD Version'], '2.')) {
+            $gdNfo = gd_info();
+            if (mb_strstr($gdNfo['GD Version'], '2.')) {
                 $this->assertEquals(
                     1,
                     $this->object->get('PMA_IS_GD2'),
@@ -412,9 +324,8 @@ class ConfigTest extends AbstractTestCase
      *
      * @param string $server Server identification
      * @param int    $iis    Whether server should be detected as IIS
-     *
-     * @dataProvider serverNames
      */
+    #[DataProvider('serverNames')]
     public function testCheckWebServer(string $server, int $iis): void
     {
         $_SERVER['SERVER_SOFTWARE'] = $server;
@@ -426,20 +337,11 @@ class ConfigTest extends AbstractTestCase
     /**
      * return server names
      *
-     * @return array
+     * @return mixed[]
      */
     public static function serverNames(): array
     {
-        return [
-            [
-                'Microsoft-IIS 7.0',
-                1,
-            ],
-            [
-                'Apache/2.2.17',
-                0,
-            ],
-        ];
+        return [['Microsoft-IIS 7.0', 1], ['Apache/2.2.17', 0]];
     }
 
     /**
@@ -469,30 +371,16 @@ class ConfigTest extends AbstractTestCase
         }
     }
 
-    /**
-     * Tests loading of default values
-     *
-     * @group large
-     */
-    public function testLoadDefaults(): void
+    public function testConstructor(): void
     {
-        $this->object->defaultServer = [];
-        $this->object->default = [];
-        $this->object->settings = ['is_setup' => false, 'AvailableCharsets' => ['test']];
-
-        $this->object->loadDefaults();
-
+        $object = new Config();
         $settings = new Settings([]);
         $config = $settings->asArray();
-
         $this->assertIsArray($config['Servers']);
-        $this->assertEquals($config['Servers'][1], $this->object->defaultServer);
-        unset($config['Servers']);
-        $this->assertEquals($config, $this->object->default);
-        $this->assertEquals(
-            array_replace_recursive(['is_setup' => false, 'AvailableCharsets' => ['test']], $config),
-            $this->object->settings,
-        );
+        $this->assertEquals($settings, $object->getSettings());
+        $this->assertEquals($config, $object->default);
+        $this->assertSame($config, $object->settings);
+        $this->assertSame($config, $object->baseSettings);
     }
 
     /**
@@ -554,9 +442,8 @@ class ConfigTest extends AbstractTestCase
      * @param string $pmaAbsoluteUri  phpMyAdmin absolute URI
      * @param int    $port            server port
      * @param bool   $expected        expected result
-     *
-     * @dataProvider httpsParams
      */
+    #[DataProvider('httpsParams')]
     public function testIsHttps(
         string $scheme,
         string $https,
@@ -588,206 +475,26 @@ class ConfigTest extends AbstractTestCase
     /**
      * Data provider for https detection
      *
-     * @return array
+     * @return mixed[]
      */
     public static function httpsParams(): array
     {
         return [
-            [
-                'http',
-                '',
-                '',
-                '',
-                '',
-                '',
-                'http',
-                '',
-                '',
-                80,
-                false,
-            ],
-            [
-                'http',
-                '',
-                '',
-                'http://',
-                '',
-                '',
-                'http',
-                '',
-                '',
-                80,
-                false,
-            ],
-            [
-                'http',
-                '',
-                '',
-                '',
-                '',
-                '',
-                'http',
-                '',
-                '',
-                443,
-                true,
-            ],
-            [
-                'http',
-                '',
-                '',
-                '',
-                '',
-                '',
-                'https',
-                '',
-                '',
-                80,
-                true,
-            ],
-            [
-                'http',
-                '',
-                '',
-                '',
-                '',
-                'on',
-                'http',
-                '',
-                '',
-                80,
-                true,
-            ],
-            [
-                'http',
-                '',
-                '',
-                '',
-                'on',
-                '',
-                'http',
-                '',
-                '',
-                80,
-                true,
-            ],
-            [
-                'http',
-                '',
-                '',
-                'https://',
-                '',
-                '',
-                'http',
-                '',
-                '',
-                80,
-                true,
-            ],
-            [
-                'http',
-                'on',
-                '',
-                '',
-                '',
-                '',
-                'http',
-                '',
-                '',
-                80,
-                true,
-            ],
-            [
-                'https',
-                '',
-                '',
-                '',
-                '',
-                '',
-                'http',
-                '',
-                '',
-                80,
-                true,
-            ],
-            [
-                'http',
-                '',
-                '',
-                '',
-                '',
-                '',
-                '',
-                'https',
-                '',
-                80,
-                true,
-            ],
-            [
-                'http',
-                '',
-                '',
-                '',
-                '',
-                '',
-                'https',
-                'http',
-                '',
-                80,
-                true,
-            ],
-            [
-                'https',
-                '',
-                '',
-                '',
-                '',
-                '',
-                '',
-                '',
-                '',
-                80,
-                true,
-            ],
-            [
-                'http',
-                '',
-                '',
-                '',
-                '',
-                '',
-                '',
-                '',
-                '',
-                8080,
-                false,
-            ],
-            [
-                '',
-                '',
-                '',
-                '',
-                '',
-                '',
-                '',
-                '',
-                'https://127.0.0.1',
-                80,
-                true,
-            ],
-            [
-                '',
-                '',
-                '',
-                '',
-                '',
-                '',
-                '',
-                '',
-                'http://127.0.0.1',
-                80,
-                false,
-            ],
+            ['http', '', '', '', '', '', 'http', '', '', 80, false],
+            ['http', '', '', 'http://', '', '', 'http', '', '', 80, false],
+            ['http', '', '', '', '', '', 'http', '', '', 443, true],
+            ['http', '', '', '', '', '', 'https', '', '', 80, true],
+            ['http', '', '', '', '', 'on', 'http', '', '', 80, true],
+            ['http', '', '', '', 'on', '', 'http', '', '', 80, true],
+            ['http', '', '', 'https://', '', '', 'http', '', '', 80, true],
+            ['http', 'on', '', '', '', '', 'http', '', '', 80, true],
+            ['https', '', '', '', '', '', 'http', '', '', 80, true],
+            ['http', '', '', '', '', '', '', 'https', '', 80, true],
+            ['http', '', '', '', '', '', 'https', 'http', '', 80, true],
+            ['https', '', '', '', '', '', '', '', '', 80, true],
+            ['http', '', '', '', '', '', '', '', '', 8080, false],
+            ['', '', '', '', '', '', '', '', 'https://127.0.0.1', 80, true],
+            ['', '', '', '', '', '', '', '', 'http://127.0.0.1', 80, false],
             [
                 '',
                 '',
@@ -810,9 +517,8 @@ class ConfigTest extends AbstractTestCase
      * @param string $request  The request URL used for phpMyAdmin
      * @param string $absolute The absolute URL used for phpMyAdmin
      * @param string $expected Expected root path
-     *
-     * @dataProvider rootUris
      */
+    #[DataProvider('rootUris')]
     public function testGetRootPath(string $request, string $absolute, string $expected): void
     {
         $_SERVER['PHP_SELF'] = $request;
@@ -825,61 +531,21 @@ class ConfigTest extends AbstractTestCase
     /**
      * Data provider for testGetRootPath
      *
-     * @return array data for testGetRootPath
+     * @return mixed[] data for testGetRootPath
      */
     public static function rootUris(): array
     {
         return [
-            [
-                '',
-                '',
-                '/',
-            ],
-            [
-                '/',
-                '',
-                '/',
-            ],
-            [
-                '/index.php',
-                '',
-                '/',
-            ],
-            [
-                '/foo/bar/phpmyadmin/index.php',
-                '',
-                '/foo/bar/phpmyadmin/',
-            ],
-            [
-                '/foo/bar/phpmyadmin/',
-                '',
-                '/foo/bar/phpmyadmin/',
-            ],
-            [
-                '/foo/bar/phpmyadmin',
-                '',
-                '/foo/bar/phpmyadmin/',
-            ],
-            [
-                'http://example.net/',
-                'http://example.net/phpmyadmin/',
-                '/phpmyadmin/',
-            ],
-            [
-                'http://example.net/',
-                'http://example.net/phpmyadmin',
-                '/phpmyadmin/',
-            ],
-            [
-                'http://example.net/',
-                '/phpmyadmin2',
-                '/phpmyadmin2/',
-            ],
-            [
-                'http://example.net/',
-                '/phpmyadmin3/',
-                '/phpmyadmin3/',
-            ],
+            ['', '', '/'],
+            ['/', '', '/'],
+            ['/index.php', '', '/'],
+            ['/foo/bar/phpmyadmin/index.php', '', '/foo/bar/phpmyadmin/'],
+            ['/foo/bar/phpmyadmin/', '', '/foo/bar/phpmyadmin/'],
+            ['/foo/bar/phpmyadmin', '', '/foo/bar/phpmyadmin/'],
+            ['http://example.net/', 'http://example.net/phpmyadmin/', '/phpmyadmin/'],
+            ['http://example.net/', 'http://example.net/phpmyadmin', '/phpmyadmin/'],
+            ['http://example.net/', '/phpmyadmin2', '/phpmyadmin2/'],
+            ['http://example.net/', '/phpmyadmin3/', '/phpmyadmin3/'],
         ];
     }
 
@@ -888,9 +554,8 @@ class ConfigTest extends AbstractTestCase
      *
      * @param string $source File name of config to load
      * @param bool   $result Expected result of loading
-     *
-     * @dataProvider configPaths
      */
+    #[DataProvider('configPaths')]
     public function testLoad(string $source, bool $result): void
     {
         if ($result) {
@@ -903,31 +568,14 @@ class ConfigTest extends AbstractTestCase
     /**
      * return of config Paths
      *
-     * @return array
+     * @return mixed[]
      */
     public static function configPaths(): array
     {
         return [
-            [
-                TEST_PATH . 'test/test_data/config.inc.php',
-                true,
-            ],
-            [
-                TEST_PATH . 'test/test_data/config-nonexisting.inc.php',
-                false,
-            ],
+            [TEST_PATH . 'test/test_data/config.inc.php', true],
+            [TEST_PATH . 'test/test_data/config-nonexisting.inc.php', false],
         ];
-    }
-
-    /**
-     * Test for loading user preferences
-     *
-     * @todo Test actually preferences loading
-     * @doesNotPerformAssertions
-     */
-    public function testLoadUserPreferences(): void
-    {
-        $this->object->loadUserPreferences();
     }
 
     /**
@@ -941,6 +589,8 @@ class ConfigTest extends AbstractTestCase
             $this->object->getUserValue('TEST_COOKIE_USER_VAL', 'fail'),
             'cfg_val_1',
         );
+        $this->object->setUserValue(null, 'NavigationWidth', 300);
+        $this->assertSame($GLOBALS['cfg']['NavigationWidth'], 300);
     }
 
     /**
@@ -959,12 +609,12 @@ class ConfigTest extends AbstractTestCase
         //load file permissions for the current permissions file
         $perms = @fileperms($this->object->getSource());
         //testing for permissions for no configuration file
-        $this->assertFalse(! ($perms === false) && ($perms & 2));
+        $this->assertFalse($perms !== false && ($perms & 2));
 
         //load file permissions for the current permissions file
         $perms = @fileperms($this->permTestObj->getSource());
 
-        if (! ($perms === false) && ($perms & 2)) {
+        if ($perms !== false && ($perms & 2)) {
             $this->assertTrue((bool) $this->permTestObj->get('PMA_IS_WINDOWS'));
         } else {
             $this->assertFalse((bool) $this->permTestObj->get('PMA_IS_WINDOWS'));
@@ -1014,9 +664,8 @@ class ConfigTest extends AbstractTestCase
 
     /**
      * Test for getTempDir
-     *
-     * @group file-system
      */
+    #[Group('file-system')]
     public function testGetTempDir(): void
     {
         $dir = realpath(sys_get_temp_dir());
@@ -1024,6 +673,7 @@ class ConfigTest extends AbstractTestCase
         $this->assertDirectoryExists($dir);
         $this->assertDirectoryIsWritable($dir);
 
+        (new ReflectionProperty(Config::class, 'tempDir'))->setValue(null, []);
         $this->object->set('TempDir', $dir . DIRECTORY_SEPARATOR);
         // Check no double slash is here
         $this->assertEquals(
@@ -1034,10 +684,9 @@ class ConfigTest extends AbstractTestCase
 
     /**
      * Test for getUploadTempDir
-     *
-     * @group file-system
-     * @depends testGetTempDir
      */
+    #[Depends('testGetTempDir')]
+    #[Group('file-system')]
     public function testGetUploadTempDir(): void
     {
         $dir = realpath(sys_get_temp_dir());
@@ -1054,187 +703,70 @@ class ConfigTest extends AbstractTestCase
     }
 
     /**
-     * Test for checkServers
-     *
-     * @param array $settings settings array
-     * @param array $expected expected result
-     *
-     * @dataProvider serverSettingsProvider
-     */
-    public function testCheckServers(array $settings, array $expected): void
-    {
-        $this->object->settings['Servers'] = $settings;
-        $this->object->checkServers();
-        $expected = array_merge($this->object->defaultServer, $expected);
-
-        $this->assertEquals($expected, $this->object->settings['Servers'][1]);
-    }
-
-    /**
-     * Data provider for checkServers test
-     *
-     * @return array
-     */
-    public static function serverSettingsProvider(): array
-    {
-        return [
-            'empty' => [
-                [],
-                [],
-            ],
-            'only_host' => [
-                [1 => ['host' => '127.0.0.1']],
-                ['host' => '127.0.0.1'],
-            ],
-            'empty_host' => [
-                [1 => ['host' => '']],
-                [
-                    'verbose' => 'Server 1',
-                    'host' => '',
-                ],
-            ],
-        ];
-    }
-
-    public function testCheckServersWithInvalidServer(): void
-    {
-        $server = ['host' => '127.0.0.1'];
-        $this->object->settings['Servers'] = ['invalid' => $server, 1 => $server, 0 => $server, 2 => 'invalid'];
-        $this->object->checkServers();
-        $expected = array_merge($this->object->defaultServer, $server);
-
-        $this->assertArrayNotHasKey('invalid', $this->object->settings['Servers']);
-        $this->assertArrayNotHasKey(0, $this->object->settings['Servers']);
-        $this->assertArrayNotHasKey(2, $this->object->settings['Servers']);
-        $this->assertArrayHasKey(1, $this->object->settings['Servers']);
-        $this->assertEquals($expected, $this->object->settings['Servers'][1]);
-    }
-
-    public function testCheckServersWithOnlyInvalidServers(): void
-    {
-        $server = ['host' => '127.0.0.1'];
-        $this->object->settings['Servers'] = ['invalid' => $server, -1 => $server, 0 => $server];
-        $this->object->checkServers();
-
-        $this->assertArrayNotHasKey('invalid', $this->object->settings['Servers']);
-        $this->assertArrayNotHasKey(0, $this->object->settings['Servers']);
-        $this->assertArrayNotHasKey(-1, $this->object->settings['Servers']);
-        $this->assertArrayHasKey(1, $this->object->settings['Servers']);
-        /** @psalm-suppress InvalidArrayOffset */
-        $this->assertEquals($this->object->defaultServer, $this->object->settings['Servers'][1]);
-    }
-
-    public function testCheckServersWithServerKeysGreaterThanOne(): void
-    {
-        $server = ['host' => '127.0.0.1'];
-        $this->object->settings['Servers'] = [2 => $server];
-        $this->object->checkServers();
-        $expected = array_merge($this->object->defaultServer, $server);
-
-        $this->assertArrayNotHasKey(1, $this->object->settings['Servers']);
-        $this->assertArrayHasKey(2, $this->object->settings['Servers']);
-        $this->assertEquals($expected, $this->object->settings['Servers'][2]);
-    }
-
-    /**
      * Test for selectServer
      *
-     * @param array  $settings settings array
-     * @param string $request  request
-     * @param int    $expected expected result
-     *
-     * @dataProvider selectServerProvider
-     * @depends testCheckServers
+     * @param mixed[]        $settings settings array
+     * @param string|mixed[] $request  request
+     * @param int            $expected expected result
      */
-    public function testSelectServer(array $settings, string $request, int $expected): void
+    #[DataProvider('selectServerProvider')]
+    public function testSelectServer(array $settings, string|array $request, int $expected): void
     {
-        $this->object->settings['Servers'] = $settings;
-        $this->object->checkServers();
-        $_REQUEST['server'] = $request;
-        $this->assertEquals($expected, $this->object->selectServer());
+        $config = new Config();
+        $config->config = new Settings(['Servers' => $settings, 'ServerDefault' => 1]);
+        $selectedServer = $config->selectServer($request);
+        $this->assertSame($expected, $selectedServer);
+        $this->assertGreaterThanOrEqual(0, $selectedServer);
+        $expectedServer = $expected >= 1 ? $config->config->Servers[$expected]->asArray() : [];
+        $this->assertArrayHasKey('Server', $config->settings);
+        $this->assertSame($config->settings['Server'], $expectedServer);
+        $this->assertSame($expected, $config->server);
     }
 
     /**
      * Data provider for selectServer test
      *
-     * @return array
+     * @return array<string, array{mixed[], string|mixed[], int}>
      */
     public static function selectServerProvider(): array
     {
         return [
-            'zero' => [
-                [],
-                '0',
-                1,
-            ],
-            'number' => [
-                [1 => []],
-                '1',
-                1,
-            ],
-            'host' => [
-                [2 => ['host' => '127.0.0.1']],
-                '127.0.0.1',
-                2,
-            ],
-            'verbose' => [
-                [
-                    1 => [
-                        'verbose' => 'Server 1',
-                        'host' => '',
-                    ],
-                ],
-                'Server 1',
-                1,
-            ],
-            'md5' => [
-                [
-                    66 => [
-                        'verbose' => 'Server 1',
-                        'host' => '',
-                    ],
-                ],
-                '753f173bd4ac8a45eae0fe9a4fbe0fc0',
-                66,
-            ],
-            'nonexisting_string' => [
-                [1 => []],
-                'invalid',
-                1,
-            ],
-            'nonexisting' => [
-                [1 => []],
-                '100',
-                1,
-            ],
+            'zero' => [[], '0', 1],
+            'number' => [[1 => []], '1', 1],
+            'host' => [[2 => ['host' => '127.0.0.1']], '127.0.0.1', 2],
+            'verbose' => [[1 => ['verbose' => 'Server 1', 'host' => '']], 'Server 1', 1],
+            'md5' => [[66 => ['verbose' => 'Server 66', 'host' => '']], md5('server 66'), 66],
+            'nonexisting_string' => [[1 => []], 'invalid', 1],
+            'nonexisting' => [[1 => []], '100', 1],
+            'none selected' => [[2 => []], '100', 0],
+            'none selected with string' => [[2 => []], 'unknown', 0],
+            'negative number' => [[1 => []], '-1', 1],
+            'array' => [[1 => []], ['1'], 1],
         ];
     }
 
     /**
      * Test for getConnectionParams
      *
-     * @param array      $server_cfg Server configuration
-     * @param array|null $server     Server array to test
-     * @param array      $expected   Expected result
-     * @psalm-param ConnectionType $mode
-     *
-     * @dataProvider connectionParams
+     * @param mixed[] $serverCfg Server configuration
+     * @param mixed[] $expected  Expected result
+     * @psalm-param ConnectionType $connectionType
      */
-    public function testGetConnectionParams(array $server_cfg, int $mode, array|null $server, array $expected): void
+    #[DataProvider('connectionParams')]
+    public function testGetConnectionParams(array $serverCfg, int $connectionType, array $expected): void
     {
-        $GLOBALS['cfg']['Server'] = $server_cfg;
-        $result = Config::getConnectionParams($mode, $server);
-        $this->assertEquals($expected, $result);
+        $result = Config::getConnectionParams(new Server($serverCfg), $connectionType);
+        $this->assertEquals(new Server($expected), $result);
     }
 
     /**
      * Data provider for getConnectionParams test
      *
-     * @return array
+     * @return array<array{mixed[], ConnectionType, mixed[]}>
      */
     public static function connectionParams(): array
     {
-        $cfg_basic = [
+        $cfgBasic = [
             'user' => 'u',
             'password' => 'pass',
             'host' => '',
@@ -1242,7 +774,7 @@ class ConfigTest extends AbstractTestCase
             'controlpass' => 'p2',
             'hide_connection_errors' => false,
         ];
-        $cfg_ssl = [
+        $cfgSsl = [
             'user' => 'u',
             'password' => 'pass',
             'host' => '',
@@ -1251,7 +783,7 @@ class ConfigTest extends AbstractTestCase
             'controlpass' => 'p2',
             'hide_connection_errors' => false,
         ];
-        $cfg_control_ssl = [
+        $cfgControlSsl = [
             'user' => 'u',
             'password' => 'pass',
             'host' => '',
@@ -1263,128 +795,129 @@ class ConfigTest extends AbstractTestCase
 
         return [
             [
-                $cfg_basic,
+                $cfgBasic,
                 Connection::TYPE_USER,
-                null,
                 [
-                    'u',
-                    'pass',
-                    [
-                        'user' => 'u',
-                        'password' => 'pass',
-                        'host' => 'localhost',
-                        'socket' => null,
-                        'port' => 0,
-                        'ssl' => false,
-                        'compress' => false,
-                        'controluser' => 'u2',
-                        'controlpass' => 'p2',
-                        'hide_connection_errors' => false,
-                    ],
+                    'user' => 'u',
+                    'password' => 'pass',
+                    'host' => 'localhost',
+                    'socket' => null,
+                    'port' => 0,
+                    'ssl' => false,
+                    'compress' => false,
+                    'controluser' => 'u2',
+                    'controlpass' => 'p2',
+                    'hide_connection_errors' => false,
                 ],
             ],
             [
-                $cfg_basic,
+                $cfgBasic,
                 Connection::TYPE_CONTROL,
-                null,
                 [
-                    'u2',
-                    'p2',
-                    [
-                        'host' => 'localhost',
-                        'socket' => null,
-                        'port' => 0,
-                        'ssl' => false,
-                        'compress' => false,
-                        'hide_connection_errors' => false,
-                    ],
+                    'user' => 'u2',
+                    'password' => 'p2',
+                    'host' => 'localhost',
+                    'socket' => null,
+                    'port' => 0,
+                    'ssl' => false,
+                    'compress' => false,
+                    'hide_connection_errors' => false,
                 ],
             ],
             [
-                $cfg_ssl,
+                $cfgSsl,
                 Connection::TYPE_USER,
-                null,
                 [
-                    'u',
-                    'pass',
-                    [
-                        'user' => 'u',
-                        'password' => 'pass',
-                        'host' => 'localhost',
-                        'socket' => null,
-                        'port' => 0,
-                        'ssl' => true,
-                        'compress' => false,
-                        'controluser' => 'u2',
-                        'controlpass' => 'p2',
-                        'hide_connection_errors' => false,
-                    ],
+                    'user' => 'u',
+                    'password' => 'pass',
+                    'host' => 'localhost',
+                    'socket' => null,
+                    'port' => 0,
+                    'ssl' => true,
+                    'compress' => false,
+                    'controluser' => 'u2',
+                    'controlpass' => 'p2',
+                    'hide_connection_errors' => false,
                 ],
             ],
             [
-                $cfg_ssl,
+                $cfgSsl,
                 Connection::TYPE_CONTROL,
-                null,
                 [
-                    'u2',
-                    'p2',
-                    [
-                        'host' => 'localhost',
-                        'socket' => null,
-                        'port' => 0,
-                        'ssl' => true,
-                        'compress' => false,
-                        'hide_connection_errors' => false,
-                    ],
+                    'user' => 'u2',
+                    'password' => 'p2',
+                    'host' => 'localhost',
+                    'socket' => null,
+                    'port' => 0,
+                    'ssl' => true,
+                    'compress' => false,
+                    'hide_connection_errors' => false,
                 ],
             ],
             [
-                $cfg_control_ssl,
+                $cfgControlSsl,
                 Connection::TYPE_USER,
-                null,
                 [
-                    'u',
-                    'pass',
-                    [
-                        'user' => 'u',
-                        'password' => 'pass',
-                        'host' => 'localhost',
-                        'socket' => null,
-                        'port' => 0,
-                        'ssl' => false,
-                        'compress' => false,
-                        'controluser' => 'u2',
-                        'controlpass' => 'p2',
-                        'control_ssl' => true,
-                        'hide_connection_errors' => false,
-                    ],
+                    'user' => 'u',
+                    'password' => 'pass',
+                    'host' => 'localhost',
+                    'socket' => null,
+                    'port' => 0,
+                    'ssl' => false,
+                    'compress' => false,
+                    'controluser' => 'u2',
+                    'controlpass' => 'p2',
+                    'control_ssl' => true,
+                    'hide_connection_errors' => false,
                 ],
             ],
             [
-                $cfg_control_ssl,
+                $cfgControlSsl,
                 Connection::TYPE_CONTROL,
-                null,
                 [
-                    'u2',
-                    'p2',
-                    [
-                        'host' => 'localhost',
-                        'socket' => null,
-                        'port' => 0,
-                        'ssl' => true,
-                        'compress' => false,
-                        'hide_connection_errors' => false,
-                    ],
+                    'user' => 'u2',
+                    'password' => 'p2',
+                    'host' => 'localhost',
+                    'socket' => null,
+                    'port' => 0,
+                    'ssl' => true,
+                    'compress' => false,
+                    'hide_connection_errors' => false,
                 ],
             ],
         ];
     }
 
-    public function testGetSettings(): void
+    /** @psalm-param ConnectionType $connectionType */
+    #[DataProvider('connectionParamsWhenConnectionIsUserOrAuxiliaryProvider')]
+    public function testGetConnectionParamsWhenConnectionIsUserOrAuxiliary(
+        int $connectionType,
+        string $host,
+        string $port,
+        string $expectedHost,
+        string $expectedPort,
+    ): void {
+        $actual = Config::getConnectionParams(new Server(['host' => $host, 'port' => $port]), $connectionType);
+        $expected = new Server(['host' => $expectedHost, 'port' => $expectedPort]);
+        $this->assertEquals($expected, $actual);
+    }
+
+    /** @psalm-return iterable<string, array{ConnectionType, string, string, string, string}> */
+    public static function connectionParamsWhenConnectionIsUserOrAuxiliaryProvider(): iterable
     {
-        $config = new Config();
-        $firstCall = $config->getSettings();
-        $secondCall = $config->getSettings();
-        $this->assertSame($firstCall, $secondCall);
+        yield 'user with only port empty' => [Connection::TYPE_USER, 'test.host', '', 'test.host', '0'];
+        yield 'user with only host empty' => [Connection::TYPE_USER, '', '12345', 'localhost', '12345'];
+        yield 'user with host and port empty' => [Connection::TYPE_USER, '', '', 'localhost', '0'];
+        yield 'user with host and port defined' => [Connection::TYPE_USER, 'test.host', '12345', 'test.host', '12345'];
+        yield 'aux with only port empty' => [Connection::TYPE_AUXILIARY, 'test.host', '', 'test.host', '0'];
+        yield 'aux with only host empty' => [Connection::TYPE_AUXILIARY, '', '12345', 'localhost', '12345'];
+        yield 'aux with host and port empty' => [Connection::TYPE_AUXILIARY, '', '', 'localhost', '0'];
+        yield 'aux with host and port defined' => [
+            Connection::TYPE_AUXILIARY,
+            'test.host',
+            '12345',
+            'test.host',
+            '12345',
+        ];
     }
 }

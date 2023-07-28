@@ -35,15 +35,15 @@ class BrowseForeigners
     /**
      * Function to get html for one relational key
      *
-     * @param int    $horizontalCount    the current horizontal count
-     * @param string $header             table header
-     * @param array  $keys               all the keys
-     * @param int    $indexByKeyname     index by keyname
-     * @param array  $descriptions       descriptions
-     * @param int    $indexByDescription index by description
-     * @param string $currentValue       current value on the edit form
+     * @param int     $horizontalCount    the current horizontal count
+     * @param string  $header             table header
+     * @param mixed[] $keys               all the keys
+     * @param int     $indexByKeyname     index by keyname
+     * @param mixed[] $descriptions       descriptions
+     * @param int     $indexByDescription index by description
+     * @param string  $currentValue       current value on the edit form
      *
-     * @return array the generated html
+     * @return mixed[] the generated html
      */
     private function getHtmlForOneKey(
         int $horizontalCount,
@@ -71,10 +71,7 @@ class BrowseForeigners
         // key names and descriptions for the left section,
         // sorted by key names
         $leftKeyname = $keys[$indexByKeyname];
-        [
-            $leftDescription,
-            $leftDescriptionTitle,
-        ] = $this->getDescriptionAndTitle($descriptions[$indexByKeyname]);
+        [$leftDescription, $leftDescriptionTitle] = $this->getDescriptionAndTitle($descriptions[$indexByKeyname]);
 
         // key names and descriptions for the right section,
         // sorted by descriptions
@@ -129,11 +126,7 @@ class BrowseForeigners
 
         $output .= '</tr>';
 
-        return [
-            $output,
-            $horizontalCount,
-            $indexByDescription,
-        ];
+        return [$output, $horizontalCount, $indexByDescription];
     }
 
     /**
@@ -142,7 +135,7 @@ class BrowseForeigners
      * @param string      $db           current database
      * @param string      $table        current table
      * @param string      $field        field
-     * @param array       $foreignData  foreign column data
+     * @param mixed[]     $foreignData  foreign column data
      * @param string|null $fieldKey     field key
      * @param string      $currentValue current columns's value
      */
@@ -164,12 +157,11 @@ class BrowseForeigners
         $output = '<form class="ajax" '
             . 'id="browse_foreign_form" name="browse_foreign_from" action="'
             . Url::getFromRoute('/browse-foreigners')
-            . '" method="post"><fieldset class="row g-3 align-items-center mb-3">'
-            . Url::getHiddenInputs($db, $table)
-            . '<input type="hidden" name="field" value="' . htmlspecialchars($field)
-            . '">'
+            . '" method="post"><fieldset class="row g-3 align-items-center mb-3">' . "\n"
+            . Url::getHiddenInputs($db, $table) . "\n"
+            . '<input type="hidden" name="field" value="' . htmlspecialchars($field) . '">' . "\n"
             . '<input type="hidden" name="fieldkey" value="'
-            . (isset($fieldKey) ? htmlspecialchars($fieldKey) : '') . '">';
+            . (isset($fieldKey) ? htmlspecialchars($fieldKey) : '') . '">' . "\n";
 
         if (isset($_POST['rownumber'])) {
             $output .= '<input type="hidden" name="rownumber" value="'
@@ -180,20 +172,20 @@ class BrowseForeigners
             ? htmlspecialchars($_POST['foreign_filter'])
             : '');
         $output .= '<div class="col-auto">'
-            . '<label class="form-label" for="input_foreign_filter">' . __('Search:') . '</label></div>'
+            . '<label class="form-label" for="input_foreign_filter">' . __('Search:') . '</label></div>' . "\n"
             . '<div class="col-auto"><input class="form-control" type="text" name="foreign_filter" '
             . 'id="input_foreign_filter" '
-            . 'value="' . $filterValue . '" data-old="' . $filterValue . '">'
+            . 'value="' . $filterValue . '" data-old="' . $filterValue . '">' . "\n"
             . '</div><div class="col-auto">'
             . '<input class="btn btn-primary" type="submit" name="submit_foreign_filter" value="'
             . __('Go') . '">'
-            . '</div>'
+            . '</div>' . "\n"
             . '<div class="col-auto">' . $gotoPage . '</div>'
             . '<div class="col-auto">' . $foreignShowAll . '</div>'
             . '</fieldset>'
-            . '</form>';
+            . '</form>' . "\n";
 
-        $output .= '<table class="table table-striped table-hover" id="browse_foreign_table">';
+        $output .= '<table class="table table-striped table-hover" id="browse_foreign_table">' . "\n";
 
         if (! is_array($foreignData['disp_row'])) {
             return $output . '</tbody>'
@@ -206,7 +198,7 @@ class BrowseForeigners
             <td width="20%"></td>
             <th>' . __('Description') . '</th>
             <th>' . __('Keyname') . '</th>
-        </tr>';
+        </tr>' . "\n";
 
         $output .= '<thead>' . $header . '</thead>' . "\n"
             . '<tfoot>' . $header . '</tfoot>' . "\n"
@@ -230,11 +222,7 @@ class BrowseForeigners
         $indexByDescription = 0;
 
         foreach (array_keys($keys) as $indexByKeyname) {
-            [
-                $html,
-                $horizontalCount,
-                $indexByDescription,
-            ] = $this->getHtmlForOneKey(
+            [$html, $horizontalCount, $indexByDescription] = $this->getHtmlForOneKey(
                 $horizontalCount,
                 $header,
                 $keys,
@@ -243,7 +231,7 @@ class BrowseForeigners
                 $indexByDescription,
                 $currentValue,
             );
-            $output .= $html;
+            $output .= $html . "\n";
         }
 
         $output .= '</tbody></table>';
@@ -267,16 +255,13 @@ class BrowseForeigners
             $description = mb_substr($description, 0, $this->settings->limitChars) . '...';
         }
 
-        return [
-            $description,
-            $descriptionTitle,
-        ];
+        return [$description, $descriptionTitle];
     }
 
     /**
      * Function to get html for the goto page option
      *
-     * @param array|null $foreignData foreign data
+     * @param mixed[]|null $foreignData foreign data
      */
     private function getHtmlForGotoPage(array|null $foreignData): string
     {

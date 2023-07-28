@@ -12,8 +12,9 @@ use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\ResponseRenderer;
 use PhpMyAdmin\Transformations;
+use PHPUnit\Framework\Attributes\CoversClass;
 
-/** @covers \PhpMyAdmin\Controllers\Normalization\ThirdNormalForm\FirstStepController */
+#[CoversClass(FirstStepController::class)]
 class FirstStepControllerTest extends AbstractTestCase
 {
     public function testDefault(): void
@@ -29,9 +30,7 @@ class FirstStepControllerTest extends AbstractTestCase
         $response = new ResponseRenderer();
         $template = new Template();
         $request = $this->createStub(ServerRequest::class);
-        $request->method('getParsedBodyParam')->willReturnMap([
-            ['tables', null, ['test_table']],
-        ]);
+        $request->method('getParsedBodyParam')->willReturnMap([['tables', null, ['test_table']]]);
 
         $controller = new FirstStepController(
             $response,

@@ -16,7 +16,7 @@ use function is_string;
 class HomeController extends AbstractController
 {
     /**
-     * @param array $params Request parameters
+     * @param mixed[] $params Request parameters
      *
      * @return string HTML
      */
@@ -73,16 +73,8 @@ class HomeController extends AbstractController
                 'dsn' => $this->config->getServerDSN($id),
                 'params' => [
                     'token' => $_SESSION[' PMA_token '],
-                    'edit' => [
-                        'page' => 'servers',
-                        'mode' => 'edit',
-                        'id' => $id,
-                    ],
-                    'remove' => [
-                        'page' => 'servers',
-                        'mode' => 'remove',
-                        'id' => $id,
-                    ],
+                    'edit' => ['page' => 'servers', 'mode' => 'edit', 'id' => $id],
+                    'remove' => ['page' => 'servers', 'mode' => 'remove', 'id' => $id],
                 ],
             ];
         }

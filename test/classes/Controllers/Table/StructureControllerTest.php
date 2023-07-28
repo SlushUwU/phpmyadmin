@@ -15,9 +15,12 @@ use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\DbiDummy;
 use PhpMyAdmin\Tests\Stubs\ResponseRenderer;
 use PhpMyAdmin\Transformations;
+use PhpMyAdmin\UserPreferences;
 use PhpMyAdmin\Util;
+use PHPUnit\Framework\Attributes\CoversClass;
+use ReflectionProperty;
 
-/** @covers \PhpMyAdmin\Controllers\Table\StructureController */
+#[CoversClass(StructureController::class)]
 class StructureControllerTest extends AbstractTestCase
 {
     protected DatabaseInterface $dbi;
@@ -40,11 +43,12 @@ class StructureControllerTest extends AbstractTestCase
         $GLOBALS['table'] = 'test_table';
         $GLOBALS['text_dir'] = 'ltr';
         $GLOBALS['lang'] = 'en';
-        $GLOBALS['cfg']['Server'] = $GLOBALS['config']->defaultServer;
+        $GLOBALS['cfg']['Server'] = $GLOBALS['config']->getSettings()->Servers[1]->asArray();
         $GLOBALS['cfg']['Server']['DisableIS'] = true;
         $GLOBALS['cfg']['ShowStats'] = false;
         $GLOBALS['cfg']['ShowPropertyComments'] = false;
-        $_SESSION['relation'] = [];
+        (new ReflectionProperty(Relation::class, 'cache'))->setValue(null, null);
+        (new ReflectionProperty(Template::class, 'twig'))->setValue(null, null);
 
         $this->dummyDbi->addSelectDb('test_db');
         $this->dummyDbi->addSelectDb('test_db');
@@ -74,7 +78,8 @@ class StructureControllerTest extends AbstractTestCase
         );
         // phpcs:enable
 
-        $pageSettings = new PageSettings('TableStructure');
+        $pageSettings = new PageSettings(new UserPreferences($GLOBALS['dbi']));
+        $pageSettings->init('TableStructure');
         $fields = $this->dbi->getColumns($GLOBALS['db'], $GLOBALS['table'], true);
 
         $request = $this->createStub(ServerRequest::class);
@@ -89,6 +94,7 @@ class StructureControllerTest extends AbstractTestCase
             $relation,
             new Transformations(),
             $this->dbi,
+            $pageSettings,
         ))($request);
 
         $expected = $pageSettings->getHTML();
@@ -116,9 +122,9 @@ class StructureControllerTest extends AbstractTestCase
             'table_stats' => null,
             'fields' => $fields,
             'extracted_columnspecs' => [
-                1 => Util::extractColumnSpec((string) $fields['id']['Type']),
-                2 => Util::extractColumnSpec((string) $fields['name']['Type']),
-                3 => Util::extractColumnSpec((string) $fields['datetimefield']['Type']),
+                1 => Util::extractColumnSpec($fields['id']['Type']),
+                2 => Util::extractColumnSpec($fields['name']['Type']),
+                3 => Util::extractColumnSpec($fields['datetimefield']['Type']),
             ],
             'columns_with_index' => [],
             'central_list' => [],

@@ -4,14 +4,17 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Controllers\Console\Bookmark;
 
+use PhpMyAdmin\ConfigStorage\Relation;
 use PhpMyAdmin\ConfigStorage\RelationParameters;
 use PhpMyAdmin\Controllers\Console\Bookmark\AddController;
 use PhpMyAdmin\Http\ServerRequest;
 use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\ResponseRenderer;
+use PHPUnit\Framework\Attributes\CoversClass;
+use ReflectionProperty;
 
-/** @covers \PhpMyAdmin\Controllers\Console\Bookmark\AddController */
+#[CoversClass(AddController::class)]
 class AddControllerTest extends AbstractTestCase
 {
     public function testWithInvalidParams(): void
@@ -34,7 +37,7 @@ class AddControllerTest extends AbstractTestCase
     public function testWithoutRelationParameters(): void
     {
         $GLOBALS['cfg']['Server']['user'] = 'user';
-        $_SESSION['relation'] = [];
+        (new ReflectionProperty(Relation::class, 'cache'))->setValue(null, null);
         $dbi = $this->createDatabaseInterface();
         $GLOBALS['dbi'] = $dbi;
         $response = new ResponseRenderer();
@@ -54,17 +57,20 @@ class AddControllerTest extends AbstractTestCase
     {
         $GLOBALS['cfg']['Server']['user'] = 'test_user';
         $GLOBALS['server'] = 1;
-        $_SESSION['relation'] = [];
-        $_SESSION['relation'][$GLOBALS['server']] = RelationParameters::fromArray([
+        $relationParameters = RelationParameters::fromArray([
             'user' => 'test_user',
             'db' => 'pmadb',
             'bookmarkwork' => true,
             'bookmark' => 'bookmark',
-        ])->toArray();
+        ]);
+        (new ReflectionProperty(Relation::class, 'cache'))->setValue(null, $relationParameters);
 
         $dbiDummy = $this->createDbiDummy();
-        // phpcs:ignore Generic.Files.LineLength.TooLong
-        $dbiDummy->addResult('INSERT INTO `pmadb`.`bookmark` (id, dbase, user, query, label) VALUES (NULL, \'test_db\', \'\', \'test_query\', \'test_label\')', []);
+        $dbiDummy->addResult(
+            'INSERT INTO `pmadb`.`bookmark` (id, dbase, user, query, label)'
+            . ' VALUES (NULL, \'test_db\', \'\', \'test_query\', \'test_label\')',
+            true,
+        );
         $dbi = $this->createDatabaseInterface($dbiDummy);
         $GLOBALS['dbi'] = $dbi;
         $response = new ResponseRenderer();

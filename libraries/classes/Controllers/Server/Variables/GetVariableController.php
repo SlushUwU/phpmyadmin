@@ -22,10 +22,10 @@ final class GetVariableController extends AbstractController
         parent::__construct($response, $template);
     }
 
-    /** @param array $params Request parameters */
+    /** @param mixed[] $params Request parameters */
     public function __invoke(ServerRequest $request, array $params): void
     {
-        if (! $this->response->isAjax()) {
+        if (! $request->isAjax()) {
             return;
         }
 
@@ -37,9 +37,7 @@ final class GetVariableController extends AbstractController
             DatabaseInterface::FETCH_NUM,
         );
 
-        $json = [
-            'message' => $varValue[1],
-        ];
+        $json = ['message' => $varValue[1]];
 
         $variableType = ServerVariablesProvider::getImplementation()->getVariableType($params['name']);
 

@@ -39,7 +39,7 @@ class Monitor
      *
      * @param string $requiredData Required data
      *
-     * @return array JSON
+     * @return mixed[] JSON
      */
     public function getJsonForChartingData(string $requiredData): array
     {
@@ -91,26 +91,26 @@ class Monitor
     /**
      * Assign the variables for real-time charting data
      *
-     * @param array $ret             Real-time charting data
-     * @param array $statusVarValues Status variable values
-     * @param array $serverVarValues Server variable values
+     * @param mixed[] $ret             Real-time charting data
+     * @param mixed[] $statusVarValues Status variable values
+     * @param mixed[] $serverVarValues Server variable values
      *
-     * @return array
+     * @return mixed[]
      */
     private function getJsonForChartingDataSet(
         array $ret,
         array $statusVarValues,
         array $serverVarValues,
     ): array {
-        foreach ($ret as $chart_id => $chartNodes) {
-            foreach ($chartNodes as $node_id => $nodeDataPoints) {
-                foreach ($nodeDataPoints as $point_id => $dataPoint) {
+        foreach ($ret as $chartId => $chartNodes) {
+            foreach ($chartNodes as $nodeId => $nodeDataPoints) {
+                foreach ($nodeDataPoints as $pointId => $dataPoint) {
                     switch ($dataPoint['type']) {
                         case 'statusvar':
-                            $ret[$chart_id][$node_id][$point_id]['value'] = $statusVarValues[$dataPoint['name']];
+                            $ret[$chartId][$nodeId][$pointId]['value'] = $statusVarValues[$dataPoint['name']];
                             break;
                         case 'servervar':
-                            $ret[$chart_id][$node_id][$point_id]['value'] = $serverVarValues[$dataPoint['name']];
+                            $ret[$chartId][$nodeId][$pointId]['value'] = $serverVarValues[$dataPoint['name']];
                             break;
                     }
                 }
@@ -123,14 +123,14 @@ class Monitor
     /**
      * Get called to get JSON for charting data
      *
-     * @param array $ret        Real-time charting data
-     * @param array $serverVars Server variable values
-     * @param array $statusVars Status variable values
-     * @param mixed $sysinfo    System info
-     * @param mixed $cpuload    CPU load
-     * @param mixed $memory     Memory
+     * @param mixed[] $ret        Real-time charting data
+     * @param mixed[] $serverVars Server variable values
+     * @param mixed[] $statusVars Status variable values
+     * @param mixed   $sysinfo    System info
+     * @param mixed   $cpuload    CPU load
+     * @param mixed   $memory     Memory
      *
-     * @return array
+     * @return mixed[]
      */
     private function getJsonForChartingDataGet(
         array $ret,
@@ -160,26 +160,22 @@ class Monitor
             } /* foreach */
         }
 
-        return [
-            $serverVars,
-            $statusVars,
-            $ret,
-        ];
+        return [$serverVars, $statusVars, $ret];
     }
 
     /**
      * Switch called to get JSON for charting data
      *
-     * @param string $type       Type
-     * @param string $pName      Name
-     * @param array  $serverVars Server variable values
-     * @param array  $statusVars Status variable values
-     * @param array  $ret        Real-time charting data
-     * @param mixed  $sysinfo    System info
-     * @param mixed  $cpuload    CPU load
-     * @param mixed  $memory     Memory
+     * @param string  $type       Type
+     * @param string  $pName      Name
+     * @param mixed[] $serverVars Server variable values
+     * @param mixed[] $statusVars Status variable values
+     * @param mixed[] $ret        Real-time charting data
+     * @param mixed   $sysinfo    System info
+     * @param mixed   $cpuload    CPU load
+     * @param mixed   $memory     Memory
      *
-     * @return array
+     * @return mixed[]
      */
     private function getJsonForChartingDataSwitch(
         string $type,
@@ -246,11 +242,7 @@ class Monitor
                 break;
         }
 
-        return [
-            $serverVars,
-            $statusVars,
-            $ret,
-        ];
+        return [$serverVars, $statusVars, $ret];
     }
 
     /**
@@ -277,10 +269,7 @@ class Monitor
             return null;
         }
 
-        $return = [
-            'rows' => [],
-            'sum' => [],
-        ];
+        $return = ['rows' => [], 'sum' => []];
 
         while ($row = $result->fetchAssoc()) {
             $type = mb_strtolower(
@@ -298,7 +287,7 @@ class Monitor
                     if (mb_strlen($row['sql_text']) > 220) {
                         $implodeSqlText = implode(
                             ' ',
-                            (array) Util::formatByteDown(
+                            Util::formatByteDown(
                                 mb_strlen($row['sql_text']),
                                 2,
                                 2,
@@ -360,10 +349,7 @@ class Monitor
             return null;
         }
 
-        $return = [
-            'rows' => [],
-            'sum' => [],
-        ];
+        $return = ['rows' => [], 'sum' => []];
         $insertTables = [];
         $insertTablesFirst = -1;
         $i = 0;
@@ -422,7 +408,7 @@ class Monitor
                         . '... ['
                         . implode(
                             ' ',
-                            (array) Util::formatByteDown(
+                            Util::formatByteDown(
                                 mb_strlen($row['argument']),
                                 2,
                                 2,
@@ -469,7 +455,7 @@ class Monitor
      * @param string|null $name  Variable name
      * @param string|null $value Variable value
      *
-     * @return array JSON
+     * @return mixed[] JSON
      */
     public function getJsonForLoggingVars(string|null $name, string|null $value): array
     {
@@ -493,7 +479,7 @@ class Monitor
      * @param string $database Database name
      * @param string $query    SQL query
      *
-     * @return array JSON
+     * @return mixed[] JSON
      */
     public function getJsonForQueryAnalyzer(
         string $database,

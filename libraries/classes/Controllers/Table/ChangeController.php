@@ -22,8 +22,9 @@ use function count;
 use function is_array;
 use function is_string;
 use function str_contains;
+use function str_starts_with;
 use function strlen;
-use function strpos;
+use function trim;
 
 /**
  * Displays form for editing and inserting new table rows.
@@ -35,6 +36,7 @@ class ChangeController extends AbstractController
         Template $template,
         private InsertEdit $insertEdit,
         private Relation $relation,
+        private PageSettings $pageSettings,
     ) {
         parent::__construct($response, $template);
     }
@@ -47,37 +49,19 @@ class ChangeController extends AbstractController
         $GLOBALS['errorUrl'] ??= null;
         $GLOBALS['where_clause'] ??= null;
         $GLOBALS['unsaved_values'] ??= null;
-        $GLOBALS['insert_mode'] ??= null;
-        $GLOBALS['where_clause_array'] ??= null;
-        $GLOBALS['where_clauses'] ??= null;
         $GLOBALS['result'] ??= null;
-        $GLOBALS['rows'] ??= null;
-        $GLOBALS['found_unique_key'] ??= null;
-        $GLOBALS['after_insert'] ??= null;
-        $GLOBALS['comments_map'] ??= null;
-        $GLOBALS['table_columns'] ??= null;
-        $GLOBALS['timestamp_seen'] ??= null;
-        $GLOBALS['columns_cnt'] ??= null;
-        $GLOBALS['tabindex'] ??= null;
-        $GLOBALS['tabindex_for_value'] ??= null;
-        $GLOBALS['o_rows'] ??= null;
-        $GLOBALS['biggest_max_file_size'] ??= null;
-        $GLOBALS['has_blob_field'] ??= null;
-        $GLOBALS['jsvkey'] ??= null;
-        $GLOBALS['vkey'] ??= null;
         $GLOBALS['current_result'] ??= null;
-        $GLOBALS['repopulate'] ??= null;
-        $GLOBALS['checked'] ??= null;
 
-        $pageSettings = new PageSettings('Edit');
-        $this->response->addHTML($pageSettings->getErrorHTML());
-        $this->response->addHTML($pageSettings->getHTML());
+        $this->pageSettings->init('Edit');
+        $this->response->addHTML($this->pageSettings->getErrorHTML());
+        $this->response->addHTML($this->pageSettings->getHTML());
 
         DbTableExists::check($GLOBALS['db'], $GLOBALS['table']);
 
-        if (isset($_GET['where_clause'], $_GET['where_clause_signature'])) {
-            if (Core::checkSqlQuerySignature($_GET['where_clause'], $_GET['where_clause_signature'])) {
-                $GLOBALS['where_clause'] = $_GET['where_clause'];
+        if ($request->hasQueryParam('where_clause') && $request->hasQueryParam('where_clause_signature')) {
+            $whereClause = $request->getQueryParam('where_clause');
+            if (Core::checkSqlQuerySignature($whereClause, $request->getQueryParam('where_clause_signature'))) {
+                $GLOBALS['where_clause'] = $whereClause;
             }
         }
 
@@ -85,22 +69,22 @@ class ChangeController extends AbstractController
          * Determine whether Insert or Edit and set global variables
          */
         [
-            $GLOBALS['insert_mode'],
+            $insertMode,
             $GLOBALS['where_clause'],
-            $GLOBALS['where_clause_array'],
-            $GLOBALS['where_clauses'],
+            $whereClauseArray,
+            $whereClauses,
             $GLOBALS['result'],
-            $GLOBALS['rows'],
-            $GLOBALS['found_unique_key'],
-            $GLOBALS['after_insert'],
+            $rows,
+            $foundUniqueIndex,
+            $afterInsert,
         ] = $this->insertEdit->determineInsertOrEdit(
             $GLOBALS['where_clause'] ?? null,
             $GLOBALS['db'],
             $GLOBALS['table'],
         );
         // Increase number of rows if unsaved rows are more
-        if (! empty($GLOBALS['unsaved_values']) && count($GLOBALS['rows']) < count($GLOBALS['unsaved_values'])) {
-            $GLOBALS['rows'] = array_fill(0, count($GLOBALS['unsaved_values']), false);
+        if (! empty($GLOBALS['unsaved_values']) && count($rows) < count($GLOBALS['unsaved_values'])) {
+            $rows = array_fill(0, count($GLOBALS['unsaved_values']), false);
         }
 
         /**
@@ -120,7 +104,7 @@ class ChangeController extends AbstractController
         $sqlQuery = $request->getParsedBodyParam('sql_query');
         $GLOBALS['urlParams'] = ['db' => $GLOBALS['db'], 'sql_query' => is_string($sqlQuery) ? $sqlQuery : ''];
 
-        if (strpos($GLOBALS['goto'] ?? '', 'index.php?route=/table') === 0) {
+        if (str_starts_with($GLOBALS['goto'] ?? '', 'index.php?route=/table')) {
             $GLOBALS['urlParams']['table'] = $GLOBALS['table'];
         }
 
@@ -130,7 +114,7 @@ class ChangeController extends AbstractController
         );
         unset($GLOBALS['urlParams']);
 
-        $GLOBALS['comments_map'] = $this->insertEdit->getCommentsMap($GLOBALS['db'], $GLOBALS['table']);
+        $commentsMap = $this->insertEdit->getCommentsMap($GLOBALS['db'], $GLOBALS['table']);
 
         /**
          * START REGULAR OUTPUT
@@ -150,20 +134,20 @@ class ChangeController extends AbstractController
          * $disp_message come from /table/replace
          */
         if (! empty($GLOBALS['disp_message'])) {
-            $this->response->addHTML(Generator::getMessage($GLOBALS['disp_message'], null));
+            $this->response->addHTML(Generator::getMessage($GLOBALS['disp_message']));
         }
 
-        $GLOBALS['table_columns'] = $this->insertEdit->getTableColumns($GLOBALS['db'], $GLOBALS['table']);
+        $tableColumns = $this->insertEdit->getTableColumns($GLOBALS['db'], $GLOBALS['table']);
 
         // retrieve keys into foreign fields, if any
         $foreigners = $this->relation->getForeigners($GLOBALS['db'], $GLOBALS['table']);
 
         // Retrieve form parameters for insert/edit form
-        $_form_params = $this->insertEdit->getFormParametersForInsertForm(
+        $formParams = $this->insertEdit->getFormParametersForInsertForm(
             $GLOBALS['db'],
             $GLOBALS['table'],
-            $GLOBALS['where_clauses'],
-            $GLOBALS['where_clause_array'],
+            $whereClauses,
+            $whereClauseArray,
             $GLOBALS['errorUrl'],
         );
 
@@ -173,27 +157,16 @@ class ChangeController extends AbstractController
         // Had to put the URI because when hosted on an https server,
         // some browsers send wrongly this form to the http server.
 
-        $html_output = '';
-        // Set if we passed the first timestamp field
-        $GLOBALS['timestamp_seen'] = false;
-        $GLOBALS['columns_cnt'] = count($GLOBALS['table_columns']);
-
-        $GLOBALS['tabindex'] = 0;
-        $GLOBALS['tabindex_for_value'] = 0;
-        $GLOBALS['o_rows'] = 0;
-        $GLOBALS['biggest_max_file_size'] = 0;
+        $htmlOutput = '';
 
         $GLOBALS['urlParams']['db'] = $GLOBALS['db'];
         $GLOBALS['urlParams']['table'] = $GLOBALS['table'];
-        $GLOBALS['urlParams'] = $this->insertEdit->urlParamsInEditMode(
-            $GLOBALS['urlParams'],
-            $GLOBALS['where_clause_array'],
-        );
+        $GLOBALS['urlParams'] = $this->urlParamsInEditMode($GLOBALS['urlParams'], $whereClauseArray);
 
-        $GLOBALS['has_blob_field'] = false;
-        foreach ($GLOBALS['table_columns'] as $column) {
-            if ($this->insertEdit->isColumn($column, ['blob', 'tinyblob', 'mediumblob', 'longblob'])) {
-                $GLOBALS['has_blob_field'] = true;
+        $hasBlobField = false;
+        foreach ($tableColumns as $tableColumn) {
+            if ($this->insertEdit->isColumn($tableColumn->type, ['blob', 'tinyblob', 'mediumblob', 'longblob'])) {
+                $hasBlobField = true;
                 break;
             }
         }
@@ -201,110 +174,109 @@ class ChangeController extends AbstractController
         //Insert/Edit form
         //If table has blob fields we have to disable ajax.
         $isUpload = $GLOBALS['config']->get('enable_upload');
-        $html_output .= $this->insertEdit->getHtmlForInsertEditFormHeader($GLOBALS['has_blob_field'], $isUpload);
+        $htmlOutput .= $this->insertEdit->getHtmlForInsertEditFormHeader($hasBlobField, $isUpload);
 
-        $html_output .= Url::getHiddenInputs($_form_params);
+        $htmlOutput .= Url::getHiddenInputs($formParams);
 
         // user can toggle the display of Function column and column types
         // (currently does not work for multi-edits)
         if (! $GLOBALS['cfg']['ShowFunctionFields'] || ! $GLOBALS['cfg']['ShowFieldTypesInDataEditView']) {
-            $html_output .= __('Show');
+            $htmlOutput .= __('Show');
         }
 
         if (! $GLOBALS['cfg']['ShowFunctionFields']) {
-            $html_output .= $this->insertEdit->showTypeOrFunction('function', $GLOBALS['urlParams'], false);
+            $htmlOutput .= $this->insertEdit->showTypeOrFunction('function', $GLOBALS['urlParams'], false);
         }
 
         if (! $GLOBALS['cfg']['ShowFieldTypesInDataEditView']) {
-            $html_output .= $this->insertEdit->showTypeOrFunction('type', $GLOBALS['urlParams'], false);
+            $htmlOutput .= $this->insertEdit->showTypeOrFunction('type', $GLOBALS['urlParams'], false);
         }
 
         $GLOBALS['plugin_scripts'] = [];
-        foreach ($GLOBALS['rows'] as $row_id => $current_row) {
-            if (empty($current_row)) {
-                $current_row = [];
-            }
-
-            $GLOBALS['jsvkey'] = (string) $row_id;
-            $GLOBALS['vkey'] = '[multi_edit][' . $GLOBALS['jsvkey'] . ']';
-
+        foreach ($rows as $rowId => $currentRow) {
             $GLOBALS['current_result'] = (isset($GLOBALS['result'])
-                && is_array($GLOBALS['result']) && isset($GLOBALS['result'][$row_id])
-                ? $GLOBALS['result'][$row_id]
+                && is_array($GLOBALS['result']) && isset($GLOBALS['result'][$rowId])
+                ? $GLOBALS['result'][$rowId]
                 : $GLOBALS['result']);
-            $GLOBALS['repopulate'] = [];
-            $GLOBALS['checked'] = true;
-            if (isset($GLOBALS['unsaved_values'][$row_id])) {
-                $GLOBALS['repopulate'] = $GLOBALS['unsaved_values'][$row_id];
-                $GLOBALS['checked'] = false;
+            $repopulate = [];
+            $checked = true;
+            if (isset($GLOBALS['unsaved_values'][$rowId])) {
+                $repopulate = $GLOBALS['unsaved_values'][$rowId];
+                $checked = false;
             }
 
-            if ($GLOBALS['insert_mode'] && $row_id > 0) {
-                $html_output .= $this->insertEdit->getHtmlForIgnoreOption($row_id, $GLOBALS['checked']);
+            if ($insertMode && $rowId > 0) {
+                $htmlOutput .= $this->insertEdit->getHtmlForIgnoreOption($rowId, $checked);
             }
 
-            $html_output .= $this->insertEdit->getHtmlForInsertEditRow(
+            $htmlOutput .= $this->insertEdit->getHtmlForInsertEditRow(
                 $GLOBALS['urlParams'],
-                $GLOBALS['table_columns'],
-                $GLOBALS['comments_map'],
-                $GLOBALS['timestamp_seen'],
+                $tableColumns,
+                $commentsMap,
                 $GLOBALS['current_result'],
-                $GLOBALS['jsvkey'],
-                $GLOBALS['vkey'],
-                $GLOBALS['insert_mode'],
-                $current_row,
-                $GLOBALS['o_rows'],
-                $GLOBALS['tabindex'],
-                $GLOBALS['columns_cnt'],
+                $insertMode,
+                $currentRow ?: [],
                 $isUpload,
                 $foreigners,
-                $GLOBALS['tabindex_for_value'],
                 $GLOBALS['table'],
                 $GLOBALS['db'],
-                $row_id,
-                $GLOBALS['biggest_max_file_size'],
+                $rowId,
                 $GLOBALS['text_dir'],
-                $GLOBALS['repopulate'],
-                $GLOBALS['where_clause_array'],
+                $repopulate,
+                $whereClauseArray,
             );
         }
 
         $this->addScriptFiles($GLOBALS['plugin_scripts']);
 
-        unset($GLOBALS['unsaved_values'], $GLOBALS['checked'], $GLOBALS['repopulate'], $GLOBALS['plugin_scripts']);
-
-        if (! isset($GLOBALS['after_insert'])) {
-            $GLOBALS['after_insert'] = 'back';
-        }
+        unset($GLOBALS['unsaved_values'], $GLOBALS['plugin_scripts']);
 
         $isNumeric = InsertEdit::isWhereClauseNumeric($GLOBALS['where_clause']);
-        $html_output .= $this->template->render('table/insert/actions_panel', [
+        $htmlOutput .= $this->template->render('table/insert/actions_panel', [
             'where_clause' => $GLOBALS['where_clause'],
-            'after_insert' => $GLOBALS['after_insert'],
-            'found_unique_key' => $GLOBALS['found_unique_key'],
+            'after_insert' => $afterInsert ?? 'back',
+            'found_unique_key' => $foundUniqueIndex,
             'is_numeric' => $isNumeric,
         ]);
 
-        if ($GLOBALS['biggest_max_file_size'] > 0) {
-            $html_output .= '<input type="hidden" name="MAX_FILE_SIZE" value="'
-                . $GLOBALS['biggest_max_file_size'] . '">' . "\n";
-        }
+        $htmlOutput .= '</form>';
 
-        $html_output .= '</form>';
-
-        $html_output .= $this->insertEdit->getHtmlForGisEditor();
+        $htmlOutput .= $this->insertEdit->getHtmlForGisEditor();
         // end Insert/Edit form
 
-        if ($GLOBALS['insert_mode']) {
+        if ($insertMode) {
             //Continue insertion form
-            $html_output .= $this->insertEdit->getContinueInsertionForm(
+            $htmlOutput .= $this->insertEdit->getContinueInsertionForm(
                 $GLOBALS['table'],
                 $GLOBALS['db'],
-                $GLOBALS['where_clause_array'],
+                $whereClauseArray,
                 $GLOBALS['errorUrl'],
             );
         }
 
-        $this->response->addHTML($html_output);
+        $this->response->addHTML($htmlOutput);
+    }
+
+    /**
+     * Add some url parameters
+     *
+     * @param mixed[] $urlParams        containing $db and $table as url parameters
+     * @param mixed[] $whereClauseArray where clauses array
+     *
+     * @return mixed[] Add some url parameters to $url_params array and return it
+     */
+    public function urlParamsInEditMode(
+        array $urlParams,
+        array $whereClauseArray,
+    ): array {
+        foreach ($whereClauseArray as $whereClause) {
+            $urlParams['where_clause'] = trim($whereClause);
+        }
+
+        if (! empty($_POST['sql_query'])) {
+            $urlParams['sql_query'] = $_POST['sql_query'];
+        }
+
+        return $urlParams;
     }
 }

@@ -83,19 +83,10 @@ class Core
     public static function getPHPDocLink(string $target): string
     {
         /* List of PHP documentation translations */
-        $php_doc_languages = [
-            'pt_BR',
-            'zh_CN',
-            'fr',
-            'de',
-            'ja',
-            'ru',
-            'es',
-            'tr',
-        ];
+        $phpDocLanguages = ['pt_BR', 'zh_CN', 'fr', 'de', 'ja', 'ru', 'es', 'tr'];
 
         $lang = 'en';
-        if (isset($GLOBALS['lang']) && in_array($GLOBALS['lang'], $php_doc_languages)) {
+        if (isset($GLOBALS['lang']) && in_array($GLOBALS['lang'], $phpDocLanguages)) {
             if ($GLOBALS['lang'] === 'zh_CN') {
                 $lang = 'zh';
             } else {
@@ -194,9 +185,9 @@ class Core
      * Checks given $page against given $allowList and returns true if valid
      * it optionally ignores query parameters in $page (script.php?ignored)
      *
-     * @param string $page      page to check
-     * @param array  $allowList allow list to check page against
-     * @param bool   $include   whether the page is going to be included
+     * @param string  $page      page to check
+     * @param mixed[] $allowList allow list to check page against
+     * @param bool    $include   whether the page is going to be included
      */
     public static function checkPageValidity(string $page, array $allowList = [], bool $include = false): bool
     {
@@ -216,23 +207,23 @@ class Core
             return false;
         }
 
-        $_page = mb_substr(
+        $newPage = mb_substr(
             $page,
             0,
             (int) mb_strpos($page . '?', '?'),
         );
-        if (in_array($_page, $allowList)) {
+        if (in_array($newPage, $allowList)) {
             return true;
         }
 
-        $_page = urldecode($page);
-        $_page = mb_substr(
-            $_page,
+        $newPage = urldecode($page);
+        $newPage = mb_substr(
+            $newPage,
             0,
-            (int) mb_strpos($_page . '?', '?'),
+            (int) mb_strpos($newPage . '?', '?'),
         );
 
-        return in_array($_page, $allowList);
+        return in_array($newPage, $allowList);
     }
 
     /**
@@ -241,26 +232,26 @@ class Core
      * searches in $_SERVER, $_ENV then tries getenv() and apache_getenv()
      * in this order
      *
-     * @param string $var_name variable name
+     * @param string $varName variable name
      *
      * @return string  value of $var or empty string
      */
-    public static function getenv(string $var_name): string
+    public static function getenv(string $varName): string
     {
-        if (isset($_SERVER[$var_name])) {
-            return (string) $_SERVER[$var_name];
+        if (isset($_SERVER[$varName])) {
+            return (string) $_SERVER[$varName];
         }
 
-        if (isset($_ENV[$var_name])) {
-            return (string) $_ENV[$var_name];
+        if (isset($_ENV[$varName])) {
+            return (string) $_ENV[$varName];
         }
 
-        if (getenv($var_name)) {
-            return (string) getenv($var_name);
+        if (getenv($varName)) {
+            return (string) getenv($varName);
         }
 
-        if (function_exists('apache_getenv') && apache_getenv($var_name, true)) {
-            return (string) apache_getenv($var_name, true);
+        if (function_exists('apache_getenv') && apache_getenv($varName, true)) {
+            return (string) apache_getenv($varName, true);
         }
 
         return '';
@@ -269,10 +260,10 @@ class Core
     /**
      * Send HTTP header, taking IIS limits into account (600 seems ok)
      *
-     * @param string $uri         the header to send
-     * @param bool   $use_refresh whether to use Refresh: header when running on IIS
+     * @param string $uri        the header to send
+     * @param bool   $useRefresh whether to use Refresh: header when running on IIS
      */
-    public static function sendHeaderLocation(string $uri, bool $use_refresh = false): void
+    public static function sendHeaderLocation(string $uri, bool $useRefresh = false): void
     {
         if ($GLOBALS['config']->get('PMA_IS_IIS') && mb_strlen($uri) > 600) {
             ResponseRenderer::getInstance()->disable();
@@ -301,7 +292,7 @@ class Core
         // bug #1523784: IE6 does not like 'Refresh: 0', it
         // results in a blank page
         // but we need it when coming from the cookie login panel)
-        if ($GLOBALS['config']->get('PMA_IS_IIS') && $use_refresh) {
+        if ($GLOBALS['config']->get('PMA_IS_IIS') && $useRefresh) {
             $response->header('Refresh: 0; ' . $uri);
 
             return;
@@ -362,17 +353,17 @@ class Core
      *                         none Content-Disposition header will be sent.
      * @param string $mimetype MIME type to include in headers.
      * @param int    $length   Length of content (optional)
-     * @param bool   $no_cache Whether to include no-caching headers.
+     * @param bool   $noCache  Whether to include no-caching headers.
      */
     public static function downloadHeader(
         string $filename,
         string $mimetype,
         int $length = 0,
-        bool $no_cache = true,
+        bool $noCache = true,
     ): void {
         $headers = [];
 
-        if ($no_cache) {
+        if ($noCache) {
             $headers = self::getNoCacheHeaders();
         }
 
@@ -406,11 +397,11 @@ class Core
      * $path is a string describing position of an element in an associative array,
      * eg. Servers/1/host refers to $array[Servers][1][host]
      *
-     * @param string $path    path in the array
-     * @param array  $array   the array
-     * @param mixed  $default default value
+     * @param string  $path    path in the array
+     * @param mixed[] $array   the array
+     * @param mixed   $default default value
      *
-     * @return array|mixed|null array element or $default
+     * @return mixed[]|mixed|null array element or $default
      */
     public static function arrayRead(string $path, array $array, mixed $default = null): mixed
     {
@@ -430,14 +421,14 @@ class Core
     /**
      * Stores value in an array
      *
-     * @param string $path  path in the array
-     * @param array  $array the array
-     * @param mixed  $value value to store
+     * @param string  $path  path in the array
+     * @param mixed[] $array the array
+     * @param mixed   $value value to store
      */
     public static function arrayWrite(string $path, array &$array, mixed $value): void
     {
         $keys = explode('/', $path);
-        $last_key = array_pop($keys);
+        $lastKey = array_pop($keys);
         $a =& $array;
         foreach ($keys as $key) {
             if (! isset($a[$key])) {
@@ -447,19 +438,19 @@ class Core
             $a =& $a[$key];
         }
 
-        $a[$last_key] = $value;
+        $a[$lastKey] = $value;
     }
 
     /**
      * Removes value from an array
      *
-     * @param string $path  path in the array
-     * @param array  $array the array
+     * @param string  $path  path in the array
+     * @param mixed[] $array the array
      */
     public static function arrayRemove(string $path, array &$array): void
     {
         $keys = explode('/', $path);
-        $keys_last = array_pop($keys);
+        $keysLast = array_pop($keys);
         $path = [];
         $depth = 0;
 
@@ -478,11 +469,12 @@ class Core
 
         // if element found, remove it
         if ($found) {
-            unset($path[$depth][$keys_last]);
+            unset($path[$depth][$keysLast]);
             $depth--;
         }
 
         // remove empty nested arrays
+        /** @infection-ignore-all */
         for (; $depth >= 0; $depth--) {
             if (isset($path[$depth + 1]) && count($path[$depth + 1]) !== 0) {
                 break;
@@ -568,6 +560,8 @@ class Core
             'www.github.com',
             /* Percona domains */
             'www.percona.com',
+            /* CVE domain */
+            'www.cve.org',
             /* Following are doubtful ones. */
             'mysqldatabaseadministration.blogspot.com',
         ];
@@ -593,19 +587,19 @@ class Core
     /**
      * Displays SQL query before executing.
      *
-     * @param array|string $query_data Array containing queries or query itself
+     * @param mixed[]|string $queryData Array containing queries or query itself
      */
-    public static function previewSQL(array|string $query_data): void
+    public static function previewSQL(array|string $queryData): void
     {
         $retval = '<div class="preview_sql">';
-        if ($query_data === '' || $query_data === []) {
+        if ($queryData === '' || $queryData === []) {
             $retval .= __('No change');
-        } elseif (is_array($query_data)) {
-            foreach ($query_data as $query) {
+        } elseif (is_array($queryData)) {
+            foreach ($queryData as $query) {
                 $retval .= Html\Generator::formatSql($query);
             }
         } else {
-            $retval .= Html\Generator::formatSql($query_data);
+            $retval .= Html\Generator::formatSql($queryData);
         }
 
         $retval .= '</div>';
@@ -639,19 +633,19 @@ class Core
     /**
      * Creates some globals from $_POST variables matching a pattern
      *
-     * @param array $post_patterns The patterns to search for
+     * @param mixed[] $postPatterns The patterns to search for
      */
-    public static function setPostAsGlobal(array $post_patterns): void
+    public static function setPostAsGlobal(array $postPatterns): void
     {
         $container = self::getContainerBuilder();
-        foreach (array_keys($_POST) as $post_key) {
-            foreach ($post_patterns as $one_post_pattern) {
-                if (! preg_match($one_post_pattern, $post_key)) {
+        foreach (array_keys($_POST) as $postKey) {
+            foreach ($postPatterns as $onePostPattern) {
+                if (! preg_match($onePostPattern, $postKey)) {
                     continue;
                 }
 
-                $GLOBALS[$post_key] = $_POST[$post_key];
-                $container->setParameter($post_key, $GLOBALS[$post_key]);
+                $GLOBALS[$postKey] = $_POST[$postKey];
+                $container->setParameter($postKey, $GLOBALS[$postKey]);
             }
         }
     }
@@ -669,12 +663,12 @@ class Core
             return false;
         }
 
-        $direct_ip = $_SERVER['REMOTE_ADDR'];
+        $directIp = $_SERVER['REMOTE_ADDR'];
 
         /* Do we trust this IP as a proxy? If yes we will use it's header. */
-        if (! isset($GLOBALS['cfg']['TrustedProxies'][$direct_ip])) {
+        if (! isset($GLOBALS['cfg']['TrustedProxies'][$directIp])) {
             /* Return true IP */
-            return $direct_ip;
+            return $directIp;
         }
 
         /**
@@ -682,13 +676,13 @@ class Core
          * X-Forwarded-For: client, proxy1, proxy2
          */
         // Get header content
-        $value = self::getenv($GLOBALS['cfg']['TrustedProxies'][$direct_ip]);
+        $value = self::getenv($GLOBALS['cfg']['TrustedProxies'][$directIp]);
         // Grab first element what is client adddress
         $value = explode(',', $value)[0];
         // checks that the header contains only one IP address,
-        $is_ip = filter_var($value, FILTER_VALIDATE_IP);
+        $isIp = filter_var($value, FILTER_VALIDATE_IP);
 
-        if ($is_ip !== false) {
+        if ($isIp !== false) {
             // True IP behind a proxy
             return $value;
         }
@@ -707,6 +701,7 @@ class Core
     public static function sanitizeMySQLHost(string $name): string
     {
         while (strtolower(substr($name, 0, 2)) === 'p:') {
+            /** @infection-ignore-all */
             $name = substr($name, 2);
         }
 

@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace PhpMyAdmin\Tests;
 
 use PhpMyAdmin\FlashMessages;
+use PHPUnit\Framework\Attributes\CoversClass;
 use RuntimeException;
 
-/** @covers \PhpMyAdmin\FlashMessages */
+#[CoversClass(FlashMessages::class)]
 class FlashMessagesTest extends AbstractTestCase
 {
     private const STORAGE_KEY = 'flashMessages';
@@ -50,18 +51,12 @@ class FlashMessagesTest extends AbstractTestCase
 
     public function testGetMessages(): void
     {
-        $_SESSION[self::STORAGE_KEY] = [
-            'error' => ['Error1', 'Error2'],
-            'warning' => ['Warning'],
-        ];
+        $_SESSION[self::STORAGE_KEY] = ['error' => ['Error1', 'Error2'], 'warning' => ['Warning']];
         $flash = new FlashMessages();
         $flash->addMessage('notice', 'Notice');
         $messages = $flash->getMessages();
         $this->assertEquals(
-            [
-                'error' => ['Error1', 'Error2'],
-                'warning' => ['Warning'],
-            ],
+            ['error' => ['Error1', 'Error2'], 'warning' => ['Warning']],
             $messages,
         );
     }

@@ -7,12 +7,12 @@ namespace PhpMyAdmin\Tests\Database;
 use PhpMyAdmin\Database\Routines;
 use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\Dbal\Connection;
-use PhpMyAdmin\ResponseRenderer;
-use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Types;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 
-/** @covers \PhpMyAdmin\Database\Routines */
+#[CoversClass(Routines::class)]
 class RoutinesTest extends AbstractTestCase
 {
     private Routines $routines;
@@ -41,11 +41,7 @@ class RoutinesTest extends AbstractTestCase
         $GLOBALS['is_reload_priv'] = false;
         $GLOBALS['errors'] = [];
 
-        $this->routines = new Routines(
-            $GLOBALS['dbi'],
-            new Template(),
-            ResponseRenderer::getInstance(),
-        );
+        $this->routines = new Routines($GLOBALS['dbi']);
     }
 
     /**
@@ -53,9 +49,8 @@ class RoutinesTest extends AbstractTestCase
      *
      * @param array<string, mixed> $in  Input
      * @param array<string, mixed> $out Expected output
-     *
-     * @dataProvider providerGetDataFromRequest
      */
+    #[DataProvider('providerGetDataFromRequest')]
     public function testGetDataFromRequest(array $in, array $out): void
     {
         unset($_POST);
@@ -143,30 +138,12 @@ class RoutinesTest extends AbstractTestCase
                     'item_type' => 'PROCEDURE',
                     'item_type_toggle' => 'FUNCTION',
                     'item_original_type' => 'PROCEDURE',
-                    'item_param_dir' => [
-                        0 => 'IN',
-                        1 => 'FAIL',
-                    ],
-                    'item_param_name' => [
-                        0 => 'bar',
-                        1 => 'baz',
-                    ],
-                    'item_param_type' => [
-                        0 => 'INT',
-                        1 => 'FAIL',
-                    ],
-                    'item_param_length' => [
-                        0 => '20',
-                        1 => '',
-                    ],
-                    'item_param_opts_num' => [
-                        0 => 'UNSIGNED',
-                        1 => '',
-                    ],
-                    'item_param_opts_text' => [
-                        0 => '',
-                        1 => 'latin1',
-                    ],
+                    'item_param_dir' => [0 => 'IN', 1 => 'FAIL'],
+                    'item_param_name' => [0 => 'bar', 1 => 'baz'],
+                    'item_param_type' => [0 => 'INT', 1 => 'FAIL'],
+                    'item_param_length' => [0 => '20', 1 => ''],
+                    'item_param_opts_num' => [0 => 'UNSIGNED', 1 => ''],
+                    'item_param_opts_text' => [0 => '', 1 => 'latin1'],
                     'item_returntype' => '',
                     'item_isdeterministic' => 'ON',
                     'item_securitytype' => 'INVOKER',
@@ -185,30 +162,12 @@ class RoutinesTest extends AbstractTestCase
                     'item_type_toggle' => 'FUNCTION',
                     'item_original_type' => 'PROCEDURE',
                     'item_num_params' => 2,
-                    'item_param_dir' => [
-                        0 => 'IN',
-                        1 => '',
-                    ],
-                    'item_param_name' => [
-                        0 => 'bar',
-                        1 => 'baz',
-                    ],
-                    'item_param_type' => [
-                        0 => 'INT',
-                        1 => '',
-                    ],
-                    'item_param_length' => [
-                        0 => '20',
-                        1 => '',
-                    ],
-                    'item_param_opts_num' => [
-                        0 => 'UNSIGNED',
-                        1 => '',
-                    ],
-                    'item_param_opts_text' => [
-                        0 => '',
-                        1 => 'latin1',
-                    ],
+                    'item_param_dir' => [0 => 'IN', 1 => ''],
+                    'item_param_name' => [0 => 'bar', 1 => 'baz'],
+                    'item_param_type' => [0 => 'INT', 1 => ''],
+                    'item_param_length' => [0 => '20', 1 => ''],
+                    'item_param_opts_num' => [0 => 'UNSIGNED', 1 => ''],
+                    'item_param_opts_text' => [0 => '', 1 => 'latin1'],
                     'item_returntype' => '',
                     'item_isdeterministic' => ' checked=\'checked\'',
                     'item_securitytype_definer' => '',
@@ -229,30 +188,12 @@ class RoutinesTest extends AbstractTestCase
                     'item_type' => 'FUNCTION',
                     'item_type_toggle' => 'PROCEDURE',
                     'item_original_type' => 'FUNCTION',
-                    'item_param_dir' => [
-                        0 => '',
-                        1 => '',
-                    ],
-                    'item_param_name' => [
-                        0 => 'bar',
-                        1 => 'baz',
-                    ],
-                    'item_param_type' => [
-                        0 => '<s>XSS</s>',
-                        1 => 'TEXT',
-                    ],
-                    'item_param_length' => [
-                        0 => '10,10',
-                        1 => '',
-                    ],
-                    'item_param_opts_num' => [
-                        0 => 'UNSIGNED',
-                        1 => '',
-                    ],
-                    'item_param_opts_text' => [
-                        0 => '',
-                        1 => 'utf8',
-                    ],
+                    'item_param_dir' => [0 => '', 1 => ''],
+                    'item_param_name' => [0 => 'bar', 1 => 'baz'],
+                    'item_param_type' => [0 => '<s>XSS</s>', 1 => 'TEXT'],
+                    'item_param_length' => [0 => '10,10', 1 => ''],
+                    'item_param_opts_num' => [0 => 'UNSIGNED', 1 => ''],
+                    'item_param_opts_text' => [0 => '', 1 => 'utf8'],
                     'item_returntype' => 'VARCHAR',
                     'item_isdeterministic' => '',
                     'item_securitytype' => 'DEFINER',
@@ -272,26 +213,11 @@ class RoutinesTest extends AbstractTestCase
                     'item_original_type' => 'FUNCTION',
                     'item_num_params' => '2',
                     'item_param_dir' => [],
-                    'item_param_name' => [
-                        0 => 'bar',
-                        1 => 'baz',
-                    ],
-                    'item_param_type' => [
-                        0 => '',
-                        1 => 'TEXT',
-                    ],
-                    'item_param_length' => [
-                        0 => '10,10',
-                        1 => '',
-                    ],
-                    'item_param_opts_num' => [
-                        0 => 'UNSIGNED',
-                        1 => '',
-                    ],
-                    'item_param_opts_text' => [
-                        0 => '',
-                        1 => 'utf8',
-                    ],
+                    'item_param_name' => [0 => 'bar', 1 => 'baz'],
+                    'item_param_type' => [0 => '', 1 => 'TEXT'],
+                    'item_param_length' => [0 => '10,10', 1 => ''],
+                    'item_param_opts_num' => [0 => 'UNSIGNED', 1 => ''],
+                    'item_param_opts_text' => [0 => '', 1 => 'utf8'],
                     'item_returntype' => 'VARCHAR',
                     'item_isdeterministic' => '',
                     'item_securitytype_definer' => ' selected=\'selected\'',
@@ -303,842 +229,20 @@ class RoutinesTest extends AbstractTestCase
     }
 
     /**
-     * Test for getParameterRow
-     */
-    public function testGetParameterRowEmpty(): void
-    {
-        $this->assertEquals('', $this->routines->getParameterRow([], 0));
-    }
-
-    /**
-     * Test for getParameterRow
-     *
-     * @param array<string, mixed> $data Data for routine
-     *
-     * @depends testGetParameterRowEmpty
-     * @dataProvider providerGetParameterRow
-     */
-    public function testGetParameterRow(array $data, int $index, string $matcher): void
-    {
-        $this->assertStringContainsString(
-            $matcher,
-            $this->routines->getParameterRow($data, $index),
-        );
-    }
-
-    /**
-     * Data provider for testGetParameterRow
-     *
-     * @return array<array{array<string, mixed>, int, string}>
-     */
-    public static function providerGetParameterRow(): array
-    {
-        $data = [
-            'item_name' => '',
-            'item_original_name' => '',
-            'item_returnlength' => '',
-            'item_returnopts_num' => '',
-            'item_returnopts_text' => '',
-            'item_definition' => '',
-            'item_comment' => '',
-            'item_definer' => '',
-            'item_type' => 'PROCEDURE',
-            'item_type_toggle' => 'FUNCTION',
-            'item_original_type' => 'PROCEDURE',
-            'item_num_params' => 1,
-            'item_param_dir' => [0 => 'IN'],
-            'item_param_name' => [0 => 'foo'],
-            'item_param_type' => [0 => 'INT'],
-            'item_param_length' => [0 => ''],
-            'item_param_opts_num' => [0 => 'UNSIGNED'],
-            'item_param_opts_text' => [0 => ''],
-            'item_returntype' => '',
-            'item_isdeterministic' => '',
-            'item_securitytype_definer' => '',
-            'item_securitytype_invoker' => '',
-            'item_sqldataaccess' => '',
-        ];
-
-        return [
-            [
-                $data,
-                0,
-                '<select name="item_param_dir[0]"',
-            ],
-            [
-                $data,
-                0,
-                '<input name="item_param_name[0]"',
-            ],
-            [
-                $data,
-                0,
-                '<select name="item_param_type[0]"',
-            ],
-            [
-                $data,
-                0,
-                '<select name="item_param_opts_num[0]"',
-            ],
-            [
-                $data,
-                0,
-                '<a href="#" class="routine_param_remove_anchor"',
-            ],
-        ];
-    }
-
-    /**
-     * Test for getParameterRow
-     *
-     * @param array<string, mixed> $data Data for routine
-     *
-     * @depends testGetParameterRow
-     * @dataProvider providerGetParameterRowAjax
-     */
-    public function testGetParameterRowAjax(array $data, string $matcher): void
-    {
-        ResponseRenderer::getInstance()->setAjax(true);
-        $this->assertStringContainsString(
-            $matcher,
-            $this->routines->getParameterRow($data),
-        );
-        ResponseRenderer::getInstance()->setAjax(false);
-    }
-
-    /**
-     * Data provider for testGetParameterRowAjax
-     *
-     * @return array<array{array<string, mixed>, string}>
-     */
-    public static function providerGetParameterRowAjax(): array
-    {
-        $data = [
-            'item_name' => '',
-            'item_original_name' => '',
-            'item_returnlength' => '',
-            'item_returnopts_num' => '',
-            'item_returnopts_text' => '',
-            'item_definition' => '',
-            'item_comment' => '',
-            'item_definer' => '',
-            'item_type' => 'PROCEDURE',
-            'item_type_toggle' => 'FUNCTION',
-            'item_original_type' => 'PROCEDURE',
-            'item_num_params' => 1,
-            'item_param_dir' => [0 => 'IN'],
-            'item_param_name' => [0 => 'foo'],
-            'item_param_type' => [0 => 'INT'],
-            'item_param_length' => [0 => ''],
-            'item_param_opts_num' => [0 => 'UNSIGNED'],
-            'item_param_opts_text' => [0 => ''],
-            'item_returntype' => '',
-            'item_isdeterministic' => '',
-            'item_securitytype_definer' => '',
-            'item_securitytype_invoker' => '',
-            'item_sqldataaccess' => '',
-        ];
-
-        return [
-            [
-                $data,
-                '<select name="item_param_dir[%s]"',
-            ],
-            [
-                $data,
-                '<input name="item_param_name[%s]"',
-            ],
-            [
-                $data,
-                '<select name="item_param_dir[%s]"',
-            ],
-            [
-                $data,
-                '<select name="item_param_opts_num[%s]"',
-            ],
-            [
-                $data,
-                '<a href="#" class="routine_param_remove_anchor"',
-            ],
-        ];
-    }
-
-    /**
-     * Test for getEditorForm
-     *
-     * @param array<string, mixed> $data Data for routine
-     *
-     * @depends testGetParameterRowAjax
-     * @dataProvider providerGetEditorForm1
-     */
-    public function testGetEditorForm1(array $data, string $matcher): void
-    {
-        $this->assertStringContainsString(
-            $matcher,
-            $this->routines->getEditorForm('add', '', $data),
-        );
-    }
-
-    /**
-     * Data provider for testGetEditorForm1
-     *
-     * @return array<array{array<string, mixed>, string}>
-     */
-    public static function providerGetEditorForm1(): array
-    {
-        $data = [
-            'item_name' => '',
-            'item_original_name' => '',
-            'item_returnlength' => '',
-            'item_returnopts_num' => '',
-            'item_returnopts_text' => '',
-            'item_definition' => '',
-            'item_comment' => '',
-            'item_definer' => '',
-            'item_type' => 'PROCEDURE',
-            'item_type_toggle' => 'FUNCTION',
-            'item_original_type' => 'PROCEDURE',
-            'item_num_params' => 0,
-            'item_param_dir' => [],
-            'item_param_name' => [],
-            'item_param_type' => [],
-            'item_param_length' => [],
-            'item_param_opts_num' => [],
-            'item_param_opts_text' => [],
-            'item_returntype' => '',
-            'item_isdeterministic' => '',
-            'item_securitytype_definer' => '',
-            'item_securitytype_invoker' => '',
-            'item_sqldataaccess' => '',
-        ];
-
-        return [
-            [
-                $data,
-                '<input name="add_item"',
-            ],
-            [
-                $data,
-                '<input type="text" name="item_name"',
-            ],
-            [
-                $data,
-                '<input name="item_type"',
-            ],
-            [
-                $data,
-                'name="routine_changetype"',
-            ],
-            [
-                $data,
-                'name="routine_addparameter"',
-            ],
-            [
-                $data,
-                'name="routine_removeparameter"',
-            ],
-            [
-                $data,
-                'select name="item_returntype"',
-            ],
-            [
-                $data,
-                'name="item_returnlength"',
-            ],
-            [
-                $data,
-                'select name="item_returnopts_num"',
-            ],
-            [
-                $data,
-                '<textarea name="item_definition"',
-            ],
-            [
-                $data,
-                'name="item_isdeterministic"',
-            ],
-            [
-                $data,
-                'name="item_definer"',
-            ],
-            [
-                $data,
-                'select name="item_securitytype"',
-            ],
-            [
-                $data,
-                'select name="item_sqldataaccess"',
-            ],
-            [
-                $data,
-                'name="item_comment"',
-            ],
-            [
-                $data,
-                'name="editor_process_add"',
-            ],
-        ];
-    }
-
-    /**
-     * Test for getEditorForm
-     *
-     * @param array<string, mixed> $data Data for routine
-     *
-     * @depends testGetParameterRowAjax
-     * @dataProvider providerGetEditorForm2
-     */
-    public function testGetEditorForm2(array $data, string $matcher): void
-    {
-        $this->assertStringContainsString(
-            $matcher,
-            $this->routines->getEditorForm('edit', 'change', $data),
-        );
-    }
-
-    /**
-     * Data provider for testGetEditorForm2
-     *
-     * @return array<array{array<string, mixed>, string}>
-     */
-    public static function providerGetEditorForm2(): array
-    {
-        $data = [
-            'item_name' => 'foo',
-            'item_original_name' => 'bar',
-            'item_returnlength' => '',
-            'item_returnopts_num' => '',
-            'item_returnopts_text' => '',
-            'item_definition' => 'SELECT 1',
-            'item_comment' => '',
-            'item_definer' => '',
-            'item_type' => 'PROCEDURE',
-            'item_type_toggle' => 'FUNCTION',
-            'item_original_type' => 'PROCEDURE',
-            'item_num_params' => 1,
-            'item_param_dir' => [0 => 'IN'],
-            'item_param_name' => [0 => 'baz'],
-            'item_param_type' => [0 => 'INT'],
-            'item_param_length' => [0 => '20'],
-            'item_param_opts_num' => [0 => 'UNSIGNED'],
-            'item_param_opts_text' => [0 => ''],
-            'item_returntype' => '',
-            'item_isdeterministic' => '',
-            'item_securitytype_definer' => '',
-            'item_securitytype_invoker' => '',
-            'item_sqldataaccess' => 'NO SQL',
-        ];
-
-        return [
-            [
-                $data,
-                'name="edit_item"',
-            ],
-            [
-                $data,
-                'name="item_name"',
-            ],
-            [
-                $data,
-                '<input name="item_type" type="hidden" value="FUNCTION"',
-            ],
-            [
-                $data,
-                'name="routine_changetype"',
-            ],
-            [
-                $data,
-                'name="routine_addparameter"',
-            ],
-            [
-                $data,
-                'name="routine_removeparameter"',
-            ],
-            [
-                $data,
-                'name="item_returntype"',
-            ],
-            [
-                $data,
-                'name="item_returnlength"',
-            ],
-            [
-                $data,
-                'name="item_returnopts_num"',
-            ],
-            [
-                $data,
-                '<textarea name="item_definition"',
-            ],
-            [
-                $data,
-                'name="item_isdeterministic"',
-            ],
-            [
-                $data,
-                'name="item_definer"',
-            ],
-            [
-                $data,
-                '<select name="item_securitytype"',
-            ],
-            [
-                $data,
-                '<select name="item_sqldataaccess"',
-            ],
-            [
-                $data,
-                'name="item_comment"',
-            ],
-            [
-                $data,
-                'name="editor_process_edit"',
-            ],
-        ];
-    }
-
-    /**
-     * Test for getEditorForm
-     *
-     * @param array<string, mixed> $data Data for routine
-     *
-     * @depends testGetParameterRowAjax
-     * @dataProvider providerGetEditorForm3
-     */
-    public function testGetEditorForm3(array $data, string $matcher): void
-    {
-        ResponseRenderer::getInstance()->setAjax(true);
-        $this->assertStringContainsString(
-            $matcher,
-            $this->routines->getEditorForm('edit', 'remove', $data),
-        );
-        ResponseRenderer::getInstance()->setAjax(false);
-    }
-
-    /**
-     * Data provider for testGetEditorForm3
-     *
-     * @return array<array{array<string, mixed>, string}>
-     */
-    public static function providerGetEditorForm3(): array
-    {
-        $data = [
-            'item_name' => 'foo',
-            'item_original_name' => 'bar',
-            'item_returnlength' => '',
-            'item_returnopts_num' => 'UNSIGNED',
-            'item_returnopts_text' => '',
-            'item_definition' => 'SELECT 1',
-            'item_comment' => '',
-            'item_definer' => '',
-            'item_type' => 'FUNCTION',
-            'item_type_toggle' => 'PROCEDURE',
-            'item_original_type' => 'FUNCTION',
-            'item_num_params' => 1,
-            'item_param_dir' => [0 => ''],
-            'item_param_name' => [0 => 'baz'],
-            'item_param_type' => [0 => 'INT'],
-            'item_param_length' => [0 => '20'],
-            'item_param_opts_num' => [0 => 'UNSIGNED'],
-            'item_param_opts_text' => [0 => ''],
-            'item_returntype' => 'INT',
-            'item_isdeterministic' => '',
-            'item_securitytype_definer' => '',
-            'item_securitytype_invoker' => '',
-            'item_sqldataaccess' => 'NO SQL',
-        ];
-
-        return [
-            [
-                $data,
-                'name="edit_item"',
-            ],
-            [
-                $data,
-                'name="item_name"',
-            ],
-            [
-                $data,
-                '<select name="item_type"',
-            ],
-            [
-                $data,
-                'id="addRoutineParameterButton"',
-            ],
-            [
-                $data,
-                '<select name="item_returntype"',
-            ],
-            [
-                $data,
-                'name="item_returnlength"',
-            ],
-            [
-                $data,
-                '<select name="item_returnopts_num"',
-            ],
-            [
-                $data,
-                '<textarea name="item_definition"',
-            ],
-            [
-                $data,
-                'name="item_isdeterministic"',
-            ],
-            [
-                $data,
-                'name="item_definer"',
-            ],
-            [
-                $data,
-                '<select name="item_securitytype"',
-            ],
-            [
-                $data,
-                '<select name="item_sqldataaccess"',
-            ],
-            [
-                $data,
-                'name="item_comment"',
-            ],
-            [
-                $data,
-                'name="ajax_request"',
-            ],
-            [
-                $data,
-                'name="editor_process_edit"',
-            ],
-        ];
-    }
-
-    /**
-     * Test for getEditorForm
-     *
-     * @param array<string, mixed> $data Data for routine
-     *
-     * @depends testGetParameterRowAjax
-     * @dataProvider providerGetEditorForm4
-     */
-    public function testGetEditorForm4(array $data, string $matcher): void
-    {
-        $this->assertStringContainsString(
-            $matcher,
-            $this->routines->getEditorForm('edit', 'change', $data),
-        );
-    }
-
-    /**
-     * Data provider for testGetEditorForm4
-     *
-     * @return array<array{array<string, mixed>, string}>
-     */
-    public static function providerGetEditorForm4(): array
-    {
-        $data = [
-            'item_name' => 'foo',
-            'item_original_name' => 'bar',
-            'item_returnlength' => '',
-            'item_returnopts_num' => '',
-            'item_returnopts_text' => '',
-            'item_definition' => 'SELECT 1',
-            'item_comment' => '',
-            'item_definer' => '',
-            'item_type' => 'FUNCTION',
-            'item_type_toggle' => 'PROCEDURE',
-            'item_original_type' => 'PROCEDURE',
-            'item_num_params' => 1,
-            'item_param_dir' => [0 => 'IN'],
-            'item_param_name' => [0 => 'baz'],
-            'item_param_type' => [0 => 'INT'],
-            'item_param_length' => [0 => '20'],
-            'item_param_opts_num' => [0 => 'UNSIGNED'],
-            'item_param_opts_text' => [0 => ''],
-            'item_returntype' => '',
-            'item_isdeterministic' => '',
-            'item_securitytype_definer' => '',
-            'item_securitytype_invoker' => '',
-            'item_sqldataaccess' => 'NO SQL',
-        ];
-
-        return [
-            [
-                $data,
-                '<input name="item_type" type="hidden" value="PROCEDURE"',
-            ],
-        ];
-    }
-
-    /**
-     * Test for getExecuteForm
-     *
-     * @param array<string, mixed> $data Data for routine
-     *
-     * @dataProvider providerGetExecuteForm1
-     */
-    public function testGetExecuteForm1(array $data, string $matcher): void
-    {
-        $GLOBALS['cfg']['ShowFunctionFields'] = true;
-
-        $this->assertStringContainsString(
-            $matcher,
-            $this->routines->getExecuteForm($data),
-        );
-    }
-
-    /**
-     * Data provider for testGetExecuteForm1
-     *
-     * @return array<array{array<string, mixed>, string}>
-     */
-    public static function providerGetExecuteForm1(): array
-    {
-        $data = [
-            'item_name' => 'foo',
-            'item_returnlength' => '',
-            'item_returnopts_num' => '',
-            'item_returnopts_text' => '',
-            'item_definition' => 'SELECT 1;',
-            'item_comment' => '',
-            'item_definer' => '',
-            'item_type' => 'PROCEDURE',
-            'item_num_params' => 6,
-            'item_param_dir' => [
-                0 => 'IN',
-                1 => 'OUT',
-                2 => 'IN',
-                3 => 'IN',
-                4 => 'IN',
-                5 => 'IN',
-            ],
-            'item_param_name' => [
-                0 => 'foo',
-                1 => 'foa',
-                2 => 'fob',
-                3 => 'foc',
-                4 => 'fod',
-                5 => 'foe',
-            ],
-            'item_param_type' => [
-                0 => 'DATE',
-                1 => 'VARCHAR',
-                2 => 'DATETIME',
-                3 => 'GEOMETRY',
-                4 => 'ENUM',
-                5 => 'SET',
-            ],
-            'item_param_length' => [
-                0 => '',
-                1 => '22',
-                2 => '',
-                3 => '',
-                4 => "'a','b'",
-                5 => "'a','b'",
-            ],
-            'item_param_length_arr' => [
-                0 => [],
-                1 => ['22'],
-                2 => [],
-                3 => [],
-                4 => [
-                    "'a'",
-                    "'b'",
-                ],
-                5 => [
-                    "'a'",
-                    "'b'",
-                ],
-            ],
-            'item_param_opts_num' => [
-                0 => '',
-                1 => '',
-                2 => '',
-                3 => '',
-                4 => '',
-                5 => '',
-            ],
-            'item_param_opts_text' => [
-                0 => '',
-                1 => 'utf8',
-                2 => '',
-                3 => '',
-                4 => '',
-                5 => '',
-            ],
-            'item_returntype' => '',
-            'item_isdeterministic' => '',
-            'item_securitytype_definer' => '',
-            'item_securitytype_invoker' => '',
-            'item_sqldataaccess' => '',
-        ];
-
-        return [
-            [
-                $data,
-                'name="item_name"',
-            ],
-            [
-                $data,
-                'name="funcs[foo]"',
-            ],
-            [
-                $data,
-                '<input class="datefield" type="text" name="params[foo]">',
-            ],
-            [
-                $data,
-                'name="funcs[fob]"',
-            ],
-            [
-                $data,
-                '<input class="datetimefield" type="text" name="params[fob]"',
-            ],
-            [
-                $data,
-                'name="params[fod][]"',
-            ],
-            [
-                $data,
-                'name="params[foe][]"',
-            ],
-            [
-                $data,
-                'name="execute_routine"',
-            ],
-        ];
-    }
-
-    /**
-     * Test for getExecuteForm
-     *
-     * @param array<string, string|int|array<mixed>> $data Data for routine
-     *
-     * @dataProvider providerGetExecuteForm2
-     */
-    public function testGetExecuteForm2(array $data, string $matcher): void
-    {
-        ResponseRenderer::getInstance()->setAjax(true);
-        $this->assertStringContainsString(
-            $matcher,
-            $this->routines->getExecuteForm($data),
-        );
-        ResponseRenderer::getInstance()->setAjax(false);
-    }
-
-    /**
-     * Data provider for testGetExecuteForm2
-     *
-     * @return array<array{array<string, string|int|array<mixed>>, string}>
-     */
-    public static function providerGetExecuteForm2(): array
-    {
-        $data = [
-            'item_name' => 'foo',
-            'item_returnlength' => '',
-            'item_returnopts_num' => '',
-            'item_returnopts_text' => '',
-            'item_definition' => 'SELECT 1;',
-            'item_comment' => '',
-            'item_definer' => '',
-            'item_type' => 'PROCEDURE',
-            'item_num_params' => 6,
-            'item_param_dir' => [
-                0 => 'IN',
-                1 => 'OUT',
-                2 => 'IN',
-                3 => 'IN',
-                4 => 'IN',
-                5 => 'IN',
-            ],
-            'item_param_name' => [
-                0 => 'foo',
-                1 => 'foa',
-                2 => 'fob',
-                3 => 'foc',
-                4 => 'fod',
-                5 => 'foe',
-            ],
-            'item_param_type' => [
-                0 => 'DATE',
-                1 => 'VARCHAR',
-                2 => 'DATETIME',
-                3 => 'GEOMETRY',
-                4 => 'ENUM',
-                5 => 'SET',
-            ],
-            'item_param_length' => [
-                0 => '',
-                1 => '22',
-                2 => '',
-                3 => '',
-                4 => "'a','b'",
-                5 => "'a','b'",
-            ],
-            'item_param_length_arr' => [
-                0 => [],
-                1 => ['22'],
-                2 => [],
-                3 => [],
-                4 => [
-                    "'a'",
-                    "'b'",
-                ],
-                5 => [
-                    "'a'",
-                    "'b'",
-                ],
-            ],
-            'item_param_opts_num' => [
-                0 => '',
-                1 => '',
-                2 => '',
-                3 => '',
-                4 => '',
-                5 => '',
-            ],
-            'item_param_opts_text' => [
-                0 => '',
-                1 => 'utf8',
-                2 => '',
-                3 => '',
-                4 => '',
-                5 => '',
-            ],
-            'item_returntype' => '',
-            'item_isdeterministic' => '',
-            'item_securitytype_definer' => '',
-            'item_securitytype_invoker' => '',
-            'item_sqldataaccess' => '',
-        ];
-
-        return [
-            [
-                $data,
-                'name="execute_routine"',
-            ],
-            [
-                $data,
-                'name="ajax_request"',
-            ],
-        ];
-    }
-
-    /**
      * Test for getQueryFromRequest
      *
      * @param array<string, string|array<string>> $request Request
      * @param string                              $query   Query
-     * @param int                                 $num_err Error number
-     *
-     * @dataProvider providerGetQueryFromRequest
+     * @param int                                 $numErr  Error number
      */
-    public function testGetQueryFromRequest(array $request, string $query, int $num_err): void
+    #[DataProvider('providerGetQueryFromRequest')]
+    public function testGetQueryFromRequest(array $request, string $query, int $numErr): void
     {
         $GLOBALS['cfg']['ShowFunctionFields'] = false;
 
         $GLOBALS['errors'] = [];
 
-        $old_dbi = $GLOBALS['dbi'] ?? null;
+        $oldDbi = $GLOBALS['dbi'] ?? null;
         $dbi = $this->getMockBuilder(DatabaseInterface::class)
             ->disableOriginalConstructor()
             ->getMock();
@@ -1148,39 +252,23 @@ class RoutinesTest extends AbstractTestCase
             ->will(
                 $this->returnValueMap(
                     [
-                        [
-                            'foo',
-                            Connection::TYPE_USER,
-                            'foo',
-                        ],
-                        [
-                            "foo's bar",
-                            Connection::TYPE_USER,
-                            "foo\'s bar",
-                        ],
-                        [
-                            '',
-                            Connection::TYPE_USER,
-                            '',
-                        ],
+                        ['foo', Connection::TYPE_USER, 'foo'],
+                        ["foo's bar", Connection::TYPE_USER, "foo\'s bar"],
+                        ['', Connection::TYPE_USER, ''],
                     ],
                 ),
             );
         $GLOBALS['dbi'] = $dbi;
 
-        $routines = new Routines(
-            $dbi,
-            new Template(),
-            ResponseRenderer::getInstance(),
-        );
+        $routines = new Routines($dbi);
 
         unset($_POST);
         $_POST = $request;
         $this->assertEquals($query, $routines->getQueryFromRequest());
-        $this->assertCount($num_err, $GLOBALS['errors']);
+        $this->assertCount($numErr, $GLOBALS['errors']);
 
         // reset
-        $GLOBALS['dbi'] = $old_dbi;
+        $GLOBALS['dbi'] = $oldDbi;
     }
 
     /**
@@ -1229,30 +317,12 @@ class RoutinesTest extends AbstractTestCase
                     'item_definer' => 'someuser@somehost',
                     'item_type' => 'PROCEDURE',
                     'item_num_params' => '2',
-                    'item_param_dir' => [
-                        'IN',
-                        'INOUT',
-                    ],
-                    'item_param_name' => [
-                        'pa`ram',
-                        'par 2',
-                    ],
-                    'item_param_type' => [
-                        'INT',
-                        'ENUM',
-                    ],
-                    'item_param_length' => [
-                        '10',
-                        '\'a\', \'b\'',
-                    ],
-                    'item_param_opts_num' => [
-                        'ZEROFILL',
-                        '',
-                    ],
-                    'item_param_opts_text' => [
-                        'utf8',
-                        'latin1',
-                    ],
+                    'item_param_dir' => ['IN', 'INOUT'],
+                    'item_param_name' => ['pa`ram', 'par 2'],
+                    'item_param_type' => ['INT', 'ENUM'],
+                    'item_param_length' => ['10', '\'a\', \'b\''],
+                    'item_param_opts_num' => ['ZEROFILL', ''],
+                    'item_param_opts_text' => ['utf8', 'latin1'],
                     'item_returntype' => '',
                     'item_securitytype' => 'DEFINER',
                     'item_sqldataaccess' => 'foobar',
@@ -1352,30 +422,12 @@ class RoutinesTest extends AbstractTestCase
                     'item_definer' => '',
                     'item_type' => 'PROCEDURE',
                     'item_num_params' => '2',
-                    'item_param_dir' => [
-                        'FAIL',
-                        'INOUT',
-                    ], // invalid direction
-                    'item_param_name' => [
-                        'pa`ram',
-                        'goo',
-                    ],
-                    'item_param_type' => [
-                        'INT',
-                        'ENUM',
-                    ],
-                    'item_param_length' => [
-                        '10',
-                        '',
-                    ], // missing ENUM values
-                    'item_param_opts_num' => [
-                        'ZEROFILL',
-                        '',
-                    ],
-                    'item_param_opts_text' => [
-                        'utf8',
-                        'latin1',
-                    ],
+                    'item_param_dir' => ['FAIL', 'INOUT'], // invalid direction
+                    'item_param_name' => ['pa`ram', 'goo'],
+                    'item_param_type' => ['INT', 'ENUM'],
+                    'item_param_length' => ['10', ''], // missing ENUM values
+                    'item_param_opts_num' => ['ZEROFILL', ''],
+                    'item_param_opts_text' => ['utf8', 'latin1'],
                     'item_returntype' => '',
                     'item_securitytype' => 'DEFINER',
                     'item_sqldataaccess' => 'foobar', // invalid, will just be ignored without throwing errors
@@ -1457,11 +509,7 @@ class RoutinesTest extends AbstractTestCase
         $dbiDummy = $this->createDbiDummy();
         $dbiDummy->addResult(
             'SHOW FUNCTION STATUS;',
-            [
-                ['db_test', 'test_func', 'FUNCTION'],
-                ['test_db', '', 'FUNCTION'],
-                ['test_db', 'test_func', 'PROCEDURE'],
-            ],
+            [['db_test', 'test_func', 'FUNCTION'], ['test_db', '', 'FUNCTION'], ['test_db', 'test_func', 'PROCEDURE']],
             ['Db', 'Name', 'Type'],
         );
 

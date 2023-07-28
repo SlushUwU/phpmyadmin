@@ -7,13 +7,15 @@ namespace PhpMyAdmin\Tests\Tracking;
 use PhpMyAdmin\Cache;
 use PhpMyAdmin\ConfigStorage\Relation;
 use PhpMyAdmin\ConfigStorage\RelationParameters;
-use PhpMyAdmin\Dbal\TableName;
+use PhpMyAdmin\Identifiers\TableName;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tracking\TrackedTable;
 use PhpMyAdmin\Tracking\Tracker;
 use PhpMyAdmin\Tracking\TrackingChecker;
+use PHPUnit\Framework\Attributes\CoversClass;
+use ReflectionProperty;
 
-/** @covers \PhpMyAdmin\Tracking\TrackingChecker */
+#[CoversClass(TrackingChecker::class)]
 class TrackingCheckerTest extends AbstractTestCase
 {
     private TrackingChecker $trackingChecker;
@@ -27,12 +29,12 @@ class TrackingCheckerTest extends AbstractTestCase
 
         $GLOBALS['dbi'] = $this->createDatabaseInterface();
 
-        $_SESSION['relation'] = [];
-        $_SESSION['relation'][$GLOBALS['server']] = RelationParameters::fromArray([
+        $relationParameters = RelationParameters::fromArray([
             'db' => 'pmadb',
             'tracking' => 'tracking',
             'trackingwork' => true,
-        ])->toArray();
+        ]);
+        (new ReflectionProperty(Relation::class, 'cache'))->setValue(null, $relationParameters);
 
         $this->trackingChecker = new TrackingChecker(
             $GLOBALS['dbi'],
@@ -52,8 +54,8 @@ class TrackingCheckerTest extends AbstractTestCase
         Tracker::enable();
 
         $expectation = [
-            0 => new TrackedTable(TableName::fromValue('0'), true),
-            'actor' => new TrackedTable(TableName::fromValue('actor'), false),
+            0 => new TrackedTable(TableName::from('0'), true),
+            'actor' => new TrackedTable(TableName::from('actor'), false),
         ];
 
         $actual = $this->trackingChecker->getTrackedTables('dummyDb');

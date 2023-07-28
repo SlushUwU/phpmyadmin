@@ -46,15 +46,15 @@ class Header
     /**
      * The page title
      */
-    private string $title;
+    private string $title = '';
     /**
      * The value for the id attribute for the body tag
      */
-    private string $bodyId;
+    private string $bodyId = '';
     /**
      * Whether to show the top menu
      */
-    private bool $menuEnabled;
+    private bool $menuEnabled = false;
     /**
      * Whether to show the warnings
      */
@@ -62,11 +62,11 @@ class Header
     /**
      * Whether we are servicing an ajax request.
      */
-    private bool $isAjax;
+    private bool $isAjax = false;
     /**
      * Whether to display anything
      */
-    private bool $isEnabled;
+    private bool $isEnabled = true;
     /**
      * Whether the HTTP headers (and possibly some HTML)
      * have already been sent to the browser
@@ -85,13 +85,7 @@ class Header
     public function __construct()
     {
         $this->template = new Template();
-
-        $this->isEnabled = true;
-        $this->isAjax = false;
-        $this->bodyId = '';
-        $this->title = '';
         $this->console = new Console(new Relation($GLOBALS['dbi']), $this->template);
-        $this->menuEnabled = false;
         if ($GLOBALS['dbi'] !== null) {
             $this->menuEnabled = true;
             $this->menu = new Menu($GLOBALS['dbi'], $GLOBALS['db'] ?? '', $GLOBALS['table'] ?? '');
@@ -132,7 +126,7 @@ class Header
      * Returns, as an array, a list of parameters
      * used on the client side
      *
-     * @return array
+     * @return mixed[]
      */
     public function getJsParams(): array
     {
@@ -427,7 +421,7 @@ class Header
     }
 
     /** @return array<string, string> */
-    private function getHttpHeaders(): array
+    public function getHttpHeaders(): array
     {
         $headers = [];
 
@@ -445,7 +439,7 @@ class Header
         /**
          * Re-enable possible disabled XSS filters.
          *
-         * @see https://www.owasp.org/index.php/List_of_useful_HTTP_headers
+         * @see https://developer.mozilla.org/docs/Web/HTTP/Headers/X-XSS-Protection
          */
         $headers['X-XSS-Protection'] = '1; mode=block';
 
@@ -453,23 +447,32 @@ class Header
          * "nosniff", prevents Internet Explorer and Google Chrome from MIME-sniffing
          * a response away from the declared content-type.
          *
-         * @see https://www.owasp.org/index.php/List_of_useful_HTTP_headers
+         * @see https://developer.mozilla.org/docs/Web/HTTP/Headers/X-Content-Type-Options
          */
         $headers['X-Content-Type-Options'] = 'nosniff';
 
         /**
          * Adobe cross-domain-policies.
          *
-         * @see https://www.adobe.com/devnet/articles/crossdomain_policy_file_spec.html
+         * @see https://www.sentrium.co.uk/labs/application-security-101-http-headers
          */
         $headers['X-Permitted-Cross-Domain-Policies'] = 'none';
 
         /**
          * Robots meta tag.
          *
-         * @see https://developers.google.com/webmasters/control-crawl-index/docs/robots_meta_tag
+         * @see https://developers.google.com/search/docs/crawling-indexing/robots-meta-tag
          */
         $headers['X-Robots-Tag'] = 'noindex, nofollow';
+
+        /**
+         * The HTTP Permissions-Policy header provides a mechanism to allow and deny
+         * the use of browser features in a document
+         * or within any <iframe> elements in the document.
+         *
+         * @see https://developer.mozilla.org/docs/Web/HTTP/Headers/Permissions-Policy
+         */
+        $headers['Permissions-Policy'] = 'fullscreen=(self), oversized-images=(self), interest-cohort=()';
 
         $headers = array_merge($headers, Core::getNoCacheHeaders());
 

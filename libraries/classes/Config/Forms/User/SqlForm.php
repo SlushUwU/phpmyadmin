@@ -13,7 +13,7 @@ use function __;
 
 class SqlForm extends BaseForm
 {
-    /** @return array */
+    /** @return mixed[] */
     public static function getForms(): array
     {
         return [
@@ -29,12 +29,7 @@ class SqlForm extends BaseForm
                 'EnableAutocompleteForTablesAndColumns',
                 'DefaultForeignKeyChecks',
             ],
-            'Sql_box' => [
-                'SQLQuery/Edit',
-                'SQLQuery/Explain',
-                'SQLQuery/ShowAsPHP',
-                'SQLQuery/Refresh',
-            ],
+            'Sql_box' => ['SQLQuery/Edit', 'SQLQuery/Explain', 'SQLQuery/ShowAsPHP', 'SQLQuery/Refresh'],
         ];
     }
 

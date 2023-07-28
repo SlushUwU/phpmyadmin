@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests;
 
+use PhpMyAdmin\Config\Settings\Server;
 use PhpMyAdmin\ConfigStorage\Relation;
 use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\Dbal\Connection;
@@ -15,8 +16,10 @@ use PhpMyAdmin\Query\Utilities;
 use PhpMyAdmin\SqlParser\Context;
 use PhpMyAdmin\SystemDatabase;
 use PhpMyAdmin\Utils\SessionCache;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 
-/** @covers \PhpMyAdmin\DatabaseInterface */
+#[CoversClass(DatabaseInterface::class)]
 class DatabaseInterfaceTest extends AbstractTestCase
 {
     protected function setUp(): void
@@ -41,13 +44,13 @@ class DatabaseInterfaceTest extends AbstractTestCase
     /**
      * Tests for DBI::getCurrentUser() method.
      *
-     * @param array|false $value           value
-     * @param string      $string          string
-     * @param array       $expected        expected result
-     * @param bool        $needsSecondCall The test will need to call another time the DB
-     *
-     * @dataProvider currentUserData
+     * @param string[][]|false $value           value
+     * @param string           $string          string
+     * @param mixed[]          $expected        expected result
+     * @param bool             $needsSecondCall The test will need to call another time the DB
+     * @psalm-param list<non-empty-list<string>>|false $value
      */
+    #[DataProvider('currentUserData')]
     public function testGetCurrentUser(array|false $value, string $string, array $expected, bool $needsSecondCall): void
     {
         $dummyDbi = $this->createDbiDummy();
@@ -70,38 +73,14 @@ class DatabaseInterfaceTest extends AbstractTestCase
     /**
      * Data provider for getCurrentUser() tests.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function currentUserData(): array
     {
         return [
-            [
-                [['pma@localhost']],
-                'pma@localhost',
-                [
-                    'pma',
-                    'localhost',
-                ],
-                false,
-            ],
-            [
-                [['@localhost']],
-                '@localhost',
-                [
-                    '',
-                    'localhost',
-                ],
-                false,
-            ],
-            [
-                false,
-                '@',
-                [
-                    '',
-                    '',
-                ],
-                true,
-            ],
+            [[['pma@localhost']], 'pma@localhost', ['pma', 'localhost'], false],
+            [[['@localhost']], '@localhost', ['', 'localhost'], false],
+            [false, '@', ['', ''], true],
         ];
     }
 
@@ -140,7 +119,6 @@ class DatabaseInterfaceTest extends AbstractTestCase
     public function testPostConnectShouldNotCallSetVersionIfNoVersion(): void
     {
         $GLOBALS['lang'] = 'en';
-        $GLOBALS['cfg']['Server']['SessionTimeZone'] = '';
         LanguageManager::getInstance()->availableLanguages();
 
         $mock = $this->getMockBuilder(DatabaseInterface::class)
@@ -154,7 +132,7 @@ class DatabaseInterfaceTest extends AbstractTestCase
 
         $mock->expects($this->never())->method('setVersion');
 
-        $mock->postConnect();
+        $mock->postConnect(new Server(['SessionTimeZone' => '']));
     }
 
     /**
@@ -164,7 +142,6 @@ class DatabaseInterfaceTest extends AbstractTestCase
     public function testPostConnectShouldCallSetVersionOnce(): void
     {
         $GLOBALS['lang'] = 'en';
-        $GLOBALS['cfg']['Server']['SessionTimeZone'] = '';
         $versionQueryResult = [
             '@@version' => '10.20.7-MariaDB-1:10.9.3+maria~ubu2204',
             '@@version_comment' => 'mariadb.org binary distribution',
@@ -182,7 +159,7 @@ class DatabaseInterfaceTest extends AbstractTestCase
 
         $mock->expects($this->once())->method('setVersion')->with($versionQueryResult);
 
-        $mock->postConnect();
+        $mock->postConnect(new Server(['SessionTimeZone' => '']));
     }
 
     /**
@@ -194,9 +171,8 @@ class DatabaseInterfaceTest extends AbstractTestCase
      * @param bool  $isMariaDb  True if mariadb
      * @param bool  $isPercona  True if percona
      * @phpstan-param array<array-key, mixed> $version
-     *
-     * @dataProvider provideDatabaseVersionData
      */
+    #[DataProvider('provideDatabaseVersionData')]
     public function testPostConnectShouldSetVersion(
         array $version,
         int $versionInt,
@@ -204,7 +180,6 @@ class DatabaseInterfaceTest extends AbstractTestCase
         bool $isPercona,
     ): void {
         $GLOBALS['lang'] = 'en';
-        $GLOBALS['cfg']['Server']['SessionTimeZone'] = '';
         LanguageManager::getInstance()->availableLanguages();
 
         $mock = $this->getMockBuilder(DatabaseInterface::class)
@@ -216,7 +191,7 @@ class DatabaseInterfaceTest extends AbstractTestCase
             ->method('fetchSingleRow')
             ->will($this->returnValue($version));
 
-        $mock->postConnect();
+        $mock->postConnect(new Server(['SessionTimeZone' => '']));
 
         $this->assertEquals($mock->getVersion(), $versionInt);
         $this->assertEquals($mock->isMariaDB(), $isMariaDb);
@@ -260,64 +235,40 @@ class DatabaseInterfaceTest extends AbstractTestCase
     /**
      * Test error formatting
      *
-     * @param int    $error_number  Error code
-     * @param string $error_message Error message as returned by server
-     * @param string $match         Expected text
-     *
-     * @dataProvider errorData
+     * @param int    $errorNumber  Error code
+     * @param string $errorMessage Error message as returned by server
+     * @param string $match        Expected text
      */
-    public function testFormatError(int $error_number, string $error_message, string $match): void
+    #[DataProvider('errorData')]
+    public function testFormatError(int $errorNumber, string $errorMessage, string $match): void
     {
         $this->assertStringContainsString(
             $match,
-            Utilities::formatError($error_number, $error_message),
+            Utilities::formatError($errorNumber, $errorMessage),
         );
     }
 
+    /** @return mixed[][] */
     public static function errorData(): array
     {
         return [
-            [
-                2002,
-                'msg',
-                'The server is not responding',
-            ],
-            [
-                2003,
-                'msg',
-                'The server is not responding',
-            ],
-            [
-                1698,
-                'msg',
-                'index.php?route=/logout',
-            ],
-            [
-                1005,
-                'msg',
-                'index.php?route=/server/engines',
-            ],
-            [
-                1005,
-                'errno: 13',
-                'Please check privileges',
-            ],
-            [
-                -1,
-                'error message',
-                'error message',
-            ],
+            [2002, 'msg', 'The server is not responding'],
+            [2003, 'msg', 'The server is not responding'],
+            [1698, 'msg', 'index.php?route=/logout'],
+            [1005, 'msg', 'index.php?route=/server/engines'],
+            [1005, 'errno: 13', 'Please check privileges'],
+            [-1, 'error message', 'error message'],
         ];
     }
 
     /**
      * Tests for DBI::isAmazonRds() method.
      *
-     * @param array $value    value
-     * @param bool  $expected expected result
-     *
-     * @dataProvider isAmazonRdsData
+     * @param string[][] $value    value
+     * @param bool       $expected expected result
+     * @psalm-param list<non-empty-list<string>> $value
      */
+    #[DataProvider('isAmazonRdsData')]
     public function testIsAmazonRdsData(array $value, bool $expected): void
     {
         $dummyDbi = $this->createDbiDummy();
@@ -338,27 +289,15 @@ class DatabaseInterfaceTest extends AbstractTestCase
     /**
      * Data provider for isAmazonRds() tests.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function isAmazonRdsData(): array
     {
         return [
-            [
-                [['/usr']],
-                false,
-            ],
-            [
-                [['E:/mysql']],
-                false,
-            ],
-            [
-                [['/rdsdbbin/mysql/']],
-                true,
-            ],
-            [
-                [['/rdsdbbin/mysql-5.7.18/']],
-                true,
-            ],
+            [[['/usr']], false],
+            [[['E:/mysql']], false],
+            [[['/rdsdbbin/mysql/']], true],
+            [[['/rdsdbbin/mysql-5.7.18/']], true],
         ];
     }
 
@@ -369,45 +308,25 @@ class DatabaseInterfaceTest extends AbstractTestCase
      * @param int    $expected expected numeric version
      * @param int    $major    expected major version
      * @param bool   $upgrade  whether upgrade should ne needed
-     *
-     * @dataProvider versionData
      */
+    #[DataProvider('versionData')]
     public function testVersion(string $version, int $expected, int $major, bool $upgrade): void
     {
-        $ver_int = Utilities::versionToInt($version);
-        $this->assertEquals($expected, $ver_int);
-        $this->assertEquals($major, (int) ($ver_int / 10000));
+        $verInt = Utilities::versionToInt($version);
+        $this->assertEquals($expected, $verInt);
+        $this->assertEquals($major, (int) ($verInt / 10000));
         $mysqlMinVersion = 50500;
-        $this->assertEquals($upgrade, $ver_int < $mysqlMinVersion);
+        $this->assertEquals($upgrade, $verInt < $mysqlMinVersion);
     }
 
+    /** @return mixed[][] */
     public static function versionData(): array
     {
         return [
-            [
-                '5.0.5',
-                50005,
-                5,
-                true,
-            ],
-            [
-                '5.05.01',
-                50501,
-                5,
-                false,
-            ],
-            [
-                '5.6.35',
-                50635,
-                5,
-                false,
-            ],
-            [
-                '10.1.22-MariaDB-',
-                100122,
-                10,
-                false,
-            ],
+            ['5.0.5', 50005, 5, true],
+            ['5.05.01', 50501, 5, false],
+            ['5.6.35', 50635, 5, false],
+            ['10.1.22-MariaDB-', 100122, 10, false],
         ];
     }
 
@@ -419,10 +338,10 @@ class DatabaseInterfaceTest extends AbstractTestCase
         $dummyDbi = $this->createDbiDummy();
         $dbi = $this->createDatabaseInterface($dummyDbi);
 
-        $dummyDbi->addResult('SET collation_connection = \'utf8_czech_ci\';', [true]);
-        $dummyDbi->addResult('SET collation_connection = \'utf8mb4_bin_ci\';', [true]);
-        $dummyDbi->addResult('SET collation_connection = \'utf8_czech_ci\';', [true]);
-        $dummyDbi->addResult('SET collation_connection = \'utf8_bin_ci\';', [true]);
+        $dummyDbi->addResult('SET collation_connection = \'utf8_czech_ci\';', true);
+        $dummyDbi->addResult('SET collation_connection = \'utf8mb4_bin_ci\';', true);
+        $dummyDbi->addResult('SET collation_connection = \'utf8_czech_ci\';', true);
+        $dummyDbi->addResult('SET collation_connection = \'utf8_bin_ci\';', true);
 
         $GLOBALS['charset_connection'] = 'utf8mb4';
         $dbi->setCollation('utf8_czech_ci');
@@ -557,8 +476,8 @@ class DatabaseInterfaceTest extends AbstractTestCase
         $dbi = $this->createDatabaseInterface($dummyDbi);
 
         $sql = 'insert into PMA_bookmark A,B values(1, 2)';
-        $dummyDbi->addResult($sql, [true]);
-        $dummyDbi->addResult($sql, [true]);
+        $dummyDbi->addResult($sql, true);
+        $dummyDbi->addResult($sql, true);
         $dummyDbi->addResult('Invalid query', false);
 
         $this->assertInstanceOf(
@@ -589,16 +508,12 @@ class DatabaseInterfaceTest extends AbstractTestCase
         $dummyDbi->addResult('SHOW DATABASES', [['db1'], ['db2']], ['Database']);
         $dummyDbi->addResult(
             'SELECT @@collation_database',
-            [
-                ['utf8_general_ci'],
-            ],
+            [['utf8_general_ci']],
             ['@@collation_database'],
         );
         $dummyDbi->addResult(
             'SELECT @@collation_database',
-            [
-                ['utf8_general_ci'],
-            ],
+            [['utf8_general_ci']],
             ['@@collation_database'],
         );
         $dummyDbi->addResult(
@@ -733,15 +648,7 @@ class DatabaseInterfaceTest extends AbstractTestCase
         $dummyDbi->addSelectDb('db1');
         $dummyDbi->addSelectDb('db2');
 
-        $databaseList = $dbi->getDatabasesFull(
-            null,
-            true,
-            Connection::TYPE_USER,
-            'SCHEMA_DATA_LENGTH',
-            'ASC',
-            0,
-            100,
-        );
+        $databaseList = $dbi->getDatabasesFull(null, true, Connection::TYPE_USER, 'SCHEMA_DATA_LENGTH', 'ASC', 0, 100);
 
         $this->assertSame([
             [
@@ -792,9 +699,8 @@ class DatabaseInterfaceTest extends AbstractTestCase
      * @param bool  $isMariaDb  True if mariadb
      * @param bool  $isPercona  True if percona
      * @phpstan-param array<array-key, mixed> $version
-     *
-     * @dataProvider provideDatabaseVersionData
      */
+    #[DataProvider('provideDatabaseVersionData')]
     public function testSetVersion(
         array $version,
         int $versionInt,
@@ -815,7 +721,7 @@ class DatabaseInterfaceTest extends AbstractTestCase
     /**
      * Data provider for setVersion() tests.
      *
-     * @return array
+     * @return mixed[]
      * @psalm-return array<int, array{array<array-key, mixed>, int, bool, bool}>
      */
     public static function provideDatabaseVersionData(): array
@@ -839,28 +745,12 @@ class DatabaseInterfaceTest extends AbstractTestCase
                 true,
                 false,
             ],
-            [
-                [
-                    '@@version' => '7.10.3',
-                    '@@version_comment' => 'MySQL Community Server (GPL)',
-                ],
-                71003,
-                false,
-                false,
-            ],
-            [
-                [
-                    '@@version' => '5.5.0',
-                    '@@version_comment' => '',
-                ],
-                50500,
-                false,
-                false,
-            ],
+            [['@@version' => '7.10.3', '@@version_comment' => 'MySQL Community Server (GPL)'], 71003, false, false],
+            [['@@version' => '5.5.0', '@@version_comment' => ''], 50500, false, false],
         ];
     }
 
-    /** @dataProvider providerForTestGetLowerCaseNames */
+    #[DataProvider('providerForTestGetLowerCaseNames')]
     public function testGetLowerCaseNames(string|false|null $result, int $expected): void
     {
         $dbiDummy = $this->createDbiDummy();

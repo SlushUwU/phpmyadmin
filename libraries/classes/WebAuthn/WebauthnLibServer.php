@@ -33,6 +33,7 @@ final class WebauthnLibServer implements Server
     {
     }
 
+    /** @inheritDoc */
     public function getCredentialCreationOptions(string $userName, string $userId, string $relyingPartyId): array
     {
         $userEntity = new PublicKeyCredentialUserEntity($userName, $userId, $userName);
@@ -67,6 +68,7 @@ final class WebauthnLibServer implements Server
         return $creationOptions;
     }
 
+    /** @inheritDoc */
     public function getCredentialRequestOptions(
         string $userName,
         string $userId,
@@ -111,6 +113,7 @@ final class WebauthnLibServer implements Server
         return $requestOptions;
     }
 
+    /** @inheritDoc */
     public function parseAndValidateAssertionResponse(
         string $assertionResponseJson,
         array $allowedCredentials,
@@ -122,11 +125,7 @@ final class WebauthnLibServer implements Server
             $this->twofactor->config['settings']['userHandle'],
             SODIUM_BASE64_VARIANT_URLSAFE_NO_PADDING,
         );
-        $userEntity = new PublicKeyCredentialUserEntity(
-            $this->twofactor->user,
-            $userHandle,
-            $this->twofactor->user,
-        );
+        $userEntity = new PublicKeyCredentialUserEntity($this->twofactor->user, $userHandle, $this->twofactor->user);
         $host = $request->getUri()->getHost();
         $relyingPartyEntity = new PublicKeyCredentialRpEntity('phpMyAdmin (' . $host . ')', $host);
         $publicKeyCredentialSourceRepository = $this->createPublicKeyCredentialSourceRepository();
@@ -138,14 +137,10 @@ final class WebauthnLibServer implements Server
             'timeout' => 60000,
         ]);
         Assert::isInstanceOf($requestOptions, PublicKeyCredentialRequestOptions::class);
-        $server->loadAndCheckAssertionResponse(
-            $assertionResponseJson,
-            $requestOptions,
-            $userEntity,
-            $request,
-        );
+        $server->loadAndCheckAssertionResponse($assertionResponseJson, $requestOptions, $userEntity, $request);
     }
 
+    /** @inheritDoc */
     public function parseAndValidateAttestationResponse(
         string $attestationResponse,
         string $credentialCreationOptions,
@@ -196,6 +191,7 @@ final class WebauthnLibServer implements Server
         return $publicKeyCredentialSource->jsonSerialize();
     }
 
+    /** @infection-ignore-all */
     private function createPublicKeyCredentialSourceRepository(): PublicKeyCredentialSourceRepository
     {
         return new class ($this->twofactor) implements PublicKeyCredentialSourceRepository {

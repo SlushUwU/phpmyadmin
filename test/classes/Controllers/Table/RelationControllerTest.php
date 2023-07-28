@@ -13,8 +13,9 @@ use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\DummyResult;
 use PhpMyAdmin\Tests\Stubs\ResponseRenderer as ResponseStub;
+use PHPUnit\Framework\Attributes\CoversClass;
 
-/** @covers \PhpMyAdmin\Controllers\Table\RelationController */
+#[CoversClass(RelationController::class)]
 class RelationControllerTest extends AbstractTestCase
 {
     private ResponseStub $response;
@@ -58,11 +59,7 @@ class RelationControllerTest extends AbstractTestCase
      */
     public function testGetDropdownValueForTableActionIsView(): void
     {
-        $viewColumns = [
-            'viewCol',
-            'viewCol2',
-            'viewCol3',
-        ];
+        $viewColumns = ['viewCol', 'viewCol2', 'viewCol3'];
         $tableMock = $this->getMockBuilder(Table::class)
             ->disableOriginalConstructor()
             ->getMock();
@@ -136,12 +133,7 @@ class RelationControllerTest extends AbstractTestCase
         $resultStub->expects($this->any())
             ->method('getIterator')
             ->will($this->returnCallback(static function (): Generator {
-                yield from [
-                    [
-                        'Engine' => 'InnoDB',
-                        'Name' => 'table',
-                    ],
-                ];
+                yield from [['Engine' => 'InnoDB', 'Name' => 'table']];
             }));
 
         $ctrl = new RelationController(

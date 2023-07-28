@@ -44,7 +44,7 @@ final class FavoriteTableController extends AbstractController
         $GLOBALS['errorUrl'] = Util::getScriptNameForOption($GLOBALS['cfg']['DefaultTabDatabase'], 'database');
         $GLOBALS['errorUrl'] .= Url::getCommon(['db' => $GLOBALS['db']], '&');
 
-        if (! $this->hasDatabase() || ! $this->response->isAjax()) {
+        if (! $request->isAjax()) {
             return;
         }
 
@@ -69,6 +69,10 @@ final class FavoriteTableController extends AbstractController
                 ));
             }
 
+            return;
+        }
+
+        if (! $this->hasDatabase()) {
             return;
         }
 
@@ -134,9 +138,9 @@ final class FavoriteTableController extends AbstractController
      *
      * @param RecentFavoriteTable $favoriteInstance Instance of this class
      * @param string              $user             The user hash
-     * @param array               $favoriteTables   Existing favorites
+     * @param mixed[]             $favoriteTables   Existing favorites
      *
-     * @return array
+     * @return mixed[]
      */
     private function synchronizeFavoriteTables(
         RecentFavoriteTable $favoriteInstance,
@@ -145,7 +149,7 @@ final class FavoriteTableController extends AbstractController
     ): array {
         $favoriteInstanceTables = $favoriteInstance->getTables();
 
-        if (empty($favoriteInstanceTables) && isset($favoriteTables[$user])) {
+        if ($favoriteInstanceTables === [] && isset($favoriteTables[$user])) {
             foreach ($favoriteTables[$user] as $value) {
                 $favoriteInstance->add($value['db'], $value['table']);
             }
@@ -156,10 +160,7 @@ final class FavoriteTableController extends AbstractController
         // Set flag when localStorage and pmadb(if present) are in sync.
         $_SESSION['tmpval']['favorites_synced'][$GLOBALS['server']] = true;
 
-        return [
-            'favoriteTables' => json_encode($favoriteTables),
-            'list' => $favoriteInstance->getHtmlList(),
-        ];
+        return ['favoriteTables' => json_encode($favoriteTables), 'list' => $favoriteInstance->getHtmlList()];
     }
 
     /**
@@ -169,10 +170,8 @@ final class FavoriteTableController extends AbstractController
      */
     private function checkFavoriteTable(string $currentTable): bool
     {
-        // ensure $_SESSION['tmpval']['favoriteTables'] is initialized
-        RecentFavoriteTable::getInstance('favorite');
-        $favoriteTables = $_SESSION['tmpval']['favoriteTables'][$GLOBALS['server']] ?? [];
-        foreach ($favoriteTables as $value) {
+        $recentFavoriteTables = RecentFavoriteTable::getInstance('favorite');
+        foreach ($recentFavoriteTables->getTables() as $value) {
             if ($value['db'] == $GLOBALS['db'] && $value['table'] == $currentTable) {
                 return true;
             }

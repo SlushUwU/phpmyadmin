@@ -8,8 +8,10 @@ use PhpMyAdmin\Database\Search;
 use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\AbstractTestCase;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 
-/** @covers \PhpMyAdmin\Database\Search */
+#[CoversClass(Search::class)]
 class SearchTest extends AbstractTestCase
 {
     protected Search $object;
@@ -34,16 +36,11 @@ class SearchTest extends AbstractTestCase
         $dbi->expects($this->any())
             ->method('getColumns')
             ->with('pma', 'table1')
-            ->will($this->returnValue([
-                ['Field' => 'column1'],
-                ['Field' => 'column2'],
-            ]));
+            ->will($this->returnValue([['Field' => 'column1'], ['Field' => 'column2']]));
 
         $dbi->expects($this->any())
             ->method('quoteString')
-            ->will($this->returnCallback(static function (string $string) {
-                return "'" . $string . "'";
-            }));
+            ->will($this->returnCallback(static fn (string $string): string => "'" . $string . "'"));
 
         $GLOBALS['dbi'] = $dbi;
         $this->object = new Search($dbi, 'pma_test', new Template());
@@ -65,9 +62,8 @@ class SearchTest extends AbstractTestCase
      *
      * @param string $type     type
      * @param string $expected expected result
-     *
-     * @dataProvider searchTypes
      */
+    #[DataProvider('searchTypes')]
     public function testGetWhereClause(string $type, string $expected): void
     {
         $_POST['criteriaSearchType'] = $type;
@@ -88,7 +84,7 @@ class SearchTest extends AbstractTestCase
     /**
      * Data provider for testGetWhereClause
      *
-     * @return array
+     * @return array<array{string, string}>
      */
     public static function searchTypes(): array
     {

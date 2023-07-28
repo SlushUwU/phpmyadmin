@@ -33,12 +33,12 @@ class Text_Plain_Iptolong extends IOTransformationsPlugin
      * @param string        $buffer  text to be transformed. a binary string containing
      *                               an IP address, as returned from MySQL's INET6_ATON
      *                               function
-     * @param array         $options transformation options
+     * @param mixed[]       $options transformation options
      * @param FieldMetadata $meta    meta information
      *
      * @return string IP address
      */
-    public function applyTransformation($buffer, array $options = [], FieldMetadata|null $meta = null): string
+    public function applyTransformation(string $buffer, array $options = [], FieldMetadata|null $meta = null): string
     {
         return (string) FormatConverter::ipToLong($buffer);
     }
@@ -47,28 +47,20 @@ class Text_Plain_Iptolong extends IOTransformationsPlugin
      * Returns the html for input field to override default textarea.
      * Note: Return empty string if default textarea is required.
      *
-     * @param array  $column               column details
-     * @param int    $row_id               row number
-     * @param string $column_name_appendix the name attribute
-     * @param array  $options              transformation options
-     * @param string $value                Current field value
-     * @param string $text_dir             text direction
-     * @param int    $tabindex             tab index
-     * @param int    $tabindex_for_value   offset for the values tabindex
-     * @param int    $idindex              id index
+     * @param string  $columnNameAppendix the name attribute
+     * @param mixed[] $options            transformation options
+     * @param string  $value              Current field value
+     * @param string  $textDir            text direction
+     * @param int     $fieldIndex         field index
      *
      * @return string the html for input field
      */
     public function getInputHtml(
-        array $column,
-        int $row_id,
-        string $column_name_appendix,
+        string $columnNameAppendix,
         array $options,
         string $value,
-        string $text_dir,
-        int $tabindex,
-        int $tabindex_for_value,
-        int $idindex,
+        string $textDir,
+        int $fieldIndex,
     ): string {
         $html = '';
         $val = '';
@@ -77,18 +69,18 @@ class Text_Plain_Iptolong extends IOTransformationsPlugin
             $val = FormatConverter::longToIp($value);
 
             if ($value !== $val) {
-                $html = '<input type="hidden" name="fields_prev' . $column_name_appendix
+                $html = '<input type="hidden" name="fields_prev' . $columnNameAppendix
                     . '" value="' . htmlspecialchars($val) . '"/>';
             }
         }
 
-        return $html . '<input type="text" name="fields' . $column_name_appendix . '"'
+        return $html . '<input type="text" name="fields' . $columnNameAppendix . '"'
             . ' value="' . htmlspecialchars($val) . '"'
             . ' size="40"'
-            . ' dir="' . $text_dir . '"'
+            . ' dir="' . $textDir . '"'
             . ' class="transform_IPToLong"'
-            . ' id="field_' . $idindex . '_3"'
-            . ' tabindex="' . ($tabindex + $tabindex_for_value) . '" />';
+            . ' id="field_' . $fieldIndex . '_3"'
+            . ' tabindex="' . $fieldIndex . '" />';
     }
 
     /* ~~~~~~~~~~~~~~~~~~~~ Getters and Setters ~~~~~~~~~~~~~~~~~~~~ */

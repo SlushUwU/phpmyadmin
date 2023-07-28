@@ -13,15 +13,11 @@ use function __;
 
 class MainForm extends BaseForm
 {
-    /** @return array */
+    /** @return mixed[] */
     public static function getForms(): array
     {
         return [
-            'Startup' => [
-                'ShowCreateDb',
-                'ShowStats',
-                'ShowServerInfo',
-            ],
+            'Startup' => ['ShowCreateDb', 'ShowStats', 'ShowServerInfo'],
             'DbStructure' => [
                 'ShowDbStructureCharset',
                 'ShowDbStructureComment',
@@ -70,12 +66,7 @@ class MainForm extends BaseForm
                 'ForeignKeyDropdownOrder',
                 'ForeignKeyMaxLimit',
             ],
-            'Tabs' => [
-                'TabsMode',
-                'DefaultTabServer',
-                'DefaultTabDatabase',
-                'DefaultTabTable',
-            ],
+            'Tabs' => ['TabsMode', 'DefaultTabServer', 'DefaultTabDatabase', 'DefaultTabTable'],
             'DisplayRelationalSchema' => ['PDFDefaultPageSize'],
         ];
     }

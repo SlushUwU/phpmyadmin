@@ -61,16 +61,16 @@ abstract class AbstractNetworkTestCase extends AbstractTestCase
             ->with()
             ->will($this->returnValue(false));
 
-        if (count($param) > 0) {
+        if ($param !== []) {
             if (is_array($param[0])) {
                 if (is_array($param[0][0]) && count($param) === 1) {
                     $param = $param[0];
                     if (is_int(end($param))) {
-                        $http_response_code_param = end($param);
+                        $httpResponseCodeParam = end($param);
                         $param = array_slice($param, 0, -1);
 
                         $mockResponse->expects($this->once())
-                        ->method('httpResponseCode')->with($http_response_code_param);
+                        ->method('httpResponseCode')->with($httpResponseCodeParam);
                     }
                 }
             } else {
@@ -81,7 +81,7 @@ abstract class AbstractNetworkTestCase extends AbstractTestCase
         }
 
         $attrInstance = new ReflectionProperty(ResponseRenderer::class, 'instance');
-        $attrInstance->setValue($mockResponse);
+        $attrInstance->setValue(null, $mockResponse);
 
         return $mockResponse;
     }
@@ -94,6 +94,6 @@ abstract class AbstractNetworkTestCase extends AbstractTestCase
         parent::tearDown();
 
         $response = new ReflectionProperty(ResponseRenderer::class, 'instance');
-        $response->setValue(null);
+        $response->setValue(null, null);
     }
 }

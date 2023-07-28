@@ -13,15 +13,15 @@ use PhpMyAdmin\Config\Settings\Server;
 use PhpMyAdmin\Config\Settings\SqlQueryBox;
 use PhpMyAdmin\Config\Settings\Transformations;
 
+use function __;
 use function array_map;
-use function count;
 use function defined;
 use function in_array;
 use function is_array;
 use function is_int;
 use function is_string;
 use function min;
-use function strlen;
+use function sprintf;
 
 use const DIRECTORY_SEPARATOR;
 use const ROOT_PATH;
@@ -65,7 +65,7 @@ final class Settings
      *
      * @link https://docs.phpmyadmin.net/en/latest/config.html#cfg_AuthLog
      */
-    public string $AuthLog;
+    public string $authLog;
 
     /**
      * Whether to log successful authentication attempts
@@ -76,7 +76,7 @@ final class Settings
      *
      * @link https://docs.phpmyadmin.net/en/latest/config.html#cfg_AuthLogSuccess
      */
-    public bool $AuthLogSuccess;
+    public bool $authLogSuccess;
 
     /**
      * Disable the default warning that is displayed on the DB Details Structure page if
@@ -1642,9 +1642,8 @@ final class Settings
     /**
      * You can select here which functions will be used for character set conversion.
      * Possible values are:
-     *      auto   - automatically use available one (first is tested iconv, then recode)
+     *      auto   - automatically use available one (first is tested iconv, then mbstring)
      *      iconv  - use iconv or libiconv functions
-     *      recode - use recode_string function
      *      mb     - use mbstring extension
      *      none   - disable encoding conversion
      *
@@ -1654,7 +1653,7 @@ final class Settings
      *
      * @link https://docs.phpmyadmin.net/en/latest/config.html#cfg_RecodingEngine
      *
-     * @psalm-var 'auto'|'iconv'|'recode'|'mb'|'none'
+     * @psalm-var 'auto'|'iconv'|'mb'|'none'
      */
     public string $RecodingEngine;
 
@@ -1922,6 +1921,17 @@ final class Settings
      * @psalm-var positive-int
      */
     public int $QueryHistoryMax;
+
+    /**
+     * Allow shared bookmarks between users
+     *
+     * ```php
+     * $cfg['AllowSharedBookmarks'] = true;
+     * ```
+     *
+     * @link https://docs.phpmyadmin.net/en/latest/config.html#cfg_AllowSharedBookmarks
+     */
+    public bool $AllowSharedBookmarks;
 
     /**
      * Use MIME-Types (stored in column comments table) for
@@ -2413,8 +2423,8 @@ final class Settings
     public function __construct(array $settings)
     {
         $this->PmaAbsoluteUri = $this->setPmaAbsoluteUri($settings);
-        $this->AuthLog = $this->setAuthLog($settings);
-        $this->AuthLogSuccess = $this->setAuthLogSuccess($settings);
+        $this->authLog = $this->setAuthLog($settings);
+        $this->authLogSuccess = $this->setAuthLogSuccess($settings);
         $this->PmaNoRelation_DisableWarning = $this->setPmaNoRelationDisableWarning($settings);
         $this->SuhosinDisableWarning = $this->setSuhosinDisableWarning($settings);
         $this->LoginCookieValidityDisableWarning = $this->setLoginCookieValidityDisableWarning($settings);
@@ -2563,6 +2573,7 @@ final class Settings
         $this->repeatCells = $this->setRepeatCells($settings);
         $this->QueryHistoryDB = $this->setQueryHistoryDB($settings);
         $this->QueryHistoryMax = $this->setQueryHistoryMax($settings);
+        $this->AllowSharedBookmarks = $this->setAllowSharedBookmarks($settings);
         $this->BrowseMIME = $this->setBrowseMIME($settings);
         $this->MaxExactCount = $this->setMaxExactCount($settings);
         $this->MaxExactCountViews = $this->setMaxExactCountViews($settings);
@@ -2610,8 +2621,8 @@ final class Settings
     {
         return [
             'PmaAbsoluteUri' => $this->PmaAbsoluteUri,
-            'AuthLog' => $this->AuthLog,
-            'AuthLogSuccess' => $this->AuthLogSuccess,
+            'AuthLog' => $this->authLog,
+            'AuthLogSuccess' => $this->authLogSuccess,
             'PmaNoRelation_DisableWarning' => $this->PmaNoRelation_DisableWarning,
             'SuhosinDisableWarning' => $this->SuhosinDisableWarning,
             'LoginCookieValidityDisableWarning' => $this->LoginCookieValidityDisableWarning,
@@ -2760,6 +2771,7 @@ final class Settings
             'RepeatCells' => $this->repeatCells,
             'QueryHistoryDB' => $this->QueryHistoryDB,
             'QueryHistoryMax' => $this->QueryHistoryMax,
+            'AllowSharedBookmarks' => $this->AllowSharedBookmarks,
             'BrowseMIME' => $this->BrowseMIME,
             'MaxExactCount' => $this->MaxExactCount,
             'MaxExactCountViews' => $this->MaxExactCountViews,
@@ -2929,19 +2941,28 @@ final class Settings
         }
 
         $servers = [];
-        /**
-         * @var int|string $key
-         * @var mixed $server
-         */
         foreach ($settings['Servers'] as $key => $server) {
             if (! is_int($key) || $key < 1 || ! is_array($server)) {
                 continue;
             }
 
             $servers[$key] = new Server($server);
+            if ($servers[$key]->host !== '' || $servers[$key]->verbose !== '') {
+                continue;
+            }
+
+            /**
+             * Ensures that the database server has a name.
+             *
+             * @link https://github.com/phpmyadmin/phpmyadmin/issues/6878
+             *
+             * @psalm-suppress ImpureFunctionCall
+             */
+            $server['verbose'] = sprintf(__('Server %d'), $key);
+            $servers[$key] = new Server($server);
         }
 
-        if (count($servers) === 0) {
+        if ($servers === []) {
             return [1 => new Server()];
         }
 
@@ -3132,7 +3153,7 @@ final class Settings
         /** @var mixed $host */
         foreach ($settings['MysqlSslWarningSafeHosts'] as $host) {
             $safeHost = (string) $host;
-            if (strlen($safeHost) === 0) {
+            if ($safeHost === '') {
                 continue;
             }
 
@@ -3524,7 +3545,7 @@ final class Settings
             return (string) $settings['NavigationTreeTableSeparator'];
         }
 
-        if (count($settings['NavigationTreeTableSeparator']) > 0) {
+        if ($settings['NavigationTreeTableSeparator'] !== []) {
             $navigationTreeTableSeparator = [];
             /** @var mixed $separator */
             foreach ($settings['NavigationTreeTableSeparator'] as $separator) {
@@ -4461,13 +4482,13 @@ final class Settings
     /**
      * @param array<int|string, mixed> $settings
      *
-     * @psalm-return 'auto'|'iconv'|'recode'|'mb'|'none'
+     * @psalm-return 'auto'|'iconv'|'mb'|'none'
      */
     private function setRecodingEngine(array $settings): string
     {
         if (
             ! isset($settings['RecodingEngine'])
-            || ! in_array($settings['RecodingEngine'], ['iconv', 'recode', 'mb', 'none'], true)
+            || ! in_array($settings['RecodingEngine'], ['iconv', 'mb', 'none'], true)
         ) {
             return 'auto';
         }
@@ -4783,6 +4804,16 @@ final class Settings
         $queryHistoryMax = (int) $settings['QueryHistoryMax'];
 
         return $queryHistoryMax >= 1 ? $queryHistoryMax : 25;
+    }
+
+    /** @param array<int|string, mixed> $settings */
+    private function setAllowSharedBookmarks(array $settings): bool
+    {
+        if (! isset($settings['AllowSharedBookmarks'])) {
+            return true;
+        }
+
+        return (bool) $settings['AllowSharedBookmarks'];
     }
 
     /** @param array<int|string, mixed> $settings */

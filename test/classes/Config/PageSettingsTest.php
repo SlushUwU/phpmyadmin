@@ -6,8 +6,10 @@ namespace PhpMyAdmin\Tests\Config;
 
 use PhpMyAdmin\Config\PageSettings;
 use PhpMyAdmin\Tests\AbstractTestCase;
+use PhpMyAdmin\UserPreferences;
+use PHPUnit\Framework\Attributes\CoversClass;
 
-/** @covers \PhpMyAdmin\Config\PageSettings */
+#[CoversClass(PageSettings::class)]
 class PageSettingsTest extends AbstractTestCase
 {
     /**
@@ -36,7 +38,8 @@ class PageSettingsTest extends AbstractTestCase
      */
     public function testShowGroupNonExistent(): void
     {
-        $object = new PageSettings('NonExistent');
+        $object = new PageSettings(new UserPreferences($GLOBALS['dbi']));
+        $object->init('NonExistent');
 
         $this->assertEquals('', $object->getHTML());
     }
@@ -46,7 +49,8 @@ class PageSettingsTest extends AbstractTestCase
      */
     public function testShowGroupBrowse(): void
     {
-        $object = new PageSettings('Browse');
+        $object = new PageSettings(new UserPreferences($GLOBALS['dbi']));
+        $object->init('Browse');
 
         $html = $object->getHTML();
 
@@ -75,7 +79,8 @@ class PageSettingsTest extends AbstractTestCase
      */
     public function testGetNaviSettings(): void
     {
-        $pageSettings = new PageSettings('Navi', 'pma_navigation_settings');
+        $pageSettings = new PageSettings(new UserPreferences($GLOBALS['dbi']));
+        $pageSettings->init('Navi', 'pma_navigation_settings');
 
         $html = $pageSettings->getHTML();
 

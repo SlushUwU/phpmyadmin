@@ -9,8 +9,9 @@ use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\Http\ServerRequest;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\DbiDummy;
+use PHPUnit\Framework\Attributes\CoversClass;
 
-/** @covers \PhpMyAdmin\Controllers\Sql\SetValuesController */
+#[CoversClass(SetValuesController::class)]
 class SetValuesControllerTest extends AbstractTestCase
 {
     protected DatabaseInterface $dbi;
@@ -79,14 +80,7 @@ class SetValuesControllerTest extends AbstractTestCase
                     '',
                 ],
             ],
-            [
-                'Field',
-                'Type',
-                'Null',
-                'Key',
-                'Default',
-                'Extra',
-            ],
+            ['Field', 'Type', 'Null', 'Key', 'Default', 'Extra'],
         );
 
         $request = $this->createStub(ServerRequest::class);

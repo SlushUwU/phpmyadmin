@@ -67,6 +67,7 @@ class TwigLintCommand extends Command
         $this->addOption('show-deprecations', null, InputOption::VALUE_NONE, 'Show deprecations as errors');
     }
 
+    /** @return mixed[] */
     protected function findFiles(string $baseFolder): array
     {
         /* Open the handle */
@@ -77,6 +78,7 @@ class TwigLintCommand extends Command
 
         $foundFiles = [];
 
+        /** @infection-ignore-all */
         while (($file = readdir($handle)) !== false) {
             if ($file === '.' || $file === '..') {
                 continue;
@@ -135,6 +137,7 @@ class TwigLintCommand extends Command
         return $this->display($output, $io, $filesInfo);
     }
 
+    /** @return mixed[] */
     protected function getFilesInfo(string $templatesPath): array
     {
         $filesInfo = [];
@@ -154,6 +157,7 @@ class TwigLintCommand extends Command
         return (string) file_get_contents($filePath);
     }
 
+    /** @return mixed[] */
     private function validate(string $template, string $file): array
     {
         $twig = Template::getTwigEnvironment(null);
@@ -180,6 +184,7 @@ class TwigLintCommand extends Command
         return ['template' => $template, 'file' => $file, 'valid' => true];
     }
 
+    /** @param mixed[] $filesInfo */
     private function display(OutputInterface $output, SymfonyStyle $io, array $filesInfo): int
     {
         $errors = 0;
@@ -247,6 +252,7 @@ class TwigLintCommand extends Command
         }
     }
 
+    /** @return mixed[] */
     private function getContext(string $template, int $line, int $context = 3): array
     {
         $lines = explode("\n", $template);
@@ -257,6 +263,7 @@ class TwigLintCommand extends Command
         $result = [];
         while ($position < $max) {
             $result[$position + 1] = $lines[$position];
+            /** @infection-ignore-all */
             ++$position;
         }
 

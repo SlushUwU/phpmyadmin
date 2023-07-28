@@ -5,15 +5,17 @@ declare(strict_types=1);
 namespace PhpMyAdmin\Tests\Database;
 
 use PhpMyAdmin\ConfigStorage\Relation;
+use PhpMyAdmin\ConfigStorage\RelationParameters;
 use PhpMyAdmin\Database\Designer;
 use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\DummyResult;
-use PhpMyAdmin\Version;
+use PHPUnit\Framework\Attributes\CoversClass;
 use ReflectionMethod;
+use ReflectionProperty;
 
-/** @covers \PhpMyAdmin\Database\Designer */
+#[CoversClass(Designer::class)]
 class DesignerTest extends AbstractTestCase
 {
     private Designer $designer;
@@ -29,26 +31,19 @@ class DesignerTest extends AbstractTestCase
 
         $GLOBALS['server'] = 1;
         $GLOBALS['cfg']['ServerDefault'] = 1;
-        $GLOBALS['cfg']['PDFPageSizes'] = [
-            'A3',
-            'A4',
-        ];
+        $GLOBALS['cfg']['PDFPageSizes'] = ['A3', 'A4'];
         $GLOBALS['cfg']['PDFDefaultPageSize'] = 'A4';
         $GLOBALS['cfg']['Schema']['pdf_orientation'] = 'L';
         $GLOBALS['cfg']['Schema']['pdf_paper'] = 'A4';
 
-        $_SESSION = [
-            'relation' => [
-                1 => [
-                    'version' => Version::VERSION,
-                    'db' => 'pmadb',
-                    'pdf_pages' => 'pdf_pages',
-                    'table_coords' => 'table_coords',
-                    'pdfwork' => true,
-                ],
-            ],
-            ' PMA_token ' => 'token',
-        ];
+        $_SESSION = [' PMA_token ' => 'token'];
+        $relationParameters = RelationParameters::fromArray([
+            'db' => 'pmadb',
+            'pdf_pages' => 'pdf_pages',
+            'table_coords' => 'table_coords',
+            'pdfwork' => true,
+        ]);
+        (new ReflectionProperty(Relation::class, 'cache'))->setValue(null, $relationParameters);
     }
 
     /**
@@ -75,14 +70,8 @@ class DesignerTest extends AbstractTestCase
         $resultStub->expects($this->exactly(3))
             ->method('fetchAssoc')
             ->willReturnOnConsecutiveCalls(
-                [
-                    'page_nr' => '1',
-                    'page_descr' => 'page1',
-                ],
-                [
-                    'page_nr' => '2',
-                    'page_descr' => 'page2',
-                ],
+                ['page_nr' => '1', 'page_descr' => 'page1'],
+                ['page_nr' => '2', 'page_descr' => 'page2'],
                 [],
             );
 
@@ -107,10 +96,7 @@ class DesignerTest extends AbstractTestCase
         $result = $method->invokeArgs($this->designer, [$db]);
 
         $this->assertEquals(
-            [
-                '1' => 'page1',
-                '2' => 'page2',
-            ],
+            ['1' => 'page1', '2' => 'page2'],
             $result,
         );
     }
@@ -178,7 +164,7 @@ class DesignerTest extends AbstractTestCase
 
         $result = $this->designer->getHtmlForSchemaExport($db, $page);
         // export type
-        $this->assertStringContainsString('<select id="plugins" name="export_type">', $result);
+        $this->assertStringContainsString('<select class="form-select" id="plugins" name="export_type">', $result);
 
         // hidden field
         $this->assertStringContainsString('<input type="hidden" name="page_number" value="' . $page . '">', $result);

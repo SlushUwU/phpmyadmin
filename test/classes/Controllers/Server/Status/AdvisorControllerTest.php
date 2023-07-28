@@ -11,9 +11,10 @@ use PhpMyAdmin\Server\Status\Data;
 use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\ResponseRenderer;
+use PHPUnit\Framework\Attributes\CoversClass;
 use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
 
-/** @covers \PhpMyAdmin\Controllers\Server\Status\AdvisorController */
+#[CoversClass(AdvisorController::class)]
 class AdvisorControllerTest extends AbstractTestCase
 {
     private ResponseRenderer $response;
@@ -56,9 +57,7 @@ class AdvisorControllerTest extends AbstractTestCase
 
         $controller($this->createStub(ServerRequest::class));
 
-        $expected = $this->template->render('server/status/advisor/index', [
-            'data' => [],
-        ]);
+        $expected = $this->template->render('server/status/advisor/index', ['data' => []]);
 
         $this->assertSame(
             $expected,

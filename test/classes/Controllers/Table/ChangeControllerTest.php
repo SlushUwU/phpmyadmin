@@ -14,8 +14,10 @@ use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\ResponseRenderer;
 use PhpMyAdmin\Transformations;
+use PhpMyAdmin\UserPreferences;
+use PHPUnit\Framework\Attributes\CoversClass;
 
-/** @covers \PhpMyAdmin\Controllers\Table\ChangeController */
+#[CoversClass(ChangeController::class)]
 class ChangeControllerTest extends AbstractTestCase
 {
     public function testChangeController(): void
@@ -36,7 +38,8 @@ class ChangeControllerTest extends AbstractTestCase
         $GLOBALS['dbi'] = $dbi;
 
         $response = new ResponseRenderer();
-        $pageSettings = new PageSettings('Edit');
+        $pageSettings = new PageSettings(new UserPreferences($GLOBALS['dbi']));
+        $pageSettings->init('Edit');
 
         $request = $this->createStub(ServerRequest::class);
 
@@ -47,6 +50,7 @@ class ChangeControllerTest extends AbstractTestCase
             $template,
             new InsertEdit($dbi, $relation, new Transformations(), new FileListing(), $template),
             $relation,
+            $pageSettings,
         ))($request);
         $actual = $response->getHTMLResult();
 
@@ -77,6 +81,30 @@ class ChangeControllerTest extends AbstractTestCase
             . ' tabindex="3" id="field_3_3"><input type="hidden"'
             . ' name="fields_type[multi_edit][0][a55dbdcc1a45ed90dbee68864d566b99]" value="datetime">',
             $actual,
+        );
+    }
+
+    /**
+     * Test for urlParamsInEditMode
+     */
+    public function testUrlParamsInEditMode(): void
+    {
+        $changeController = new ChangeController(
+            $this->createStub(ResponseRenderer::class),
+            $this->createStub(Template::class),
+            $this->createStub(InsertEdit::class),
+            $this->createStub(Relation::class),
+            $this->createStub(PageSettings::class),
+        );
+
+        $whereClauseArray = ['foo=1', 'bar=2'];
+        $_POST['sql_query'] = 'SELECT 1';
+
+        $result = $changeController->urlParamsInEditMode([1], $whereClauseArray);
+
+        $this->assertEquals(
+            ['0' => 1, 'where_clause' => 'bar=2', 'sql_query' => 'SELECT 1'],
+            $result,
         );
     }
 }

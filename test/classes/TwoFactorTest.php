@@ -10,6 +10,9 @@ use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\Plugins\TwoFactor\Application;
 use PhpMyAdmin\Tests\Stubs\DbiDummy;
 use PhpMyAdmin\TwoFactor;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Group;
+use PHPUnit\Framework\Attributes\RequiresPhpExtension;
 
 use function count;
 use function in_array;
@@ -18,7 +21,7 @@ use function str_replace;
 
 use const JSON_UNESCAPED_SLASHES;
 
-/** @covers \PhpMyAdmin\TwoFactor */
+#[CoversClass(TwoFactor::class)]
 class TwoFactorTest extends AbstractTestCase
 {
     protected DatabaseInterface $dbi;
@@ -38,10 +41,7 @@ class TwoFactorTest extends AbstractTestCase
         $GLOBALS['db'] = '';
         $GLOBALS['table'] = 'table';
         $GLOBALS['cfg']['Server']['DisableIS'] = false;
-        $GLOBALS['cfg']['DBG'] = [
-            'simple2fa' => false,
-            'sql' => false,
-        ];
+        $GLOBALS['cfg']['DBG'] = ['simple2fa' => false, 'sql' => false];
         $GLOBALS['cfg']['NaturalOrder'] = true;
         $this->initStorageConfigAndData();
     }
@@ -96,20 +96,14 @@ class TwoFactorTest extends AbstractTestCase
             ['Tables_in_phpmyadmin'],
         );
 
-        $this->dummyDbi->addResult(
-            'SELECT NULL FROM `pma__userconfig` LIMIT 0',
-            [
-                ['NULL'],
-            ],
-            ['NULL'],
-        );
+        $this->dummyDbi->addResult('SELECT NULL FROM `pma__userconfig` LIMIT 0', [], ['NULL']);
     }
 
     /**
      * Creates TwoFactor mock with custom configuration
      *
-     * @param string $user   Username
-     * @param array  $config Two factor authentication configuration
+     * @param string  $user   Username
+     * @param mixed[] $config Two factor authentication configuration
      */
     private function getTwoFactorAndLoadConfig(string $user, array|null $config): TwoFactor
     {
@@ -127,30 +121,26 @@ class TwoFactorTest extends AbstractTestCase
         return new TwoFactor($user);
     }
 
+    /** @param mixed[] $backendSettings */
     private function loadQueriesForConfigure(string $backend, array $backendSettings = []): void
     {
         $this->dummyDbi->addResult(
             'SELECT `username` FROM `phpmyadmin`.`pma__userconfig` WHERE `username` = \'groot\'',
-            [
-                ['groot'],
-            ],
+            [['groot']],
             ['username'],
         );
 
         $jsonData = (string) json_encode([
             'Console\\\\\\/Mode' => 'collapse',
             'lang' => 'fr',
-            '2fa' => [
-                'backend' => $backend,
-                'settings' => $backendSettings,
-            ],
+            '2fa' => ['backend' => $backend, 'settings' => $backendSettings],
         ], JSON_UNESCAPED_SLASHES);
         $jsonData = str_replace('"', '\"', $jsonData);
 
         $this->dummyDbi->addResult(
             'UPDATE `phpmyadmin`.`pma__userconfig` SET `timevalue` = NOW(),'
             . ' `config_data` = \'' . $jsonData . '\' WHERE `username` = \'groot\'',
-            [],
+            true,
         );
     }
 
@@ -160,14 +150,7 @@ class TwoFactorTest extends AbstractTestCase
             'SELECT `config_data`, UNIX_TIMESTAMP(`timevalue`) ts'
             . ' FROM `phpmyadmin`.`pma__userconfig` WHERE `username` = \'groot\'',
             $config === null ? [] : [
-                [
-                    (string) json_encode([
-                        'Console\/Mode' => 'collapse',
-                        'lang' => 'fr',
-                        '2fa' => $config,
-                    ]),
-                    '1628632378',
-                ],
+                [(string) json_encode(['Console\/Mode' => 'collapse', 'lang' => 'fr', '2fa' => $config]), '1628632378'],
             ],
             ['config_data', 'ts'],
         );
@@ -254,11 +237,9 @@ class TwoFactorTest extends AbstractTestCase
         $this->dummyDbi->assertAllQueriesConsumed();
     }
 
-    /**
-     * @group extension-iconv
-     * @requires extension xmlwriter
-     * @requires extension iconv
-     */
+    #[Group('extension-iconv')]
+    #[RequiresPhpExtension('iconv')]
+    #[RequiresPhpExtension('xmlwriter')]
     public function testApplication(): void
     {
         parent::setLanguage();
@@ -287,9 +268,7 @@ class TwoFactorTest extends AbstractTestCase
 
         $this->dummyDbi->assertAllQueriesConsumed();
         $this->loadResultForConfig([]);
-        $this->loadQueriesForConfigure('application', [
-            'secret' => $object->config['settings']['secret'],
-        ]);
+        $this->loadQueriesForConfigure('application', ['secret' => $object->config['settings']['secret']]);
 
         $this->assertTrue($object->configure('application'));
 

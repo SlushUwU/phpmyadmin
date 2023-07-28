@@ -19,10 +19,10 @@ class NodeColumn extends Node
     /**
      * Initialises the class
      *
-     * @param array $item    array to identify the column node
-     * @param int   $type    Type of node, may be one of CONTAINER or OBJECT
-     * @param bool  $isGroup Whether this object has been created
-     *                       while grouping nodes
+     * @param mixed[] $item    array to identify the column node
+     * @param int     $type    Type of node, may be one of CONTAINER or OBJECT
+     * @param bool    $isGroup Whether this object has been created
+     *                         while grouping nodes
      */
     public function __construct(array $item, int $type = Node::OBJECT, bool $isGroup = false)
     {
@@ -71,14 +71,14 @@ class NodeColumn extends Node
     private function getDisplayName(array $item): string
     {
         $retval = $item['name'];
-        $flag = 0;
+        $isFirst = true;
         foreach ($item as $key => $value) {
             if (empty($value) || $key === 'name') {
                 continue;
             }
 
-            $flag == 0 ? $retval .= ' (' : $retval .= ', ';
-            $flag = 1;
+            $isFirst ? $retval .= ' (' : $retval .= ', ';
+            $isFirst = false;
             $retval .= $this->getTruncateValue($key, $value);
         }
 

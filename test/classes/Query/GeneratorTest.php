@@ -6,8 +6,9 @@ namespace PhpMyAdmin\Tests\Query;
 
 use PhpMyAdmin\Query\Generator;
 use PhpMyAdmin\Tests\AbstractTestCase;
+use PHPUnit\Framework\Attributes\CoversClass;
 
-/** @covers \PhpMyAdmin\Query\Generator */
+#[CoversClass(Generator::class)]
 class GeneratorTest extends AbstractTestCase
 {
     public function testGetColumnsSql(): void
@@ -156,6 +157,25 @@ class GeneratorTest extends AbstractTestCase
                 'COALESCE',
                 ['p1', 'p2'],
             ),
+        );
+    }
+
+    /**
+     * Test for buildSqlQuery
+     */
+    public function testBuildSqlQuery(): void
+    {
+        $queryFields = ['a', 'b'];
+        $valueSets = ['1', '2'];
+
+        $this->assertEquals(
+            'INSERT IGNORE INTO `table` (a, b) VALUES (1), (2)',
+            Generator::buildInsertSqlQuery('table', true, $queryFields, $valueSets),
+        );
+
+        $this->assertEquals(
+            'INSERT INTO `table` (a, b) VALUES (1), (2)',
+            Generator::buildInsertSqlQuery('table', false, $queryFields, $valueSets),
         );
     }
 }

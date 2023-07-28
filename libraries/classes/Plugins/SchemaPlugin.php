@@ -7,7 +7,7 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Plugins;
 
-use PhpMyAdmin\Dbal\DatabaseName;
+use PhpMyAdmin\Identifiers\DatabaseName;
 use PhpMyAdmin\Properties\Options\Groups\OptionsPropertyMainGroup;
 use PhpMyAdmin\Properties\Options\Items\BoolPropertyItem;
 use PhpMyAdmin\Properties\Plugins\PluginPropertyItem;
@@ -75,7 +75,7 @@ abstract class SchemaPlugin implements Plugin
     /**
      * Returns the array of paper sizes
      *
-     * @return array array of paper sizes
+     * @return mixed[] array of paper sizes
      */
     protected function getPaperSizeArray(): array
     {

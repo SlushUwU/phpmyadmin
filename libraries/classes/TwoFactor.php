@@ -31,7 +31,7 @@ use function ucfirst;
 class TwoFactor
 {
     /**
-     * @var array
+     * @var mixed[]
      * @psalm-var array{backend: string, settings: mixed[], type?: 'session'|'db'}
      */
     public array $config;
@@ -40,6 +40,7 @@ class TwoFactor
 
     protected TwoFactorPlugin $backend;
 
+    /** @var mixed[] */
     protected array $available;
 
     private UserPreferences $userPreferences;
@@ -96,7 +97,7 @@ class TwoFactor
         return $this->backend;
     }
 
-    /** @return array */
+    /** @return mixed[] */
     public function getAvailable(): array
     {
         return $this->available;
@@ -145,24 +146,15 @@ class TwoFactor
     {
         $result = [];
         if (! class_exists(Google2FA::class)) {
-            $result[] = [
-                'class' => Application::getName(),
-                'dep' => 'pragmarx/google2fa-qrcode',
-            ];
+            $result[] = ['class' => Application::getName(), 'dep' => 'pragmarx/google2fa-qrcode'];
         }
 
         if (! class_exists(ImageRenderer::class)) {
-            $result[] = [
-                'class' => Application::getName(),
-                'dep' => 'bacon/bacon-qr-code',
-            ];
+            $result[] = ['class' => Application::getName(), 'dep' => 'bacon/bacon-qr-code'];
         }
 
         if (! class_exists(U2FServer::class)) {
-            $result[] = [
-                'class' => Key::getName(),
-                'dep' => 'code-lts/u2f-php-server',
-            ];
+            $result[] = ['class' => Key::getName(), 'dep' => 'code-lts/u2f-php-server'];
         }
 
         return $result;
@@ -291,11 +283,7 @@ class TwoFactor
         $backends = [];
         foreach ($all as $name) {
             $cls = $this->getBackendClass($name);
-            $backends[] = [
-                'id' => $cls::$id,
-                'name' => $cls::getName(),
-                'description' => $cls::getDescription(),
-            ];
+            $backends[] = ['id' => $cls::$id, 'name' => $cls::getName(), 'description' => $cls::getDescription()];
         }
 
         return $backends;

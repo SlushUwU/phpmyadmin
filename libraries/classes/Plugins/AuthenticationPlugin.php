@@ -61,7 +61,7 @@ abstract class AuthenticationPlugin
     /**
      * Displays authentication form
      */
-    abstract public function showLoginForm(): bool;
+    abstract public function showLoginForm(): void;
 
     /**
      * Gets authentication credentials
@@ -95,7 +95,7 @@ abstract class AuthenticationPlugin
      */
     public function showFailure(string $failure): void
     {
-        Logging::logUser($this->user, $failure);
+        Logging::logUser($GLOBALS['config'], $this->user, $failure);
     }
 
     /**
@@ -107,9 +107,9 @@ abstract class AuthenticationPlugin
 
         /* Obtain redirect URL (before doing logout) */
         if (! empty($GLOBALS['cfg']['Server']['LogoutURL'])) {
-            $redirect_url = $GLOBALS['cfg']['Server']['LogoutURL'];
+            $redirectUrl = $GLOBALS['cfg']['Server']['LogoutURL'];
         } else {
-            $redirect_url = $this->getLoginFormURL();
+            $redirectUrl = $this->getLoginFormURL();
         }
 
         /* Clear credentials */
@@ -136,7 +136,7 @@ abstract class AuthenticationPlugin
             }
 
             /* Redirect to login form (or configured URL) */
-            Core::sendHeaderLocation($redirect_url);
+            Core::sendHeaderLocation($redirectUrl);
         } else {
             /* Redirect to other authenticated server */
             $_SESSION['partial_logout'] = true;
@@ -177,9 +177,9 @@ abstract class AuthenticationPlugin
             );
         }
 
-        $dbi_error = $GLOBALS['dbi']->getError();
-        if (! empty($dbi_error)) {
-            return htmlspecialchars($dbi_error);
+        $dbiError = $GLOBALS['dbi']->getError();
+        if (! empty($dbiError)) {
+            return htmlspecialchars($dbiError);
         }
 
         if (isset($GLOBALS['errno'])) {
@@ -248,7 +248,7 @@ abstract class AuthenticationPlugin
                     'error_message' => $exception->getMessage(),
                 ]);
 
-                exit;
+                ResponseRenderer::getInstance()->callExit();
             }
 
             $this->showLoginForm();
@@ -270,17 +270,17 @@ abstract class AuthenticationPlugin
         // Check IP-based Allow/Deny rules as soon as possible to reject the
         // user based on mod_access in Apache
         if (isset($GLOBALS['cfg']['Server']['AllowDeny']['order'])) {
-            $allowDeny_forbidden = false; // default
+            $allowDenyForbidden = false; // default
             if ($GLOBALS['cfg']['Server']['AllowDeny']['order'] === 'allow,deny') {
-                $allowDeny_forbidden = ! ($this->ipAllowDeny->allow() && ! $this->ipAllowDeny->deny());
+                $allowDenyForbidden = ! ($this->ipAllowDeny->allow() && ! $this->ipAllowDeny->deny());
             } elseif ($GLOBALS['cfg']['Server']['AllowDeny']['order'] === 'deny,allow') {
-                $allowDeny_forbidden = $this->ipAllowDeny->deny() && ! $this->ipAllowDeny->allow();
+                $allowDenyForbidden = $this->ipAllowDeny->deny() && ! $this->ipAllowDeny->allow();
             } elseif ($GLOBALS['cfg']['Server']['AllowDeny']['order'] === 'explicit') {
-                $allowDeny_forbidden = ! ($this->ipAllowDeny->allow() && ! $this->ipAllowDeny->deny());
+                $allowDenyForbidden = ! ($this->ipAllowDeny->allow() && ! $this->ipAllowDeny->deny());
             }
 
             // Ejects the user if banished
-            if ($allowDeny_forbidden) {
+            if ($allowDenyForbidden) {
                 $this->showFailure('allow-denied');
             }
         }
@@ -313,11 +313,7 @@ abstract class AuthenticationPlugin
 
         $response = ResponseRenderer::getInstance();
         if ($response->loginPage()) {
-            if (defined('TESTSUITE')) {
-                return;
-            }
-
-            exit;
+            $response->callExit();
         }
 
         echo $this->template->render('login/header');
@@ -330,8 +326,6 @@ abstract class AuthenticationPlugin
         ]);
         echo $this->template->render('login/footer');
         echo Config::renderFooter();
-        if (! defined('TESTSUITE')) {
-            exit;
-        }
+        $response->callExit();
     }
 }

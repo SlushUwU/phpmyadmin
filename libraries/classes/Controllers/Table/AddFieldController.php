@@ -9,10 +9,10 @@ use PhpMyAdmin\Controllers\AbstractController;
 use PhpMyAdmin\Core;
 use PhpMyAdmin\CreateAddField;
 use PhpMyAdmin\DatabaseInterface;
-use PhpMyAdmin\Dbal\DatabaseName;
 use PhpMyAdmin\DbTableExists;
 use PhpMyAdmin\Html\Generator;
 use PhpMyAdmin\Http\ServerRequest;
+use PhpMyAdmin\Identifiers\DatabaseName;
 use PhpMyAdmin\Message;
 use PhpMyAdmin\ResponseRenderer;
 use PhpMyAdmin\Table\ColumnsDefinition;
@@ -65,10 +65,7 @@ class AddFieldController extends AbstractController
         /**
          * Defines the url to return to in case of error in a sql statement
          */
-        $GLOBALS['errorUrl'] = Url::getFromRoute('/table/sql', [
-            'db' => $GLOBALS['db'],
-            'table' => $GLOBALS['table'],
-        ]);
+        $GLOBALS['errorUrl'] = Url::getFromRoute('/table/sql', ['db' => $GLOBALS['db'], 'table' => $GLOBALS['table']]);
 
         // check number of fields to be created
         if (isset($_POST['submit_num_fields'])) {
@@ -108,14 +105,14 @@ class AddFieldController extends AbstractController
             }
 
             $GLOBALS['result'] = $createAddField->tryColumnCreationQuery(
-                DatabaseName::fromValue($GLOBALS['db']),
+                DatabaseName::from($GLOBALS['db']),
                 $GLOBALS['sql_query'],
                 $GLOBALS['errorUrl'],
             );
 
-            if ($GLOBALS['result'] !== true) {
-                $error_message_html = Generator::mysqlDie('', '', false, $GLOBALS['errorUrl'], false);
-                $this->response->addHTML($error_message_html ?? '');
+            if (! $GLOBALS['result']) {
+                $errorMessageHtml = Generator::mysqlDie('', '', false, $GLOBALS['errorUrl'], false);
+                $this->response->addHTML($errorMessageHtml ?? '');
                 $this->response->setRequestStatus(false);
 
                 return;
@@ -164,9 +161,9 @@ class AddFieldController extends AbstractController
             return;
         }
 
-        $url_params = ['db' => $GLOBALS['db'], 'table' => $GLOBALS['table']];
+        $urlParams = ['db' => $GLOBALS['db'], 'table' => $GLOBALS['table']];
         $GLOBALS['errorUrl'] = Util::getScriptNameForOption($cfg['DefaultTabTable'], 'table');
-        $GLOBALS['errorUrl'] .= Url::getCommon($url_params, '&');
+        $GLOBALS['errorUrl'] .= Url::getCommon($urlParams, '&');
 
         DbTableExists::check($GLOBALS['db'], $GLOBALS['table']);
 

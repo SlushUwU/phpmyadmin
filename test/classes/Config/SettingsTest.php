@@ -13,55 +13,31 @@ use PhpMyAdmin\Config\Settings\Schema;
 use PhpMyAdmin\Config\Settings\Server;
 use PhpMyAdmin\Config\Settings\SqlQueryBox;
 use PhpMyAdmin\Config\Settings\Transformations;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 use function array_keys;
+use function array_map;
 use function array_merge;
 
 use const DIRECTORY_SEPARATOR;
 use const ROOT_PATH;
 
 // phpcs:disable Squiz.NamingConventions.ValidVariableName.MemberNotCamelCaps, Generic.Files.LineLength.TooLong
-
-/**
- * @covers \PhpMyAdmin\Config\Settings
- * @covers \PhpMyAdmin\Config\Settings\Console
- * @covers \PhpMyAdmin\Config\Settings\Debug
- * @covers \PhpMyAdmin\Config\Settings\Export
- * @covers \PhpMyAdmin\Config\Settings\Import
- * @covers \PhpMyAdmin\Config\Settings\Schema
- * @covers \PhpMyAdmin\Config\Settings\Server
- * @covers \PhpMyAdmin\Config\Settings\SqlQueryBox
- * @covers \PhpMyAdmin\Config\Settings\Transformations
- */
+#[CoversClass(Settings::class)]
+#[CoversClass(Console::class)]
+#[CoversClass(Debug::class)]
+#[CoversClass(Export::class)]
+#[CoversClass(Import::class)]
+#[CoversClass(Schema::class)]
+#[CoversClass(Server::class)]
+#[CoversClass(SqlQueryBox::class)]
+#[CoversClass(Transformations::class)]
 class SettingsTest extends TestCase
 {
     /** @var array<string, array|bool|int|string|null> */
     private array $defaultValues = [
-        'PmaAbsoluteUri' => '',
-        'AuthLog' => 'auto',
-        'AuthLogSuccess' => false,
-        'PmaNoRelation_DisableWarning' => false,
-        'SuhosinDisableWarning' => false,
-        'LoginCookieValidityDisableWarning' => false,
-        'ReservedWordDisableWarning' => false,
-        'TranslationWarningThreshold' => 80,
-        'AllowThirdPartyFraming' => false,
-        'blowfish_secret' => '',
-        'Servers' => [],
-        'ServerDefault' => 1,
-        'VersionCheck' => true,
-        'ProxyUrl' => '',
-        'ProxyUser' => '',
-        'ProxyPass' => '',
-        'MaxDbList' => 100,
-        'MaxTableList' => 250,
-        'ShowHint' => true,
-        'MaxCharactersInDisplayedSQL' => 1000,
-        'OBGzip' => 'auto',
-        'PersistentConnections' => false,
-        'ExecTimeLimit' => 300,
-        'SessionSavePath' => '',
         'MysqlSslWarningSafeHosts' => ['127.0.0.1', 'localhost'],
         'MemoryLimit' => '-1',
         'SkipLockedTables' => false,
@@ -220,6 +196,7 @@ class SettingsTest extends TestCase
         'ShowPropertyComments' => true,
         'QueryHistoryDB' => false,
         'QueryHistoryMax' => 25,
+        'AllowSharedBookmarks' => true,
         'BrowseMIME' => true,
         'MaxExactCount' => 50000,
         'MaxExactCountViews' => 0,
@@ -285,9 +262,8 @@ class SettingsTest extends TestCase
     /**
      * @param mixed[][] $values
      * @psalm-param (array{0: string, 1: mixed, 2: mixed})[] $values
-     *
-     * @dataProvider providerForTestConstructor
      */
+    #[DataProvider('providerForTestConstructor')]
     public function testConstructor(array $values): void
     {
         $actualValues = [];
@@ -302,13 +278,6 @@ class SettingsTest extends TestCase
         $settings = new Settings($actualValues);
         $settingsArray = $settings->asArray();
         foreach (array_keys($expectedValues) as $key) {
-            if ($key === 'Servers') {
-                $this->assertContainsOnlyInstancesOf(Server::class, $settings->Servers);
-                $this->assertIsArray($expected[$key]);
-                $this->assertSame(array_keys($expected[$key]), array_keys($settings->Servers));
-                continue;
-            }
-
             if ($key === 'Console') {
                 $this->assertInstanceOf(Console::class, $settings->Console);
                 continue;
@@ -361,30 +330,6 @@ class SettingsTest extends TestCase
         return [
             'null values' => [
                 [
-                    ['PmaAbsoluteUri', null, ''],
-                    ['AuthLog', null, 'auto'],
-                    ['AuthLogSuccess', null, false],
-                    ['PmaNoRelation_DisableWarning', null, false],
-                    ['SuhosinDisableWarning', null, false],
-                    ['LoginCookieValidityDisableWarning', null, false],
-                    ['ReservedWordDisableWarning', null, false],
-                    ['TranslationWarningThreshold', null, 80],
-                    ['AllowThirdPartyFraming', null, false],
-                    ['blowfish_secret', null, ''],
-                    ['Servers', null, [1 => null]],
-                    ['ServerDefault', null, 1],
-                    ['VersionCheck', null, true],
-                    ['ProxyUrl', null, ''],
-                    ['ProxyUser', null, ''],
-                    ['ProxyPass', null, ''],
-                    ['MaxDbList', null, 100],
-                    ['MaxTableList', null, 250],
-                    ['ShowHint', null, true],
-                    ['MaxCharactersInDisplayedSQL', null, 1000],
-                    ['OBGzip', null, 'auto'],
-                    ['PersistentConnections', null, false],
-                    ['ExecTimeLimit', null, 300],
-                    ['SessionSavePath', null, ''],
                     ['MysqlSslWarningSafeHosts', null, ['127.0.0.1', 'localhost']],
                     ['MemoryLimit', null, '-1'],
                     ['SkipLockedTables', null, false],
@@ -508,6 +453,7 @@ class SettingsTest extends TestCase
                     ['ShowPropertyComments', null, true],
                     ['QueryHistoryDB', null, false],
                     ['QueryHistoryMax', null, 25],
+                    ['AllowSharedBookmarks', null, true],
                     ['BrowseMIME', null, true],
                     ['MaxExactCount', null, 50000],
                     ['MaxExactCountViews', null, 0],
@@ -550,30 +496,6 @@ class SettingsTest extends TestCase
             ],
             'valid values' => [
                 [
-                    ['PmaAbsoluteUri', 'https://www.phpmyadmin.net/', 'https://www.phpmyadmin.net/'],
-                    ['AuthLog', '/path/to/file', '/path/to/file'],
-                    ['AuthLogSuccess', true, true],
-                    ['PmaNoRelation_DisableWarning', true, true],
-                    ['SuhosinDisableWarning', true, true],
-                    ['LoginCookieValidityDisableWarning', true, true],
-                    ['ReservedWordDisableWarning', true, true],
-                    ['TranslationWarningThreshold', 100, 100],
-                    ['AllowThirdPartyFraming', 'sameorigin', 'sameorigin'],
-                    ['blowfish_secret', 'blowfish_secret', 'blowfish_secret'],
-                    ['Servers', [1 => [], 2 => []], [1 => null, 2 => null]],
-                    ['ServerDefault', 0, 0],
-                    ['VersionCheck', false, false],
-                    ['ProxyUrl', 'test', 'test'],
-                    ['ProxyUser', 'test', 'test'],
-                    ['ProxyPass', 'test', 'test'],
-                    ['MaxDbList', 1, 1],
-                    ['MaxTableList', 1, 1],
-                    ['ShowHint', false, false],
-                    ['MaxCharactersInDisplayedSQL', 1, 1],
-                    ['OBGzip', true, true],
-                    ['PersistentConnections', true, true],
-                    ['ExecTimeLimit', 0, 0],
-                    ['SessionSavePath', 'test', 'test'],
                     ['MysqlSslWarningSafeHosts', ['test1', 'test2'], ['test1', 'test2']],
                     ['MemoryLimit', '16M', '16M'],
                     ['SkipLockedTables', true, true],
@@ -697,6 +619,7 @@ class SettingsTest extends TestCase
                     ['ShowPropertyComments', false, false],
                     ['QueryHistoryDB', true, true],
                     ['QueryHistoryMax', 1, 1],
+                    ['AllowSharedBookmarks', false, false],
                     ['BrowseMIME', false, false],
                     ['MaxExactCount', 1, 1],
                     ['MaxExactCountViews', 0, 0],
@@ -808,7 +731,7 @@ class SettingsTest extends TestCase
                     ['DefaultTabServer', 'status', 'status'],
                     ['DefaultTabDatabase', 'search', 'search'],
                     ['DefaultTabTable', 'search', 'search'],
-                    ['RecodingEngine', 'recode', 'recode'],
+                    ['RecodingEngine', 'mb', 'mb'],
                     ['RowActionLinks', 'both', 'both'],
                 ],
             ],
@@ -819,7 +742,6 @@ class SettingsTest extends TestCase
                     ['DefaultTabServer', 'variables', 'variables'],
                     ['DefaultTabDatabase', 'db_structure.php', 'structure'],
                     ['DefaultTabTable', 'insert', 'insert'],
-                    ['RecodingEngine', 'mb', 'mb'],
                 ],
             ],
             'valid values 6' => [
@@ -868,29 +790,6 @@ class SettingsTest extends TestCase
             'valid values 11' => [[['NavigationTreeDefaultTabTable2', '', '']]],
             'valid values with type coercion' => [
                 [
-                    ['PmaAbsoluteUri', 1234, '1234'],
-                    ['AuthLog', 1234, '1234'],
-                    ['AuthLogSuccess', 1, true],
-                    ['PmaNoRelation_DisableWarning', 1, true],
-                    ['SuhosinDisableWarning', 1, true],
-                    ['LoginCookieValidityDisableWarning', 1, true],
-                    ['ReservedWordDisableWarning', 1, true],
-                    ['TranslationWarningThreshold', '0', 0],
-                    ['AllowThirdPartyFraming', 1, true],
-                    ['blowfish_secret', 1234, '1234'],
-                    ['ServerDefault', '0', 0],
-                    ['VersionCheck', 0, false],
-                    ['ProxyUrl', 1234, '1234'],
-                    ['ProxyUser', 1234, '1234'],
-                    ['ProxyPass', 1234, '1234'],
-                    ['MaxDbList', '1', 1],
-                    ['MaxTableList', '1', 1],
-                    ['ShowHint', 0, false],
-                    ['MaxCharactersInDisplayedSQL', '1', 1],
-                    ['OBGzip', 0, false],
-                    ['PersistentConnections', 1, true],
-                    ['ExecTimeLimit', '0', 0],
-                    ['SessionSavePath', 1234, '1234'],
                     ['MysqlSslWarningSafeHosts', ['127.0.0.1' => 'local', false, 1234 => 1234], ['local', '1234']],
                     ['MemoryLimit', 1234, '1234'],
                     ['SkipLockedTables', 1, true],
@@ -988,6 +887,7 @@ class SettingsTest extends TestCase
                     ['ShowPropertyComments', 0, false],
                     ['QueryHistoryDB', 1, true],
                     ['QueryHistoryMax', '1', 1],
+                    ['AllowSharedBookmarks', 0, false],
                     ['BrowseMIME', 0, false],
                     ['MaxExactCount', '1', 1],
                     ['MaxExactCountViews', '1', 1],
@@ -1022,13 +922,6 @@ class SettingsTest extends TestCase
             ],
             'invalid values' => [
                 [
-                    ['Servers', 'invalid', [1 => null]],
-                    ['TranslationWarningThreshold', -1, 80],
-                    ['ServerDefault', -1, 1],
-                    ['MaxDbList', 0, 100],
-                    ['MaxTableList', 0, 250],
-                    ['MaxCharactersInDisplayedSQL', 0, 1000],
-                    ['ExecTimeLimit', -1, 300],
                     ['MysqlSslWarningSafeHosts', 'invalid', ['127.0.0.1', 'localhost']],
                     ['CookieSameSite', 'invalid', 'Strict'],
                     ['LoginCookieValidity', 0, 1440],
@@ -1095,17 +988,15 @@ class SettingsTest extends TestCase
             ],
             'invalid values 2' => [
                 [
-                    ['Servers', [0 => [], 2 => 'invalid', 'invalid' => [], 4 => []], [4 => null]],
-                    ['TranslationWarningThreshold', 101, 100],
                     ['ForeignKeyDropdownOrder', ['id-content', 'invalid'], ['id-content']],
                     ['TrustedProxies', [1234 => 'invalid', 'valid' => 'valid'], ['valid' => 'valid']],
                     ['DefaultFunctions', [1234 => 'invalid', 'valid' => 'valid'], ['valid' => 'valid']],
                     ['FirstDayOfCalendar', -1, 0],
+                    ['RecodingEngine', 'recode', 'auto'],
                 ],
             ],
             'invalid values 3' => [
                 [
-                    ['Servers', [0 => []], [1 => null]],
                     ['ForeignKeyDropdownOrder', 'invalid', ['content-id', 'id-content']],
                 ],
             ],
@@ -1113,7 +1004,405 @@ class SettingsTest extends TestCase
         ];
     }
 
-    /** @dataProvider booleanWithDefaultFalseProvider */
+    #[DataProvider('valuesForPmaAbsoluteUriProvider')]
+    public function testPmaAbsoluteUri(mixed $actual, string $expected): void
+    {
+        $settings = new Settings(['PmaAbsoluteUri' => $actual]);
+        $settingsArray = $settings->asArray();
+        $this->assertSame($expected, $settings->PmaAbsoluteUri);
+        $this->assertArrayHasKey('PmaAbsoluteUri', $settingsArray);
+        $this->assertSame($expected, $settingsArray['PmaAbsoluteUri']);
+    }
+
+    /** @return iterable<string, array{mixed, string}> */
+    public static function valuesForPmaAbsoluteUriProvider(): iterable
+    {
+        yield 'null value' => [null, ''];
+        yield 'valid value' => ['', ''];
+        yield 'valid value 2' => ['https://www.phpmyadmin.net/', 'https://www.phpmyadmin.net/'];
+        yield 'valid value with type coercion' => [1234, '1234'];
+    }
+
+    #[DataProvider('valuesForAuthLogProvider')]
+    public function testAuthLog(mixed $actual, string $expected): void
+    {
+        $settings = new Settings(['AuthLog' => $actual]);
+        $settingsArray = $settings->asArray();
+        $this->assertSame($expected, $settings->authLog);
+        $this->assertArrayHasKey('AuthLog', $settingsArray);
+        $this->assertSame($expected, $settingsArray['AuthLog']);
+    }
+
+    /** @return iterable<string, array{mixed, string}> */
+    public static function valuesForAuthLogProvider(): iterable
+    {
+        yield 'null value' => [null, 'auto'];
+        yield 'valid value' => ['', ''];
+        yield 'valid value 2' => ['/path/to/file', '/path/to/file'];
+        yield 'valid value with type coercion' => [1234, '1234'];
+    }
+
+    #[DataProvider('booleanWithDefaultFalseProvider')]
+    public function testAuthLogSuccess(mixed $actual, bool $expected): void
+    {
+        $settings = new Settings(['AuthLogSuccess' => $actual]);
+        $settingsArray = $settings->asArray();
+        $this->assertSame($expected, $settings->authLogSuccess);
+        $this->assertArrayHasKey('AuthLogSuccess', $settingsArray);
+        $this->assertSame($expected, $settingsArray['AuthLogSuccess']);
+    }
+
+    #[DataProvider('booleanWithDefaultFalseProvider')]
+    public function testPmaNoRelationDisableWarning(mixed $actual, bool $expected): void
+    {
+        $settings = new Settings(['PmaNoRelation_DisableWarning' => $actual]);
+        $settingsArray = $settings->asArray();
+        $this->assertSame($expected, $settings->PmaNoRelation_DisableWarning);
+        $this->assertArrayHasKey('PmaNoRelation_DisableWarning', $settingsArray);
+        $this->assertSame($expected, $settingsArray['PmaNoRelation_DisableWarning']);
+    }
+
+    #[DataProvider('booleanWithDefaultFalseProvider')]
+    public function testSuhosinDisableWarning(mixed $actual, bool $expected): void
+    {
+        $settings = new Settings(['SuhosinDisableWarning' => $actual]);
+        $settingsArray = $settings->asArray();
+        $this->assertSame($expected, $settings->SuhosinDisableWarning);
+        $this->assertArrayHasKey('SuhosinDisableWarning', $settingsArray);
+        $this->assertSame($expected, $settingsArray['SuhosinDisableWarning']);
+    }
+
+    #[DataProvider('booleanWithDefaultFalseProvider')]
+    public function testLoginCookieValidityDisableWarning(mixed $actual, bool $expected): void
+    {
+        $settings = new Settings(['LoginCookieValidityDisableWarning' => $actual]);
+        $settingsArray = $settings->asArray();
+        $this->assertSame($expected, $settings->LoginCookieValidityDisableWarning);
+        $this->assertArrayHasKey('LoginCookieValidityDisableWarning', $settingsArray);
+        $this->assertSame($expected, $settingsArray['LoginCookieValidityDisableWarning']);
+    }
+
+    #[DataProvider('booleanWithDefaultFalseProvider')]
+    public function testReservedWordDisableWarning(mixed $actual, bool $expected): void
+    {
+        $settings = new Settings(['ReservedWordDisableWarning' => $actual]);
+        $settingsArray = $settings->asArray();
+        $this->assertSame($expected, $settings->ReservedWordDisableWarning);
+        $this->assertArrayHasKey('ReservedWordDisableWarning', $settingsArray);
+        $this->assertSame($expected, $settingsArray['ReservedWordDisableWarning']);
+    }
+
+    #[DataProvider('valuesForTranslationWarningThresholdProvider')]
+    public function testTranslationWarningThreshold(mixed $actual, int $expected): void
+    {
+        $settings = new Settings(['TranslationWarningThreshold' => $actual]);
+        $settingsArray = $settings->asArray();
+        $this->assertSame($expected, $settings->TranslationWarningThreshold);
+        $this->assertArrayHasKey('TranslationWarningThreshold', $settingsArray);
+        $this->assertSame($expected, $settingsArray['TranslationWarningThreshold']);
+    }
+
+    /** @return iterable<string, array{mixed, int}> */
+    public static function valuesForTranslationWarningThresholdProvider(): iterable
+    {
+        yield 'null value' => [null, 80];
+        yield 'valid value' => [100, 100];
+        yield 'valid value with type coercion' => ['0', 0];
+        yield 'invalid value' => [-1, 80];
+        yield 'invalid value 2' => [101, 100];
+    }
+
+    #[DataProvider('valuesForAllowThirdPartyFramingProvider')]
+    public function testAllowThirdPartyFraming(mixed $actual, bool|string $expected): void
+    {
+        $settings = new Settings(['AllowThirdPartyFraming' => $actual]);
+        $settingsArray = $settings->asArray();
+        $this->assertSame($expected, $settings->AllowThirdPartyFraming);
+        $this->assertArrayHasKey('AllowThirdPartyFraming', $settingsArray);
+        $this->assertSame($expected, $settingsArray['AllowThirdPartyFraming']);
+    }
+
+    /** @return iterable<string, array{mixed, bool|string}> */
+    public static function valuesForAllowThirdPartyFramingProvider(): iterable
+    {
+        yield 'null value' => [null, false];
+        yield 'valid value' => [false, false];
+        yield 'valid value 2' => [true, true];
+        yield 'valid value 3' => ['sameorigin', 'sameorigin'];
+        yield 'valid value with type coercion' => [1, true];
+    }
+
+    #[DataProvider('valuesForBlowfishSecretProvider')]
+    public function testBlowfishSecret(mixed $actual, string $expected): void
+    {
+        $settings = new Settings(['blowfish_secret' => $actual]);
+        $settingsArray = $settings->asArray();
+        $this->assertSame($expected, $settings->blowfish_secret);
+        $this->assertArrayHasKey('blowfish_secret', $settingsArray);
+        $this->assertSame($expected, $settingsArray['blowfish_secret']);
+    }
+
+    /** @return iterable<string, array{mixed, string}> */
+    public static function valuesForBlowfishSecretProvider(): iterable
+    {
+        yield 'null value' => [null, ''];
+        yield 'valid value' => ['', ''];
+        yield 'valid value 2' => ['blowfish_secret', 'blowfish_secret'];
+        yield 'valid value with type coercion' => [1234, '1234'];
+    }
+
+    /** @param array<int, Server> $expected */
+    #[DataProvider('valuesForServersProvider')]
+    public function testServers(mixed $actual, array $expected): void
+    {
+        $settings = new Settings(['Servers' => $actual]);
+        $settingsArray = $settings->asArray();
+        $this->assertEquals($expected, $settings->Servers);
+        $this->assertArrayHasKey('Servers', $settingsArray);
+        $expectedArray = array_map(static fn ($server) => $server->asArray(), $expected);
+        $this->assertSame($expectedArray, $settingsArray['Servers']);
+    }
+
+    /** @return iterable<string, array{mixed, array<int, Server>}> */
+    public static function valuesForServersProvider(): iterable
+    {
+        $server = new Server();
+
+        yield 'null value' => [null, [1 => $server]];
+        yield 'valid value' => [[1 => [], 2 => []], [1 => $server, 2 => $server]];
+        yield 'valid value 2' => [[2 => ['host' => 'test']], [2 => new Server(['host' => 'test'])]];
+        yield 'valid value 3' => [
+            [4 => ['host' => '', 'verbose' => '']],
+            [4 => new Server(['host' => '', 'verbose' => 'Server 4'])],
+        ];
+
+        yield 'invalid value' => ['invalid', [1 => $server]];
+        yield 'invalid value 2' => [[0 => [], 2 => 'invalid', 'invalid' => [], 4 => []], [4 => $server]];
+        yield 'invalid value 3' => [[0 => []], [1 => $server]];
+    }
+
+    #[DataProvider('valuesForServerDefaultProvider')]
+    public function testServerDefault(mixed $actual, int $expected): void
+    {
+        $settings = new Settings(['ServerDefault' => $actual]);
+        $settingsArray = $settings->asArray();
+        $this->assertSame($expected, $settings->ServerDefault);
+        $this->assertArrayHasKey('ServerDefault', $settingsArray);
+        $this->assertSame($expected, $settingsArray['ServerDefault']);
+    }
+
+    /** @return iterable<string, array{mixed, int}> */
+    public static function valuesForServerDefaultProvider(): iterable
+    {
+        yield 'null value' => [null, 1];
+        yield 'valid value' => [0, 0];
+        yield 'valid value with type coercion' => ['0', 0];
+        yield 'invalid value' => [-1, 1];
+    }
+
+    #[DataProvider('booleanWithDefaultTrueProvider')]
+    public function testVersionCheck(mixed $actual, bool $expected): void
+    {
+        $settings = new Settings(['VersionCheck' => $actual]);
+        $settingsArray = $settings->asArray();
+        $this->assertSame($expected, $settings->VersionCheck);
+        $this->assertArrayHasKey('VersionCheck', $settingsArray);
+        $this->assertSame($expected, $settingsArray['VersionCheck']);
+    }
+
+    #[DataProvider('valuesForProxyUrlProvider')]
+    public function testProxyUrl(mixed $actual, string $expected): void
+    {
+        $settings = new Settings(['ProxyUrl' => $actual]);
+        $settingsArray = $settings->asArray();
+        $this->assertSame($expected, $settings->ProxyUrl);
+        $this->assertArrayHasKey('ProxyUrl', $settingsArray);
+        $this->assertSame($expected, $settingsArray['ProxyUrl']);
+    }
+
+    /** @return iterable<string, array{mixed, string}> */
+    public static function valuesForProxyUrlProvider(): iterable
+    {
+        yield 'null value' => [null, ''];
+        yield 'valid value' => ['', ''];
+        yield 'valid value 2' => ['test', 'test'];
+        yield 'valid value with type coercion' => [1234, '1234'];
+    }
+
+    #[DataProvider('valuesForProxyUserProvider')]
+    public function testProxyUser(mixed $actual, string $expected): void
+    {
+        $settings = new Settings(['ProxyUser' => $actual]);
+        $settingsArray = $settings->asArray();
+        $this->assertSame($expected, $settings->ProxyUser);
+        $this->assertArrayHasKey('ProxyUser', $settingsArray);
+        $this->assertSame($expected, $settingsArray['ProxyUser']);
+    }
+
+    /** @return iterable<string, array{mixed, string}> */
+    public static function valuesForProxyUserProvider(): iterable
+    {
+        yield 'null value' => [null, ''];
+        yield 'valid value' => ['', ''];
+        yield 'valid value 2' => ['test', 'test'];
+        yield 'valid value with type coercion' => [1234, '1234'];
+    }
+
+    #[DataProvider('valuesForProxyPassProvider')]
+    public function testProxyPass(mixed $actual, string $expected): void
+    {
+        $settings = new Settings(['ProxyPass' => $actual]);
+        $settingsArray = $settings->asArray();
+        $this->assertSame($expected, $settings->ProxyPass);
+        $this->assertArrayHasKey('ProxyPass', $settingsArray);
+        $this->assertSame($expected, $settingsArray['ProxyPass']);
+    }
+
+    /** @return iterable<string, array{mixed, string}> */
+    public static function valuesForProxyPassProvider(): iterable
+    {
+        yield 'null value' => [null, ''];
+        yield 'valid value' => ['', ''];
+        yield 'valid value 2' => ['test', 'test'];
+        yield 'valid value with type coercion' => [1234, '1234'];
+    }
+
+    #[DataProvider('valuesForMaxDbListProvider')]
+    public function testMaxDbList(mixed $actual, int $expected): void
+    {
+        $settings = new Settings(['MaxDbList' => $actual]);
+        $settingsArray = $settings->asArray();
+        $this->assertSame($expected, $settings->MaxDbList);
+        $this->assertArrayHasKey('MaxDbList', $settingsArray);
+        $this->assertSame($expected, $settingsArray['MaxDbList']);
+    }
+
+    /** @return iterable<string, array{mixed, int}> */
+    public static function valuesForMaxDbListProvider(): iterable
+    {
+        yield 'null value' => [null, 100];
+        yield 'valid value' => [1, 1];
+        yield 'valid value with type coercion' => ['1', 1];
+        yield 'invalid value' => [0, 100];
+    }
+
+    #[DataProvider('valuesForMaxTableListProvider')]
+    public function testMaxTableList(mixed $actual, int $expected): void
+    {
+        $settings = new Settings(['MaxTableList' => $actual]);
+        $settingsArray = $settings->asArray();
+        $this->assertSame($expected, $settings->MaxTableList);
+        $this->assertArrayHasKey('MaxTableList', $settingsArray);
+        $this->assertSame($expected, $settingsArray['MaxTableList']);
+    }
+
+    /** @return iterable<string, array{mixed, int}> */
+    public static function valuesForMaxTableListProvider(): iterable
+    {
+        yield 'null value' => [null, 250];
+        yield 'valid value' => [1, 1];
+        yield 'valid value with type coercion' => ['1', 1];
+        yield 'invalid value' => [0, 250];
+    }
+
+    #[DataProvider('booleanWithDefaultTrueProvider')]
+    public function testShowHint(mixed $actual, bool $expected): void
+    {
+        $settings = new Settings(['ShowHint' => $actual]);
+        $settingsArray = $settings->asArray();
+        $this->assertSame($expected, $settings->ShowHint);
+        $this->assertArrayHasKey('ShowHint', $settingsArray);
+        $this->assertSame($expected, $settingsArray['ShowHint']);
+    }
+
+    #[DataProvider('valuesForMaxCharactersInDisplayedSQLProvider')]
+    public function testMaxCharactersInDisplayedSQL(mixed $actual, int $expected): void
+    {
+        $settings = new Settings(['MaxCharactersInDisplayedSQL' => $actual]);
+        $settingsArray = $settings->asArray();
+        $this->assertSame($expected, $settings->MaxCharactersInDisplayedSQL);
+        $this->assertArrayHasKey('MaxCharactersInDisplayedSQL', $settingsArray);
+        $this->assertSame($expected, $settingsArray['MaxCharactersInDisplayedSQL']);
+    }
+
+    /** @return iterable<string, array{mixed, int}> */
+    public static function valuesForMaxCharactersInDisplayedSQLProvider(): iterable
+    {
+        yield 'null value' => [null, 1000];
+        yield 'valid value' => [1, 1];
+        yield 'valid value with type coercion' => ['1', 1];
+        yield 'invalid value' => [0, 1000];
+    }
+
+    #[DataProvider('valuesForOBGzipProvider')]
+    public function testOBGzip(mixed $actual, string|bool $expected): void
+    {
+        $settings = new Settings(['OBGzip' => $actual]);
+        $settingsArray = $settings->asArray();
+        $this->assertSame($expected, $settings->OBGzip);
+        $this->assertArrayHasKey('OBGzip', $settingsArray);
+        $this->assertSame($expected, $settingsArray['OBGzip']);
+    }
+
+    /** @return iterable<string, array{mixed, string|bool}> */
+    public static function valuesForOBGzipProvider(): iterable
+    {
+        yield 'null value' => [null, 'auto'];
+        yield 'valid value' => [true, true];
+        yield 'valid value 2' => [false, false];
+        yield 'valid value 3' => ['auto', 'auto'];
+        yield 'valid value with type coercion' => [0, false];
+    }
+
+    #[DataProvider('booleanWithDefaultFalseProvider')]
+    public function testPersistentConnections(mixed $actual, bool $expected): void
+    {
+        $settings = new Settings(['PersistentConnections' => $actual]);
+        $settingsArray = $settings->asArray();
+        $this->assertSame($expected, $settings->PersistentConnections);
+        $this->assertArrayHasKey('PersistentConnections', $settingsArray);
+        $this->assertSame($expected, $settingsArray['PersistentConnections']);
+    }
+
+    #[DataProvider('valuesForExecTimeLimitProvider')]
+    public function testExecTimeLimit(mixed $actual, int $expected): void
+    {
+        $settings = new Settings(['ExecTimeLimit' => $actual]);
+        $settingsArray = $settings->asArray();
+        $this->assertSame($expected, $settings->ExecTimeLimit);
+        $this->assertArrayHasKey('ExecTimeLimit', $settingsArray);
+        $this->assertSame($expected, $settingsArray['ExecTimeLimit']);
+    }
+
+    /** @return iterable<string, array{mixed, int}> */
+    public static function valuesForExecTimeLimitProvider(): iterable
+    {
+        yield 'null value' => [null, 300];
+        yield 'valid value' => [0, 0];
+        yield 'valid value with type coercion' => ['0', 0];
+        yield 'invalid value' => [-1, 300];
+    }
+
+    #[DataProvider('valuesForSessionSavePathProvider')]
+    public function testSessionSavePath(mixed $actual, string $expected): void
+    {
+        $settings = new Settings(['SessionSavePath' => $actual]);
+        $settingsArray = $settings->asArray();
+        $this->assertSame($expected, $settings->SessionSavePath);
+        $this->assertArrayHasKey('SessionSavePath', $settingsArray);
+        $this->assertSame($expected, $settingsArray['SessionSavePath']);
+    }
+
+    /** @return iterable<string, array{mixed, string}> */
+    public static function valuesForSessionSavePathProvider(): iterable
+    {
+        yield 'null value' => [null, ''];
+        yield 'valid value' => ['test', 'test'];
+        yield 'valid value 2' => ['', ''];
+        yield 'valid value with type coercion' => [1234, '1234'];
+    }
+
+    #[DataProvider('booleanWithDefaultFalseProvider')]
     public function testShowAll(mixed $actual, bool $expected): void
     {
         $settings = new Settings(['ShowAll' => $actual]);
@@ -1132,7 +1421,7 @@ class SettingsTest extends TestCase
         yield 'valid value with type coercion' => [1, true];
     }
 
-    /** @dataProvider valuesForMaxRowsProvider */
+    #[DataProvider('valuesForMaxRowsProvider')]
     public function testMaxRows(mixed $actual, int $expected): void
     {
         $settings = new Settings(['MaxRows' => $actual]);
@@ -1151,7 +1440,7 @@ class SettingsTest extends TestCase
         yield 'invalid value' => [0, 25];
     }
 
-    /** @dataProvider valuesForLimitCharsProvider */
+    #[DataProvider('valuesForLimitCharsProvider')]
     public function testLimitChars(mixed $actual, int $expected): void
     {
         $settings = new Settings(['LimitChars' => $actual]);
@@ -1170,7 +1459,7 @@ class SettingsTest extends TestCase
         yield 'invalid value' => [0, 50];
     }
 
-    /** @dataProvider valuesForRepeatCellsProvider */
+    #[DataProvider('valuesForRepeatCellsProvider')]
     public function testRepeatCells(mixed $actual, int $expected): void
     {
         $settings = new Settings(['RepeatCells' => $actual]);
@@ -1189,7 +1478,7 @@ class SettingsTest extends TestCase
         yield 'invalid value' => [-1, 100];
     }
 
-    /** @dataProvider booleanWithDefaultTrueProvider */
+    #[DataProvider('booleanWithDefaultTrueProvider')]
     public function testZeroConf(mixed $actual, bool $expected): void
     {
         $settings = new Settings(['ZeroConf' => $actual]);
@@ -1208,11 +1497,8 @@ class SettingsTest extends TestCase
         yield 'valid value with type coercion' => [0, false];
     }
 
-    /**
-     * @param array{internal: int, human: string} $expected
-     *
-     * @dataProvider valuesForMysqlMinVersionProvider
-     */
+    /** @param array{internal: int, human: string} $expected */
+    #[DataProvider('valuesForMysqlMinVersionProvider')]
     public function testMysqlMinVersion(mixed $actual, array $expected): void
     {
         $settings = new Settings(['MysqlMinVersion' => $actual]);

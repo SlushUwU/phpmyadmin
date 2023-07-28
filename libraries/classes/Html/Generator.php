@@ -13,7 +13,6 @@ use PhpMyAdmin\Profiling;
 use PhpMyAdmin\Providers\ServerVariables\ServerVariablesProvider;
 use PhpMyAdmin\Query\Compatibility;
 use PhpMyAdmin\ResponseRenderer;
-use PhpMyAdmin\Sanitize;
 use PhpMyAdmin\SqlParser\Lexer;
 use PhpMyAdmin\SqlParser\Parser;
 use PhpMyAdmin\SqlParser\Utils\Error as ParserError;
@@ -259,23 +258,28 @@ class Generator
     /**
      * Returns default function for a particular column.
      *
-     * @param array $field      Data about the column for which
-     *                          to generate the dropdown
-     * @param bool  $insertMode Whether the operation is 'insert'
-     *
      * @return string An HTML snippet of a dropdown list with function
      *                names appropriate for the requested column.
-     *
-     * @global mixed $data data of currently edited row
-     *                     (used to detect whether to choose defaults)
-     * @global array $cfg  PMA configuration
      */
-    public static function getDefaultFunctionForField(array $field, bool $insertMode): string
-    {
+    public static function getDefaultFunctionForField(
+        string $trueType,
+        bool $firstTimestamp,
+        string|null $defaultValue,
+        string $extra,
+        bool $isNull,
+        string $key,
+        string $type,
+        bool $insertMode,
+    ): string {
+        // For uuid field, no default function
+        if ($trueType === 'uuid') {
+            return '';
+        }
+
         $defaultFunction = '';
 
         // Can we get field class based values?
-        $currentClass = $GLOBALS['dbi']->types->getTypeClass($field['True_Type']);
+        $currentClass = $GLOBALS['dbi']->types->getTypeClass($trueType);
         if (! empty($currentClass) && isset($GLOBALS['cfg']['DefaultFunctions']['FUNC_' . $currentClass])) {
             $defaultFunction = $GLOBALS['cfg']['DefaultFunctions']['FUNC_' . $currentClass];
             // Change the configured default function to include the ST_ prefix with MySQL 5.6 and later.
@@ -296,18 +300,13 @@ class Generator
         // and the column does not have the
         // ON UPDATE DEFAULT TIMESTAMP attribute.
         if (
-            ($field['True_Type'] === 'timestamp')
-            && $field['first_timestamp']
-            && empty($field['Default'])
-            && $field['Extra'] !== 'on update CURRENT_TIMESTAMP'
-            && $field['Null'] === 'NO'
+            ($trueType === 'timestamp')
+            && $firstTimestamp
+            && ($defaultValue === null || $defaultValue === '')
+            && $extra !== 'on update CURRENT_TIMESTAMP'
+            && ! $isNull
         ) {
             $defaultFunction = $GLOBALS['cfg']['DefaultFunctions']['first_timestamp'];
-        }
-
-        // For uuid field, no default function
-        if ($field['True_Type'] === 'uuid') {
-            return '';
         }
 
         // For primary keys of type char(36) or varchar(36) UUID if the default
@@ -315,8 +314,8 @@ class Generator
         // Only applies to insert mode, as it would silently trash data on updates.
         if (
             $insertMode
-            && $field['Key'] === 'PRI'
-            && ($field['Type'] === 'char(36)' || $field['Type'] === 'varchar(36)')
+            && $key === 'PRI'
+            && ($type === 'char(36)' || $type === 'varchar(36)')
         ) {
             return $GLOBALS['cfg']['DefaultFunctions']['FUNC_UUID'];
         }
@@ -327,16 +326,12 @@ class Generator
     /**
      * Creates a dropdown box with MySQL functions for a particular column.
      *
-     * @param array $field       Data about the column for which to generate the dropdown
-     * @param bool  $insertMode  Whether the operation is 'insert'
-     * @param array $foreignData Foreign data
+     * @param mixed[] $foreignData Foreign data
      *
      * @return string An HTML snippet of a dropdown list with function names appropriate for the requested column.
      */
-    public static function getFunctionsForField(array $field, bool $insertMode, array $foreignData): string
+    public static function getFunctionsForField(string $defaultFunction, array $foreignData): string
     {
-        $defaultFunction = self::getDefaultFunctionForField($field, $insertMode);
-
         // Create the output
         $retval = '<option></option>' . "\n";
         // loop on the dropdown array and print all available options for that
@@ -453,217 +448,243 @@ class Generator
             unset($GLOBALS['using_bookmark_message']);
         }
 
-        if ($renderSql) {
-            $retval .= '<div class="result_query">' . "\n";
-        }
-
-        if ($message instanceof Message) {
-            if (isset($GLOBALS['special_message'])) {
-                $message->addText($GLOBALS['special_message']);
-                unset($GLOBALS['special_message']);
-            }
-
-            $retval .= $message->getDisplay();
-        } else {
-            $context = 'primary';
+        if (is_string($message)) {
+            $context = Message::NOTICE;
             if ($type === 'error') {
-                $context = 'danger';
+                $context = Message::ERROR;
             } elseif ($type === 'success') {
-                $context = 'success';
+                $context = Message::SUCCESS;
             }
 
-            $retval .= '<div class="alert alert-' . $context . '" role="alert">';
-            $retval .= Sanitize::sanitizeMessage($message);
-            if (isset($GLOBALS['special_message'])) {
-                $retval .= Sanitize::sanitizeMessage($GLOBALS['special_message']);
-                unset($GLOBALS['special_message']);
-            }
-
-            $retval .= '</div>';
+            $message = new Message($message, $context);
         }
 
-        if ($renderSql) {
-            $queryTooBig = false;
+        if (isset($GLOBALS['special_message'])) {
+            $message->addText($GLOBALS['special_message']);
+            unset($GLOBALS['special_message']);
+        }
 
-            $queryLength = mb_strlen($sqlQuery);
-            if ($queryLength > $GLOBALS['cfg']['MaxCharactersInDisplayedSQL']) {
-                // when the query is large (for example an INSERT of binary
-                // data), the parser chokes; so avoid parsing the query
-                $queryTooBig = true;
-                $queryBase = mb_substr($sqlQuery, 0, $GLOBALS['cfg']['MaxCharactersInDisplayedSQL']) . '[...]';
+        if (! $renderSql) {
+            return $retval . $message->getDisplay();
+        }
+
+        $retval .= '<div class="card mb-3 result_query">' . "\n";
+
+        $context = 'primary';
+        $level = $message->getLevel();
+        if ($level === 'error') {
+            $context = 'danger';
+        } elseif ($level === 'success') {
+            $context = 'success';
+        }
+
+        $message->isDisplayed(true);
+        $retval .= '<div class="alert alert-' . $context;
+        $retval .= ' border-top-0 border-start-0 border-end-0 rounded-bottom-0 mb-0" role="alert">' . "\n";
+        $retval .= '  ' . $message->getMessage() . "\n";
+        $retval .= '</div>' . "\n";
+
+        $queryTooBig = false;
+
+        $queryLength = mb_strlen($sqlQuery);
+        if ($queryLength > $GLOBALS['cfg']['MaxCharactersInDisplayedSQL']) {
+            // when the query is large (for example an INSERT of binary
+            // data), the parser chokes; so avoid parsing the query
+            $queryTooBig = true;
+            $queryBase = mb_substr($sqlQuery, 0, $GLOBALS['cfg']['MaxCharactersInDisplayedSQL']) . '[...]';
+        } else {
+            $queryBase = $sqlQuery;
+        }
+
+        // Html format the query to be displayed
+        // If we want to show some sql code it is easiest to create it here
+        /* SQL-Parser-Analyzer */
+
+        if (! empty($GLOBALS['show_as_php'])) {
+            $newLine = '\\n"<br>' . "\n" . '&nbsp;&nbsp;&nbsp;&nbsp;. "';
+            $queryBase = htmlspecialchars(addslashes($queryBase));
+            $queryBase = preg_replace('/((\015\012)|(\015)|(\012))/', $newLine, $queryBase);
+            $queryBase = '<code class="php" dir="ltr"><pre>' . "\n"
+                . '$sql = "' . $queryBase . '";' . "\n"
+                . '</pre></code>';
+        } elseif ($queryTooBig) {
+            $queryBase = '<code class="sql" dir="ltr"><pre>' . "\n"
+                . htmlspecialchars($queryBase, ENT_COMPAT) . '</pre></code>';
+        } else {
+            $queryBase = self::formatSql($queryBase);
+        }
+
+        // Prepares links that may be displayed to edit/explain the query
+        // (don't go to default pages, we must go to the page
+        // where the query box is available)
+
+        // Basic url query part
+        $urlParams = [];
+        if (! isset($GLOBALS['db'])) {
+            $GLOBALS['db'] = '';
+        }
+
+        if (strlen($GLOBALS['db']) > 0) {
+            $urlParams['db'] = $GLOBALS['db'];
+            if (strlen($GLOBALS['table']) > 0) {
+                $urlParams['table'] = $GLOBALS['table'];
+                $editLinkRoute = '/table/sql';
             } else {
-                $queryBase = $sqlQuery;
+                $editLinkRoute = '/database/sql';
             }
+        } else {
+            $editLinkRoute = '/server/sql';
+        }
 
-            // Html format the query to be displayed
-            // If we want to show some sql code it is easiest to create it here
-            /* SQL-Parser-Analyzer */
-
-            if (! empty($GLOBALS['show_as_php'])) {
-                $newLine = '\\n"<br>' . "\n" . '&nbsp;&nbsp;&nbsp;&nbsp;. "';
-                $queryBase = htmlspecialchars(addslashes($queryBase));
-                $queryBase = preg_replace('/((\015\012)|(\015)|(\012))/', $newLine, $queryBase);
-                $queryBase = '<code class="php"><pre>' . "\n"
-                    . '$sql = "' . $queryBase . '";' . "\n"
-                    . '</pre></code>';
-            } elseif ($queryTooBig) {
-                $queryBase = '<code class="sql"><pre>' . "\n"
-                    . htmlspecialchars($queryBase, ENT_COMPAT) . '</pre></code>';
-            } else {
-                $queryBase = self::formatSql($queryBase);
-            }
-
-            // Prepares links that may be displayed to edit/explain the query
-            // (don't go to default pages, we must go to the page
-            // where the query box is available)
-
-            // Basic url query part
-            $urlParams = [];
-            if (! isset($GLOBALS['db'])) {
-                $GLOBALS['db'] = '';
-            }
-
-            if (strlen($GLOBALS['db']) > 0) {
-                $urlParams['db'] = $GLOBALS['db'];
-                if (strlen($GLOBALS['table']) > 0) {
-                    $urlParams['table'] = $GLOBALS['table'];
-                    $editLink = Url::getFromRoute('/table/sql');
-                } else {
-                    $editLink = Url::getFromRoute('/database/sql');
-                }
-            } else {
-                $editLink = Url::getFromRoute('/server/sql');
-            }
-
-            // Want to have the query explained
-            // but only explain a SELECT (that has not been explained)
-            /* SQL-Parser-Analyzer */
-            $explainLink = '';
-            $isSelect = preg_match('@^SELECT[[:space:]]+@i', $sqlQuery);
-            if (! empty($GLOBALS['cfg']['SQLQuery']['Explain']) && ! $queryTooBig) {
-                $explainParams = $urlParams;
-                if ($isSelect) {
-                    $explainParams['sql_query'] = 'EXPLAIN ' . $sqlQuery;
-                    $explainLink = ' [&nbsp;'
-                        . self::linkOrButton(
-                            Url::getFromRoute('/import'),
-                            $explainParams,
-                            __('Explain SQL'),
-                        ) . '&nbsp;]';
-                } elseif (preg_match('@^EXPLAIN[[:space:]]+SELECT[[:space:]]+@i', $sqlQuery)) {
-                    $explainParams['sql_query'] = mb_substr($sqlQuery, 8);
-                    $explainLink = ' [&nbsp;'
-                        . self::linkOrButton(
-                            Url::getFromRoute('/import'),
-                            $explainParams,
-                            __('Skip Explain SQL'),
-                        ) . ']';
-                }
-            }
-
-            $urlParams['sql_query'] = $sqlQuery;
-            $urlParams['show_query'] = 1;
-
-            // even if the query is big and was truncated, offer the chance
-            // to edit it (unless it's enormous, see linkOrButton() )
-            if (! empty($GLOBALS['cfg']['SQLQuery']['Edit']) && empty($GLOBALS['show_as_php'])) {
-                $editLink = ' [&nbsp;'
-                    . self::linkOrButton($editLink, $urlParams, __('Edit'))
-                    . '&nbsp;]';
-            } else {
-                $editLink = '';
-            }
-
-            // Also we would like to get the SQL formed in some nice
-            // php-code
-            if (! empty($GLOBALS['cfg']['SQLQuery']['ShowAsPHP']) && ! $queryTooBig) {
-                if (! empty($GLOBALS['show_as_php'])) {
-                    $phpLink = ' [&nbsp;'
-                        . self::linkOrButton(
-                            Url::getFromRoute('/import'),
-                            $urlParams,
-                            __('Without PHP code'),
-                        )
-                        . '&nbsp;]';
-
-                    $phpLink .= ' [&nbsp;'
-                        . self::linkOrButton(
-                            Url::getFromRoute('/import'),
-                            $urlParams,
-                            __('Submit query'),
-                        )
-                        . '&nbsp;]';
-                } else {
-                    $phpParams = $urlParams;
-                    $phpParams['show_as_php'] = 1;
-                    $phpLink = ' [&nbsp;'
-                        . self::linkOrButton(
-                            Url::getFromRoute('/import'),
-                            $phpParams,
-                            __('Create PHP code'),
-                        )
-                        . '&nbsp;]';
-                }
-            } else {
-                $phpLink = '';
-            }
-
-            // Refresh query
-            if (
-                ! empty($GLOBALS['cfg']['SQLQuery']['Refresh'])
-                && ! isset($GLOBALS['show_as_php']) // 'Submit query' does the same
-                && preg_match('@^(SELECT|SHOW)[[:space:]]+@i', $sqlQuery)
-            ) {
-                $refreshLink = Url::getFromRoute('/sql', $urlParams);
-                $refreshLink = ' [&nbsp;'
-                    . self::linkOrButton($refreshLink, $urlParams, __('Refresh')) . '&nbsp;]';
-            } else {
-                $refreshLink = '';
-            }
-
-            $retval .= '<div class="sqlOuter">';
-            $retval .= $queryBase;
-            $retval .= '</div>';
-
-            $retval .= '<div class="tools d-print-none">';
-            $retval .= '<form action="' . Url::getFromRoute('/sql') . '" method="post">';
-            $retval .= Url::getHiddenInputs($GLOBALS['db'], $GLOBALS['table']);
-            $retval .= '<input type="hidden" name="sql_query" value="'
-                . htmlspecialchars($sqlQuery) . '">';
-
-            // avoid displaying a Profiling checkbox that could
-            // be checked, which would re-execute an INSERT, for example
-            if ($refreshLink !== '' && Profiling::isSupported($GLOBALS['dbi'])) {
-                $retval .= '<input type="hidden" name="profiling_form" value="1">';
-                $retval .= '<input type="checkbox" name="profiling" id="profilingCheckbox" class="autosubmit"';
-                $retval .= isset($_SESSION['profiling']) ? ' checked' : '';
-                $retval .= '> <label for="profilingCheckbox">' . __('Profiling') . '</label>';
-            }
-
-            $retval .= '</form>';
-
-            /**
-             * TODO: Should we have $cfg['SQLQuery']['InlineEdit']?
-             */
-            if (! empty($GLOBALS['cfg']['SQLQuery']['Edit']) && ! $queryTooBig && empty($GLOBALS['show_as_php'])) {
-                $inlineEditLink = ' [&nbsp;'
+        // Want to have the query explained
+        // but only explain a SELECT (that has not been explained)
+        /* SQL-Parser-Analyzer */
+        $explainLink = '';
+        $isSelect = preg_match('@^SELECT[[:space:]]+@i', $sqlQuery);
+        if (! empty($GLOBALS['cfg']['SQLQuery']['Explain']) && ! $queryTooBig) {
+            $explainParams = $urlParams;
+            if ($isSelect) {
+                $explainParams['sql_query'] = 'EXPLAIN ' . $sqlQuery;
+                $explainLink = '<div class="col-auto">'
                     . self::linkOrButton(
-                        '#',
+                        Url::getFromRoute('/import', $explainParams),
                         null,
-                        _pgettext('Inline edit query', 'Edit inline'),
-                        ['class' => 'inline_edit_sql'],
-                    )
-                    . '&nbsp;]';
-            } else {
-                $inlineEditLink = '';
+                        __('Explain SQL'),
+                        ['class' => 'btn btn-link'],
+                    ) . '</div>' . "\n";
+            } elseif (preg_match('@^EXPLAIN[[:space:]]+SELECT[[:space:]]+@i', $sqlQuery)) {
+                $explainParams['sql_query'] = mb_substr($sqlQuery, 8);
+                $explainLink = '<div class="col-auto">'
+                    . self::linkOrButton(
+                        Url::getFromRoute('/import', $explainParams),
+                        null,
+                        __('Skip Explain SQL'),
+                        ['class' => 'btn btn-link'],
+                    ) . '</div>' . "\n";
             }
-
-            $retval .= $inlineEditLink . $editLink . $explainLink . $phpLink
-                . $refreshLink;
-            $retval .= '</div>';
-
-            $retval .= '</div>';
         }
+
+        $urlParams['sql_query'] = $sqlQuery;
+        $urlParams['show_query'] = 1;
+
+        // even if the query is big and was truncated, offer the chance
+        // to edit it (unless it's enormous, see linkOrButton() )
+        if (! empty($GLOBALS['cfg']['SQLQuery']['Edit']) && empty($GLOBALS['show_as_php'])) {
+            $editLink = '<div class="col-auto">'
+                . self::linkOrButton(
+                    Url::getFromRoute($editLinkRoute, $urlParams),
+                    null,
+                    __('Edit'),
+                    ['class' => 'btn btn-link'],
+                )
+                . '</div>' . "\n";
+        } else {
+            $editLink = '';
+        }
+
+        // Also we would like to get the SQL formed in some nice
+        // php-code
+        if (! empty($GLOBALS['cfg']['SQLQuery']['ShowAsPHP']) && ! $queryTooBig) {
+            if (! empty($GLOBALS['show_as_php'])) {
+                $phpLink = '<div class="col-auto">'
+                    . self::linkOrButton(
+                        Url::getFromRoute('/import', $urlParams),
+                        null,
+                        __('Without PHP code'),
+                        ['class' => 'btn btn-link'],
+                    )
+                    . '</div>' . "\n";
+
+                $phpLink .= '<div class="col-auto">'
+                    . self::linkOrButton(
+                        Url::getFromRoute('/import', $urlParams),
+                        null,
+                        __('Submit query'),
+                        ['class' => 'btn btn-link'],
+                    )
+                    . '</div>' . "\n";
+            } else {
+                $phpParams = $urlParams;
+                $phpParams['show_as_php'] = 1;
+                $phpLink = '<div class="col-auto">'
+                    . self::linkOrButton(
+                        Url::getFromRoute('/import', $phpParams),
+                        null,
+                        __('Create PHP code'),
+                        ['class' => 'btn btn-link'],
+                    )
+                    . '</div>' . "\n";
+            }
+        } else {
+            $phpLink = '';
+        }
+
+        // Refresh query
+        if (
+            ! empty($GLOBALS['cfg']['SQLQuery']['Refresh'])
+            && ! isset($GLOBALS['show_as_php']) // 'Submit query' does the same
+            && preg_match('@^(SELECT|SHOW)[[:space:]]+@i', $sqlQuery)
+        ) {
+            $refreshLink = Url::getFromRoute('/sql', $urlParams);
+            $refreshLink = '<div class="col-auto">'
+                . self::linkOrButton(
+                    $refreshLink,
+                    null,
+                    __('Refresh'),
+                    ['class' => 'btn btn-link'],
+                ) . '</div>' . "\n";
+        } else {
+            $refreshLink = '';
+        }
+
+        $retval .= '<div class="card-body sqlOuter">';
+        $retval .= $queryBase;
+        $retval .= '</div>' . "\n";
+
+        $retval .= '<div class="card-footer tools d-print-none">' . "\n";
+        $retval .= '<div class="row align-items-center">' . "\n";
+        $retval .= '<div class="col-auto">' . "\n";
+        $retval .= '<form action="' . Url::getFromRoute('/sql', ['db' => $GLOBALS['db'], 'table' => $GLOBALS['table']])
+            . '" method="post" class="disableAjax">' . "\n";
+        $retval .= Url::getHiddenInputs($GLOBALS['db'], $GLOBALS['table']) . "\n";
+        $retval .= '<input type="hidden" name="sql_query" value="'
+            . htmlspecialchars($sqlQuery) . '">' . "\n";
+
+        // avoid displaying a Profiling checkbox that could
+        // be checked, which would re-execute an INSERT, for example
+        if ($refreshLink !== '' && Profiling::isSupported($GLOBALS['dbi'])) {
+            $retval .= '<input type="hidden" name="profiling_form" value="1">' . "\n";
+            $retval .= '<div class="form-check form-switch">' . "\n";
+            $retval .= '<input type="checkbox" name="profiling" id="profilingCheckbox" role="switch"';
+            $retval .= ' class="form-check-input autosubmit"';
+            $retval .= isset($_SESSION['profiling']) ? ' checked>' . "\n" : '>' . "\n";
+            $retval .= '<label class="form-check-label" for="profilingCheckbox">' . __('Profiling') . '</label>' . "\n";
+            $retval .= '</div>' . "\n";
+        }
+
+        $retval .= '</form></div>' . "\n";
+
+        /**
+         * TODO: Should we have $cfg['SQLQuery']['InlineEdit']?
+         */
+        if (! empty($GLOBALS['cfg']['SQLQuery']['Edit']) && ! $queryTooBig && empty($GLOBALS['show_as_php'])) {
+            $inlineEditLink = '<div class="col-auto">'
+                . self::linkOrButton(
+                    '#',
+                    null,
+                    _pgettext('Inline edit query', 'Edit inline'),
+                    ['class' => 'btn btn-link inline_edit_sql'],
+                )
+                . '</div>' . "\n";
+        } else {
+            $inlineEditLink = '';
+        }
+
+        $retval .= $inlineEditLink . $editLink . $explainLink . $phpLink
+            . $refreshLink;
+        $retval .= '</div></div>';
+
+        $retval .= '</div>';
 
         return $retval;
     }
@@ -756,15 +777,12 @@ class Generator
          * The errors found by the lexer and the parser.
          */
         $errors = ParserError::get(
-            [
-                $lexer,
-                $parser,
-            ],
+            [$lexer, $parser],
         );
 
         if ($sqlQuery === '') {
             $formattedSql = '';
-        } elseif (count($errors)) {
+        } elseif ($errors !== []) {
             $formattedSql = htmlspecialchars($sqlQuery);
         } else {
             $formattedSql = self::formatSql($sqlQuery, true);
@@ -806,10 +824,7 @@ class Generator
             }
 
             if ($isModifyLink) {
-                $urlParams = [
-                    'sql_query' => $sqlQuery,
-                    'show_query' => 1,
-                ];
+                $urlParams = ['sql_query' => $sqlQuery, 'show_query' => 1];
                 if (strlen($GLOBALS['table']) > 0) {
                     $urlParams['db'] = $GLOBALS['db'];
                     $urlParams['table'] = $GLOBALS['table'];
@@ -849,14 +864,8 @@ class Generator
             // All non-single blanks and  TAB-characters are replaced with their
             // HTML-counterpart
             $serverMessage = str_replace(
-                [
-                    '  ',
-                    "\t",
-                ],
-                [
-                    '&nbsp;&nbsp;',
-                    '&nbsp;&nbsp;&nbsp;&nbsp;',
-                ],
+                ['  ', "\t"],
+                ['&nbsp;&nbsp;', '&nbsp;&nbsp;&nbsp;&nbsp;'],
                 $serverMessage,
             );
 
@@ -881,7 +890,7 @@ class Generator
         if ($response->isAjax()) {
             $response->setRequestStatus(false);
             $response->addJSON('message', $errorMessage);
-            exit;
+            $response->callExit();
         }
 
         if ($backUrl !== '') {
@@ -893,12 +902,12 @@ class Generator
 
             $_SESSION['Import_message']['go_back_url'] = $backUrl;
 
-            $errorMessage .= '<fieldset class="pma-fieldset tblFooters">'
+            $errorMessage .= '<div class="card"><div class="card-body">'
                 . '[ <a href="' . $backUrl . '">' . __('Back') . '</a> ]'
-                . '</fieldset>' . "\n\n";
+                . '</div></div>' . "\n\n";
         }
 
-        exit($errorMessage);
+        $response->callExit($errorMessage);
     }
 
     /**
@@ -906,10 +915,10 @@ class Generator
      *
      * The image name should match CSS class defined in icons.css.php
      *
-     * @param string $image      The name of the file to get
-     * @param string $alternate  Used to set 'alt' and 'title' attributes
-     *                           of the image
-     * @param array  $attributes An associative array of other attributes
+     * @param string  $image      The name of the file to get
+     * @param string  $alternate  Used to set 'alt' and 'title' attributes
+     *                            of the image
+     * @param mixed[] $attributes An associative array of other attributes
      *
      * @return string an html IMG tag
      */
@@ -1047,7 +1056,7 @@ class Generator
      *
      * @param int      $count     number of elements in the list
      * @param int      $pos       current position in the list
-     * @param array    $urlParams url parameters
+     * @param mixed[]  $urlParams url parameters
      * @param string   $script    script name for form target
      * @param string   $frame     target frame
      * @param int      $maxCount  maximum number of elements to display from
@@ -1117,7 +1126,7 @@ class Generator
             $sqlQuery = mb_substr($sqlQuery, 0, $GLOBALS['cfg']['MaxCharactersInDisplayedSQL']) . '[...]';
         }
 
-        return '<code class="sql"><pre>' . "\n"
+        return '<code class="sql" dir="ltr"><pre>' . "\n"
             . htmlspecialchars($sqlQuery, ENT_COMPAT) . "\n"
             . '</pre></code>';
     }

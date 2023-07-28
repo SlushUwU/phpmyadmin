@@ -39,11 +39,11 @@ final class MysqliResult implements ResultInterface
      * Returns a generator that traverses through the whole result set
      * and returns each row as an associative array
      *
-     * @psalm-return Generator<int, array<string, string|null>, mixed, void>
+     * @psalm-return Generator<int, array<array-key, string|null>, mixed, void>
      */
     public function getIterator(): Generator
     {
-        if (! $this->result) {
+        if ($this->result === null) {
             return;
         }
 
@@ -57,11 +57,12 @@ final class MysqliResult implements ResultInterface
     /**
      * Returns the next row of the result with associative keys
      *
-     * @return array<string,string|null>
+     * @return array<string|null>
+     * @psalm-return array<array-key, string|null>
      */
     public function fetchAssoc(): array
     {
-        if (! $this->result) {
+        if ($this->result === null) {
             return [];
         }
 
@@ -74,10 +75,11 @@ final class MysqliResult implements ResultInterface
      * Returns the next row of the result with numeric keys
      *
      * @return array<int,string|null>
+     * @psalm-return list<string|null>
      */
     public function fetchRow(): array
     {
-        if (! $this->result) {
+        if ($this->result === null) {
             return [];
         }
 
@@ -107,11 +109,12 @@ final class MysqliResult implements ResultInterface
     /**
      * Returns all rows of the result
      *
-     * @return array<int, array<string,string|null>>
+     * @return array<array<string|null>>
+     * @psalm-return list<array<array-key, string|null>>
      */
     public function fetchAllAssoc(): array
     {
-        if (! $this->result) {
+        if ($this->result === null) {
             return [];
         }
 
@@ -125,10 +128,11 @@ final class MysqliResult implements ResultInterface
      * Returns values from the first column of each row
      *
      * @return array<int, string|null>
+     * @psalm-return list<string|null>
      */
     public function fetchAllColumn(): array
     {
-        if (! $this->result) {
+        if ($this->result === null) {
             return [];
         }
 
@@ -144,11 +148,12 @@ final class MysqliResult implements ResultInterface
      * SELECT id, name FROM users
      * produces: ['123' => 'John', '124' => 'Jane']
      *
-     * @return array<string, string|null>
+     * @return array<string|null>
+     * @psalm-return array<array-key, string|null>
      */
     public function fetchAllKeyPair(): array
     {
-        if (! $this->result) {
+        if ($this->result === null) {
             return [];
         }
 
@@ -165,7 +170,7 @@ final class MysqliResult implements ResultInterface
      */
     public function numFields(): int
     {
-        if (! $this->result) {
+        if ($this->result === null) {
             return 0;
         }
 
@@ -179,7 +184,7 @@ final class MysqliResult implements ResultInterface
      */
     public function numRows(): string|int
     {
-        if (! $this->result) {
+        if ($this->result === null) {
             return 0;
         }
 
@@ -195,7 +200,7 @@ final class MysqliResult implements ResultInterface
      */
     public function seek(int $offset): bool
     {
-        if (! $this->result) {
+        if ($this->result === null) {
             return false;
         }
 
@@ -206,16 +211,17 @@ final class MysqliResult implements ResultInterface
      * returns meta info for fields in $result
      *
      * @return array<int, FieldMetadata> meta info for fields in $result
+     * @psalm-return list<FieldMetadata>
      */
     public function getFieldsMeta(): array
     {
-        if (! $this->result) {
+        if ($this->result === null) {
             return [];
         }
 
         $fields = [];
-        foreach ($this->result->fetch_fields() as $k => $field) {
-            $fields[$k] = new FieldMetadata($field->type, $field->flags, $field);
+        foreach ($this->result->fetch_fields() as $field) {
+            $fields[] = new FieldMetadata($field);
         }
 
         return $fields;
@@ -225,16 +231,14 @@ final class MysqliResult implements ResultInterface
      * Returns the names of the fields in the result
      *
      * @return array<int, string> Fields names
+     * @psalm-return list<non-empty-string>
      */
     public function getFieldNames(): array
     {
-        if (! $this->result) {
+        if ($this->result === null) {
             return [];
         }
 
-        /** @var list<string> $column */
-        $column = array_column($this->result->fetch_fields(), 'name');
-
-        return $column;
+        return array_column($this->result->fetch_fields(), 'name');
     }
 }

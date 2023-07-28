@@ -4,11 +4,19 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests;
 
+use PhpMyAdmin\Config;
 use PhpMyAdmin\Template;
 use PhpMyAdmin\Twig\Extensions\Node\TransNode;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
+use PHPUnit\Framework\Attributes\RunInSeparateProcess;
+use ReflectionProperty;
+use Twig\Cache\CacheInterface;
+use Twig\Environment;
 use Twig\Error\LoaderError;
 
-/** @covers \PhpMyAdmin\Template */
+#[CoversClass(Template::class)]
 class TemplateTest extends AbstractTestCase
 {
     protected Template $template;
@@ -45,15 +53,11 @@ class TemplateTest extends AbstractTestCase
      * Test for set function
      *
      * @param string $data Template name
-     *
-     * @dataProvider providerTestSet
      */
+    #[DataProvider('providerTestSet')]
     public function testSet(string $data): void
     {
-        $result = $this->template->render($data, [
-            'variable1' => 'value1',
-            'variable2' => 'value2',
-        ]);
+        $result = $this->template->render($data, ['variable1' => 'value1', 'variable2' => 'value2']);
         $this->assertStringContainsString('value1', $result);
         $this->assertStringContainsString('value2', $result);
     }
@@ -61,13 +65,11 @@ class TemplateTest extends AbstractTestCase
     /**
      * Data provider for testSet
      *
-     * @return array
+     * @return mixed[]
      */
     public static function providerTestSet(): array
     {
-        return [
-            ['test/add_data'],
-        ];
+        return [['test/add_data']];
     }
 
     /**
@@ -76,9 +78,8 @@ class TemplateTest extends AbstractTestCase
      * @param string $templateFile Template name
      * @param string $key          Template variable array key
      * @param string $value        Template variable array value
-     *
-     * @dataProvider providerTestDynamicRender
      */
+    #[DataProvider('providerTestDynamicRender')]
     public function testDynamicRender(string $templateFile, string $key, string $value): void
     {
         $this->assertEquals(
@@ -90,17 +91,11 @@ class TemplateTest extends AbstractTestCase
     /**
      * Data provider for testDynamicRender
      *
-     * @return array
+     * @return mixed[]
      */
     public static function providerTestDynamicRender(): array
     {
-        return [
-            [
-                'test/echo',
-                'variable',
-                'value',
-            ],
-        ];
+        return [['test/echo', 'variable', 'value']];
     }
 
     /**
@@ -117,9 +112,8 @@ class TemplateTest extends AbstractTestCase
      *
      * @param string $templateFile   Template name
      * @param string $expectedResult Expected result
-     *
-     * @dataProvider providerTestRender
      */
+    #[DataProvider('providerTestRender')]
     public function testRender(string $templateFile, string $expectedResult): void
     {
         $this->assertEquals(
@@ -131,27 +125,21 @@ class TemplateTest extends AbstractTestCase
     /**
      * Data provider for testSet
      *
-     * @return array
+     * @return mixed[]
      */
     public static function providerTestRender(): array
     {
-        return [
-            [
-                'test/static',
-                'static content',
-            ],
-        ];
+        return [['test/static', 'static content']];
     }
 
     /**
      * Test for render
      *
-     * @param string $templateFile   Template name
-     * @param array  $renderParams   Render params
-     * @param string $expectedResult Expected result
-     *
-     * @dataProvider providerTestRenderGettext
+     * @param string  $templateFile   Template name
+     * @param mixed[] $renderParams   Render params
+     * @param string  $expectedResult Expected result
      */
+    #[DataProvider('providerTestRenderGettext')]
     public function testRenderGettext(string $templateFile, array $renderParams, string $expectedResult): void
     {
         $this->assertEquals(
@@ -163,46 +151,47 @@ class TemplateTest extends AbstractTestCase
     /**
      * Data provider for testRenderGettext
      *
-     * @return array
+     * @return mixed[]
      */
     public static function providerTestRenderGettext(): array
     {
         return [
-            [
-                'test/gettext/gettext',
-                [],
-                'Text',
-            ],
-            [
-                'test/gettext/pgettext',
-                [],
-                'Text',
-            ],
-            [
-                'test/gettext/notes',
-                [],
-                'Text',
-            ],
-            [
-                'test/gettext/plural',
-                ['table_count' => 1],
-                'One table',
-            ],
-            [
-                'test/gettext/plural',
-                ['table_count' => 2],
-                '2 tables',
-            ],
-            [
-                'test/gettext/plural_notes',
-                ['table_count' => 1],
-                'One table',
-            ],
-            [
-                'test/gettext/plural_notes',
-                ['table_count' => 2],
-                '2 tables',
-            ],
+            ['test/gettext/gettext', [], 'Text'],
+            ['test/gettext/pgettext', [], 'Text'],
+            ['test/gettext/notes', [], 'Text'],
+            ['test/gettext/plural', ['table_count' => 1], 'One table'],
+            ['test/gettext/plural', ['table_count' => 2], '2 tables'],
+            ['test/gettext/plural_notes', ['table_count' => 1], 'One table'],
+            ['test/gettext/plural_notes', ['table_count' => 2], '2 tables'],
         ];
+    }
+
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
+    public function testLoadingTwigEnvOnlyOnce(): void
+    {
+        $config = $this->createMock(Config::class);
+        $config->expects($this->once())->method('getTempDir')->with($this->equalTo('twig'))->willReturn(null);
+
+        $template = new Template($config);
+        $this->assertSame('static content', $template->render('test/static'));
+
+        $template2 = new Template($config);
+        $this->assertSame('static content', $template2->render('test/static'));
+    }
+
+    public function testDisableCache(): void
+    {
+        (new ReflectionProperty(Template::class, 'twig'))->setValue(null, null);
+        $template = new Template($this->createStub(Config::class));
+        $template->disableCache();
+        $twig = (new ReflectionProperty(Template::class, 'twig'))->getValue();
+        $this->assertInstanceOf(Environment::class, $twig);
+        $this->assertFalse($twig->getCache());
+        $twig->setCache($this->createStub(CacheInterface::class));
+        $this->assertNotFalse($twig->getCache());
+        $template->disableCache();
+        $this->assertFalse($twig->getCache());
+        (new ReflectionProperty(Template::class, 'twig'))->setValue(null, null);
     }
 }

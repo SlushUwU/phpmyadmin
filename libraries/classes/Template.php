@@ -40,20 +40,15 @@ class Template
     /**
      * Twig environment
      */
-    protected static Environment $twig;
+    protected static Environment|null $twig = null;
 
     public const TEMPLATES_FOLDER = ROOT_PATH . 'templates';
 
+    private Config $config;
+
     public function __construct(Config|null $config = null)
     {
-        if (isset(static::$twig)) {
-            return;
-        }
-
-        $config = $config ?? $GLOBALS['config'] ?? null;
-        $cacheDir = $config?->getTempDir('twig');
-
-        static::$twig = self::getTwigEnvironment($cacheDir);
+        $this->config = $config ?? $GLOBALS['config'];
     }
 
     public static function getTwigEnvironment(string|null $cacheDir): Environment
@@ -64,21 +59,20 @@ class Template
         }
 
         $loader = new FilesystemLoader(self::TEMPLATES_FOLDER);
-        $twig = new Environment($loader, [
-            'auto_reload' => true,
-            'cache' => $cacheDir,
-        ]);
+        $twig = new Environment($loader, ['auto_reload' => true, 'cache' => $cacheDir]);
 
         $twig->addRuntimeLoader(new ContainerRuntimeLoader(Core::getContainerBuilder()));
 
         if (($GLOBALS['cfg']['environment'] ?? '') === 'development') {
             $twig->enableDebug();
+            $twig->enableStrictVariables();
             $twig->addExtension(new DebugExtension());
             // This will enable debug for the extension to print lines
             // It is used in po file lines re-mapping
             TransNode::$enableAddDebugInfo = true;
         } else {
             $twig->disableDebug();
+            $twig->disableStrictVariables();
             TransNode::$enableAddDebugInfo = false;
         }
 
@@ -107,6 +101,10 @@ class Template
      */
     private function load(string $templateName): TemplateWrapper
     {
+        if (static::$twig === null) {
+            static::$twig = self::getTwigEnvironment($this->config->getTempDir('twig'));
+        }
+
         try {
             $template = static::$twig->load($templateName . '.twig');
         } catch (RuntimeException $e) {
@@ -128,8 +126,8 @@ class Template
     }
 
     /**
-     * @param string $template Template path name
-     * @param array  $data     Associative array of template variables
+     * @param string  $template Template path name
+     * @param mixed[] $data     Associative array of template variables
      *
      * @throws Throwable
      * @throws LoaderError
@@ -139,5 +137,14 @@ class Template
     public function render(string $template, array $data = []): string
     {
         return $this->load($template)->render($data);
+    }
+
+    public function disableCache(): void
+    {
+        if (static::$twig === null) {
+            static::$twig = self::getTwigEnvironment(null);
+        }
+
+        static::$twig->setCache(false);
     }
 }

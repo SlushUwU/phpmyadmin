@@ -34,10 +34,10 @@ abstract class PreApPendTransformationsPlugin extends TransformationsPlugin
      * Does the actual work of each specific transformations plugin.
      *
      * @param string             $buffer  text to be transformed
-     * @param array              $options transformation options
+     * @param mixed[]            $options transformation options
      * @param FieldMetadata|null $meta    meta information
      */
-    public function applyTransformation($buffer, array $options = [], FieldMetadata|null $meta = null): string
+    public function applyTransformation(string $buffer, array $options = [], FieldMetadata|null $meta = null): string
     {
         $cfg = $GLOBALS['cfg'];
         $options = $this->getOptions($options, $cfg['DefaultTransformations']['PreApPend']);

@@ -40,16 +40,16 @@ class PageSettings
      */
     private string $HTML = '';
 
-    private UserPreferences $userPreferences;
+    public function __construct(private UserPreferences $userPreferences)
+    {
+    }
 
     /**
      * @param string      $formGroupName The name of config form group to display
      * @param string|null $elemId        Id of the div containing settings
      */
-    public function __construct(string $formGroupName, string|null $elemId = null)
+    public function init(string $formGroupName, string|null $elemId = null): void
     {
-        $this->userPreferences = new UserPreferences($GLOBALS['dbi']);
-
         $formClass = PageFormList::get($formGroupName);
         if ($formClass === null) {
             return;
@@ -98,7 +98,7 @@ class PageSettings
             // reload page
             $response = ResponseRenderer::getInstance();
             Core::sendHeaderLocation($response->getSelfUrl());
-            exit;
+            $response->callExit();
         }
 
         return $result;
@@ -113,7 +113,7 @@ class PageSettings
     private function storeError(FormDisplay $formDisplay, Message|null $error): void
     {
         $retval = '';
-        if ($error) {
+        if ($error !== null) {
             $retval .= $error->getDisplay();
         }
 

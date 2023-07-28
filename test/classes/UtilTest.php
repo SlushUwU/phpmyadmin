@@ -13,6 +13,9 @@ use PhpMyAdmin\SqlParser\Token;
 use PhpMyAdmin\Util;
 use PhpMyAdmin\Utils\SessionCache;
 use PhpMyAdmin\Version;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\RequiresPhpExtension;
 use Psr\Http\Message\ServerRequestInterface;
 
 use function __;
@@ -28,7 +31,6 @@ use function ini_set;
 use function str_repeat;
 use function str_replace;
 use function strlen;
-use function trim;
 
 use const LC_ALL;
 use const MYSQLI_NUM_FLAG;
@@ -44,26 +46,20 @@ const FIELD_TYPE_INTEGER = 1;
 const FIELD_TYPE_VARCHAR = 253;
 const FIELD_TYPE_UNKNOWN = -1;
 
-/** @covers \PhpMyAdmin\Util */
+#[CoversClass(Util::class)]
 class UtilTest extends AbstractTestCase
 {
     /**
      * Test for listPHPExtensions
-     *
-     * @requires extension mysqli
-     * @requires extension curl
-     * @requires extension mbstring
-     * @requires extension sodium
      */
+    #[RequiresPhpExtension('curl')]
+    #[RequiresPhpExtension('mbstring')]
+    #[RequiresPhpExtension('mysqli')]
+    #[RequiresPhpExtension('sodium')]
     public function testListPHPExtensions(): void
     {
         $this->assertSame(
-            [
-                'mysqli',
-                'curl',
-                'mbstring',
-                'sodium',
-            ],
+            ['mysqli', 'curl', 'mbstring', 'sodium'],
             Util::listPHPExtensions(),
         );
     }
@@ -85,73 +81,81 @@ class UtilTest extends AbstractTestCase
         $GLOBALS['dbi'] = $this->createDatabaseInterface();
 
         $meta = [
-            new FieldMetadata(MYSQLI_TYPE_STRING, 0, (object) [
+            FieldHelper::fromArray([
+                'type' => MYSQLI_TYPE_STRING,
                 'name' => 'field1',
                 'table' => 'table',
                 'orgtable' => 'table',
             ]),
-            new FieldMetadata(MYSQLI_TYPE_STRING, 0, (object) [
+            FieldHelper::fromArray([
+                'type' => MYSQLI_TYPE_STRING,
                 'name' => 'field2',
                 'table' => 'table',
                 'orgtable' => 'table',
             ]),
-            new FieldMetadata(MYSQLI_TYPE_SHORT, MYSQLI_NUM_FLAG, (object) [
+            FieldHelper::fromArray([
+                'type' => MYSQLI_TYPE_SHORT,
+                'flags' => MYSQLI_NUM_FLAG,
                 'name' => 'field3',
                 'table' => 'table',
                 'orgtable' => 'table',
             ]),
-            new FieldMetadata(MYSQLI_TYPE_LONG, MYSQLI_NUM_FLAG, (object) [
+            FieldHelper::fromArray([
+                'type' => MYSQLI_TYPE_LONG,
+                'flags' => MYSQLI_NUM_FLAG,
                 'name' => 'field4',
                 'table' => 'table',
                 'orgtable' => 'table',
             ]),
-            new FieldMetadata(MYSQLI_TYPE_STRING, 0, (object) [
+            FieldHelper::fromArray([
+                'type' => MYSQLI_TYPE_STRING,
                 'name' => 'field5',
                 'table' => 'table',
                 'orgtable' => 'table',
                 'charsetnr' => 63, // binary
             ]),
-            new FieldMetadata(MYSQLI_TYPE_STRING, 0, (object) [
+            FieldHelper::fromArray([
+                'type' => MYSQLI_TYPE_STRING,
                 'name' => 'field6',
                 'table' => 'table',
                 'orgtable' => 'table',
                 'charsetnr' => 63, // binary
             ]),
-            new FieldMetadata(MYSQLI_TYPE_STRING, 0, (object) [
+            FieldHelper::fromArray([
+                'type' => MYSQLI_TYPE_STRING,
                 'name' => 'field7',
                 'table' => 'table',
                 'orgtable' => 'table',
-                'numeric' => false,
-                'type' => 'blob',
                 'charsetnr' => 32, // armscii8_general_ci
             ]),
-            new FieldMetadata(MYSQLI_TYPE_STRING, 0, (object) [
+            FieldHelper::fromArray([
+                'type' => MYSQLI_TYPE_STRING,
                 'name' => 'field8',
                 'table' => 'table',
                 'orgtable' => 'table',
-                'numeric' => false,
-                'type' => 'blob',
                 'charsetnr' => 48, // latin1_general_ci
             ]),
-            new FieldMetadata(MYSQLI_TYPE_STRING, 0, (object) [
+            FieldHelper::fromArray([
+                'type' => MYSQLI_TYPE_STRING,
                 'name' => 'field9',
                 'table' => 'table',
                 'orgtable' => 'table',
-                'numeric' => false,
-                'type' => 'blob',
                 'charsetnr' => 63, // binary
             ]),
-            new FieldMetadata(MYSQLI_TYPE_GEOMETRY, 0, (object) [
+            FieldHelper::fromArray([
+                'type' => MYSQLI_TYPE_GEOMETRY,
                 'name' => 'field10',
                 'table' => 'table',
                 'orgtable' => 'table',
             ]),
-            new FieldMetadata(MYSQLI_TYPE_STRING, 0, (object) [
+            FieldHelper::fromArray([
+                'type' => MYSQLI_TYPE_STRING,
                 'name' => 'field11',
                 'table' => 'table2',
                 'orgtable' => 'table2',
             ]),
-            new FieldMetadata(MYSQLI_TYPE_BIT, 0, (object) [
+            FieldHelper::fromArray([
+                'type' => MYSQLI_TYPE_BIT,
                 'name' => 'field12',
                 'table' => 'table',
                 'orgtable' => 'table',
@@ -202,7 +206,8 @@ class UtilTest extends AbstractTestCase
     public function testGetUniqueConditionWithSingleBigBinaryField(): void
     {
         $meta = [
-            new FieldMetadata(MYSQLI_TYPE_STRING, 0, (object) [
+            FieldHelper::fromArray([
+                'type' => MYSQLI_TYPE_STRING,
                 'name' => 'field',
                 'table' => 'table',
                 'orgtable' => 'table',
@@ -222,12 +227,15 @@ class UtilTest extends AbstractTestCase
         $GLOBALS['dbi'] = $this->createDatabaseInterface();
 
         $meta = [
-            new FieldMetadata(MYSQLI_TYPE_LONG, MYSQLI_PRI_KEY_FLAG | MYSQLI_NUM_FLAG, (object) [
+            FieldHelper::fromArray([
+                'type' => MYSQLI_TYPE_LONG,
+                'flags' => MYSQLI_PRI_KEY_FLAG | MYSQLI_NUM_FLAG,
                 'name' => 'id',
                 'table' => 'table',
                 'orgtable' => 'table',
             ]),
-            new FieldMetadata(MYSQLI_TYPE_STRING, 0, (object) [
+            FieldHelper::fromArray([
+                'type' => MYSQLI_TYPE_STRING,
                 'name' => 'field',
                 'table' => 'table',
                 'orgtable' => 'table',
@@ -243,12 +251,15 @@ class UtilTest extends AbstractTestCase
         $GLOBALS['dbi'] = $this->createDatabaseInterface();
 
         $meta = [
-            new FieldMetadata(MYSQLI_TYPE_STRING, MYSQLI_UNIQUE_KEY_FLAG, (object) [
+            FieldHelper::fromArray([
+                'type' => MYSQLI_TYPE_STRING,
+                'flags' => MYSQLI_UNIQUE_KEY_FLAG,
                 'name' => 'id',
                 'table' => 'table',
                 'orgtable' => 'table',
             ]),
-            new FieldMetadata(MYSQLI_TYPE_STRING, 0, (object) [
+            FieldHelper::fromArray([
+                'type' => MYSQLI_TYPE_STRING,
                 'name' => 'field',
                 'table' => 'table',
                 'orgtable' => 'table',
@@ -268,9 +279,8 @@ class UtilTest extends AbstractTestCase
      * @param array           $expected Expected Result
      * @psalm-param array<int, mixed> $row
      * @psalm-param array{string, bool, array<string, string>} $expected
-     *
-     * @dataProvider providerGetUniqueConditionForGroupFlag
      */
+    #[DataProvider('providerGetUniqueConditionForGroupFlag')]
     public function testGetUniqueConditionForGroupFlag(array $meta, array $row, array $expected): void
     {
         $GLOBALS['dbi'] = $this->createDatabaseInterface();
@@ -291,87 +301,81 @@ class UtilTest extends AbstractTestCase
         return [
             'field type is integer, value is number - not escape string' => [
                 [
-                    new FieldMetadata(FIELD_TYPE_INTEGER, MYSQLI_NUM_FLAG, (object) [
+                    FieldHelper::fromArray([
+                        'type' => FIELD_TYPE_INTEGER,
+                        'flags' => MYSQLI_NUM_FLAG,
                         'name' => 'col',
                         'table' => 'table',
                         'orgtable' => 'table',
                     ]),
                 ],
                 [123],
-                [
-                    '`table`.`col` = 123',
-                    false,
-                    ['`table`.`col`' => '= 123'],
-                ],
+                ['`table`.`col` = 123', false, ['`table`.`col`' => '= 123']],
             ],
             'field type is unknown, value is string - escape string' => [
                 [
-                    new FieldMetadata(FIELD_TYPE_UNKNOWN, MYSQLI_NUM_FLAG, (object) [
+                    FieldHelper::fromArray([
+                        'type' => FIELD_TYPE_UNKNOWN,
+                        'flags' => MYSQLI_NUM_FLAG,
                         'name' => 'col',
                         'table' => 'table',
                         'orgtable' => 'table',
                     ]),
                 ],
                 ['test'],
-                [
-                    "`table`.`col` = 'test'",
-                    false,
-                    ['`table`.`col`' => "= 'test'"],
-                ],
+                ["`table`.`col` = 'test'", false, ['`table`.`col`' => "= 'test'"]],
             ],
             'field type is varchar, value is string - escape string' => [
                 [
-                    new FieldMetadata(FIELD_TYPE_VARCHAR, MYSQLI_NUM_FLAG, (object) [
+                    FieldHelper::fromArray([
+                        'type' => FIELD_TYPE_VARCHAR,
+                        'flags' => MYSQLI_NUM_FLAG,
                         'name' => 'col',
                         'table' => 'table',
                         'orgtable' => 'table',
                     ]),
                 ],
                 ['test'],
-                [
-                    "`table`.`col` = 'test'",
-                    false,
-                    ['`table`.`col`' => "= 'test'"],
-                ],
+                ["`table`.`col` = 'test'", false, ['`table`.`col`' => "= 'test'"]],
             ],
             'field type is varchar, value is string with double quote - escape string' => [
                 [
-                    new FieldMetadata(FIELD_TYPE_VARCHAR, MYSQLI_NUM_FLAG, (object) [
+                    FieldHelper::fromArray([
+                        'type' => FIELD_TYPE_VARCHAR,
+                        'flags' => MYSQLI_NUM_FLAG,
                         'name' => 'col',
                         'table' => 'table',
                         'orgtable' => 'table',
                     ]),
                 ],
                 ['"test"'],
-                [
-                    "`table`.`col` = '\\\"test\\\"'",
-                    false,
-                    ['`table`.`col`' => "= '\\\"test\\\"'"],
-                ],
+                ["`table`.`col` = '\\\"test\\\"'", false, ['`table`.`col`' => "= '\\\"test\\\"'"]],
             ],
             'field type is varchar, value is string with single quote - escape string' => [
                 [
-                    new FieldMetadata(FIELD_TYPE_VARCHAR, MYSQLI_NUM_FLAG, (object) [
+                    FieldHelper::fromArray([
+                        'type' => FIELD_TYPE_VARCHAR,
+                        'flags' => MYSQLI_NUM_FLAG,
                         'name' => 'col',
                         'table' => 'table',
                         'orgtable' => 'table',
                     ]),
                 ],
                 ["'test'"],
-                [
-                    "`table`.`col` = '\'test\''",
-                    false,
-                    ['`table`.`col`' => "= '\'test\''"],
-                ],
+                ["`table`.`col` = '\'test\''", false, ['`table`.`col`' => "= '\'test\''"]],
             ],
             'group by multiple columns and field type is mixed' => [
                 [
-                    new FieldMetadata(FIELD_TYPE_VARCHAR, MYSQLI_NUM_FLAG, (object) [
+                    FieldHelper::fromArray([
+                        'type' => FIELD_TYPE_VARCHAR,
+                        'flags' => MYSQLI_NUM_FLAG,
                         'name' => 'col',
                         'table' => 'table',
                         'orgtable' => 'table',
                     ]),
-                    new FieldMetadata(FIELD_TYPE_INTEGER, MYSQLI_NUM_FLAG, (object) [
+                    FieldHelper::fromArray([
+                        'type' => FIELD_TYPE_INTEGER,
+                        'flags' => MYSQLI_NUM_FLAG,
                         'name' => 'status_id',
                         'table' => 'table',
                         'orgtable' => 'table',
@@ -381,10 +385,7 @@ class UtilTest extends AbstractTestCase
                 [
                     "`table`.`col` = 'test' AND `table`.`status_id` = 2",
                     false,
-                    [
-                        '`table`.`col`' => "= 'test'",
-                        '`table`.`status_id`' => '= 2',
-                    ],
+                    ['`table`.`col`' => "= 'test'", '`table`.`status_id`' => '= 2'],
                 ],
             ],
         ];
@@ -412,9 +413,8 @@ class UtilTest extends AbstractTestCase
      *
      * @param string $collation Collation
      * @param string $expected  Expected Charset Query
-     *
-     * @dataProvider charsetQueryData
      */
+    #[DataProvider('charsetQueryData')]
     public function testGenerateCharsetQueryPart(string $collation, string $expected): void
     {
         $this->assertEquals(
@@ -426,24 +426,11 @@ class UtilTest extends AbstractTestCase
     /**
      * Data Provider for testgetCharsetQueryPart
      *
-     * @return array test data
+     * @return mixed[] test data
      */
     public static function charsetQueryData(): array
     {
-        return [
-            [
-                'a_b_c_d',
-                ' CHARSET=a COLLATE a_b_c_d',
-            ],
-            [
-                'a_',
-                ' CHARSET=a COLLATE a_',
-            ],
-            [
-                'a',
-                ' CHARSET=a',
-            ],
-        ];
+        return [['a_b_c_d', ' CHARSET=a COLLATE a_b_c_d'], ['a_', ' CHARSET=a COLLATE a_'], ['a', ' CHARSET=a']];
     }
 
     /**
@@ -462,17 +449,11 @@ class UtilTest extends AbstractTestCase
         $this->assertEquals('yes', $_SESSION['cache']['server_server']['is_superuser']);
 
         SessionCache::set('mysql_cur_user', 'mysql');
-        $this->assertEquals(
-            'mysql',
-            $_SESSION['cache']['server_server']['mysql_cur_user'],
-        );
+        $this->assertEquals('mysql', $_SESSION['cache']['server_server']['mysql_cur_user']);
 
         Util::clearUserCache();
         $this->assertArrayNotHasKey('is_superuser', $_SESSION['cache']['server_server']);
-        $this->assertArrayNotHasKey(
-            'mysql_cur_user',
-            $_SESSION['cache']['server_server'],
-        );
+        $this->assertArrayNotHasKey('mysql_cur_user', $_SESSION['cache']['server_server']);
     }
 
     /**
@@ -480,9 +461,8 @@ class UtilTest extends AbstractTestCase
      *
      * @param string|null $bit Value
      * @param string      $val Expected value
-     *
-     * @dataProvider providerConvertBitDefaultValue
      */
+    #[DataProvider('providerConvertBitDefaultValue')]
     public function testConvertBitDefaultValue(string|null $bit, string $val): void
     {
         $this->assertEquals(
@@ -494,43 +474,19 @@ class UtilTest extends AbstractTestCase
     /**
      * Provider for testConvertBitDefaultValue
      *
-     * @return array
+     * @return mixed[]
      */
     public static function providerConvertBitDefaultValue(): array
     {
         return [
-            [
-                null,
-                '',
-            ],
-            [
-                "b'",
-                '',
-            ],
-            [
-                "b'01'",
-                '01',
-            ],
-            [
-                "b'010111010'",
-                '010111010',
-            ],
-            'database name starting with b' => [
-                'big database',
-                'big database',
-            ],
-            "database name containing b'" => [
-                "a b'ig database",
-                "a b'ig database",
-            ],
-            'database name in single quotes' => [
-                "'a*database*name'",
-                "'a*database*name'",
-            ],
-            "database name with multiple b'" => [
-                "b'ens datab'ase'",
-                "b'ens datab'ase'",
-            ],
+            [null, ''],
+            ["b'", ''],
+            ["b'01'", '01'],
+            ["b'010111010'", '010111010'],
+            'database name starting with b' => ['big database', 'big database'],
+            "database name containing b'" => ["a b'ig database", "a b'ig database"],
+            'database name in single quotes' => ["'a*database*name'", "'a*database*name'"],
+            "database name with multiple b'" => ["b'ens datab'ase'", "b'ens datab'ase'"],
         ];
     }
 
@@ -539,19 +495,13 @@ class UtilTest extends AbstractTestCase
      *
      * @param string $in  string to evaluate
      * @param string $out expected output
-     *
-     * @dataProvider providerExpandUserString
      */
+    #[DataProvider('providerExpandUserString')]
     public function testExpandUserString(string $in, string $out): void
     {
         parent::setGlobalConfig();
 
-        $GLOBALS['cfg'] = [
-            'Server' => [
-                'host' => 'host&',
-                'verbose' => 'verbose',
-            ],
-        ];
+        $GLOBALS['cfg'] = ['Server' => ['host' => 'host&', 'verbose' => 'verbose']];
         $GLOBALS['db'] = 'database';
         $GLOBALS['table'] = 'table';
 
@@ -577,41 +527,22 @@ class UtilTest extends AbstractTestCase
     public static function providerExpandUserString(): array
     {
         return [
-            [
-                '@SERVER@',
-                'host&',
-            ],
-            [
-                '@VSERVER@',
-                'verbose',
-            ],
-            [
-                '@DATABASE@',
-                'database',
-            ],
-            [
-                '@TABLE@',
-                'table',
-            ],
-            [
-                '@IGNORE@',
-                '@IGNORE@',
-            ],
-            [
-                '@PHPMYADMIN@',
-                'phpMyAdmin ' . Version::VERSION,
-            ],
+            ['@SERVER@', 'host&'],
+            ['@VSERVER@', 'verbose'],
+            ['@DATABASE@', 'database'],
+            ['@TABLE@', 'table'],
+            ['@IGNORE@', '@IGNORE@'],
+            ['@PHPMYADMIN@', 'phpMyAdmin ' . Version::VERSION],
         ];
     }
 
     /**
      * Test case for parsing SHOW COLUMNS output
      *
-     * @param string $in  Column specification
-     * @param array  $out Expected value
-     *
-     * @dataProvider providerExtractColumnSpec
+     * @param string  $in  Column specification
+     * @param mixed[] $out Expected value
      */
+    #[DataProvider('providerExtractColumnSpec')]
     public function testExtractColumnSpec(string $in, array $out): void
     {
         $GLOBALS['cfg']['LimitChars'] = 1000;
@@ -625,7 +556,7 @@ class UtilTest extends AbstractTestCase
     /**
      * Data provider for testExtractColumnSpec
      *
-     * @return array
+     * @return mixed[]
      */
     public static function providerExtractColumnSpec(): array
     {
@@ -639,10 +570,7 @@ class UtilTest extends AbstractTestCase
                     'unsigned' => false,
                     'zerofill' => false,
                     'spec_in_brackets' => "'a','b'",
-                    'enum_set_values' => [
-                        'a',
-                        'b',
-                    ],
+                    'enum_set_values' => ['a', 'b'],
                     'attribute' => ' ',
                     'can_contain_collation' => true,
                     'displayed_type' => "set('a', 'b')",
@@ -657,10 +585,7 @@ class UtilTest extends AbstractTestCase
                     'unsigned' => false,
                     'zerofill' => false,
                     'spec_in_brackets' => "'\'a','b'",
-                    'enum_set_values' => [
-                        "'a",
-                        'b',
-                    ],
+                    'enum_set_values' => ["'a", 'b'],
                     'attribute' => ' ',
                     'can_contain_collation' => true,
                     'displayed_type' => "set('\'a', 'b')",
@@ -675,10 +600,7 @@ class UtilTest extends AbstractTestCase
                     'unsigned' => false,
                     'zerofill' => false,
                     'spec_in_brackets' => "'''a','b'",
-                    'enum_set_values' => [
-                        "'a",
-                        'b',
-                    ],
+                    'enum_set_values' => ["'a", 'b'],
                     'attribute' => ' ',
                     'can_contain_collation' => true,
                     'displayed_type' => "set('''a', 'b')",
@@ -693,11 +615,7 @@ class UtilTest extends AbstractTestCase
                     'unsigned' => false,
                     'zerofill' => false,
                     'spec_in_brackets' => "'a&b', 'b''c\\'d', 'e\\\\f'",
-                    'enum_set_values' => [
-                        'a&b',
-                        'b\'c\'d',
-                        'e\\f',
-                    ],
+                    'enum_set_values' => ['a&b', 'b\'c\'d', 'e\\f'],
                     'attribute' => ' ',
                     'can_contain_collation' => true,
                     'displayed_type' => "enum('a&amp;b', 'b''c\\'d', 'e\\\\f')",
@@ -771,9 +689,8 @@ class UtilTest extends AbstractTestCase
      *
      * @param int|string $size     Size
      * @param int|float  $expected Expected value (float on some cpu architectures)
-     *
-     * @dataProvider providerExtractValueFromFormattedSize
      */
+    #[DataProvider('providerExtractValueFromFormattedSize')]
     public function testExtractValueFromFormattedSize(int|string $size, int|float $expected): void
     {
         $this->assertEquals(
@@ -785,223 +702,55 @@ class UtilTest extends AbstractTestCase
     /**
      * Data provider for testExtractValueFromFormattedSize
      *
-     * @return array
+     * @return mixed[]
      */
     public static function providerExtractValueFromFormattedSize(): array
     {
-        return [
-            [
-                100,
-                -1,
-            ],
-            [
-                '10GB',
-                10737418240,
-            ],
-            [
-                '15MB',
-                15728640,
-            ],
-            [
-                '256K',
-                262144,
-            ],
-        ];
-    }
-
-    public function testFormatByteDownWithNullValue(): void
-    {
-        $this->assertNull(Util::formatByteDown(null));
+        return [[100, -1], ['10GB', 10737418240], ['15MB', 15728640], ['256K', 262144]];
     }
 
     /**
      * format byte test, globals are defined
      *
-     * @param float|int|string $a Value to format
-     * @param int              $b Sensitiveness
-     * @param int              $c Number of decimals to retain
-     * @param array            $e Expected value
-     *
-     * @dataProvider providerFormatByteDown
+     * @param float|int|string|null $a Value to format
+     * @param int                   $b Sensitiveness
+     * @param int                   $c Number of decimals to retain
+     * @param string[]|null         $e Expected value
      */
-    public function testFormatByteDown(float|int|string $a, int $b, int $c, array $e): void
+    #[DataProvider('providerFormatByteDown')]
+    public function testFormatByteDown(float|int|string|null $a, int $b, int $c, array|null $e): void
     {
         $result = Util::formatByteDown($a, $b, $c);
-        $this->assertIsArray($result);
-        $result[0] = trim($result[0]);
         $this->assertSame($e, $result);
     }
 
     /**
      * format byte down data provider
      *
-     * @return array
+     * @psalm-return list<array{float|int|string|null, int, int, string[]|null}>
      */
     public static function providerFormatByteDown(): array
     {
         return [
-            [
-                '0',
-                6,
-                0,
-                [
-                    '0',
-                    __('B'),
-                ],
-            ],
-            [
-                'A4',
-                6,
-                0,
-                [
-                    '0',
-                    __('B'),
-                ],
-            ],
-            [
-                10,
-                2,
-                2,
-                [
-                    '10',
-                    __('B'),
-                ],
-            ],
-            [
-                100,
-                2,
-                0,
-                [
-                    '0',
-                    __('KiB'),
-                ],
-            ],
-            [
-                100,
-                3,
-                0,
-                [
-                    '100',
-                    __('B'),
-                ],
-            ],
-            [
-                100,
-                2,
-                2,
-                [
-                    '0.10',
-                    __('KiB'),
-                ],
-            ],
-            [
-                1034,
-                3,
-                2,
-                [
-                    '1.01',
-                    __('KiB'),
-                ],
-            ],
-            [
-                100233,
-                3,
-                3,
-                [
-                    '97.884',
-                    __('KiB'),
-                ],
-            ],
-            [
-                '100233',
-                3,
-                3,
-                [
-                    '97.884',
-                    __('KiB'),
-                ],
-            ],
-            [
-                '102400K',
-                3,
-                3,
-                [
-                    '100.000',
-                    __('KiB'),
-                ],
-            ],
-            [
-                '102401K',
-                3,
-                3,
-                [
-                    '100.001',
-                    __('KiB'),
-                ],
-            ],
-            [
-                '153600K',
-                3,
-                3,
-                [
-                    '150.000',
-                    __('KiB'),
-                ],
-            ],
-            [
-                '153600K',
-                3,
-                0,
-                [
-                    '150',
-                    __('KiB'),
-                ],
-            ],
-            [
-                102400 * 1024,
-                3,
-                0,
-                [
-                    '100',
-                    __('MiB'),
-                ],
-            ],
-            [
-                2206451,
-                1,
-                2,
-                [
-                    '2.10',
-                    __('MiB'),
-                ],
-            ],
-            [
-                21474836480,
-                4,
-                0,
-                [
-                    '20',
-                    __('GiB'),
-                ],
-            ],
-            [
-                floatval(52) + floatval(2048),
-                3,
-                1,
-                [
-                    '2.1',
-                    'KiB',
-                ],
-            ],
-            [
-                '' . (floatval(52) + floatval(2048)),
-                3,
-                1,
-                [
-                    '2.1',
-                    'KiB',
-                ],
-            ],
+            [null, 0, 0, null],
+            ['0', 6, 0, ['0', __('B')]],
+            ['A4', 6, 0, ['0', __('B')]],
+            [10, 2, 2, ['10', __('B')]],
+            [100, 2, 0, ['0', __('KiB')]],
+            [100, 3, 0, ['100', __('B')]],
+            [100, 2, 2, ['0.10', __('KiB')]],
+            [1034, 3, 2, ['1.01', __('KiB')]],
+            [100233, 3, 3, ['97.884', __('KiB')]],
+            ['100233', 3, 3, ['97.884', __('KiB')]],
+            ['102400K', 3, 3, ['100.000', __('KiB')]],
+            ['102401K', 3, 3, ['100.001', __('KiB')]],
+            ['153600K', 3, 3, ['150.000', __('KiB')]],
+            ['153600K', 3, 0, ['150', __('KiB')]],
+            [102400 * 1024, 3, 0, ['100', __('MiB')]],
+            [2206451, 1, 2, ['2.10', __('MiB')]],
+            [21474836480, 4, 0, ['20', __('GiB')]],
+            [floatval(52) + floatval(2048), 3, 1, ['2.1', 'KiB']],
+            ['' . (floatval(52) + floatval(2048)), 3, 1, ['2.1', 'KiB']],
         ];
     }
 
@@ -1033,15 +782,14 @@ class UtilTest extends AbstractTestCase
      * @param int              $b Sensitiveness
      * @param int              $c Number of decimals to retain
      * @param string           $d Expected value
-     *
-     * @dataProvider providerFormatNumber
      */
+    #[DataProvider('providerFormatNumber')]
     public function testFormatNumber(float|int|string $a, int $b, int $c, string $d): void
     {
         $this->assertFormatNumber($a, $b, $c, $d);
 
         // Test with various precisions
-        $old_precision = (string) ini_get('precision');
+        $oldPrecision = (string) ini_get('precision');
         try {
             ini_set('precision', '20');
             $this->assertFormatNumber($a, $b, $c, $d);
@@ -1054,7 +802,7 @@ class UtilTest extends AbstractTestCase
             ini_set('precision', '-1');
             $this->assertFormatNumber($a, $b, $c, $d);
         } finally {
-            ini_set('precision', $old_precision);
+            ini_set('precision', $oldPrecision);
         }
 
         // Test with different translations
@@ -1082,119 +830,29 @@ class UtilTest extends AbstractTestCase
     /**
      * format number data provider
      *
-     * @return array
+     * @return mixed[]
      */
     public static function providerFormatNumber(): array
     {
         return [
-            [
-                10,
-                2,
-                2,
-                '10  ',
-            ],
-            [
-                100,
-                2,
-                0,
-                '100  ',
-            ],
-            [
-                100,
-                2,
-                2,
-                '100  ',
-            ],
-            [
-                '100',
-                2,
-                2,
-                '100  ',
-            ],
-            [
-                -1000.454,
-                4,
-                2,
-                '-1,000.45  ',
-            ],
-            [
-                '-1000.454',
-                4,
-                2,
-                '-1,000.45  ',
-            ],
-            [
-                0.00003,
-                3,
-                2,
-                '30 µ',
-            ],
-            [
-                0.003,
-                3,
-                3,
-                '3 m',
-            ],
-            [
-                -0.003,
-                6,
-                0,
-                '-3,000 µ',
-            ],
-            [
-                100.98,
-                0,
-                2,
-                '100.98',
-            ],
-            [
-                21010101,
-                0,
-                2,
-                '21,010,101.00',
-            ],
-            [
-                1100000000,
-                5,
-                0,
-                '1,100 M',
-            ],
-            [
-                '1100000000',
-                5,
-                0,
-                '1,100 M',
-            ],
-            [
-                20000,
-                2,
-                2,
-                '20 k',
-            ],
-            [
-                20011,
-                2,
-                2,
-                '20.01 k',
-            ],
-            [
-                123456789,
-                6,
-                0,
-                '123,457 k',
-            ],
-            [
-                -123456789,
-                4,
-                2,
-                '-123.46 M',
-            ],
-            [
-                0,
-                6,
-                0,
-                '0',
-            ],
+            [10, 2, 2, '10  '],
+            [100, 2, 0, '100  '],
+            [100, 2, 2, '100  '],
+            ['100', 2, 2, '100  '],
+            [-1000.454, 4, 2, '-1,000.45  '],
+            ['-1000.454', 4, 2, '-1,000.45  '],
+            [0.00003, 3, 2, '30 µ'],
+            [0.003, 3, 3, '3 m'],
+            [-0.003, 6, 0, '-3,000 µ'],
+            [100.98, 0, 2, '100.98'],
+            [21010101, 0, 2, '21,010,101.00'],
+            [1100000000, 5, 0, '1,100 M'],
+            ['1100000000', 5, 0, '1,100 M'],
+            [20000, 2, 2, '20 k'],
+            [20011, 2, 2, '20.01 k'],
+            [123456789, 6, 0, '123,457 k'],
+            [-123456789, 4, 2, '-123.46 M'],
+            [0, 6, 0, '0'],
         ];
     }
 
@@ -1204,9 +862,8 @@ class UtilTest extends AbstractTestCase
      * @param int|float|string $size Size (float on some cpu architectures)
      * @param string           $unit Unit
      * @param string           $res  Result
-     *
-     * @dataProvider providerGetFormattedMaximumUploadSize
      */
+    #[DataProvider('providerGetFormattedMaximumUploadSize')]
     public function testGetFormattedMaximumUploadSize(int|float|string $size, string $unit, string $res): void
     {
         $this->assertEquals(
@@ -1218,56 +875,20 @@ class UtilTest extends AbstractTestCase
     /**
      * Data provider for testGetFormattedMaximumUploadSize
      *
-     * @return array
+     * @return mixed[]
      */
     public static function providerGetFormattedMaximumUploadSize(): array
     {
         return [
-            [
-                10,
-                __('B'),
-                '10',
-            ],
-            [
-                100,
-                __('B'),
-                '100',
-            ],
-            [
-                1024,
-                __('B'),
-                '1,024',
-            ],
-            [
-                102400,
-                __('KiB'),
-                '100',
-            ],
-            [
-                10240000,
-                __('MiB'),
-                '10',
-            ],
-            [
-                2147483648,
-                __('MiB'),
-                '2,048',
-            ],
-            [
-                21474836480,
-                __('GiB'),
-                '20',
-            ],
-            [
-                '153600K',
-                __('KiB'),
-                '150',
-            ],
-            [
-                '157286400',
-                __('MiB'),
-                '150',
-            ],
+            [10, __('B'), '10'],
+            [100, __('B'), '100'],
+            [1024, __('B'), '1,024'],
+            [102400, __('KiB'), '100'],
+            [10240000, __('MiB'), '10'],
+            [2147483648, __('MiB'), '2,048'],
+            [21474836480, __('GiB'), '20'],
+            ['153600K', __('KiB'), '150'],
+            ['157286400', __('MiB'), '150'],
             [
                 // Equals to Core::getRealSize of '102400K'
                 // according to PHP FAQ on "shorthandbytes"
@@ -1283,9 +904,8 @@ class UtilTest extends AbstractTestCase
      *
      * @param string $target Target
      * @param string $result Expected value
-     *
-     * @dataProvider providerGetTitleForTarget
      */
+    #[DataProvider('providerGetTitleForTarget')]
     public function testGetTitleForTarget(string $target, string $result): void
     {
         $this->assertEquals(
@@ -1297,35 +917,17 @@ class UtilTest extends AbstractTestCase
     /**
      * Data provider for testGetTitleForTarget
      *
-     * @return array
+     * @return mixed[]
      */
     public static function providerGetTitleForTarget(): array
     {
         return [
-            [
-                'structure',
-                __('Structure'),
-            ],
-            [
-                'sql',
-                __('SQL'),
-            ],
-            [
-                'search',
-                __('Search'),
-            ],
-            [
-                'insert',
-                __('Insert'),
-            ],
-            [
-                'browse',
-                __('Browse'),
-            ],
-            [
-                'operations',
-                __('Operations'),
-            ],
+            ['structure', __('Structure')],
+            ['sql', __('SQL')],
+            ['search', __('Search')],
+            ['insert', __('Insert')],
+            ['browse', __('Browse')],
+            ['operations', __('Operations')],
         ];
     }
 
@@ -1337,9 +939,8 @@ class UtilTest extends AbstractTestCase
      * @param string $e      Expected output
      * @param string $tz     Timezone to set
      * @param string $locale Locale to set
-     *
-     * @dataProvider providerLocalisedDate
      */
+    #[DataProvider('providerLocalisedDate')]
     public function testLocalisedDate(int $a, string $b, string $e, string $tz, string $locale): void
     {
         parent::setLanguage();
@@ -1362,55 +963,19 @@ class UtilTest extends AbstractTestCase
     /**
      * data provider for localised date test
      *
-     * @return array
+     * @return mixed[]
      */
     public static function providerLocalisedDate(): array
     {
         $hasJaTranslations = file_exists(LOCALE_PATH . '/cs/LC_MESSAGES/phpmyadmin.mo');
 
         return [
-            [
-                1227455558,
-                '',
-                'Nov 23, 2008 at 03:52 PM',
-                'Europe/London',
-                'en',
-            ],
-            [
-                1227455558,
-                '%Y-%m-%d %H:%M:%S %a',
-                '2008-11-23 15:52:38 Sun',
-                'Europe/London',
-                'en',
-            ],
-            [
-                1227455558,
-                '%Y-%m-%d %H:%M:%S %a',
-                '2008-11-23 16:52:38 Sun',
-                'Europe/Paris',
-                'en',
-            ],
-            [
-                1227455558,
-                '%Y-%m-%d %H:%M:%S %a',
-                '2008-11-24 00:52:38 Mon',
-                'Asia/Tokyo',
-                'en',
-            ],
-            [
-                1227455558,
-                '%a %A %b %B',
-                'Mon Mon Nov Nov',
-                'Asia/Tokyo',
-                'en',
-            ],
-            [
-                1227455558,
-                '%a %A %b %B %P',
-                'Mon Mon Nov Nov AM',
-                'Asia/Tokyo',
-                'en',
-            ],
+            [1227455558, '', 'Nov 23, 2008 at 03:52 PM', 'Europe/London', 'en'],
+            [1227455558, '%Y-%m-%d %H:%M:%S %a', '2008-11-23 15:52:38 Sun', 'Europe/London', 'en'],
+            [1227455558, '%Y-%m-%d %H:%M:%S %a', '2008-11-23 16:52:38 Sun', 'Europe/Paris', 'en'],
+            [1227455558, '%Y-%m-%d %H:%M:%S %a', '2008-11-24 00:52:38 Mon', 'Asia/Tokyo', 'en'],
+            [1227455558, '%a %A %b %B', 'Mon Mon Nov Nov', 'Asia/Tokyo', 'en'],
+            [1227455558, '%a %A %b %B %P', 'Mon Mon Nov Nov AM', 'Asia/Tokyo', 'en'],
             [
                 1227455558,
                 '%Y-%m-%d %H:%M:%S %a',
@@ -1432,27 +997,9 @@ class UtilTest extends AbstractTestCase
                 'Asia/Tokyo',
                 'ja',
             ],
-            [
-                1227455558,
-                '月月',
-                '月月',
-                'Asia/Tokyo',
-                'ja',
-            ],
-            [
-                1227455558,
-                '%Y 年 2 月 %d 日 %H:%M',
-                '2008 年 2 月 24 日 00:52',
-                'Asia/Tokyo',
-                'ja',
-            ],
-            [
-                1227455558,
-                '%Y 年 2 � %d 日 %H:%M',
-                '2008 年 2 � 24 日 00:52',
-                'Asia/Tokyo',
-                'ja',
-            ],
+            [1227455558, '月月', '月月', 'Asia/Tokyo', 'ja'],
+            [1227455558, '%Y 年 2 月 %d 日 %H:%M', '2008 年 2 月 24 日 00:52', 'Asia/Tokyo', 'ja'],
+            [1227455558, '%Y 年 2 � %d 日 %H:%M', '2008 年 2 � 24 日 00:52', 'Asia/Tokyo', 'ja'],
             [
                 1617153941,
                 'H:i:s Y-d-m',
@@ -1475,9 +1022,8 @@ class UtilTest extends AbstractTestCase
      *
      * @param int    $a Timespan in seconds
      * @param string $e Expected output
-     *
-     * @dataProvider providerTimespanFormat
      */
+    #[DataProvider('providerTimespanFormat')]
     public function testTimespanFormat(int $a, string $e): void
     {
         $GLOBALS['timespanfmt'] = '%s days, %s hours, %s minutes and %s seconds';
@@ -1495,19 +1041,13 @@ class UtilTest extends AbstractTestCase
     /**
      * data provider for localised timestamp test
      *
-     * @return array
+     * @return mixed[]
      */
     public static function providerTimespanFormat(): array
     {
         return [
-            [
-                1258,
-                '0 days, 0 hours, 20 minutes and 58 seconds',
-            ],
-            [
-                821958,
-                '9 days, 12 hours, 19 minutes and 18 seconds',
-            ],
+            [1258, '0 days, 0 hours, 20 minutes and 58 seconds'],
+            [821958, '9 days, 12 hours, 19 minutes and 18 seconds'],
         ];
     }
 
@@ -1517,9 +1057,8 @@ class UtilTest extends AbstractTestCase
      * @param int    $a Value
      * @param int    $b Length
      * @param string $e Expected output
-     *
-     * @dataProvider providerPrintableBitValue
      */
+    #[DataProvider('providerPrintableBitValue')]
     public function testPrintableBitValue(int $a, int $b, string $e): void
     {
         $this->assertEquals(
@@ -1531,21 +1070,13 @@ class UtilTest extends AbstractTestCase
     /**
      * data provider for printable bit value test
      *
-     * @return array
+     * @return mixed[]
      */
     public static function providerPrintableBitValue(): array
     {
         return [
-            [
-                20131009,
-                64,
-                '0000000000000000000000000000000000000001001100110010110011000001',
-            ],
-            [
-                5,
-                32,
-                '00000000000000000000000000000101',
-            ],
+            [20131009, 64, '0000000000000000000000000000000000000001001100110010110011000001'],
+            [5, 32, '00000000000000000000000000000101'],
         ];
     }
 
@@ -1554,9 +1085,8 @@ class UtilTest extends AbstractTestCase
      *
      * @param string $param    String
      * @param string $expected Expected output
-     *
-     * @dataProvider providerUnQuote
      */
+    #[DataProvider('providerUnQuote')]
     public function testUnQuote(string $param, string $expected): void
     {
         $this->assertEquals(
@@ -1568,28 +1098,11 @@ class UtilTest extends AbstractTestCase
     /**
      * data provider for PhpMyAdmin\Util::unQuote test
      *
-     * @return array
+     * @return mixed[]
      */
     public static function providerUnQuote(): array
     {
-        return [
-            [
-                '"test\'"',
-                "test'",
-            ],
-            [
-                "'test''",
-                "test'",
-            ],
-            [
-                "`test'`",
-                "test'",
-            ],
-            [
-                "'test'test",
-                "'test'test",
-            ],
-        ];
+        return [['"test\'"', "test'"], ["'test''", "test'"], ["`test'`", "test'"], ["'test'test", "'test'test"]];
     }
 
     /**
@@ -1597,9 +1110,8 @@ class UtilTest extends AbstractTestCase
      *
      * @param string $param    String
      * @param string $expected Expected output
-     *
-     * @dataProvider providerUnQuoteSelectedChar
      */
+    #[DataProvider('providerUnQuoteSelectedChar')]
     public function testUnQuoteSelectedChar(string $param, string $expected): void
     {
         $this->assertEquals(
@@ -1611,31 +1123,14 @@ class UtilTest extends AbstractTestCase
     /**
      * data provider for PhpMyAdmin\Util::unQuote test with chosen quote
      *
-     * @return array
+     * @return mixed[]
      */
     public static function providerUnQuoteSelectedChar(): array
     {
-        return [
-            [
-                '"test\'"',
-                "test'",
-            ],
-            [
-                "'test''",
-                "'test''",
-            ],
-            [
-                "`test'`",
-                "`test'`",
-            ],
-            [
-                "'test'test",
-                "'test'test",
-            ],
-        ];
+        return [['"test\'"', "test'"], ["'test''", "'test''"], ["`test'`", "`test'`"], ["'test'test", "'test'test"]];
     }
 
-    /** @dataProvider providerForTestBackquote */
+    #[DataProvider('providerForTestBackquote')]
     public function testBackquote(string|null $entry, string $expectedNoneOutput, string $expectedMssqlOutput): void
     {
         $this->assertSame($expectedNoneOutput, Util::backquote($entry));
@@ -1649,61 +1144,26 @@ class UtilTest extends AbstractTestCase
     public static function providerForTestBackquote(): array
     {
         return [
-            [
-                '0',
-                '`0`',
-                '"0"',
-            ],
-            [
-                'test',
-                '`test`',
-                '"test"',
-            ],
-            [
-                'te`st',
-                '`te``st`',
-                '"te`st"',
-            ],
-            [
-                'te"st',
-                '`te"st`',
-                '"te\"st"',
-            ],
-            [
-                '',
-                '',
-                '',
-            ],
-            [
-                '*',
-                '*',
-                '*',
-            ],
-            [
-                null,
-                '',
-                '',
-            ],
+            ['0', '`0`', '"0"'],
+            ['test', '`test`', '"test"'],
+            ['te`st', '`te``st`', '"te`st"'],
+            ['te"st', '`te"st`', '"te\"st"'],
+            ['', '', ''],
+            ['*', '*', '*'],
+            [null, '', ''],
         ];
     }
 
-    /**
-     * backquoteCompat test with forbidden words
-     */
-    public function testBackquoteForbidenWords(): void
+    public function testBackquoteCompatWithReservedKeywords(): void
     {
-        foreach (Context::$KEYWORDS as $keyword => $type) {
+        Context::load();
+        foreach (Context::$keywords as $keyword => $type) {
+            $expected = $keyword;
             if ($type & Token::FLAG_KEYWORD_RESERVED) {
-                $this->assertEquals(
-                    '`' . $keyword . '`',
-                    Util::backquoteCompat($keyword, 'NONE', false),
-                );
-            } else {
-                $this->assertEquals(
-                    $keyword,
-                    Util::backquoteCompat($keyword, 'NONE', false),
-                );
+                $expected = '`' . $keyword . '`';
             }
+
+            $this->assertSame($expected, Util::backquoteCompat($keyword, 'NONE', false));
         }
     }
 
@@ -1712,9 +1172,8 @@ class UtilTest extends AbstractTestCase
      *
      * @param string $a String
      * @param string $e Expected output
-     *
-     * @dataProvider providerUserDir
      */
+    #[DataProvider('providerUserDir')]
     public function testUserDir(string $a, string $e): void
     {
         $GLOBALS['cfg']['Server']['user'] = 'root';
@@ -1725,20 +1184,11 @@ class UtilTest extends AbstractTestCase
     /**
      * data provider for PhpMyAdmin\Util::userDir test
      *
-     * @return array
+     * @return mixed[]
      */
     public static function providerUserDir(): array
     {
-        return [
-            [
-                '/var/pma_tmp/%u/',
-                '/var/pma_tmp/root/',
-            ],
-            [
-                '/home/%u/pma',
-                '/home/root/pma/',
-            ],
-        ];
+        return [['/var/pma_tmp/%u/', '/var/pma_tmp/root/'], ['/home/%u/pma', '/home/root/pma/']];
     }
 
     /**
@@ -1746,9 +1196,8 @@ class UtilTest extends AbstractTestCase
      *
      * @param string $a String
      * @param string $e Expected output
-     *
-     * @dataProvider providerDuplicateFirstNewline
      */
+    #[DataProvider('providerDuplicateFirstNewline')]
     public function testDuplicateFirstNewline(string $a, string $e): void
     {
         $this->assertEquals(
@@ -1760,35 +1209,18 @@ class UtilTest extends AbstractTestCase
     /**
      * data provider for duplicate first newline test
      *
-     * @return array
+     * @return mixed[]
      */
     public static function providerDuplicateFirstNewline(): array
     {
-        return [
-            [
-                'test',
-                'test',
-            ],
-            [
-                "\r\ntest",
-                "\n\r\ntest",
-            ],
-            [
-                "\ntest",
-                "\ntest",
-            ],
-            [
-                "\n\r\ntest",
-                "\n\r\ntest",
-            ],
-        ];
+        return [['test', 'test'], ["\r\ntest", "\n\r\ntest"], ["\ntest", "\ntest"], ["\n\r\ntest", "\n\r\ntest"]];
     }
 
     public function testUnsupportedDatatypes(): void
     {
-        $no_support_types = [];
+        $noSupportTypes = [];
         $this->assertEquals(
-            $no_support_types,
+            $noSupportTypes,
             Util::unsupportedDatatypes(),
         );
     }
@@ -1806,9 +1238,8 @@ class UtilTest extends AbstractTestCase
      *
      * @param bool  $expected Expected result for a given input
      * @param mixed $input    Input data to check
-     *
-     * @dataProvider providerIsInteger
      */
+    #[DataProvider('providerIsInteger')]
     public function testIsInteger(bool $expected, mixed $input): void
     {
         $isInteger = Util::isInteger($input);
@@ -1818,32 +1249,11 @@ class UtilTest extends AbstractTestCase
     /**
      * Data provider for Util::isInteger test
      *
-     * @return array
+     * @return mixed[]
      */
     public static function providerIsInteger(): array
     {
-        return [
-            [
-                true,
-                1000,
-            ],
-            [
-                true,
-                '1000',
-            ],
-            [
-                false,
-                1000.1,
-            ],
-            [
-                false,
-                '1000.1',
-            ],
-            [
-                false,
-                'input',
-            ],
-        ];
+        return [[true, 1000], [true, '1000'], [false, 1000.1], [false, '1000.1'], [false, 'input']];
     }
 
     /**
@@ -1851,9 +1261,8 @@ class UtilTest extends AbstractTestCase
      *
      * @param string $header The http Forwarded header
      * @param string $proto  The protocol http/https
-     *
-     * @dataProvider providerForwardedHeaders
      */
+    #[DataProvider('providerForwardedHeaders')]
     public function testGetProtoFromForwardedHeader(string $header, string $proto): void
     {
         $protocolDetected = Util::getProtoFromForwardedHeader($header);
@@ -1863,7 +1272,7 @@ class UtilTest extends AbstractTestCase
     /**
      * Data provider for Util::getProtoFromForwardedHeader test
      *
-     * @return array
+     * @return mixed[]
      *
      * @source https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Forwarded MDN docs
      * @source https://www.nginx.com/resources/wiki/start/topics/examples/forwarded/ Nginx docs
@@ -1871,90 +1280,27 @@ class UtilTest extends AbstractTestCase
     public static function providerForwardedHeaders(): array
     {
         return [
-            [
-                '',
-                '',
-            ],
-            [
-                '=',
-                '',
-            ],
-            [
-                'https',
-                '',
-            ],
-            [
-                'https',
-                '',
-            ],
-            [
-                '=https',
-                '',
-            ],
-            [
-                '=http',
-                '',
-            ],
-            [
-                'For="[2001:db8:cafe::17]:4711"',
-                '',
-            ],
-            [
-                'for=192.0.2.60;proto=http;by=203.0.113.43',
-                'http',
-            ],
-            [
-                'for=192.0.2.43, for=198.51.100.17',
-                '',
-            ],
-            [
-                'for=123.34.567.89',
-                '',
-            ],
-            [
-                'for=192.0.2.43, for="[2001:db8:cafe::17]"',
-                '',
-            ],
-            [
-                'for=12.34.56.78;host=example.com;proto=https, for=23.45.67.89',
-                'https',
-            ],
-            [
-                'for=12.34.56.78, for=23.45.67.89;secret=egah2CGj55fSJFs, for=10.1.2.3',
-                '',
-            ],
-            [
-                'for=injected;by="',
-                '',
-            ],
-            [
-                'for=injected;by=", for=real',
-                '',
-            ],
-            [
-                'for=192.0.2.60;proto=http;by=203.0.113.43',
-                'http',
-            ],
-            [
-                'for=192.0.2.60;proto=htTp;by=203.0.113.43',
-                'http',
-            ],
-            [
-                'for=192.0.2.60;proto=HTTP;by=203.0.113.43',
-                'http',
-            ],
-            [
-                'for=192.0.2.60;proto= http;by=203.0.113.43',
-                'http',
-            ],
-            [
-                'for=12.34.45.67;secret="special;proto=abc;test=1";proto=http,for=23.45.67.89',
-                'http',
-            ],
-            [
-                'for=12.34.45.67;secret="special;proto=abc;test=1";proto=418,for=23.45.67.89',
-                '',
-            ],
+            ['', ''],
+            ['=', ''],
+            ['https', ''],
+            ['https', ''],
+            ['=https', ''],
+            ['=http', ''],
+            ['For="[2001:db8:cafe::17]:4711"', ''],
+            ['for=192.0.2.60;proto=http;by=203.0.113.43', 'http'],
+            ['for=192.0.2.43, for=198.51.100.17', ''],
+            ['for=123.34.567.89', ''],
+            ['for=192.0.2.43, for="[2001:db8:cafe::17]"', ''],
+            ['for=12.34.56.78;host=example.com;proto=https, for=23.45.67.89', 'https'],
+            ['for=12.34.56.78, for=23.45.67.89;secret=egah2CGj55fSJFs, for=10.1.2.3', ''],
+            ['for=injected;by="', ''],
+            ['for=injected;by=", for=real', ''],
+            ['for=192.0.2.60;proto=http;by=203.0.113.43', 'http'],
+            ['for=192.0.2.60;proto=htTp;by=203.0.113.43', 'http'],
+            ['for=192.0.2.60;proto=HTTP;by=203.0.113.43', 'http'],
+            ['for=192.0.2.60;proto= http;by=203.0.113.43', 'http'],
+            ['for=12.34.45.67;secret="special;proto=abc;test=1";proto=http,for=23.45.67.89', 'http'],
+            ['for=12.34.45.67;secret="special;proto=abc;test=1";proto=418,for=23.45.67.89', ''],
             /*[ // this test case is very special and would need a different implementation
                 'for=12.34.45.67;secret="special;proto=http;test=1";proto=https,for=23.45.67.89',
                 'https'
@@ -2092,7 +1438,7 @@ SQL;
         $dbiDummy->assertAllQueriesConsumed();
     }
 
-    /** @return array[] */
+    /** @return mixed[][] */
     public static function dataProviderScriptNames(): array
     {
         // target
@@ -2114,145 +1460,89 @@ SQL;
                 'table',
                 'index.php?route=/table/structure&lang=en',
             ],
-            [
-                'structure',
-                'table',
-                'index.php?route=/table/structure&lang=en',
-            ],
+            ['structure', 'table', 'index.php?route=/table/structure&lang=en'],
             [
                 'tbl_sql.php', // Support the legacy value
                 'table',
                 'index.php?route=/table/sql&lang=en',
             ],
-            [
-                'sql',
-                'table',
-                'index.php?route=/table/sql&lang=en',
-            ],
+            ['sql', 'table', 'index.php?route=/table/sql&lang=en'],
             [
                 'tbl_select.php', // Support the legacy value
                 'table',
                 'index.php?route=/table/search&lang=en',
             ],
-            [
-                'search',
-                'table',
-                'index.php?route=/table/search&lang=en',
-            ],
+            ['search', 'table', 'index.php?route=/table/search&lang=en'],
             [
                 'tbl_change.php', // Support the legacy value
                 'table',
                 'index.php?route=/table/change&lang=en',
             ],
-            [
-                'insert',
-                'table',
-                'index.php?route=/table/change&lang=en',
-            ],
+            ['insert', 'table', 'index.php?route=/table/change&lang=en'],
             [
                 'sql.php', // Support the legacy value
                 'table',
                 'index.php?route=/sql&lang=en',
             ],
-            [
-                'browse',
-                'table',
-                'index.php?route=/sql&lang=en',
-            ],
+            ['browse', 'table', 'index.php?route=/sql&lang=en'],
             [
                 'db_structure.php', // Support the legacy value
                 'database',
                 'index.php?route=/database/structure&lang=en',
             ],
-            [
-                'structure',
-                'database',
-                'index.php?route=/database/structure&lang=en',
-            ],
+            ['structure', 'database', 'index.php?route=/database/structure&lang=en'],
             [
                 'db_sql.php', // Support the legacy value
                 'database',
                 'index.php?route=/database/sql&lang=en',
             ],
-            [
-                'sql',
-                'database',
-                'index.php?route=/database/sql&lang=en',
-            ],
+            ['sql', 'database', 'index.php?route=/database/sql&lang=en'],
             [
                 'db_search.php', // Support the legacy value
                 'database',
                 'index.php?route=/database/search&lang=en',
             ],
-            [
-                'search',
-                'database',
-                'index.php?route=/database/search&lang=en',
-            ],
+            ['search', 'database', 'index.php?route=/database/search&lang=en'],
             [
                 'db_operations.php', // Support the legacy value
                 'database',
                 'index.php?route=/database/operations&lang=en',
             ],
-            [
-                'operations',
-                'database',
-                'index.php?route=/database/operations&lang=en',
-            ],
+            ['operations', 'database', 'index.php?route=/database/operations&lang=en'],
             [
                 'index.php', // Support the legacy value
                 'server',
                 'index.php?route=/&lang=en',
             ],
-            [
-                'welcome',
-                'server',
-                'index.php?route=/&lang=en',
-            ],
+            ['welcome', 'server', 'index.php?route=/&lang=en'],
             [
                 'server_databases.php', // Support the legacy value
                 'server',
                 'index.php?route=/server/databases&lang=en',
             ],
-            [
-                'databases',
-                'server',
-                'index.php?route=/server/databases&lang=en',
-            ],
+            ['databases', 'server', 'index.php?route=/server/databases&lang=en'],
             [
                 'server_status.php', // Support the legacy value
                 'server',
                 'index.php?route=/server/status&lang=en',
             ],
-            [
-                'status',
-                'server',
-                'index.php?route=/server/status&lang=en',
-            ],
+            ['status', 'server', 'index.php?route=/server/status&lang=en'],
             [
                 'server_variables.php', // Support the legacy value
                 'server',
                 'index.php?route=/server/variables&lang=en',
             ],
-            [
-                'variables',
-                'server',
-                'index.php?route=/server/variables&lang=en',
-            ],
+            ['variables', 'server', 'index.php?route=/server/variables&lang=en'],
             [
                 'server_privileges.php', // Support the legacy value
                 'server',
                 'index.php?route=/server/privileges&lang=en',
             ],
-            [
-                'privileges',
-                'server',
-                'index.php?route=/server/privileges&lang=en',
-            ],
+            ['privileges', 'server', 'index.php?route=/server/privileges&lang=en'],
         ];
     }
 
-    /** @dataProvider dataProviderScriptNames */
+    #[DataProvider('dataProviderScriptNames')]
     public function testGetScriptNameForOption(string $target, string $location, string $finalLink): void
     {
         $GLOBALS['lang'] = 'en';
@@ -2282,14 +1572,11 @@ SQL;
         $this->assertFalse(Util::showText('ActionLinksMode'));
     }
 
-    /** @dataProvider providerForTestGetMySQLDocuURL */
+    #[DataProvider('providerForTestGetMySQLDocuURL')]
     public function testGetMySQLDocuURL(string $link, string $anchor, string $version, string $expected): void
     {
         $GLOBALS['dbi'] = $this->createDatabaseInterface();
-        $GLOBALS['dbi']->setVersion([
-            '@@version' => $version,
-            '@@version_comment' => 'MySQL Community Server (GPL)',
-        ]);
+        $GLOBALS['dbi']->setVersion(['@@version' => $version, '@@version_comment' => 'MySQL Community Server (GPL)']);
         $this->assertSame($expected, Util::getMySQLDocuURL($link, $anchor));
     }
 
@@ -2445,9 +1732,8 @@ SQL;
      * @param bool $isMariaDB True if mariadb
      * @param int  $version   Database version as integer
      * @param bool $expected  Expected Result
-     *
-     * @dataProvider provideForTestIsUUIDSupported
      */
+    #[DataProvider('provideForTestIsUUIDSupported')]
     public function testIsUUIDSupported(bool $isMariaDB, int $version, bool $expected): void
     {
         $dbi = $this->getMockBuilder(DatabaseInterface::class)
@@ -2470,36 +1756,15 @@ SQL;
     /**
      * Data provider for isUUIDSupported() tests.
      *
-     * @return array
+     * @return mixed[]
      * @psalm-return array<int, array{bool, int, bool}>
      */
     public static function provideForTestIsUUIDSupported(): array
     {
-        return [
-            [
-                false,
-                60100,
-                false,
-            ],
-            [
-                false,
-                100700,
-                false,
-            ],
-            [
-                true,
-                60100,
-                false,
-            ],
-            [
-                true,
-                100700,
-                true,
-            ],
-        ];
+        return [[false, 60100, false], [false, 100700, false], [true, 60100, false], [true, 100700, true]];
     }
 
-    /** @dataProvider providerForTestGetLowerCaseNames */
+    #[DataProvider('providerForTestGetLowerCaseNames')]
     public function testGetCollateForIS(string $lowerCaseTableNames, string $expected): void
     {
         $dbiDummy = $this->createDbiDummy();
@@ -2515,5 +1780,58 @@ SQL;
         yield 'lower_case_table_names=0' => ['0', 'COLLATE utf8_bin'];
         yield 'lower_case_table_names=1' => ['1', ''];
         yield 'lower_case_table_names=2' => ['2', 'COLLATE utf8_general_ci'];
+    }
+
+    public function testGetSupportedDatatypes(): void
+    {
+        $dbiDummy = $this->createDbiDummy();
+        $GLOBALS['dbi'] = $this->createDatabaseInterface($dbiDummy);
+        $expected = [
+            'INT',
+            'VARCHAR',
+            'TEXT',
+            'DATE',
+            'TINYINT',
+            'SMALLINT',
+            'MEDIUMINT',
+            'INT',
+            'BIGINT',
+            'DECIMAL',
+            'FLOAT',
+            'DOUBLE',
+            'REAL',
+            'BIT',
+            'BOOLEAN',
+            'SERIAL',
+            'DATE',
+            'DATETIME',
+            'TIMESTAMP',
+            'TIME',
+            'YEAR',
+            'CHAR',
+            'VARCHAR',
+            'TINYTEXT',
+            'TEXT',
+            'MEDIUMTEXT',
+            'LONGTEXT',
+            'BINARY',
+            'VARBINARY',
+            'TINYBLOB',
+            'BLOB',
+            'MEDIUMBLOB',
+            'LONGBLOB',
+            'ENUM',
+            'SET',
+            'GEOMETRY',
+            'POINT',
+            'LINESTRING',
+            'POLYGON',
+            'MULTIPOINT',
+            'MULTILINESTRING',
+            'MULTIPOLYGON',
+            'GEOMETRYCOLLECTION',
+            'JSON',
+        ];
+        $this->assertSame($expected, Util::getSupportedDatatypes());
     }
 }

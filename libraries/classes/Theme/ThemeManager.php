@@ -26,11 +26,6 @@ use const ROOT_PATH;
  */
 class ThemeManager
 {
-    /**
-     * ThemeManager instance
-     */
-    private static ThemeManager|null $instance = null;
-
     /** @var string file-system path to the theme folder */
     private string $themesPath;
 
@@ -46,33 +41,31 @@ class ThemeManager
     public bool $perServer = false;
 
     /** @var string name of active theme */
-    public string $activeTheme = '';
+    public string $activeTheme = self::FALLBACK_THEME;
 
     /** @var Theme Theme active theme */
     public Theme $theme;
 
-    public string $themeDefault;
+    public string $themeDefault = self::FALLBACK_THEME;
 
     /** @const string The name of the fallback theme */
     public const FALLBACK_THEME = 'pmahomme';
 
     public function __construct()
     {
-        $this->themes = [];
-        $this->themeDefault = self::FALLBACK_THEME;
-        $this->activeTheme = '';
         $this->themesPath = self::getThemesFsDir();
         $this->themesPathUrl = self::getThemesDir();
+        $this->theme = new Theme();
+    }
 
+    public function initializeTheme(): Theme
+    {
         $this->setThemePerServer($GLOBALS['cfg']['ThemePerServer']);
 
         $this->loadThemes();
 
-        $this->theme = new Theme();
-
-        $configThemeExists = true;
-
-        if (! $this->checkTheme($GLOBALS['cfg']['ThemeDefault'])) {
+        $configThemeExists = $this->checkTheme($GLOBALS['cfg']['ThemeDefault']);
+        if (! $configThemeExists) {
             trigger_error(
                 sprintf(
                     __('Default theme %s not found!'),
@@ -80,39 +73,27 @@ class ThemeManager
                 ),
                 E_USER_ERROR,
             );
-            $configThemeExists = false;
         } else {
             $this->themeDefault = $GLOBALS['cfg']['ThemeDefault'];
         }
 
         // check if user have a theme cookie
         $cookieTheme = $this->getThemeCookie();
-        if ($cookieTheme && $this->setActiveTheme($cookieTheme)) {
+        if (
+            $cookieTheme && $this->setActiveTheme($cookieTheme)
+            || $configThemeExists && $this->setActiveTheme($this->themeDefault)
+        ) {
             $colorMode = $this->getColorModeCookie();
             if (is_string($colorMode) && $colorMode !== '') {
                 $this->theme->setColorMode($colorMode);
             }
 
-            return;
+            return $this->theme;
         }
 
-        if ($configThemeExists) {
-            // otherwise use default theme
-            $this->setActiveTheme($this->themeDefault);
-        } else {
-            // or fallback theme
-            $this->setActiveTheme(self::FALLBACK_THEME);
-        }
-    }
+        $this->setActiveTheme(self::FALLBACK_THEME);
 
-    /**
-     * Returns the singleton ThemeManager object
-     *
-     * @return ThemeManager The instance
-     */
-    public static function getInstance(): ThemeManager
-    {
-        return self::$instance ??= new ThemeManager();
+        return $this->theme;
     }
 
     /**
@@ -273,6 +254,7 @@ class ThemeManager
         return array_key_exists($theme ?? '', $this->themes);
     }
 
+    /** @return mixed[] */
     public function getThemesArray(): array
     {
         $themes = [];
@@ -288,13 +270,6 @@ class ThemeManager
         }
 
         return $themes;
-    }
-
-    public static function initializeTheme(): Theme
-    {
-        $themeManager = self::getInstance();
-
-        return $themeManager->theme;
     }
 
     /**

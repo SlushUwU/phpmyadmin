@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Dbal;
 
+use PhpMyAdmin\Config\Settings\Server;
 use PhpMyAdmin\ConfigStorage\Relation;
 use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\FieldMetadata;
+use PhpMyAdmin\Identifiers\DatabaseName;
 use PhpMyAdmin\SystemDatabase;
 use PhpMyAdmin\Table;
 
@@ -85,17 +87,17 @@ interface DbalInterface
      * $dbi->getTablesFull('my_database', 'my_tables_', true));
      * </code>
      *
-     * @param string       $database     database
-     * @param string|array $table        table name(s)
-     * @param bool         $tableIsGroup $table is a table group
-     * @param int          $limitOffset  zero-based offset for the count
-     * @param bool|int     $limitCount   number of tables to return
-     * @param string       $sortBy       table attribute to sort by
-     * @param string       $sortOrder    direction to sort (ASC or DESC)
-     * @param string|null  $tableType    whether table or view
+     * @param string         $database     database
+     * @param string|mixed[] $table        table name(s)
+     * @param bool           $tableIsGroup $table is a table group
+     * @param int            $limitOffset  zero-based offset for the count
+     * @param bool|int       $limitCount   number of tables to return
+     * @param string         $sortBy       table attribute to sort by
+     * @param string         $sortOrder    direction to sort (ASC or DESC)
+     * @param string|null    $tableType    whether table or view
      * @psalm-param ConnectionType $connectionType
      *
-     * @return array           list of tables in given db(s)
+     * @return mixed[]           list of tables in given db(s)
      *
      * @todo    move into Table
      */
@@ -131,7 +133,7 @@ interface DbalInterface
      * @param bool|int    $limitCount  row count for LIMIT or true for $GLOBALS['cfg']['MaxDbList']
      * @psalm-param ConnectionType $connectionType
      *
-     * @return array
+     * @return mixed[]
      *
      * @todo    move into ListDatabase?
      */
@@ -154,7 +156,7 @@ interface DbalInterface
      * @param string|null $column   name of specific column
      * @psalm-param ConnectionType $connectionType
      *
-     * @return array
+     * @return mixed[]
      */
     public function getColumnsFull(
         string|null $database = null,
@@ -172,7 +174,17 @@ interface DbalInterface
      * @param bool   $full     whether to return full info or only column names
      * @psalm-param ConnectionType $connectionType
      *
-     * @return array flat array description
+     * @return array{
+     *  Field: string,
+     *  Type: string,
+     *  Collation?: string|null,
+     *  Null:'YES'|'NO',
+     *  Key: string,
+     *  Default: string|null,
+     *  Extra: string,
+     *  Privileges?: string,
+     *  Comment?: string
+     * }|null
      */
     public function getColumn(
         string $database,
@@ -180,7 +192,7 @@ interface DbalInterface
         string $column,
         bool $full = false,
         int $connectionType = Connection::TYPE_USER,
-    ): array;
+    ): array|null;
 
     /**
      * Returns descriptions of columns in given table
@@ -190,7 +202,17 @@ interface DbalInterface
      * @param bool   $full     whether to return full info or only column names
      * @psalm-param ConnectionType $connectionType
      *
-     * @return array[] array indexed by column names
+     * @return array{
+     *  Field: string,
+     *  Type: string,
+     *  Collation?: string|null,
+     *  Null:'YES'|'NO',
+     *  Key: string,
+     *  Default: string|null,
+     *  Extra: string,
+     *  Privileges?: string,
+     *  Comment?: string
+     * }[] array indexed by column names
      */
     public function getColumns(
         string $database,
@@ -280,7 +302,7 @@ interface DbalInterface
      * been established. It sets the connection collation, and determines the
      * version of MySQL which is running.
      */
-    public function postConnect(): void;
+    public function postConnect(Server $currentServer): void;
 
     /**
      * Sets collation connection for user link
@@ -384,12 +406,12 @@ interface DbalInterface
      * // $users['admin']['John Doe'] = '123'
      * </code>
      *
-     * @param string                $query query to execute
-     * @param string|int|array|null $key   field-name or offset used as key for array or array of those
-     * @param string|int|null       $value value-name or offset used as value for array
+     * @param string                  $query query to execute
+     * @param string|int|mixed[]|null $key   field-name or offset used as key for array or array of those
+     * @param string|int|null         $value value-name or offset used as value for array
      * @psalm-param ConnectionType $connectionType
      *
-     * @return array resultrows or values indexed by $key
+     * @return mixed[] resultrows or values indexed by $key
      */
     public function fetchResult(
         string $query,
@@ -401,7 +423,7 @@ interface DbalInterface
     /**
      * Get supported SQL compatibility modes
      *
-     * @return array supported SQL compatibility modes
+     * @return mixed[] supported SQL compatibility modes
      */
     public function getCompatibilities(): array;
 
@@ -410,7 +432,7 @@ interface DbalInterface
      *
      * @psalm-param ConnectionType $connectionType
      *
-     * @return array warnings
+     * @return mixed[] warnings
      */
     public function getWarnings(int $connectionType = Connection::TYPE_USER): array;
 
@@ -452,13 +474,11 @@ interface DbalInterface
     /**
      * Connects to the database server.
      *
-     * @param int        $mode   Connection mode.
-     * @param array|null $server Server information like host/port/socket/persistent
-     * @param int|null   $target How to store connection link, defaults to $mode
-     * @psalm-param ConnectionType $mode
+     * @param int|null $target How to store connection link, defaults to $mode
+     * @psalm-param ConnectionType $connectionType
      * @psalm-param ConnectionType|null $target
      */
-    public function connect(int $mode, array|null $server = null, int|null $target = null): Connection|null;
+    public function connect(Server $currentServer, int $connectionType, int|null $target = null): Connection|null;
 
     /**
      * selects given database

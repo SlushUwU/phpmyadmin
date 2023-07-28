@@ -9,13 +9,13 @@ use PhpMyAdmin\Http\ServerRequest;
 use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\ResponseRenderer;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 
 use function json_encode;
 
-/**
- * @covers \PhpMyAdmin\Controllers\LintController
- * @runTestsInSeparateProcesses
- */
+#[CoversClass(LintController::class)]
+#[RunTestsInSeparateProcesses]
 class LintControllerTest extends AbstractTestCase
 {
     protected function setUp(): void
@@ -28,10 +28,8 @@ class LintControllerTest extends AbstractTestCase
     public function testWithoutParams(): void
     {
         $request = $this->createStub(ServerRequest::class);
-        $request->method('getParsedBodyParam')->willReturnMap([
-            ['sql_query', '', ''],
-            ['options', null, null],
-        ]);
+        $request->method('isAjax')->willReturn(true);
+        $request->method('getParsedBodyParam')->willReturnMap([['sql_query', '', ''], ['options', null, null]]);
 
         $this->getLintController()($request);
 
@@ -43,6 +41,7 @@ class LintControllerTest extends AbstractTestCase
     public function testWithoutSqlErrors(): void
     {
         $request = $this->createStub(ServerRequest::class);
+        $request->method('isAjax')->willReturn(true);
         $request->method('getParsedBodyParam')->willReturnMap([
             ['sql_query', '', 'SELECT * FROM `actor` WHERE `actor_id` = 1;'],
             ['options', null, null],
@@ -60,33 +59,33 @@ class LintControllerTest extends AbstractTestCase
         $expectedJson = json_encode([
             [
                 'message' => 'An alias was previously found. (near <code>`actor_id`</code>)',
-                'fromLine' => 0,
+                'fromLine' => 1,
                 'fromColumn' => 29,
-                'toLine' => 0,
+                'toLine' => 1,
                 'toColumn' => 39,
                 'severity' => 'error',
             ],
             [
                 'message' => 'Unexpected token. (near <code>`actor_id`</code>)',
-                'fromLine' => 0,
+                'fromLine' => 1,
                 'fromColumn' => 29,
-                'toLine' => 0,
+                'toLine' => 1,
                 'toColumn' => 39,
                 'severity' => 'error',
             ],
             [
                 'message' => 'Unexpected token. (near <code>=</code>)',
-                'fromLine' => 0,
+                'fromLine' => 1,
                 'fromColumn' => 40,
-                'toLine' => 0,
+                'toLine' => 1,
                 'toColumn' => 41,
                 'severity' => 'error',
             ],
             [
                 'message' => 'Unexpected token. (near <code>1</code>)',
-                'fromLine' => 0,
+                'fromLine' => 1,
                 'fromColumn' => 42,
-                'toLine' => 0,
+                'toLine' => 1,
                 'toColumn' => 43,
                 'severity' => 'error',
             ],
@@ -94,8 +93,9 @@ class LintControllerTest extends AbstractTestCase
         $this->assertNotFalse($expectedJson);
 
         $request = $this->createStub(ServerRequest::class);
+        $request->method('isAjax')->willReturn(true);
         $request->method('getParsedBodyParam')->willReturnMap([
-            ['sql_query', '', 'SELECT * FROM `actor` WHEREE `actor_id` = 1;'],
+            ['sql_query', '', 'SELECT * FROM `actor` WHEREE `actor_id` = 1'],
             ['options', null, null],
         ]);
 

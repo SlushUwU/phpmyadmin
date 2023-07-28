@@ -34,6 +34,7 @@ class SqlController extends AbstractController
         private Sql $sql,
         private CheckUserPrivileges $checkUserPrivileges,
         private DatabaseInterface $dbi,
+        private PageSettings $pageSettings,
     ) {
         parent::__construct($response, $template);
     }
@@ -58,9 +59,9 @@ class SqlController extends AbstractController
 
         $this->checkUserPrivileges->getPrivileges();
 
-        $pageSettings = new PageSettings('Browse');
-        $this->response->addHTML($pageSettings->getErrorHTML());
-        $this->response->addHTML($pageSettings->getHTML());
+        $this->pageSettings->init('Browse');
+        $this->response->addHTML($this->pageSettings->getErrorHTML());
+        $this->response->addHTML($this->pageSettings->getHTML());
 
         $this->addScriptFiles([
             'vendor/jquery/jquery.uitablefilter.js',
@@ -103,24 +104,25 @@ class SqlController extends AbstractController
             }
         }
 
-        /** @var array<string>|null $bkm_fields */
-        $bkm_fields = $request->getParsedBodyParam('bkm_fields');
-        $sql_query = $request->getParsedBodyParam('sql_query');
+        /** @var array<string>|null $bkmFields */
+        $bkmFields = $request->getParsedBodyParam('bkm_fields');
+        $sqlQuery = $request->getParsedBodyParam('sql_query');
 
         // Coming from a bookmark dialog
-        if ($bkm_fields !== null && $bkm_fields['bkm_sql_query'] != null) {
-            $GLOBALS['sql_query'] = $bkm_fields['bkm_sql_query'];
-        } elseif ($sql_query !== null) {
-            $GLOBALS['sql_query'] = $sql_query;
-        } elseif (isset($_GET['sql_query'], $_GET['sql_signature'])) {
-            if (Core::checkSqlQuerySignature($_GET['sql_query'], $_GET['sql_signature'])) {
-                $GLOBALS['sql_query'] = $_GET['sql_query'];
+        if ($bkmFields !== null && $bkmFields['bkm_sql_query'] != null) {
+            $GLOBALS['sql_query'] = $bkmFields['bkm_sql_query'];
+        } elseif ($sqlQuery !== null) {
+            $GLOBALS['sql_query'] = $sqlQuery;
+        } elseif ($request->hasQueryParam('sql_query') && $request->hasQueryParam('sql_signature')) {
+            $sqlQuery = $request->getQueryParam('sql_query');
+            if (Core::checkSqlQuerySignature($sqlQuery, $request->getQueryParam('sql_signature'))) {
+                $GLOBALS['sql_query'] = $sqlQuery;
             }
         }
 
         // This one is just to fill $db
-        if ($bkm_fields !== null && $bkm_fields['bkm_database'] != null) {
-            $GLOBALS['db'] = $bkm_fields['bkm_database'];
+        if ($bkmFields !== null && $bkmFields['bkm_database'] != null) {
+            $GLOBALS['db'] = $bkmFields['bkm_database'];
         }
 
         // Default to browse if no query set and we have table
@@ -178,10 +180,10 @@ class SqlController extends AbstractController
         /**
          * Bookmark add
          */
-        $store_bkm = $request->hasBodyParam('store_bkm');
-        $bkm_all_users = $request->getParsedBodyParam('bkm_all_users'); // Should this be hasBodyParam?
-        if ($store_bkm && $bkm_fields !== null) {
-            $this->addBookmark($GLOBALS['goto'], $bkm_fields, (bool) $bkm_all_users);
+        $storeBkm = $request->hasBodyParam('store_bkm');
+        $bkmAllUsers = $request->getParsedBodyParam('bkm_all_users'); // Should this be hasBodyParam?
+        if ($storeBkm && $bkmFields !== null) {
+            $this->addBookmark($GLOBALS['goto'], $bkmFields, (bool) $bkmAllUsers);
 
             return;
         }
@@ -216,14 +218,10 @@ class SqlController extends AbstractController
         ));
     }
 
-    /** @param array<string> $bkm_fields */
-    private function addBookmark(string $goto, array $bkm_fields, bool $bkm_all_users): void
+    /** @param array<string> $bkmFields */
+    private function addBookmark(string $goto, array $bkmFields, bool $bkmAllUsers): void
     {
-        $bookmark = Bookmark::createBookmark(
-            $this->dbi,
-            $bkm_fields,
-            $bkm_all_users,
-        );
+        $bookmark = Bookmark::createBookmark($this->dbi, $bkmFields, $bkmAllUsers);
 
         $result = null;
         if ($bookmark instanceof Bookmark) {
@@ -231,14 +229,14 @@ class SqlController extends AbstractController
         }
 
         if (! $this->response->isAjax()) {
-            Core::sendHeaderLocation('./' . $goto . '&label=' . $bkm_fields['bkm_label']);
+            Core::sendHeaderLocation('./' . $goto . '&label=' . $bkmFields['bkm_label']);
 
             return;
         }
 
         if ($result) {
             $msg = Message::success(__('Bookmark %s has been created.'));
-            $msg->addParam($bkm_fields['bkm_label']);
+            $msg->addParam($bkmFields['bkm_label']);
             $this->response->addJSON('message', $msg);
 
             return;

@@ -5,13 +5,14 @@ declare(strict_types=1);
 namespace PhpMyAdmin\Tests;
 
 use PhpMyAdmin\Url;
+use PHPUnit\Framework\Attributes\CoversClass;
 
 use function is_string;
 use function parse_str;
 use function str_repeat;
 use function urldecode;
 
-/** @covers \PhpMyAdmin\Url */
+#[CoversClass(Url::class)]
 class UrlTest extends AbstractTestCase
 {
     /**
@@ -59,10 +60,7 @@ class UrlTest extends AbstractTestCase
         $expected = '?db=db'
             . $separator . 'table=table'
             . $separator . $expected;
-        $params = [
-            'db' => 'db',
-            'table' => 'table',
-        ];
+        $params = ['db' => 'db', 'table' => 'table'];
         $this->assertEquals($expected, Url::getCommon($params));
     }
 
@@ -82,10 +80,7 @@ class UrlTest extends AbstractTestCase
         $this->assertEquals(
             $expected,
             Url::getCommonRaw(
-                [
-                    'db' => 'db',
-                    'table' => 'table',
-                ],
+                ['db' => 'db', 'table' => 'table'],
                 '#ABC#',
             ),
         );

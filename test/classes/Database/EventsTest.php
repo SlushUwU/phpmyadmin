@@ -6,11 +6,11 @@ namespace PhpMyAdmin\Tests\Database;
 
 use PhpMyAdmin\Database\Events;
 use PhpMyAdmin\DatabaseInterface;
-use PhpMyAdmin\ResponseRenderer;
-use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\AbstractTestCase;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 
-/** @covers \PhpMyAdmin\Database\Events */
+#[CoversClass(Events::class)]
 class EventsTest extends AbstractTestCase
 {
     private Events $events;
@@ -35,21 +35,16 @@ class EventsTest extends AbstractTestCase
         $GLOBALS['table'] = 'table';
         $GLOBALS['cfg']['Server']['DisableIS'] = false;
 
-        $this->events = new Events(
-            $GLOBALS['dbi'],
-            new Template(),
-            ResponseRenderer::getInstance(),
-        );
+        $this->events = new Events($GLOBALS['dbi']);
     }
 
     /**
      * Test for getDataFromRequest
      *
-     * @param array $in  Input
-     * @param array $out Expected output
-     *
-     * @dataProvider providerGetDataFromRequest
+     * @param array<string, string> $in  Input
+     * @param array<string, string> $out Expected output
      */
+    #[DataProvider('providerGetDataFromRequest')]
     public function testGetDataFromRequestEmpty(array $in, array $out): void
     {
         unset($_POST);
@@ -67,7 +62,7 @@ class EventsTest extends AbstractTestCase
     /**
      * Data provider for testGetDataFromRequestEmpty
      *
-     * @return array
+     * @return array<array{array<string, string>, array<string, string>}>
      */
     public static function providerGetDataFromRequest(): array
     {
@@ -142,174 +137,14 @@ class EventsTest extends AbstractTestCase
     }
 
     /**
-     * Test for getEditorForm
-     *
-     * @param array  $data    Data for routine
-     * @param string $matcher Matcher
-     *
-     * @dataProvider providerGetEditorFormAdd
-     */
-    public function testGetEditorFormAdd(array $data, string $matcher): void
-    {
-        ResponseRenderer::getInstance()->setAjax(false);
-        $this->assertStringContainsString(
-            $matcher,
-            $this->events->getEditorForm('add', 'change', $data),
-        );
-    }
-
-    /**
-     * Data provider for testGetEditorFormAdd
-     *
-     * @return array
-     */
-    public static function providerGetEditorFormAdd(): array
-    {
-        $data = [
-            'item_name' => '',
-            'item_type' => 'ONE TIME',
-            'item_type_toggle' => 'RECURRING',
-            'item_original_name' => '',
-            'item_status' => '',
-            'item_execute_at' => '',
-            'item_interval_value' => '',
-            'item_interval_field' => '',
-            'item_starts' => '',
-            'item_ends' => '',
-            'item_definition' => '',
-            'item_preserve' => '',
-            'item_comment' => '',
-            'item_definer' => '',
-        ];
-
-        return [
-            [$data, '<input name="add_item"'],
-            [$data, '<input type="text" name="item_name"'],
-            [$data, '<select name="item_status"'],
-            [$data, '<input name="item_type"'],
-            [$data, '<input type="text" name="item_execute_at"'],
-            [$data, '<input type="text" name="item_ends"'],
-            [$data, '<textarea name="item_definition"'],
-            [$data, '<input type="text" name="item_definer"'],
-            [$data, '<input type="text" name="item_comment"'],
-            [$data, '<input class="btn btn-primary" type="submit" name="editor_process_add"'],
-        ];
-    }
-
-    /**
-     * Test for getEditorForm
-     *
-     * @param array  $data    Data for routine
-     * @param string $matcher Matcher
-     *
-     * @dataProvider providerGetEditorFormEdit
-     */
-    public function testGetEditorFormEdit(array $data, string $matcher): void
-    {
-        ResponseRenderer::getInstance()->setAjax(false);
-        $this->assertStringContainsString(
-            $matcher,
-            $this->events->getEditorForm('edit', 'change', $data),
-        );
-    }
-
-    /**
-     * Data provider for testGetEditorFormEdit
-     *
-     * @return array
-     */
-    public static function providerGetEditorFormEdit(): array
-    {
-        $data = [
-            'item_name' => 'foo',
-            'item_type' => 'RECURRING',
-            'item_type_toggle' => 'ONE TIME',
-            'item_original_name' => 'bar',
-            'item_status' => 'ENABLED',
-            'item_execute_at' => '',
-            'item_interval_value' => '1',
-            'item_interval_field' => 'DAY',
-            'item_starts' => '',
-            'item_ends' => '',
-            'item_definition' => 'SET @A=1;',
-            'item_preserve' => '',
-            'item_comment' => '',
-            'item_definer' => '',
-        ];
-
-        return [
-            [$data, '<input name="edit_item"'],
-            [$data, '<input type="text" name="item_name"'],
-            [$data, '<select name="item_status"'],
-            [$data, '<input name="item_type"'],
-            [$data, '<input type="text" name="item_execute_at"'],
-            [$data, '<input type="text" name="item_ends"'],
-            [$data, '<textarea name="item_definition"'],
-            [$data, '<input type="text" name="item_definer"'],
-            [$data, '<input type="text" name="item_comment"'],
-            [$data, '<input class="btn btn-primary" type="submit" name="editor_process_edit"'],
-        ];
-    }
-
-    /**
-     * Test for getEditorForm
-     *
-     * @param array  $data    Data for routine
-     * @param string $matcher Matcher
-     *
-     * @dataProvider providerGetEditorFormAjax
-     */
-    public function testGetEditorFormAjax(array $data, string $matcher): void
-    {
-        ResponseRenderer::getInstance()->setAjax(true);
-        $this->assertStringContainsString(
-            $matcher,
-            $this->events->getEditorForm('edit', 'change', $data),
-        );
-        ResponseRenderer::getInstance()->setAjax(false);
-    }
-
-    /**
-     * Data provider for testGetEditorFormAjax
-     *
-     * @return array
-     */
-    public static function providerGetEditorFormAjax(): array
-    {
-        $data = [
-            'item_name' => '',
-            'item_type' => 'RECURRING',
-            'item_type_toggle' => 'ONE TIME',
-            'item_original_name' => '',
-            'item_status' => 'ENABLED',
-            'item_execute_at' => '',
-            'item_interval_value' => '',
-            'item_interval_field' => 'DAY',
-            'item_starts' => '',
-            'item_ends' => '',
-            'item_definition' => '',
-            'item_preserve' => '',
-            'item_comment' => '',
-            'item_definer' => '',
-        ];
-
-        return [
-            [$data, '<select name="item_type"'],
-            [$data, '<input type="hidden" name="editor_process_edit"'],
-            [$data, '<input type="hidden" name="ajax_request"'],
-        ];
-    }
-
-    /**
      * Test for getQueryFromRequest
      *
-     * @param array  $request Request
-     * @param string $query   Query
-     * @param int    $num_err Error number
-     *
-     * @dataProvider providerGetQueryFromRequest
+     * @param array<string, string> $request Request
+     * @param string                $query   Query
+     * @param int                   $numErr  Error number
      */
-    public function testGetQueryFromRequest(array $request, string $query, int $num_err): void
+    #[DataProvider('providerGetQueryFromRequest')]
+    public function testGetQueryFromRequest(array $request, string $query, int $numErr): void
     {
         $GLOBALS['errors'] = [];
 
@@ -325,13 +160,13 @@ class EventsTest extends AbstractTestCase
         $GLOBALS['dbi'] = $dbi;
 
         $this->assertEquals($query, $this->events->getQueryFromRequest());
-        $this->assertCount($num_err, $GLOBALS['errors']);
+        $this->assertCount($numErr, $GLOBALS['errors']);
     }
 
     /**
      * Data provider for testGetQueryFromRequest
      *
-     * @return array
+     * @return array<array{array<string, string>, string, int}>
      */
     public static function providerGetQueryFromRequest(): array
     {

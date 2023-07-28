@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace PhpMyAdmin\Tests\Config\Settings;
 
 use PhpMyAdmin\Config\Settings\Schema;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 use function array_keys;
 use function array_merge;
 
-/** @covers \PhpMyAdmin\Config\Settings\Schema */
+#[CoversClass(Schema::class)]
 class SchemaTest extends TestCase
 {
     /** @var array<string, bool|string> */
@@ -40,9 +42,8 @@ class SchemaTest extends TestCase
     /**
      * @param mixed[][] $values
      * @psalm-param (array{0: string, 1: mixed, 2: mixed})[] $values
-     *
-     * @dataProvider providerForTestConstructor
      */
+    #[DataProvider('providerForTestConstructor')]
     public function testConstructor(array $values): void
     {
         $actualValues = [];
@@ -143,12 +144,7 @@ class SchemaTest extends TestCase
                     ['svg_all_tables_same_width', true, true],
                 ],
             ],
-            'valid values 3' => [
-                [
-                    ['format', 'dia', 'dia'],
-                    ['pdf_table_order', 'name_desc', 'name_desc'],
-                ],
-            ],
+            'valid values 3' => [[['format','dia','dia'], ['pdf_table_order','name_desc','name_desc']]],
             'valid values 4' => [[['format', 'svg', 'svg']]],
             'valid values with type coercion' => [
                 [

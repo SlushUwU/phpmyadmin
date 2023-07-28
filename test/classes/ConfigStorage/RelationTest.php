@@ -7,15 +7,18 @@ namespace PhpMyAdmin\Tests\ConfigStorage;
 use PhpMyAdmin\ConfigStorage\Relation;
 use PhpMyAdmin\ConfigStorage\RelationParameters;
 use PhpMyAdmin\DatabaseInterface;
+use PhpMyAdmin\RecentFavoriteTable;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\DummyResult;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Group;
+use ReflectionProperty;
 
 use function implode;
 
-/**
- * @covers \PhpMyAdmin\ConfigStorage\Relation
- * @group medium
- */
+#[CoversClass(Relation::class)]
+#[Group('medium')]
 class RelationTest extends AbstractTestCase
 {
     /**
@@ -50,7 +53,8 @@ class RelationTest extends AbstractTestCase
 
         $db = 'information_schema';
         $table = 'PMA';
-        $this->assertFalse(
+        $this->assertSame(
+            '',
             $relation->getDisplayField($db, $table),
         );
     }
@@ -68,16 +72,8 @@ class RelationTest extends AbstractTestCase
             ->getMock();
 
         $getColumnsResult = [
-            [
-                'Field' => 'field1',
-                'Type' => 'int(11)',
-                'Comment' => 'Comment1',
-            ],
-            [
-                'Field' => 'field2',
-                'Type' => 'text',
-                'Comment' => 'Comment1',
-            ],
+            ['Field' => 'field1', 'Type' => 'int(11)', 'Comment' => 'Comment1'],
+            ['Field' => 'field2', 'Type' => 'text', 'Comment' => 'Comment1'],
         ];
         $dbi->expects($this->any())->method('getColumns')
             ->will($this->returnValue($getColumnsResult));
@@ -95,10 +91,7 @@ class RelationTest extends AbstractTestCase
         $db = 'information_schema';
         $table = 'TABLES';
         $this->assertEquals(
-            [
-                'field1' => 'Comment1',
-                'field2' => 'Comment1',
-            ],
+            ['field1' => 'Comment1', 'field2' => 'Comment1'],
             $relation->getComments($db, $table),
         );
     }
@@ -159,16 +152,10 @@ class RelationTest extends AbstractTestCase
             'foreign_keys_data' => [
                 0 => [
                     'constraint' => 'ad',
-                    'index_list' => [
-                        'id',
-                        'value',
-                    ],
+                    'index_list' => ['id', 'value'],
                     'ref_db_name' => 'GSoC14',
                     'ref_table_name' => 'table_1',
-                    'ref_index_list' => [
-                        'id',
-                        'value',
-                    ],
+                    'ref_index_list' => ['id', 'value'],
                     'on_delete' => 'CASCADE',
                     'on_update' => 'CASCADE',
                 ],
@@ -236,40 +223,29 @@ class RelationTest extends AbstractTestCase
         $dummyDbi->removeDefaultResults();
         $dummyDbi->addResult(
             'SHOW TABLES FROM `db_pma`;',
-            [
-                ['pma__userconfig'],
-            ],
+            [['pma__userconfig']],
             ['Tables_in_db_pma'],
         );
 
         $dummyDbi->addResult(
             'SHOW TABLES FROM `db_pma`',
-            [
-                ['pma__userconfig'],
-            ],
+            [['pma__userconfig']],
             ['Tables_in_db_pma'],
         );
 
-        $dummyDbi->addResult(
-            'SELECT NULL FROM `pma__userconfig` LIMIT 0',
-            [['NULL']],
-        );
+        $dummyDbi->addResult('SELECT NULL FROM `pma__userconfig` LIMIT 0', []);
         $dummyDbi->addSelectDb('db_pma');
 
-        $_SESSION['relation'] = [];
+        (new ReflectionProperty(Relation::class, 'cache'))->setValue(null, null);
 
         $relation->fixPmaTables('db_pma', false);
-
-        $this->assertArrayHasKey($GLOBALS['server'], $_SESSION['relation'], 'The cache is expected to be filled');
-        /** @psalm-suppress EmptyArrayAccess */
-        $this->assertIsArray($_SESSION['relation'][$GLOBALS['server']]);
 
         $relationParameters = RelationParameters::fromArray([
             'db' => 'db_pma',
             'userconfigwork' => true,
             'userconfig' => 'pma__userconfig',
         ]);
-        $this->assertSame($relationParameters->toArray(), $_SESSION['relation'][$GLOBALS['server']]);
+        $this->assertSame($relationParameters->toArray(), $relation->getRelationParameters()->toArray());
 
         $dummyDbi->assertAllQueriesConsumed();
         $dummyDbi->assertAllSelectsConsumed();
@@ -309,24 +285,17 @@ class RelationTest extends AbstractTestCase
         $dummyDbi->removeDefaultResults();
         $dummyDbi->addResult(
             'SHOW TABLES FROM `db_pma`;',
-            [
-                ['pma__userconfig'],
-            ],
+            [['pma__userconfig']],
             ['Tables_in_db_pma'],
         );
 
         $dummyDbi->addResult(
             'SHOW TABLES FROM `db_pma`',
-            [
-                ['pma__userconfig'],
-            ],
+            [['pma__userconfig']],
             ['Tables_in_db_pma'],
         );
 
-        $dummyDbi->addResult(
-            'SELECT NULL FROM `pma__userconfig` LIMIT 0',
-            [['NULL']],
-        );
+        $dummyDbi->addResult('SELECT NULL FROM `pma__userconfig` LIMIT 0', []);
         $dummyDbi->addSelectDb('db_pma');
         $dummyDbi->addSelectDb('db_pma');
 
@@ -340,7 +309,7 @@ class RelationTest extends AbstractTestCase
                 . ' `label` varchar(255) COLLATE utf8_general_ci NOT NULL default \'\','
                 . ' `query` text NOT NULL, PRIMARY KEY (`id`) )'
                 . ' COMMENT=\'Bookmarks\' DEFAULT CHARACTER SET utf8 COLLATE utf8_bin;',
-            [],
+            true,
         );
         $dummyDbi->addResult(
             '-- -------------------------------------------------------- -- --'
@@ -353,7 +322,7 @@ class RelationTest extends AbstractTestCase
                 . ' PRIMARY KEY (`master_db`,`master_table`,`master_field`),'
                 . ' KEY `foreign_field` (`foreign_db`,`foreign_table`) ) COMMENT=\'Relation table\''
                 . ' DEFAULT CHARACTER SET utf8 COLLATE utf8_bin;',
-            [],
+            true,
         );
         $dummyDbi->addResult(
             '-- -------------------------------------------------------- -- --'
@@ -362,7 +331,7 @@ class RelationTest extends AbstractTestCase
                 . '`db_name` varchar(64) NOT NULL default \'\', `table_name` varchar(64) NOT NULL default \'\','
                 . ' `display_field` varchar(64) NOT NULL default \'\', PRIMARY KEY (`db_name`,`table_name`) )'
                 . ' COMMENT=\'Table information for phpMyAdmin\' DEFAULT CHARACTER SET utf8 COLLATE utf8_bin;',
-            [],
+            true,
         );
 
         $dummyDbi->addResult(
@@ -375,7 +344,7 @@ class RelationTest extends AbstractTestCase
                 . ' PRIMARY KEY (`db_name`,`table_name`,`pdf_page_number`) )'
                 . ' COMMENT=\'Table coordinates for phpMyAdmin PDF output\''
                 . ' DEFAULT CHARACTER SET utf8 COLLATE utf8_bin;',
-            [],
+            true,
         );
         $dummyDbi->addResult(
             '-- -------------------------------------------------------- -- --'
@@ -385,7 +354,7 @@ class RelationTest extends AbstractTestCase
                 . ' `page_descr` varchar(50) COLLATE utf8_general_ci NOT NULL default \'\', PRIMARY KEY (`page_nr`),'
                 . ' KEY `db_name` (`db_name`) ) COMMENT=\'PDF relation pages for phpMyAdmin\''
                 . ' DEFAULT CHARACTER SET utf8 COLLATE utf8_bin;',
-            [],
+            true,
         );
         $dummyDbi->addResult(
             '-- -------------------------------------------------------- -- --'
@@ -401,7 +370,7 @@ class RelationTest extends AbstractTestCase
                 . ' `input_transformation_options` varchar(255) NOT NULL default \'\','
                 . ' PRIMARY KEY (`id`), UNIQUE KEY `db_name` (`db_name`,`table_name`,`column_name`) )'
                 . ' COMMENT=\'Column information for phpMyAdmin\' DEFAULT CHARACTER SET utf8 COLLATE utf8_bin;',
-            [],
+            true,
         );
         $dummyDbi->addResult(
             '-- -------------------------------------------------------- -- --'
@@ -412,7 +381,7 @@ class RelationTest extends AbstractTestCase
                 . ' `timevalue` timestamp NOT NULL default CURRENT_TIMESTAMP, `sqlquery` text NOT NULL,'
                 . ' PRIMARY KEY (`id`), KEY `username` (`username`,`db`,`table`,`timevalue`) )'
                 . ' COMMENT=\'SQL history for phpMyAdmin\' DEFAULT CHARACTER SET utf8 COLLATE utf8_bin;',
-            [],
+            true,
         );
         $dummyDbi->addResult(
             '-- -------------------------------------------------------- -- --'
@@ -420,7 +389,7 @@ class RelationTest extends AbstractTestCase
             . '-- CREATE TABLE IF NOT EXISTS `pma__recent` ( '
                 . '`username` varchar(64) NOT NULL, `tables` text NOT NULL, PRIMARY KEY (`username`) )'
                 . ' COMMENT=\'Recently accessed tables\' DEFAULT CHARACTER SET utf8 COLLATE utf8_bin;',
-            [],
+            true,
         );
         $dummyDbi->addResult(
             '-- -------------------------------------------------------- -- --'
@@ -428,7 +397,7 @@ class RelationTest extends AbstractTestCase
             . '-- CREATE TABLE IF NOT EXISTS `pma__favorite` ( '
                 . '`username` varchar(64) NOT NULL, `tables` text NOT NULL, PRIMARY KEY (`username`) )'
                 . ' COMMENT=\'Favorite tables\' DEFAULT CHARACTER SET utf8 COLLATE utf8_bin;',
-            [],
+            true,
         );
         $dummyDbi->addResult(
             '-- -------------------------------------------------------- -- --'
@@ -439,7 +408,7 @@ class RelationTest extends AbstractTestCase
                 . ' `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,'
                 . ' PRIMARY KEY (`username`,`db_name`,`table_name`) ) COMMENT=\'Tables\'\' UI preferences\''
                 . ' DEFAULT CHARACTER SET utf8 COLLATE utf8_bin;',
-            [],
+            true,
         );
         $dummyDbi->addResult(
             '-- -------------------------------------------------------- -- --'
@@ -458,7 +427,7 @@ class RelationTest extends AbstractTestCase
                 . ' default \'1\', PRIMARY KEY (`db_name`,`table_name`,`version`) )'
                 . ' COMMENT=\'Database changes tracking for phpMyAdmin\''
                 . ' DEFAULT CHARACTER SET utf8 COLLATE utf8_bin;',
-            [],
+            true,
         );
         $dummyDbi->addResult(
             '-- -------------------------------------------------------- -- --'
@@ -468,7 +437,7 @@ class RelationTest extends AbstractTestCase
                 . ' PRIMARY KEY (`username`,`usergroup`) )'
                 . ' COMMENT=\'Users and their assignments to user groups\''
                 . ' DEFAULT CHARACTER SET utf8 COLLATE utf8_bin;',
-            [],
+            true,
         );
         $dummyDbi->addResult(
             '-- -------------------------------------------------------- -- --'
@@ -479,7 +448,7 @@ class RelationTest extends AbstractTestCase
                 . ' PRIMARY KEY (`usergroup`,`tab`,`allowed`) )'
                 . ' COMMENT=\'User groups with configured menu items\''
                 . ' DEFAULT CHARACTER SET utf8 COLLATE utf8_bin;',
-            [],
+            true,
         );
         $dummyDbi->addResult(
             '-- -------------------------------------------------------- -- --'
@@ -490,7 +459,7 @@ class RelationTest extends AbstractTestCase
                 . ' `table_name` varchar(64) NOT NULL,'
                 . ' PRIMARY KEY (`username`,`item_name`,`item_type`,`db_name`,`table_name`) )'
                 . ' COMMENT=\'Hidden items of navigation tree\' DEFAULT CHARACTER SET utf8 COLLATE utf8_bin;',
-            [],
+            true,
         );
         $dummyDbi->addResult(
             '-- -------------------------------------------------------- -- --'
@@ -501,7 +470,7 @@ class RelationTest extends AbstractTestCase
                 . ' `search_data` text NOT NULL, PRIMARY KEY (`id`),'
                 . ' UNIQUE KEY `u_savedsearches_username_dbname` (`username`,`db_name`,`search_name`) )'
                 . ' COMMENT=\'Saved searches\' DEFAULT CHARACTER SET utf8 COLLATE utf8_bin;',
-            [],
+            true,
         );
         $dummyDbi->addResult(
             '-- -------------------------------------------------------- -- --'
@@ -512,7 +481,7 @@ class RelationTest extends AbstractTestCase
                 . ' `col_extra` varchar(255) default \'\', `col_default` text,'
                 . ' PRIMARY KEY (`db_name`,`col_name`) )'
                 . ' COMMENT=\'Central list of columns\' DEFAULT CHARACTER SET utf8 COLLATE utf8_bin;',
-            [],
+            true,
         );
         $dummyDbi->addResult(
             '-- -------------------------------------------------------- -- --'
@@ -521,7 +490,7 @@ class RelationTest extends AbstractTestCase
                 . '`username` varchar(64) NOT NULL, `settings_data` text NOT NULL,'
                 . ' PRIMARY KEY (`username`) )'
                 . ' COMMENT=\'Settings related to Designer\' DEFAULT CHARACTER SET utf8 COLLATE utf8_bin;',
-            [],
+            true,
         );
         $dummyDbi->addResult(
             '-- -------------------------------------------------------- -- --'
@@ -532,18 +501,15 @@ class RelationTest extends AbstractTestCase
                 . ' `template_data` text NOT NULL, PRIMARY KEY (`id`),'
                 . ' UNIQUE KEY `u_user_type_template` (`username`,`export_type`,`template_name`) )'
                 . ' COMMENT=\'Saved export templates\' DEFAULT CHARACTER SET utf8 COLLATE utf8_bin;',
-            [],
+            true,
         );
 
         $this->assertSame('', $GLOBALS['cfg']['Server']['pmadb']);
 
-        $_SESSION['relation'] = [];
+        (new ReflectionProperty(Relation::class, 'cache'))->setValue(null, null);
 
         $relation->fixPmaTables('db_pma', true);
         $this->assertArrayNotHasKey('message', $GLOBALS);
-        $this->assertArrayHasKey($GLOBALS['server'], $_SESSION['relation'], 'The cache is expected to be filled');
-        /** @psalm-suppress EmptyArrayAccess */
-        $this->assertIsArray($_SESSION['relation'][$GLOBALS['server']]);
         $this->assertSame('db_pma', $GLOBALS['cfg']['Server']['pmadb']);
 
         $relationParameters = RelationParameters::fromArray([
@@ -551,7 +517,7 @@ class RelationTest extends AbstractTestCase
             'userconfigwork' => true,
             'userconfig' => 'pma__userconfig',
         ]);
-        $this->assertSame($relationParameters->toArray(), $_SESSION['relation'][$GLOBALS['server']]);
+        $this->assertSame($relationParameters->toArray(), $relation->getRelationParameters()->toArray());
 
         $dummyDbi->assertAllQueriesConsumed();
         $dummyDbi->assertAllSelectsConsumed();
@@ -611,10 +577,7 @@ class RelationTest extends AbstractTestCase
             ['Tables_in_db_pma'],
         );
 
-        $dummyDbi->addResult(
-            'SELECT NULL FROM `pma__userconfig` LIMIT 0',
-            [['NULL']],
-        );
+        $dummyDbi->addResult('SELECT NULL FROM `pma__userconfig` LIMIT 0', []);
 
         $dummyDbi->addResult(
             '-- -------------------------------------------------------- -- --'
@@ -626,7 +589,7 @@ class RelationTest extends AbstractTestCase
                 . ' `label` varchar(255) COLLATE utf8_general_ci NOT NULL default \'\','
                 . ' `query` text NOT NULL, PRIMARY KEY (`id`) )'
                 . ' COMMENT=\'Bookmarks\' DEFAULT CHARACTER SET utf8 COLLATE utf8_bin;',
-            [],
+            true,
         );
         $dummyDbi->addResult(
             '-- -------------------------------------------------------- -- --'
@@ -639,7 +602,7 @@ class RelationTest extends AbstractTestCase
                 . ' PRIMARY KEY (`master_db`,`master_table`,`master_field`),'
                 . ' KEY `foreign_field` (`foreign_db`,`foreign_table`) ) COMMENT=\'Relation table\''
                 . ' DEFAULT CHARACTER SET utf8 COLLATE utf8_bin;',
-            [],
+            true,
         );
         $dummyDbi->addResult(
             '-- -------------------------------------------------------- -- --'
@@ -648,7 +611,7 @@ class RelationTest extends AbstractTestCase
                 . '`db_name` varchar(64) NOT NULL default \'\', `table_name` varchar(64) NOT NULL default \'\','
                 . ' `display_field` varchar(64) NOT NULL default \'\', PRIMARY KEY (`db_name`,`table_name`) )'
                 . ' COMMENT=\'Table information for phpMyAdmin\' DEFAULT CHARACTER SET utf8 COLLATE utf8_bin;',
-            [],
+            true,
         );
 
         $dummyDbi->addResult(
@@ -661,7 +624,7 @@ class RelationTest extends AbstractTestCase
                 . ' PRIMARY KEY (`db_name`,`table_name`,`pdf_page_number`) )'
                 . ' COMMENT=\'Table coordinates for phpMyAdmin PDF output\''
                 . ' DEFAULT CHARACTER SET utf8 COLLATE utf8_bin;',
-            [],
+            true,
         );
         $dummyDbi->addResult(
             '-- -------------------------------------------------------- -- --'
@@ -671,7 +634,7 @@ class RelationTest extends AbstractTestCase
                 . ' `page_descr` varchar(50) COLLATE utf8_general_ci NOT NULL default \'\', PRIMARY KEY (`page_nr`),'
                 . ' KEY `db_name` (`db_name`) ) COMMENT=\'PDF relation pages for phpMyAdmin\''
                 . ' DEFAULT CHARACTER SET utf8 COLLATE utf8_bin;',
-            [],
+            true,
         );
         $dummyDbi->addResult(
             '-- -------------------------------------------------------- -- --'
@@ -687,7 +650,7 @@ class RelationTest extends AbstractTestCase
                 . ' `input_transformation_options` varchar(255) NOT NULL default \'\','
                 . ' PRIMARY KEY (`id`), UNIQUE KEY `db_name` (`db_name`,`table_name`,`column_name`) )'
                 . ' COMMENT=\'Column information for phpMyAdmin\' DEFAULT CHARACTER SET utf8 COLLATE utf8_bin;',
-            [],
+            true,
         );
         $dummyDbi->addResult(
             '-- -------------------------------------------------------- -- --'
@@ -698,7 +661,7 @@ class RelationTest extends AbstractTestCase
                 . ' `timevalue` timestamp NOT NULL default CURRENT_TIMESTAMP, `sqlquery` text NOT NULL,'
                 . ' PRIMARY KEY (`id`), KEY `username` (`username`,`db`,`table`,`timevalue`) )'
                 . ' COMMENT=\'SQL history for phpMyAdmin\' DEFAULT CHARACTER SET utf8 COLLATE utf8_bin;',
-            [],
+            true,
         );
         $dummyDbi->addResult(
             '-- -------------------------------------------------------- -- --'
@@ -706,7 +669,7 @@ class RelationTest extends AbstractTestCase
             . '-- CREATE TABLE IF NOT EXISTS `pma__recent` ( '
                 . '`username` varchar(64) NOT NULL, `tables` text NOT NULL, PRIMARY KEY (`username`) )'
                 . ' COMMENT=\'Recently accessed tables\' DEFAULT CHARACTER SET utf8 COLLATE utf8_bin;',
-            [],
+            true,
         );
         $dummyDbi->addResult(
             '-- -------------------------------------------------------- -- --'
@@ -714,7 +677,7 @@ class RelationTest extends AbstractTestCase
             . '-- CREATE TABLE IF NOT EXISTS `pma__favorite` ( '
                 . '`username` varchar(64) NOT NULL, `tables` text NOT NULL, PRIMARY KEY (`username`) )'
                 . ' COMMENT=\'Favorite tables\' DEFAULT CHARACTER SET utf8 COLLATE utf8_bin;',
-            [],
+            true,
         );
         $dummyDbi->addResult(
             '-- -------------------------------------------------------- -- --'
@@ -725,7 +688,7 @@ class RelationTest extends AbstractTestCase
                 . ' `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,'
                 . ' PRIMARY KEY (`username`,`db_name`,`table_name`) ) COMMENT=\'Tables\'\' UI preferences\''
                 . ' DEFAULT CHARACTER SET utf8 COLLATE utf8_bin;',
-            [],
+            true,
         );
         $dummyDbi->addResult(
             '-- -------------------------------------------------------- -- --'
@@ -744,7 +707,7 @@ class RelationTest extends AbstractTestCase
                 . ' default \'1\', PRIMARY KEY (`db_name`,`table_name`,`version`) )'
                 . ' COMMENT=\'Database changes tracking for phpMyAdmin\''
                 . ' DEFAULT CHARACTER SET utf8 COLLATE utf8_bin;',
-            [],
+            true,
         );
         $dummyDbi->addResult(
             '-- -------------------------------------------------------- -- --'
@@ -754,7 +717,7 @@ class RelationTest extends AbstractTestCase
                 . ' PRIMARY KEY (`username`,`usergroup`) )'
                 . ' COMMENT=\'Users and their assignments to user groups\''
                 . ' DEFAULT CHARACTER SET utf8 COLLATE utf8_bin;',
-            [],
+            true,
         );
         $dummyDbi->addResult(
             '-- -------------------------------------------------------- -- --'
@@ -765,7 +728,7 @@ class RelationTest extends AbstractTestCase
                 . ' PRIMARY KEY (`usergroup`,`tab`,`allowed`) )'
                 . ' COMMENT=\'User groups with configured menu items\''
                 . ' DEFAULT CHARACTER SET utf8 COLLATE utf8_bin;',
-            [],
+            true,
         );
         $dummyDbi->addResult(
             '-- -------------------------------------------------------- -- --'
@@ -776,7 +739,7 @@ class RelationTest extends AbstractTestCase
                 . ' `table_name` varchar(64) NOT NULL,'
                 . ' PRIMARY KEY (`username`,`item_name`,`item_type`,`db_name`,`table_name`) )'
                 . ' COMMENT=\'Hidden items of navigation tree\' DEFAULT CHARACTER SET utf8 COLLATE utf8_bin;',
-            [],
+            true,
         );
         $dummyDbi->addResult(
             '-- -------------------------------------------------------- -- --'
@@ -787,7 +750,7 @@ class RelationTest extends AbstractTestCase
                 . ' `search_data` text NOT NULL, PRIMARY KEY (`id`),'
                 . ' UNIQUE KEY `u_savedsearches_username_dbname` (`username`,`db_name`,`search_name`) )'
                 . ' COMMENT=\'Saved searches\' DEFAULT CHARACTER SET utf8 COLLATE utf8_bin;',
-            [],
+            true,
         );
         $dummyDbi->addResult(
             '-- -------------------------------------------------------- -- --'
@@ -798,7 +761,7 @@ class RelationTest extends AbstractTestCase
                 . ' `col_extra` varchar(255) default \'\', `col_default` text,'
                 . ' PRIMARY KEY (`db_name`,`col_name`) )'
                 . ' COMMENT=\'Central list of columns\' DEFAULT CHARACTER SET utf8 COLLATE utf8_bin;',
-            [],
+            true,
         );
         $dummyDbi->addResult(
             '-- -------------------------------------------------------- -- --'
@@ -807,7 +770,7 @@ class RelationTest extends AbstractTestCase
                 . '`username` varchar(64) NOT NULL, `settings_data` text NOT NULL,'
                 . ' PRIMARY KEY (`username`) )'
                 . ' COMMENT=\'Settings related to Designer\' DEFAULT CHARACTER SET utf8 COLLATE utf8_bin;',
-            [],
+            true,
         );
         $dummyDbi->addResult(
             '-- -------------------------------------------------------- -- --'
@@ -818,20 +781,17 @@ class RelationTest extends AbstractTestCase
                 . ' `template_data` text NOT NULL, PRIMARY KEY (`id`),'
                 . ' UNIQUE KEY `u_user_type_template` (`username`,`export_type`,`template_name`) )'
                 . ' COMMENT=\'Saved export templates\' DEFAULT CHARACTER SET utf8 COLLATE utf8_bin;',
-            [],
+            true,
         );
 
         $this->assertSame('db_pma', $GLOBALS['cfg']['Server']['pmadb']);
 
-        $_SESSION['relation'] = [];
+        (new ReflectionProperty(Relation::class, 'cache'))->setValue(null, null);
 
         $dummyDbi->addSelectDb('db_pma');
         $dummyDbi->addSelectDb('db_pma');
         $relation->fixPmaTables('db_pma', true);
         $this->assertArrayNotHasKey('message', $GLOBALS);
-        $this->assertArrayHasKey($GLOBALS['server'], $_SESSION['relation'], 'The cache is expected to be filled');
-        /** @psalm-suppress EmptyArrayAccess */
-        $this->assertIsArray($_SESSION['relation'][$GLOBALS['server']]);
         $this->assertSame('db_pma', $GLOBALS['cfg']['Server']['pmadb']);
 
         $relationParameters = RelationParameters::fromArray([
@@ -839,7 +799,7 @@ class RelationTest extends AbstractTestCase
             'userconfigwork' => true,
             'userconfig' => 'pma__userconfig',
         ]);
-        $this->assertSame($relationParameters->toArray(), $_SESSION['relation'][$GLOBALS['server']]);
+        $this->assertSame($relationParameters->toArray(), $relation->getRelationParameters()->toArray());
 
         $dummyDbi->assertAllQueriesConsumed();
         $dummyDbi->assertAllSelectsConsumed();
@@ -879,9 +839,7 @@ class RelationTest extends AbstractTestCase
         $dummyDbi->removeDefaultResults();
         $dummyDbi->addResult(
             'SHOW TABLES FROM `db_pma`;',
-            [
-                ['pma__userconfig'],
-            ],
+            [['pma__userconfig']],
             ['Tables_in_db_pma'],
         );
 
@@ -903,7 +861,7 @@ class RelationTest extends AbstractTestCase
 
         $this->assertSame('', $GLOBALS['cfg']['Server']['pmadb']);
 
-        $_SESSION['relation'] = [];
+        (new ReflectionProperty(Relation::class, 'cache'))->setValue(null, null);
 
         $relation->fixPmaTables('db_pma', true);
 
@@ -911,7 +869,7 @@ class RelationTest extends AbstractTestCase
         $this->assertSame('MYSQL_ERROR', $GLOBALS['message']);
         $this->assertSame('', $GLOBALS['cfg']['Server']['pmadb']);
 
-        $this->assertSame([], $_SESSION['relation']);
+        $this->assertNull((new ReflectionProperty(Relation::class, 'cache'))->getValue());
 
         $dummyDbi->assertAllQueriesConsumed();
         $dummyDbi->assertAllErrorCodesConsumed();
@@ -929,10 +887,7 @@ class RelationTest extends AbstractTestCase
         $relation = new Relation($dbi);
 
         $dummyDbi->removeDefaultResults();
-        $dummyDbi->addResult(
-            'CREATE DATABASE IF NOT EXISTS `phpmyadmin`',
-            [],
-        );
+        $dummyDbi->addResult('CREATE DATABASE IF NOT EXISTS `phpmyadmin`', true);
 
         $dummyDbi->addResult(
             'SHOW TABLES FROM `phpmyadmin`',
@@ -1403,7 +1358,7 @@ class RelationTest extends AbstractTestCase
 
         $this->assertSame(
             $data,
-            $relation->getDefaultPmaTableNames([]),
+            $relation->getCreateTableSqlQueries([]),
         );
 
         $data['pma__export_templates'] = implode("\n", [
@@ -1430,7 +1385,7 @@ class RelationTest extends AbstractTestCase
 
         $this->assertSame(
             $data,
-            $relation->getDefaultPmaTableNames(['pma__export_templates' => 'db_exporttemplates_pma']),
+            $relation->getCreateTableSqlQueries(['pma__export_templates' => 'db_exporttemplates_pma']),
         );
     }
 
@@ -1463,24 +1418,18 @@ class RelationTest extends AbstractTestCase
         $dummyDbi->removeDefaultResults();
         $dummyDbi->addResult(
             'SHOW TABLES FROM `phpmyadmin`;',
-            [
-                ['pma__userconfig'],
-            ],
+            [['pma__userconfig']],
             ['Tables_in_phpmyadmin'],
         );
 
-        $_SESSION['relation'] = [];
+        (new ReflectionProperty(Relation::class, 'cache'))->setValue(null, null);
 
         $relation = new Relation($dbi);
         $relation->initRelationParamsCache();
 
-        $this->assertArrayHasKey($GLOBALS['server'], $_SESSION['relation'], 'The cache is expected to be filled');
-        /** @psalm-suppress EmptyArrayAccess */
-        $this->assertIsArray($_SESSION['relation'][$GLOBALS['server']]);
-
         // Should all be false for server = 0
         $relationParameters = RelationParameters::fromArray([]);
-        $this->assertSame($relationParameters->toArray(), $_SESSION['relation'][$GLOBALS['server']]);
+        $this->assertSame($relationParameters->toArray(), $relation->getRelationParameters()->toArray());
 
         $this->assertEquals([
             'userconfig' => 'pma__userconfig',
@@ -1522,38 +1471,24 @@ class RelationTest extends AbstractTestCase
         $dummyDbi->removeDefaultResults();
         $dummyDbi->addResult(
             'SHOW TABLES FROM `phpmyadmin`;',
-            [
-                ['pma__userconfig'],
-            ],
+            [['pma__userconfig']],
             ['Tables_in_phpmyadmin'],
         );
 
         $dummyDbi->addResult(
             'SHOW TABLES FROM `phpmyadmin`',
-            [
-                ['pma__userconfig'],
-            ],
+            [['pma__userconfig']],
             ['Tables_in_phpmyadmin'],
         );
 
-        $dummyDbi->addResult(
-            'SELECT NULL FROM `pma__userconfig` LIMIT 0',
-            [
-                ['NULL'],
-            ],
-            ['NULL'],
-        );
+        $dummyDbi->addResult('SELECT NULL FROM `pma__userconfig` LIMIT 0', [], ['NULL']);
 
-        $_SESSION['relation'] = [];
+        (new ReflectionProperty(Relation::class, 'cache'))->setValue(null, null);
 
         $dummyDbi->addSelectDb('phpmyadmin');
         $relation = new Relation($dbi);
         $relation->initRelationParamsCache();
         $dummyDbi->assertAllSelectsConsumed();
-
-        $this->assertArrayHasKey($GLOBALS['server'], $_SESSION['relation'], 'The cache is expected to be filled');
-        /** @psalm-suppress EmptyArrayAccess */
-        $this->assertIsArray($_SESSION['relation'][$GLOBALS['server']]);
 
         // Should all be false for server = 0
         $relationParameters = RelationParameters::fromArray([
@@ -1561,7 +1496,7 @@ class RelationTest extends AbstractTestCase
             'userconfigwork' => true,
             'userconfig' => 'pma__userconfig',
         ]);
-        $this->assertSame($relationParameters->toArray(), $_SESSION['relation'][$GLOBALS['server']]);
+        $this->assertSame($relationParameters->toArray(), $relation->getRelationParameters()->toArray());
 
         $this->assertSame([
             'user' => '',
@@ -1623,39 +1558,31 @@ class RelationTest extends AbstractTestCase
         $dummyDbi->removeDefaultResults();
         $dummyDbi->addResult(
             'SHOW TABLES FROM `phpmyadmin`;',
-            [
-                ['pma__userconfig'],
-            ],
+            [['pma__userconfig']],
             ['Tables_in_phpmyadmin'],
         );
 
         $dummyDbi->addResult(
             'SHOW TABLES FROM `phpmyadmin`',
-            [
-                ['pma__userconfig'],
-            ],
+            [['pma__userconfig']],
             ['Tables_in_phpmyadmin'],
         );
 
         $dummyDbi->addResult('SELECT NULL FROM `pma__userconfig` LIMIT 0', false);
 
-        $_SESSION['relation'] = [];
+        (new ReflectionProperty(Relation::class, 'cache'))->setValue(null, null);
 
         $dummyDbi->addSelectDb('phpmyadmin');
         $relation = new Relation($dbi);
         $relation->initRelationParamsCache();
         $dummyDbi->assertAllSelectsConsumed();
 
-        $this->assertArrayHasKey($GLOBALS['server'], $_SESSION['relation'], 'The cache is expected to be filled');
-        /** @psalm-suppress EmptyArrayAccess */
-        $this->assertIsArray($_SESSION['relation'][$GLOBALS['server']]);
-
         $relationParameters = RelationParameters::fromArray([
             'db' => 'phpmyadmin',
             'userconfigwork' => false,
             'userconfig' => 'pma__userconfig',
         ]);
-        $this->assertSame($relationParameters->toArray(), $_SESSION['relation'][$GLOBALS['server']]);
+        $this->assertSame($relationParameters->toArray(), $relation->getRelationParameters()->toArray());
 
         $this->assertSame([
             'user' => '',
@@ -1717,46 +1644,30 @@ class RelationTest extends AbstractTestCase
         $dummyDbi->removeDefaultResults();
         $dummyDbi->addResult(
             'SHOW TABLES FROM `PMA-storage`;',
-            [
-                [
-                    'pma__userconfig_custom',
-                    'pma__usergroups',
-                ],
-            ],
+            [['pma__userconfig_custom', 'pma__usergroups']],
             ['Tables_in_PMA-storage'],
         );
 
         $dummyDbi->addResult(
             'SHOW TABLES FROM `PMA-storage`',
-            [
-                [
-                    'pma__userconfig_custom',
-                    'pma__usergroups',
-                ],
-            ],
+            [['pma__userconfig_custom', 'pma__usergroups']],
             ['Tables_in_PMA-storage'],
         );
 
-        $dummyDbi->addResult(
-            'SELECT NULL FROM `pma__userconfig_custom` LIMIT 0',
-            [
-                ['NULL'],
-            ],
-            ['NULL'],
-        );
+        $dummyDbi->addResult('SELECT NULL FROM `pma__userconfig_custom` LIMIT 0', [], ['NULL']);
 
         $dummyDbi->addSelectDb('PMA-storage');
 
-        $_SESSION['relation'] = [];
+        (new ReflectionProperty(Relation::class, 'cache'))->setValue(null, null);
 
         $relation = new Relation($dbi);
         $relation->initRelationParamsCache();
 
         $this->assertArrayHasKey(
             'relation',
-            $_SESSION,
+            $relation->getRelationParameters()->toArray(),
             'The cache is expected to be filled because the custom override'
-            . 'was undertood (pma__userconfig vs pma__userconfig_custom)',
+            . 'was understood (pma__userconfig vs pma__userconfig_custom)',
         );
 
         $dummyDbi->assertAllQueriesConsumed();
@@ -1764,26 +1675,14 @@ class RelationTest extends AbstractTestCase
 
         $dummyDbi->addResult(
             'SHOW TABLES FROM `PMA-storage`',
-            [
-                [
-                    'pma__userconfig_custom',
-                    'pma__usergroups',
-                ],
-            ],
+            [['pma__userconfig_custom', 'pma__usergroups']],
             ['Tables_in_PMA-storage'],
         );
 
-        $dummyDbi->addResult(
-            'SELECT NULL FROM `pma__userconfig_custom` LIMIT 0',
-            [
-                ['NULL'],
-            ],
-            ['NULL'],
-        );
+        $dummyDbi->addResult('SELECT NULL FROM `pma__userconfig_custom` LIMIT 0', [], ['NULL']);
 
         $dummyDbi->addSelectDb('PMA-storage');
-        /** @psalm-suppress EmptyArrayAccess */
-        unset($_SESSION['relation'][$GLOBALS['server']]);
+        (new ReflectionProperty(Relation::class, 'cache'))->setValue(null, null);
         $relationData = $relation->getRelationParameters();
         $dummyDbi->assertAllSelectsConsumed();
 
@@ -1821,12 +1720,386 @@ class RelationTest extends AbstractTestCase
         $dummyDbi->assertAllQueriesConsumed();
     }
 
+    public function testInitRelationParamsDisabledTracking(): void
+    {
+        $GLOBALS['db'] = '';
+        $GLOBALS['server'] = 1;
+        $GLOBALS['cfg']['Server'] = [];
+        $GLOBALS['cfg']['Server']['user'] = '';
+        $GLOBALS['cfg']['Server']['pmadb'] = 'PMA-storage';
+        $GLOBALS['cfg']['Server']['bookmarktable'] = '';
+        $GLOBALS['cfg']['Server']['relation'] = '';
+        $GLOBALS['cfg']['Server']['table_info'] = '';
+        $GLOBALS['cfg']['Server']['table_coords'] = '';
+        $GLOBALS['cfg']['Server']['column_info'] = '';
+        $GLOBALS['cfg']['Server']['pdf_pages'] = '';
+        $GLOBALS['cfg']['Server']['history'] = '';
+        $GLOBALS['cfg']['Server']['recent'] = '';
+        $GLOBALS['cfg']['Server']['favorite'] = '';
+        $GLOBALS['cfg']['Server']['table_uiprefs'] = '';
+        $GLOBALS['cfg']['Server']['tracking'] = false;
+        $GLOBALS['cfg']['Server']['userconfig'] = '';
+        $GLOBALS['cfg']['Server']['users'] = '';
+        $GLOBALS['cfg']['Server']['usergroups'] = '';
+        $GLOBALS['cfg']['Server']['navigationhiding'] = '';
+        $GLOBALS['cfg']['Server']['savedsearches'] = '';
+        $GLOBALS['cfg']['Server']['central_columns'] = '';
+        $GLOBALS['cfg']['Server']['designer_settings'] = '';
+        $GLOBALS['cfg']['Server']['export_templates'] = '';
+
+        $dummyDbi = $this->createDbiDummy();
+        $dbi = $this->createDatabaseInterface($dummyDbi);
+
+        $dummyDbi->removeDefaultResults();
+        $dummyDbi->addResult(
+            'SHOW TABLES FROM `PMA-storage`;',
+            [
+                ['pma__tracking'],
+            ],
+            ['Tables_in_PMA-storage'],
+        );
+        $dummyDbi->addResult(
+            'SHOW TABLES FROM `PMA-storage`',
+            [
+                ['pma__tracking'],
+            ],
+            ['Tables_in_PMA-storage'],
+        );
+
+        $dummyDbi->addSelectDb('PMA-storage');
+
+        (new ReflectionProperty(Relation::class, 'cache'))->setValue(null, null);
+
+        $relation = new Relation($dbi);
+        $relation->initRelationParamsCache();
+
+        /**
+         * TODO: Warning! This test doesn't actually test anything.
+         * The method above does't initialize Relation param cache.
+         * A proper test is needed to verify that the user disabled features result in disabled Relation cache.
+         */
+        $this->assertArrayHasKey(
+            'relation',
+            $relation->getRelationParameters()->toArray(),
+            'The cache is expected to be filled because the custom override'
+            . 'was understood',
+        );
+
+        $dummyDbi->assertAllQueriesConsumed();
+        $dummyDbi->assertAllSelectsConsumed();
+
+        $dummyDbi->addResult(
+            'SHOW TABLES FROM `PMA-storage`',
+            [
+                [
+                    'pma__userconfig_custom',
+                    'pma__usergroups',
+                ],
+            ],
+            ['Tables_in_PMA-storage'],
+        );
+
+        $dummyDbi->addSelectDb('PMA-storage');
+        (new ReflectionProperty(Relation::class, 'cache'))->setValue(null, null);
+        $relationData = $relation->getRelationParameters();
+        $dummyDbi->assertAllSelectsConsumed();
+
+        $relationParameters = RelationParameters::fromArray([
+            'db' => 'PMA-storage',
+            'trackingwork' => false,
+            'tracking' => false,
+        ]);
+        $this->assertSame($relationParameters->toArray(), $relationData->toArray());
+        $this->assertNull($relationParameters->trackingFeature, 'The feature should not be enabled');
+
+        $this->assertSame([
+            'user' => '',
+            'pmadb' => 'PMA-storage',
+            'bookmarktable' => '',
+            'relation' => '',
+            'table_info' => '',
+            'table_coords' => '',
+            'column_info' => '',
+            'pdf_pages' => '',
+            'history' => '',
+            'recent' => '',
+            'favorite' => '',
+            'table_uiprefs' => '',
+            'tracking' => false,
+            'userconfig' => '',
+            'users' => '',
+            'usergroups' => '',
+            'navigationhiding' => '',
+            'savedsearches' => '',
+            'central_columns' => '',
+            'designer_settings' => '',
+            'export_templates' => '',
+        ], $GLOBALS['cfg']['Server']);
+
+        $dummyDbi->assertAllQueriesConsumed();
+    }
+
+    public function testInitRelationParamsDisabledTrackingOthersExist(): void
+    {
+        $GLOBALS['db'] = '';
+        $GLOBALS['server'] = 1;
+        $GLOBALS['cfg']['Server'] = [];
+        $GLOBALS['cfg']['Server']['user'] = '';
+        $GLOBALS['cfg']['Server']['pmadb'] = 'PMA-storage';
+        $GLOBALS['cfg']['Server']['bookmarktable'] = '';
+        $GLOBALS['cfg']['Server']['relation'] = '';
+        $GLOBALS['cfg']['Server']['table_info'] = '';
+        $GLOBALS['cfg']['Server']['table_coords'] = '';
+        $GLOBALS['cfg']['Server']['column_info'] = '';
+        $GLOBALS['cfg']['Server']['pdf_pages'] = '';
+        $GLOBALS['cfg']['Server']['history'] = '';
+        $GLOBALS['cfg']['Server']['recent'] = '';
+        $GLOBALS['cfg']['Server']['favorite'] = 'pma__favorite_custom';
+        $GLOBALS['cfg']['Server']['table_uiprefs'] = '';
+        $GLOBALS['cfg']['Server']['tracking'] = false;
+        $GLOBALS['cfg']['Server']['userconfig'] = '';
+        $GLOBALS['cfg']['Server']['users'] = '';
+        $GLOBALS['cfg']['Server']['usergroups'] = '';
+        $GLOBALS['cfg']['Server']['navigationhiding'] = '';
+        $GLOBALS['cfg']['Server']['savedsearches'] = '';
+        $GLOBALS['cfg']['Server']['central_columns'] = '';
+        $GLOBALS['cfg']['Server']['designer_settings'] = '';
+        $GLOBALS['cfg']['Server']['export_templates'] = '';
+
+        $dummyDbi = $this->createDbiDummy();
+        $dbi = $this->createDatabaseInterface($dummyDbi);
+        $GLOBALS['dbi'] = $dbi;
+
+        $dummyDbi->removeDefaultResults();
+        $dummyDbi->addSelectDb('PMA-storage');
+        $dummyDbi->addResult(
+            'SHOW TABLES FROM `PMA-storage`;',
+            [
+                ['pma__favorite_custom'],
+            ],
+            ['Tables_in_PMA-storage'],
+        );
+
+        $dummyDbi->addResult(
+            'SHOW TABLES FROM `PMA-storage`',
+            [
+                ['pma__favorite_custom'],
+            ],
+            ['Tables_in_PMA-storage'],
+        );
+
+        $dummyDbi->addResult('SELECT NULL FROM `pma__favorite_custom` LIMIT 0', [], ['NULL']);
+
+        $_SESSION['tmpval'] = [];
+        (new ReflectionProperty(Relation::class, 'cache'))->setValue(null, null);
+        (new ReflectionProperty(RecentFavoriteTable::class, 'instances'))->setValue(null, []);
+
+        $relation = new Relation($dbi);
+        $relation->initRelationParamsCache();
+
+        $this->assertArrayHasKey(
+            'relation',
+            $relation->getRelationParameters()->toArray(),
+            'The cache is expected to be filled because the custom override'
+            . 'was understood',
+        );
+
+        $dummyDbi->assertAllQueriesConsumed();
+        $dummyDbi->assertAllSelectsConsumed();
+
+        $relationData = $relation->getRelationParameters();
+        $dummyDbi->assertAllSelectsConsumed();
+
+        $relationParameters = RelationParameters::fromArray([
+            'db' => 'PMA-storage',
+            'trackingwork' => false,
+            'tracking' => false,
+            'favorite' => 'pma__favorite_custom',
+            'favoritework' => true,
+        ]);
+        $this->assertSame($relationParameters->toArray(), $relationData->toArray());
+        $this->assertNull($relationParameters->trackingFeature, 'The feature should not be enabled');
+
+        $this->assertSame([
+            'user' => '',
+            'pmadb' => 'PMA-storage',
+            'bookmarktable' => '',
+            'relation' => '',
+            'table_info' => '',
+            'table_coords' => '',
+            'column_info' => '',
+            'pdf_pages' => '',
+            'history' => '',
+            'recent' => '',
+            'favorite' => 'pma__favorite_custom',
+            'table_uiprefs' => '',
+            'tracking' => false,
+            'userconfig' => '',
+            'users' => '',
+            'usergroups' => '',
+            'navigationhiding' => '',
+            'savedsearches' => '',
+            'central_columns' => '',
+            'designer_settings' => '',
+            'export_templates' => '',
+        ], $GLOBALS['cfg']['Server']);
+
+        $dummyDbi->assertAllQueriesConsumed();
+    }
+
+    public function testArePmadbTablesDefinedAndArePmadbTablesAllDisabled(): void
+    {
+        $GLOBALS['cfg']['Server']['bookmarktable'] = '';
+        $GLOBALS['cfg']['Server']['relation'] = '';
+        $GLOBALS['cfg']['Server']['table_info'] = '';
+        $GLOBALS['cfg']['Server']['table_coords'] = '';
+        $GLOBALS['cfg']['Server']['column_info'] = '';
+        $GLOBALS['cfg']['Server']['pdf_pages'] = '';
+        $GLOBALS['cfg']['Server']['history'] = '';
+        $GLOBALS['cfg']['Server']['recent'] = '';
+        $GLOBALS['cfg']['Server']['favorite'] = '';
+        $GLOBALS['cfg']['Server']['table_uiprefs'] = '';
+        $GLOBALS['cfg']['Server']['tracking'] = '';
+        $GLOBALS['cfg']['Server']['userconfig'] = '';
+        $GLOBALS['cfg']['Server']['users'] = '';
+        $GLOBALS['cfg']['Server']['usergroups'] = '';
+        $GLOBALS['cfg']['Server']['navigationhiding'] = '';
+        $GLOBALS['cfg']['Server']['savedsearches'] = '';
+        $GLOBALS['cfg']['Server']['central_columns'] = '';
+        $GLOBALS['cfg']['Server']['designer_settings'] = '';
+        $GLOBALS['cfg']['Server']['export_templates'] = '';
+
+        $dbi = $this->createDatabaseInterface();
+        $GLOBALS['dbi'] = $dbi;
+
+        (new ReflectionProperty(Relation::class, 'cache'))->setValue(null, null);
+
+        $relation = new Relation($dbi);
+
+        $this->assertFalse($relation->arePmadbTablesDefined());
+        $this->assertFalse($relation->arePmadbTablesAllDisabled());
+
+        $GLOBALS['cfg']['Server']['bookmarktable'] = '';
+        $GLOBALS['cfg']['Server']['relation'] = '';
+        $GLOBALS['cfg']['Server']['table_info'] = '';
+        $GLOBALS['cfg']['Server']['table_coords'] = '';
+        $GLOBALS['cfg']['Server']['column_info'] = '';
+        $GLOBALS['cfg']['Server']['pdf_pages'] = '';
+        $GLOBALS['cfg']['Server']['history'] = '';
+        $GLOBALS['cfg']['Server']['recent'] = '';
+        $GLOBALS['cfg']['Server']['favorite'] = 'pma__favorite_custom';
+        $GLOBALS['cfg']['Server']['table_uiprefs'] = '';
+        $GLOBALS['cfg']['Server']['tracking'] = false;
+        $GLOBALS['cfg']['Server']['userconfig'] = '';
+        $GLOBALS['cfg']['Server']['users'] = '';
+        $GLOBALS['cfg']['Server']['usergroups'] = '';
+        $GLOBALS['cfg']['Server']['navigationhiding'] = '';
+        $GLOBALS['cfg']['Server']['savedsearches'] = '';
+        $GLOBALS['cfg']['Server']['central_columns'] = '';
+        $GLOBALS['cfg']['Server']['designer_settings'] = '';
+        $GLOBALS['cfg']['Server']['export_templates'] = '';
+
+        $this->assertFalse($relation->arePmadbTablesDefined());
+        $this->assertFalse($relation->arePmadbTablesAllDisabled());
+
+        $GLOBALS['cfg']['Server']['bookmarktable'] = 'pma__bookmark';
+        $GLOBALS['cfg']['Server']['relation'] = 'pma__relation';
+        $GLOBALS['cfg']['Server']['table_info'] = 'pma__table_info';
+        $GLOBALS['cfg']['Server']['table_coords'] = 'pma__table_coords';
+        $GLOBALS['cfg']['Server']['pdf_pages'] = 'pma__pdf_pages';
+        $GLOBALS['cfg']['Server']['column_info'] = 'pma__column_info';
+        $GLOBALS['cfg']['Server']['history'] = 'pma__history';
+        $GLOBALS['cfg']['Server']['table_uiprefs'] = 'pma__table_uiprefs';
+        $GLOBALS['cfg']['Server']['tracking'] = 'pma__tracking';
+        $GLOBALS['cfg']['Server']['userconfig'] = 'pma__userconfig';
+        $GLOBALS['cfg']['Server']['recent'] = 'pma__recent';
+        $GLOBALS['cfg']['Server']['favorite'] = 'pma__favorite';
+        $GLOBALS['cfg']['Server']['users'] = 'pma__users';
+        $GLOBALS['cfg']['Server']['usergroups'] = 'pma__usergroups';
+        $GLOBALS['cfg']['Server']['navigationhiding'] = 'pma__navigationhiding';
+        $GLOBALS['cfg']['Server']['savedsearches'] = 'pma__savedsearches';
+        $GLOBALS['cfg']['Server']['central_columns'] = 'pma__central_columns';
+        $GLOBALS['cfg']['Server']['designer_settings'] = 'pma__designer_settings';
+        $GLOBALS['cfg']['Server']['export_templates'] = 'pma__export_templates';
+
+        $this->assertTrue($relation->arePmadbTablesDefined());
+        $this->assertFalse($relation->arePmadbTablesAllDisabled());
+
+        $GLOBALS['cfg']['Server']['bookmarktable'] = 'pma__bookmark';
+        $GLOBALS['cfg']['Server']['relation'] = 'pma__relation';
+        $GLOBALS['cfg']['Server']['table_info'] = 'pma__table_info';
+        $GLOBALS['cfg']['Server']['table_coords'] = 'pma__table_coords';
+        $GLOBALS['cfg']['Server']['pdf_pages'] = 'pma__pdf_pages';
+        $GLOBALS['cfg']['Server']['column_info'] = 'pma__column_info';
+        $GLOBALS['cfg']['Server']['history'] = 'custom_name';
+        $GLOBALS['cfg']['Server']['table_uiprefs'] = 'pma__table_uiprefs';
+        $GLOBALS['cfg']['Server']['tracking'] = 'pma__tracking';
+        $GLOBALS['cfg']['Server']['userconfig'] = 'pma__userconfig';
+        $GLOBALS['cfg']['Server']['recent'] = 'pma__recent';
+        $GLOBALS['cfg']['Server']['favorite'] = 'pma__favorite';
+        $GLOBALS['cfg']['Server']['users'] = 'pma__users';
+        $GLOBALS['cfg']['Server']['usergroups'] = 'pma__usergroups';
+        $GLOBALS['cfg']['Server']['navigationhiding'] = 'pma__navigationhiding';
+        $GLOBALS['cfg']['Server']['savedsearches'] = 'pma__savedsearches';
+        $GLOBALS['cfg']['Server']['central_columns'] = 'pma__central_columns';
+        $GLOBALS['cfg']['Server']['designer_settings'] = 'pma__designer_settings';
+        $GLOBALS['cfg']['Server']['export_templates'] = 'pma__export_templates';
+
+        $this->assertTrue($relation->arePmadbTablesDefined());
+        $this->assertFalse($relation->arePmadbTablesAllDisabled());
+
+        $GLOBALS['cfg']['Server']['bookmarktable'] = 'pma__bookmark';
+        $GLOBALS['cfg']['Server']['relation'] = 'pma__relation';
+        $GLOBALS['cfg']['Server']['table_info'] = 'pma__table_info';
+        $GLOBALS['cfg']['Server']['table_coords'] = 'pma__table_coords';
+        $GLOBALS['cfg']['Server']['pdf_pages'] = 'pma__pdf_pages';
+        $GLOBALS['cfg']['Server']['column_info'] = 'pma__column_info';
+        $GLOBALS['cfg']['Server']['history'] = 'pma__history';
+        $GLOBALS['cfg']['Server']['table_uiprefs'] = 'pma__table_uiprefs';
+        $GLOBALS['cfg']['Server']['tracking'] = 'pma__tracking';
+        $GLOBALS['cfg']['Server']['userconfig'] = '';
+        $GLOBALS['cfg']['Server']['recent'] = 'pma__recent';
+        $GLOBALS['cfg']['Server']['favorite'] = 'pma__favorite';
+        $GLOBALS['cfg']['Server']['users'] = 'pma__users';
+        $GLOBALS['cfg']['Server']['usergroups'] = 'pma__usergroups';
+        $GLOBALS['cfg']['Server']['navigationhiding'] = 'pma__navigationhiding';
+        $GLOBALS['cfg']['Server']['savedsearches'] = 'pma__savedsearches';
+        $GLOBALS['cfg']['Server']['central_columns'] = 'pma__central_columns';
+        $GLOBALS['cfg']['Server']['designer_settings'] = 'pma__designer_settings';
+        $GLOBALS['cfg']['Server']['export_templates'] = 'pma__export_templates';
+
+        $this->assertFalse($relation->arePmadbTablesDefined());
+        $this->assertFalse($relation->arePmadbTablesAllDisabled());
+
+        $GLOBALS['cfg']['Server']['bookmarktable'] = false; //'pma__bookmark';
+        $GLOBALS['cfg']['Server']['relation'] = false; //'pma__relation';
+        $GLOBALS['cfg']['Server']['table_info'] = false; //'pma__table_info';
+        $GLOBALS['cfg']['Server']['table_coords'] = false; //'pma__table_coords';
+        $GLOBALS['cfg']['Server']['pdf_pages'] = false; //'pma__pdf_pages';
+        $GLOBALS['cfg']['Server']['column_info'] = false; //'pma__column_info';
+        $GLOBALS['cfg']['Server']['history'] = false; //'pma__history';
+        $GLOBALS['cfg']['Server']['table_uiprefs'] = false; //'pma__table_uiprefs';
+        $GLOBALS['cfg']['Server']['tracking'] = false; //'pma__tracking';
+        $GLOBALS['cfg']['Server']['userconfig'] = false; //'pma__userconfig';
+        $GLOBALS['cfg']['Server']['recent'] = false; //'pma__recent';
+        $GLOBALS['cfg']['Server']['favorite'] = false; //'pma__favorite';
+        $GLOBALS['cfg']['Server']['users'] = false; //'pma__users';
+        $GLOBALS['cfg']['Server']['usergroups'] = false; //'pma__usergroups';
+        $GLOBALS['cfg']['Server']['navigationhiding'] = false; //'pma__navigationhiding';
+        $GLOBALS['cfg']['Server']['savedsearches'] = false; //'pma__savedsearches';
+        $GLOBALS['cfg']['Server']['central_columns'] = false; //'pma__central_columns';
+        $GLOBALS['cfg']['Server']['designer_settings'] = false; //'pma__designer_settings';
+        $GLOBALS['cfg']['Server']['export_templates'] = false; //'pma__export_templates';
+
+        $this->assertFalse($relation->arePmadbTablesDefined());
+        $this->assertTrue($relation->arePmadbTablesAllDisabled());
+    }
+
     /**
      * @param array<string, bool|string> $params
      * @param string[]                   $queries
-     *
-     * @dataProvider providerForTestRenameTable
      */
+    #[DataProvider('providerForTestRenameTable')]
     public function testRenameTable(array $params, array $queries): void
     {
         $dummyDbi = $this->createDbiDummy();
@@ -1835,11 +2108,11 @@ class RelationTest extends AbstractTestCase
         $relation = new Relation($dbi);
 
         $GLOBALS['server'] = 1;
-        $_SESSION['relation'] = [];
-        $_SESSION['relation'][$GLOBALS['server']] = RelationParameters::fromArray($params)->toArray();
+        $relationParameters = RelationParameters::fromArray($params);
+        (new ReflectionProperty(Relation::class, 'cache'))->setValue(null, $relationParameters);
 
         foreach ($queries as $query) {
-            $dummyDbi->addResult($query, []);
+            $dummyDbi->addResult($query, true);
         }
 
         $relation->renameTable('db_1', 'db_2', 'table_1', 'table_2');
@@ -1897,19 +2170,19 @@ class RelationTest extends AbstractTestCase
         $relation = new Relation($dbi);
 
         $GLOBALS['server'] = 1;
-        $_SESSION['relation'] = [];
-        $_SESSION['relation'][$GLOBALS['server']] = RelationParameters::fromArray([
+        $relationParameters = RelationParameters::fromArray([
             'user' => 'user',
             'db' => 'pma`db',
             'pdfwork' => true,
             'pdf_pages' => 'pdf_pages',
             'table_coords' => 'table`coords',
-        ])->toArray();
+        ]);
+        (new ReflectionProperty(Relation::class, 'cache'))->setValue(null, $relationParameters);
 
         $dummyDbi->addResult(
             'UPDATE `pma``db`.`table``coords` SET db_name = \'db\\\'1\', table_name = \'table\\\'2\''
                 . ' WHERE db_name = \'db\\\'1\' AND table_name = \'table\\\'1\'',
-            [],
+            true,
         );
 
         $relation->renameTable('db\'1', 'db\'1', 'table\'1', 'table\'2');

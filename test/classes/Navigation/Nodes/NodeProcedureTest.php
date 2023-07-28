@@ -6,21 +6,11 @@ namespace PhpMyAdmin\Tests\Navigation\Nodes;
 
 use PhpMyAdmin\Navigation\Nodes\NodeProcedure;
 use PhpMyAdmin\Tests\AbstractTestCase;
+use PHPUnit\Framework\Attributes\CoversClass;
 
-/** @covers \PhpMyAdmin\Navigation\Nodes\NodeProcedure */
+#[CoversClass(NodeProcedure::class)]
 class NodeProcedureTest extends AbstractTestCase
 {
-    /**
-     * SetUp for test cases
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $GLOBALS['dbi'] = $this->createDatabaseInterface();
-        $GLOBALS['server'] = 0;
-    }
-
     /**
      * Test for __construct
      */

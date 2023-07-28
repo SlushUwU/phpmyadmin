@@ -31,10 +31,10 @@ use function vsprintf;
  */
 class Advisor
 {
-    /** @var array */
+    /** @var mixed[] */
     private array $variables = [];
 
-    /** @var array */
+    /** @var mixed[] */
     private array $globals = [];
 
     /**
@@ -43,13 +43,17 @@ class Advisor
      */
     private array $rules = [];
 
-    /** @var array{fired:array, notfired:array, unchecked:array, errors:array} */
-    private array $runResult = [
-        'fired' => [],
-        'notfired' => [],
-        'unchecked' => [],
-        'errors' => [],
-    ];
+    /** @psalm-var list<RuleType> */
+    private array $firedRules = [];
+
+    /** @psalm-var list<RuleType> */
+    private array $notFiredRules = [];
+
+    /** @psalm-var list<RuleType> */
+    private array $uncheckedRules = [];
+
+    /** @psalm-var list<string> */
+    private array $errors = [];
 
     public function __construct(private DatabaseInterface $dbi, private ExpressionLanguage $expression)
     {
@@ -96,7 +100,7 @@ class Advisor
                 int $value,
                 int $limes = 6,
                 int $comma = 0,
-            ) => implode(' ', (array) Util::formatByteDown($value, $limes, $comma))
+            ) => implode(' ', Util::formatByteDown($value, $limes, $comma))
         );
         $this->expression->register(
             'fired',
@@ -104,7 +108,7 @@ class Advisor
             },
             function (array $arguments, int|string $value) {
                 // Did matching rule fire?
-                foreach ($this->runResult['fired'] as $rule) {
+                foreach ($this->firedRules as $rule) {
                     if ($rule['id'] == $value) {
                         return '1';
                     }
@@ -156,20 +160,30 @@ class Advisor
         $this->rules = array_merge($genericRules, $extraRules);
     }
 
-    /** @return array{fired: array, notfired: array, unchecked: array, errors: array} */
+    /** @return array{fired: mixed[], notfired: mixed[], unchecked: mixed[], errors: mixed[]} */
     public function getRunResult(): array
     {
-        return $this->runResult;
+        return [
+            'fired' => $this->firedRules,
+            'notfired' => $this->notFiredRules,
+            'unchecked' => $this->uncheckedRules,
+            'errors' => $this->errors,
+        ];
     }
 
-    /** @psalm-return array{fired:array, notfired:array, unchecked:array, errors:array} */
+    /** @psalm-return array{fired:mixed[], notfired:mixed[], unchecked:mixed[], errors:mixed[]} */
     public function run(): array
     {
         $this->setVariables();
         $this->setRules();
         $this->runRules();
 
-        return $this->runResult;
+        return [
+            'fired' => $this->firedRules,
+            'notfired' => $this->notFiredRules,
+            'unchecked' => $this->uncheckedRules,
+            'errors' => $this->errors,
+        ];
     }
 
     /**
@@ -180,7 +194,7 @@ class Advisor
      */
     private function storeError(string $description, Throwable $exception): void
     {
-        $this->runResult['errors'][] = $description . ' ' . sprintf(
+        $this->errors[] = $description . ' ' . sprintf(
             __('Error when evaluating: %s'),
             $exception->getMessage(),
         );
@@ -191,12 +205,10 @@ class Advisor
      */
     private function runRules(): void
     {
-        $this->runResult = [
-            'fired' => [],
-            'notfired' => [],
-            'unchecked' => [],
-            'errors' => [],
-        ];
+        $this->firedRules = [];
+        $this->notFiredRules = [];
+        $this->uncheckedRules = [];
+        $this->errors = [];
 
         foreach ($this->rules as $rule) {
             $this->variables['value'] = 0;
@@ -259,14 +271,15 @@ class Advisor
     /**
      * Adds a rule to the result list
      *
-     * @param string $type type of rule
-     * @param array  $rule rule itself
-     * @psalm-param 'notfired'|'fired'|'unchecked'|'errors' $type
+     * @param string  $type type of rule
+     * @param mixed[] $rule rule itself
+     * @psalm-param 'notfired'|'fired'|'unchecked' $type
+     * @psalm-param RuleType $rule
      */
     public function addRule(string $type, array $rule): void
     {
-        if ($type !== 'notfired' && $type !== 'fired') {
-            $this->runResult[$type][] = $rule;
+        if ($type === 'unchecked') {
+            $this->uncheckedRules[] = $rule;
 
             return;
         }
@@ -306,13 +319,19 @@ class Advisor
             $rule['recommendation'],
         );
 
-        $this->runResult[$type][] = $rule;
+        if ($type === 'notfired') {
+            $this->notFiredRules[] = $rule;
+
+            return;
+        }
+
+        $this->firedRules[] = $rule;
     }
 
     /**
      * Callback for wrapping links with Core::linkURL
      *
-     * @param array $matches List of matched elements form preg_replace_callback
+     * @param mixed[] $matches List of matched elements form preg_replace_callback
      *
      * @return string Replacement value
      */
@@ -324,7 +343,7 @@ class Advisor
     /**
      * Callback for wrapping variable edit links
      *
-     * @param array $matches List of matched elements form preg_replace_callback
+     * @param mixed[] $matches List of matched elements form preg_replace_callback
      *
      * @return string Replacement value
      */

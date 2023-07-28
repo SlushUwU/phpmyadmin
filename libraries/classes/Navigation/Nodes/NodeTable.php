@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Navigation\Nodes;
 
+use PhpMyAdmin\ConfigStorage\RelationParameters;
 use PhpMyAdmin\Url;
 use PhpMyAdmin\Util;
 
@@ -144,10 +145,14 @@ class NodeTable extends NodeDatabaseChild
      * @param int    $pos          The offset of the list within the results
      * @param string $searchClause A string used to filter the results of the query
      *
-     * @return array
+     * @return mixed[]
      */
-    public function getData(string $type, int $pos, string $searchClause = ''): array
-    {
+    public function getData(
+        RelationParameters $relationParameters,
+        string $type,
+        int $pos,
+        string $searchClause = '',
+    ): array {
         $maxItems = $GLOBALS['cfg']['MaxNavigationItems'];
         $retval = [];
         $db = $this->realParent()->realName;

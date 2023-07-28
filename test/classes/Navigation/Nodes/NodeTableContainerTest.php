@@ -6,25 +6,11 @@ namespace PhpMyAdmin\Tests\Navigation\Nodes;
 
 use PhpMyAdmin\Navigation\Nodes\NodeTableContainer;
 use PhpMyAdmin\Tests\AbstractTestCase;
+use PHPUnit\Framework\Attributes\CoversClass;
 
-/** @covers \PhpMyAdmin\Navigation\Nodes\NodeTableContainer */
+#[CoversClass(NodeTableContainer::class)]
 class NodeTableContainerTest extends AbstractTestCase
 {
-    /**
-     * SetUp for test cases
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $GLOBALS['dbi'] = $this->createDatabaseInterface();
-        $GLOBALS['server'] = 0;
-        $GLOBALS['cfg']['NavigationTreeEnableGrouping'] = true;
-        $GLOBALS['cfg']['NavigationTreeDbSeparator'] = '_';
-        $GLOBALS['cfg']['NavigationTreeTableSeparator'] = '__';
-        $GLOBALS['cfg']['NavigationTreeTableLevel'] = 1;
-    }
-
     /**
      * Test for __construct
      */

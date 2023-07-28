@@ -4,17 +4,18 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Navigation\Nodes;
 
+use PhpMyAdmin\ConfigStorage\Relation;
 use PhpMyAdmin\ConfigStorage\RelationParameters;
 use PhpMyAdmin\Navigation\Nodes\NodeDatabase;
 use PhpMyAdmin\Navigation\Nodes\NodeDatabaseChild;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Url;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\MockObject\MockObject;
+use ReflectionProperty;
 
-/**
- * @covers \PhpMyAdmin\Navigation\Nodes\NodeDatabaseChild
- * @covers \PhpMyAdmin\Navigation\Nodes\NodeDatabase
- */
+#[CoversClass(NodeDatabaseChild::class)]
+#[CoversClass(NodeDatabase::class)]
 class NodeDatabaseChildTest extends AbstractTestCase
 {
     /**
@@ -35,16 +36,15 @@ class NodeDatabaseChildTest extends AbstractTestCase
 
         parent::setLanguage();
 
-        $GLOBALS['dbi'] = $this->createDatabaseInterface();
         $GLOBALS['cfg']['DefaultTabDatabase'] = 'structure';
         $GLOBALS['server'] = 1;
         $GLOBALS['cfg']['ServerDefault'] = 1;
-        $_SESSION['relation'] = [];
-        $_SESSION['relation'][$GLOBALS['server']] = RelationParameters::fromArray([
+        $relationParameters = RelationParameters::fromArray([
             'db' => 'pmadb',
             'navwork' => true,
             'navigationhiding' => 'navigationhiding',
-        ])->toArray();
+        ]);
+        (new ReflectionProperty(Relation::class, 'cache'))->setValue(null, $relationParameters);
         $this->object = $this->getMockForAbstractClass(
             NodeDatabaseChild::class,
             ['child'],
@@ -66,12 +66,18 @@ class NodeDatabaseChildTest extends AbstractTestCase
      */
     public function testGetHtmlForControlButtons(): void
     {
+        $relationParameters = RelationParameters::fromArray([
+            'db' => 'pmadb',
+            'navwork' => true,
+            'navigationhiding' => 'navigationhiding',
+        ]);
+
         $parent = new NodeDatabase('parent');
         $parent->addChild($this->object);
         $this->object->expects($this->once())
             ->method('getItemType')
             ->will($this->returnValue('itemType'));
-        $html = $this->object->getHtmlForControlButtons();
+        $html = $this->object->getHtmlForControlButtons($relationParameters->navigationItemsHidingFeature);
 
         $this->assertStringStartsWith('<span class="navItemControls">', $html);
         $this->assertStringEndsWith('</span>', $html);

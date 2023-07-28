@@ -7,7 +7,7 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Plugins\Schema;
 
-use PhpMyAdmin\Dbal\DatabaseName;
+use PhpMyAdmin\Identifiers\DatabaseName;
 use PhpMyAdmin\Plugins\Schema\Eps\EpsRelationSchema;
 use PhpMyAdmin\Plugins\SchemaPlugin;
 use PhpMyAdmin\Properties\Options\Groups\OptionsPropertyMainGroup;
@@ -61,10 +61,7 @@ class SchemaEps extends SchemaPlugin
             __('Orientation'),
         );
         $leaf->setValues(
-            [
-                'L' => __('Landscape'),
-                'P' => __('Portrait'),
-            ],
+            ['L' => __('Landscape'), 'P' => __('Portrait')],
         );
         $specificOptions->addProperty($leaf);
 

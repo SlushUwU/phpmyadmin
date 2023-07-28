@@ -36,12 +36,10 @@ final class ChartingDataController extends AbstractController
             $this->dbi->selectDb('mysql');
         }
 
-        if (! $this->response->isAjax()) {
+        if (! $request->isAjax()) {
             return;
         }
 
-        $this->response->addJSON([
-            'message' => $this->monitor->getJsonForChartingData($requiredData),
-        ]);
+        $this->response->addJSON(['message' => $this->monitor->getJsonForChartingData($requiredData)]);
     }
 }

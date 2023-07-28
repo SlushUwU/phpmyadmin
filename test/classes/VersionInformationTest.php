@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace PhpMyAdmin\Tests;
 
 use PhpMyAdmin\VersionInformation;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Group;
 use stdClass;
 
-/** @covers \PhpMyAdmin\VersionInformation */
+#[CoversClass(VersionInformation::class)]
 class VersionInformationTest extends AbstractTestCase
 {
     /** @var stdClass[] */
@@ -51,14 +54,14 @@ class VersionInformationTest extends AbstractTestCase
 
     /**
      * Test version checking
-     *
-     * @group large
-     * @group network
      */
+    #[Group('large')]
+    #[Group('network')]
     public function testGetLatestVersion(): void
     {
         $this->setProxySettings();
         $GLOBALS['cfg']['VersionCheck'] = true;
+        unset($_SESSION['cache']['version_check']);
         $versionInformation = new VersionInformation();
         $version = $versionInformation->getLatestVersion();
         $this->assertIsObject($version);
@@ -71,9 +74,8 @@ class VersionInformationTest extends AbstractTestCase
      *
      * @param string $version Version string
      * @param int    $numeric Integer matching version
-     *
-     * @dataProvider dataVersions
      */
+    #[DataProvider('dataVersions')]
     public function testVersionToInt(string $version, int $numeric): void
     {
         $versionInformation = new VersionInformation();
@@ -85,86 +87,31 @@ class VersionInformationTest extends AbstractTestCase
 
     /**
      * Data provider for version parsing
+     *
+     * @return mixed[]
      */
     public static function dataVersions(): array
     {
         return [
-            [
-                '1.0.0',
-                1000050,
-            ],
-            [
-                '2.0.0.2-dev',
-                2000002,
-            ],
-            [
-                '3.4.2.1',
-                3040251,
-            ],
-            [
-                '3.4.2-dev3',
-                3040203,
-            ],
-            [
-                '3.4.2-dev',
-                3040200,
-            ],
-            [
-                '3.4.2-pl',
-                3040260,
-            ],
-            [
-                '3.4.2-pl3',
-                3040263,
-            ],
-            [
-                '4.4.2-rc22',
-                4040252,
-            ],
-            [
-                '4.4.2-rc',
-                4040230,
-            ],
-            [
-                '4.4.22-beta22',
-                4042242,
-            ],
-            [
-                '4.4.22-beta',
-                4042220,
-            ],
-            [
-                '4.4.21-alpha22',
-                4042132,
-            ],
-            [
-                '4.4.20-alpha',
-                4042010,
-            ],
-            [
-                '4.40.20-alpha-dev',
-                4402010,
-            ],
-            [
-                '4.4a',
-                4000050,
-            ],
-            [
-                '4.4.4-test',
-                4040400,
-            ],
-            [
-                '4.1.0',
-                4010050,
-            ],
-            [
-                '4.0.1.3',
-                4000153,
-            ],
-            [
-                '4.1-dev',
-                4010000,
-            ],
+            ['1.0.0', 1000050],
+            ['2.0.0.2-dev', 2000002],
+            ['3.4.2.1', 3040251],
+            ['3.4.2-dev3', 3040203],
+            ['3.4.2-dev', 3040200],
+            ['3.4.2-pl', 3040260],
+            ['3.4.2-pl3', 3040263],
+            ['4.4.2-rc22', 4040252],
+            ['4.4.2-rc', 4040230],
+            ['4.4.22-beta22', 4042242],
+            ['4.4.22-beta', 4042220],
+            ['4.4.21-alpha22', 4042132],
+            ['4.4.20-alpha', 4042010],
+            ['4.40.20-alpha-dev', 4402010],
+            ['4.4a', 4000050],
+            ['4.4.4-test', 4040400],
+            ['4.1.0', 4010050],
+            ['4.0.1.3', 4000153],
+            ['4.1-dev', 4010000],
         ];
     }
 
@@ -222,9 +169,8 @@ class VersionInformationTest extends AbstractTestCase
      * @param list<object>       $versions           The versions to use
      * @param array{int, string} $conditions         The conditions that will be executed
      * @param string|null        $matchedLastVersion The version that will be matched
-     *
-     * @dataProvider dataProviderVersionConditions
      */
+    #[DataProvider('dataProviderVersionConditions')]
     public function testGetLatestCompatibleVersionWithNewPHPVersion(
         array $versions,
         array $conditions,

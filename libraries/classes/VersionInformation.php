@@ -67,10 +67,7 @@ class VersionInformation
         }
 
         if ($save) {
-            $_SESSION['cache']['version_check'] = [
-                'response' => $response,
-                'timestamp' => time(),
-            ];
+            $_SESSION['cache']['version_check'] = ['response' => $response, 'timestamp' => time()];
         }
 
         return $data;
@@ -80,10 +77,8 @@ class VersionInformation
      * Calculates numerical equivalent of phpMyAdmin version string
      *
      * @param string $version version
-     *
-     * @return mixed false on failure, integer on success
      */
-    public function versionToInt(string $version): mixed
+    public function versionToInt(string $version): int
     {
         $parts = explode('-', $version);
         if (count($parts) > 1) {
@@ -146,9 +141,9 @@ class VersionInformation
      * Returns the version and date of the latest phpMyAdmin version compatible
      * with the available PHP and MySQL versions
      *
-     * @param array $releases array of information related to each version
+     * @param mixed[] $releases array of information related to each version
      *
-     * @return array|null containing the version and date of latest compatible version
+     * @return mixed[]|null containing the version and date of latest compatible version
      */
     public function getLatestCompatibleVersion(array $releases): array|null
     {
@@ -160,6 +155,7 @@ class VersionInformation
             $phpConditions = explode(',', $phpVersions);
             foreach ($phpConditions as $phpCondition) {
                 if (! $this->evaluateVersionCondition('PHP', $phpCondition)) {
+                    /** @infection-ignore-all */
                     continue 2;
                 }
             }
@@ -182,10 +178,7 @@ class VersionInformation
                 continue;
             }
 
-            $latestRelease = [
-                'version' => $release->version,
-                'date' => $release->date,
-            ];
+            $latestRelease = ['version' => $release->version, 'date' => $release->date];
         }
 
         // no compatible version
@@ -204,15 +197,7 @@ class VersionInformation
     {
         $operator = null;
         $version = null;
-        $operators = [
-            '<=',
-            '>=',
-            '!=',
-            '<>',
-            '<',
-            '>',
-            '=',
-        ]; // preserve order
+        $operators = ['<=', '>=', '!=', '<>', '<', '>', '=']; // preserve order
         foreach ($operators as $oneOperator) {
             if (strpos($condition, $oneOperator) === 0) {
                 $operator = $oneOperator;

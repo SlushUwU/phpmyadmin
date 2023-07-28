@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace PhpMyAdmin\Tests\Selenium\Database;
 
 use PhpMyAdmin\Tests\Selenium\TestBase;
+use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\Attributes\Group;
 
 use function sleep;
 use function str_replace;
 
-/** @coversNothing */
+#[CoversNothing]
 class ProceduresTest extends TestBase
 {
     /**
@@ -62,7 +64,7 @@ class ProceduresTest extends TestBase
                 $this->waitForElement('id', 'extraOptionsButton')->click();
                 $this->waitForElement('cssSelector', '#extraOptions.collapse.show');
                 $this->waitForElement('xpath', '//label[contains(., "Full texts")]')->click();
-                $this->waitForElement('cssSelector', '.collapse .tblFooters input[type=submit]')->click();
+                $this->waitForElement('cssSelector', '.collapse .card-footer input[type=submit]')->click();
                 $this->waitAjax();
                 sleep(2);// Waitfor the new results
                 $this->assertTrue($this->isElementPresent('className', 'table_results'));
@@ -105,9 +107,8 @@ class ProceduresTest extends TestBase
 
     /**
      * Create a procedure
-     *
-     * @group large
      */
+    #[Group('large')]
     public function testAddProcedure(): void
     {
         $this->waitForElement('partialLinkText', 'Routines')->click();
@@ -145,10 +146,8 @@ class ProceduresTest extends TestBase
 
         $this->byCssSelector('div.ui-dialog-buttonset button:nth-child(1)')->click();
 
-        $this->waitForElement(
-            'xpath',
-            '//div[@class=\'alert alert-success\' and contains(., \'Routine `test_procedure` has been created\')]',
-        );
+        $success = $this->waitForElement('cssSelector', '.alert-success');
+        $this->assertStringContainsString('Routine `test_procedure` has been created', $success->getText());
 
         $this->dbQuery(
             "SHOW PROCEDURE STATUS WHERE Db='" . $this->databaseName . "'",
@@ -163,9 +162,8 @@ class ProceduresTest extends TestBase
 
     /**
      * Test for editing procedure
-     *
-     * @group large
      */
+    #[Group('large')]
     public function testEditProcedure(): void
     {
         $this->procedureSQL();
@@ -181,19 +179,16 @@ class ProceduresTest extends TestBase
 
         $this->byCssSelector('div.ui-dialog-buttonset button:nth-child(1)')->click();
 
-        $this->waitForElement(
-            'xpath',
-            '//div[@class=\'alert alert-success\' and contains(., \'Routine `test_procedure` has been modified\')]',
-        );
+        $success = $this->waitForElement('cssSelector', '.alert-success');
+        $this->assertStringContainsString('Routine `test_procedure` has been modified', $success->getText());
 
         $this->executeProcedure('test_procedure', 14);
     }
 
     /**
      * Test for dropping procedure
-     *
-     * @group large
      */
+    #[Group('large')]
     public function testDropProcedure(): void
     {
         $this->procedureSQL();

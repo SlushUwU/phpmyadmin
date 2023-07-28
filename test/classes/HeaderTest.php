@@ -4,17 +4,19 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests;
 
+use PhpMyAdmin\Console;
 use PhpMyAdmin\Header;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Group;
 use ReflectionProperty;
 
 use function gmdate;
 
 use const DATE_RFC1123;
 
-/**
- * @covers \PhpMyAdmin\Header
- * @group medium
- */
+#[CoversClass(Header::class)]
+#[Group('medium')]
 class HeaderTest extends AbstractTestCase
 {
     /**
@@ -131,10 +133,7 @@ class HeaderTest extends AbstractTestCase
         $this->assertFalse($reflection->getValue($header));
     }
 
-    /**
-     * @covers \PhpMyAdmin\Core::getNoCacheHeaders
-     * @dataProvider providerForTestGetHttpHeaders
-     */
+    #[DataProvider('providerForTestGetHttpHeaders')]
     public function testGetHttpHeaders(
         string|bool $frameOptions,
         string $cspAllow,
@@ -165,6 +164,7 @@ class HeaderTest extends AbstractTestCase
             'X-Content-Type-Options' => 'nosniff',
             'X-Permitted-Cross-Domain-Policies' => 'none',
             'X-Robots-Tag' => 'noindex, nofollow',
+            'Permissions-Policy' => 'fullscreen=(self), oversized-images=(self), interest-cohort=()',
             'Expires' => $date,
             'Cache-Control' => 'no-store, no-cache, must-revalidate, pre-check=0, post-check=0, max-age=0',
             'Pragma' => 'no-cache',
@@ -179,6 +179,7 @@ class HeaderTest extends AbstractTestCase
         $this->assertSame($expected, $headers);
     }
 
+    /** @return mixed[][] */
     public static function providerForTestGetHttpHeaders(): array
     {
         return [
@@ -263,5 +264,23 @@ class HeaderTest extends AbstractTestCase
             ['name' => 'main.js', 'fire' => 1],
         ];
         $this->assertSame($expected, $scripts->getFiles());
+    }
+
+    public function testSetAjax(): void
+    {
+        $header = new Header();
+        $console = (new ReflectionProperty(Header::class, 'console'))->getValue($header);
+        $this->assertInstanceOf(Console::class, $console);
+        $isAjax = new ReflectionProperty(Header::class, 'isAjax');
+        $consoleIsAjax = new ReflectionProperty(Console::class, 'isAjax');
+
+        $this->assertFalse($isAjax->getValue($header));
+        $this->assertFalse($consoleIsAjax->getValue($console));
+        $header->setAjax(true);
+        $this->assertTrue($isAjax->getValue($header));
+        $this->assertTrue($consoleIsAjax->getValue($console));
+        $header->setAjax(false);
+        $this->assertFalse($isAjax->getValue($header));
+        $this->assertFalse($consoleIsAjax->getValue($console));
     }
 }

@@ -15,7 +15,6 @@ use PhpMyAdmin\Util;
 
 use function __;
 use function count;
-use function defined;
 use function sprintf;
 use function trigger_error;
 
@@ -29,24 +28,18 @@ class AuthenticationConfig extends AuthenticationPlugin
 {
     /**
      * Displays authentication form
-     *
-     * @return bool always true
      */
-    public function showLoginForm(): bool
+    public function showLoginForm(): void
     {
         $response = ResponseRenderer::getInstance();
-        if ($response->isAjax()) {
-            $response->setRequestStatus(false);
-            // reload_flag removes the token parameter from the URL and reloads
-            $response->addJSON('reload_flag', '1');
-            if (defined('TESTSUITE')) {
-                return true;
-            }
-
-            exit;
+        if (! $response->isAjax()) {
+            return;
         }
 
-        return true;
+        $response->setRequestStatus(false);
+        // reload_flag removes the token parameter from the URL and reloads
+        $response->addJSON('reload_flag', '1');
+        $response->callExit();
     }
 
     /**
@@ -71,13 +64,13 @@ class AuthenticationConfig extends AuthenticationPlugin
      *
      * @param string $failure String describing why authentication has failed
      */
-    public function showFailure(string $failure): void
+    public function showFailure(string $failure): never
     {
         parent::showFailure($failure);
 
-        $conn_error = $GLOBALS['dbi']->getError();
-        if (! $conn_error) {
-            $conn_error = __('Cannot connect: invalid settings.');
+        $connError = $GLOBALS['dbi']->getError();
+        if (! $connError) {
+            $connError = __('Cannot connect: invalid settings.');
         }
 
         /* HTML header */
@@ -135,7 +128,7 @@ class AuthenticationConfig extends AuthenticationPlugin
                 );
             }
 
-            echo Generator::mysqlDie($conn_error, '', true, '', false);
+            echo Generator::mysqlDie($connError, '', true, '', false);
         }
 
         $GLOBALS['errorHandler']->dispUserErrors();
@@ -154,14 +147,12 @@ class AuthenticationConfig extends AuthenticationPlugin
             // offer a chance to login to other servers if the current one failed
             echo '<tr>' , "\n";
             echo ' <td>' , "\n";
-            echo Select::render(true, true);
+            echo Select::render(true);
             echo ' </td>' , "\n";
             echo '</tr>' , "\n";
         }
 
         echo '</table>' , "\n";
-        if (! defined('TESTSUITE')) {
-            exit;
-        }
+        $response->callExit();
     }
 }

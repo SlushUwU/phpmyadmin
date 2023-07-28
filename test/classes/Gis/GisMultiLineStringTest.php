@@ -4,16 +4,19 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Gis;
 
+use PhpMyAdmin\Gis\Ds\ScaleData;
 use PhpMyAdmin\Gis\GisMultiLineString;
-use PhpMyAdmin\Gis\ScaleData;
 use PhpMyAdmin\Image\ImageWrapper;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
+use PHPUnit\Framework\Attributes\RequiresPhpExtension;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 use TCPDF;
 
-/**
- * @covers \PhpMyAdmin\Gis\GisMultiLineString
- * @runTestsInSeparateProcesses
- * @preserveGlobalState disabled
- */
+#[CoversClass(GisMultiLineString::class)]
+#[PreserveGlobalState(false)]
+#[RunTestsInSeparateProcesses]
 class GisMultiLineStringTest extends GisGeomTestCase
 {
     /**
@@ -27,28 +30,8 @@ class GisMultiLineStringTest extends GisGeomTestCase
             0 => [
                 'MULTILINESTRING' => [
                     'no_of_lines' => 2,
-                    0 => [
-                        'no_of_points' => 2,
-                        0 => [
-                            'x' => 5.02,
-                            'y' => 8.45,
-                        ],
-                        1 => [
-                            'x' => 6.14,
-                            'y' => 0.15,
-                        ],
-                    ],
-                    1 => [
-                        'no_of_points' => 2,
-                        0 => [
-                            'x' => 1.23,
-                            'y' => 4.25,
-                        ],
-                        1 => [
-                            'x' => 9.15,
-                            'y' => 0.47,
-                        ],
-                    ],
+                    0 => ['no_of_points' => 2, 0 => ['x' => 5.02, 'y' => 8.45], 1 => ['x' => 6.14, 'y' => 0.15]],
+                    1 => ['no_of_points' => 2, 0 => ['x' => 1.23, 'y' => 4.25], 1 => ['x' => 9.15, 'y' => 0.47]],
                 ],
             ],
         ];
@@ -63,57 +46,31 @@ class GisMultiLineStringTest extends GisGeomTestCase
         $temp3[0]['MULTILINESTRING'][1]['no_of_points'] = 1;
 
         return [
-            [
-                $temp,
-                0,
-                null,
-                'MULTILINESTRING((5.02 8.45,6.14 0.15),(1.23 4.25,9.15 0.47))',
-            ],
+            [$temp, 0, null, 'MULTILINESTRING((5.02 8.45,6.14 0.15),(1.23 4.25,9.15 0.47))'],
             // if a coordinate is missing, default is empty string
-            [
-                $temp1,
-                0,
-                null,
-                'MULTILINESTRING((5.02 8.45,6.14 0.15),(1.23 4.25,9.15 ))',
-            ],
+            [$temp1, 0, null, 'MULTILINESTRING((5.02 8.45,6.14 0.15),(1.23 4.25,9.15 ))'],
             // missing coordinates are replaced with provided values (3rd parameter)
-            [
-                $temp1,
-                0,
-                '0',
-                'MULTILINESTRING((5.02 8.45,6.14 0.15),(1.23 4.25,9.15 0))',
-            ],
+            [$temp1, 0, '0', 'MULTILINESTRING((5.02 8.45,6.14 0.15),(1.23 4.25,9.15 0))'],
             // at least one line should be there
-            [
-                $temp2,
-                0,
-                null,
-                'MULTILINESTRING((5.02 8.45,6.14 0.15))',
-            ],
+            [$temp2, 0, null, 'MULTILINESTRING((5.02 8.45,6.14 0.15))'],
             // a line should have at least two points
-            [
-                $temp3,
-                0,
-                '0',
-                'MULTILINESTRING((5.02 8.45,6.14 0.15),(1.23 4.25,9.15 0.47))',
-            ],
+            [$temp3, 0, '0', 'MULTILINESTRING((5.02 8.45,6.14 0.15),(1.23 4.25,9.15 0.47))'],
         ];
     }
 
     /**
      * Test for generateWkt
      *
-     * @param array<mixed> $gis_data
-     * @param int          $index    index in $gis_data
-     * @param string|null  $empty    empty parameter
-     * @param string       $output   expected output
-     *
-     * @dataProvider providerForTestGenerateWkt
+     * @param array<mixed> $gisData
+     * @param int          $index   index in $gis_data
+     * @param string|null  $empty   empty parameter
+     * @param string       $output  expected output
      */
-    public function testGenerateWkt(array $gis_data, int $index, string|null $empty, string $output): void
+    #[DataProvider('providerForTestGenerateWkt')]
+    public function testGenerateWkt(array $gisData, int $index, string|null $empty, string $output): void
     {
         $object = GisMultiLineString::singleton();
-        $this->assertEquals($output, $object->generateWkt($gis_data, $index, $empty));
+        $this->assertEquals($output, $object->generateWkt($gisData, $index, $empty));
     }
 
     /**
@@ -121,40 +78,18 @@ class GisMultiLineStringTest extends GisGeomTestCase
      */
     public function testGetShape(): void
     {
-        $row_data = [
+        $rowData = [
             'numparts' => 2,
             'parts' => [
-                0 => [
-                    'points' => [
-                        0 => [
-                            'x' => 5.02,
-                            'y' => 8.45,
-                        ],
-                        1 => [
-                            'x' => 6.14,
-                            'y' => 0.15,
-                        ],
-                    ],
-                ],
-                1 => [
-                    'points' => [
-                        0 => [
-                            'x' => 1.23,
-                            'y' => 4.25,
-                        ],
-                        1 => [
-                            'x' => 9.15,
-                            'y' => 0.47,
-                        ],
-                    ],
-                ],
+                0 => ['points' => [0 => ['x' => 5.02, 'y' => 8.45], 1 => ['x' => 6.14, 'y' => 0.15]]],
+                1 => ['points' => [0 => ['x' => 1.23, 'y' => 4.25], 1 => ['x' => 9.15, 'y' => 0.47]]],
             ],
         ];
 
         $object = GisMultiLineString::singleton();
         $this->assertEquals(
             'MULTILINESTRING((5.02 8.45,6.14 0.15),(1.23 4.25,9.15 0.47))',
-            $object->getShape($row_data),
+            $object->getShape($rowData),
         );
     }
 
@@ -163,9 +98,8 @@ class GisMultiLineStringTest extends GisGeomTestCase
      *
      * @param string       $wkt    point in WKT form
      * @param array<mixed> $params expected output array
-     *
-     * @dataProvider providerForTestGenerateParams
      */
+    #[DataProvider('providerForTestGenerateParams')]
     public function testGenerateParams(string $wkt, array $params): void
     {
         $object = GisMultiLineString::singleton();
@@ -187,28 +121,8 @@ class GisMultiLineStringTest extends GisGeomTestCase
                     0 => [
                         'MULTILINESTRING' => [
                             'no_of_lines' => 2,
-                            0 => [
-                                'no_of_points' => 2,
-                                0 => [
-                                    'x' => 5.02,
-                                    'y' => 8.45,
-                                ],
-                                1 => [
-                                    'x' => 6.14,
-                                    'y' => 0.15,
-                                ],
-                            ],
-                            1 => [
-                                'no_of_points' => 2,
-                                0 => [
-                                    'x' => 1.23,
-                                    'y' => 4.25,
-                                ],
-                                1 => [
-                                    'x' => 9.15,
-                                    'y' => 0.47,
-                                ],
-                            ],
+                            0 => ['no_of_points' => 2, 0 => ['x' => 5.02,'y' => 8.45], 1 => ['x' => 6.14,'y' => 0.15]],
+                            1 => ['no_of_points' => 2, 0 => ['x' => 1.23,'y' => 4.25], 1 => ['x' => 9.15,'y' => 0.47]],
                         ],
                     ],
                 ],
@@ -220,32 +134,26 @@ class GisMultiLineStringTest extends GisGeomTestCase
      * test scaleRow method
      *
      * @param string    $spatial spatial data of a row
-     * @param ScaleData $min_max expected results
-     *
-     * @dataProvider providerForTestScaleRow
+     * @param ScaleData $minMax  expected results
      */
-    public function testScaleRow(string $spatial, ScaleData $min_max): void
+    #[DataProvider('providerForTestScaleRow')]
+    public function testScaleRow(string $spatial, ScaleData $minMax): void
     {
         $object = GisMultiLineString::singleton();
-        $this->assertEquals($min_max, $object->scaleRow($spatial));
+        $this->assertEquals($minMax, $object->scaleRow($spatial));
     }
 
     /**
      * data provider for testScaleRow
      *
-     * @return array data for testScaleRow
+     * @return array<array{string, ScaleData}>
      */
     public static function providerForTestScaleRow(): array
     {
-        return [
-            [
-                'MULTILINESTRING((36 14,47 23,62 75),(36 10,17 23,178 53))',
-                new ScaleData(178, 17, 75, 10),
-            ],
-        ];
+        return [['MULTILINESTRING((36 14,47 23,62 75),(36 10,17 23,178 53))', new ScaleData(178, 17, 75, 10)]];
     }
 
-    /** @requires extension gd */
+    #[RequiresPhpExtension('gd')]
     public function testPrepareRowAsPng(): void
     {
         $object = GisMultiLineString::singleton();
@@ -270,22 +178,21 @@ class GisMultiLineStringTest extends GisGeomTestCase
     /**
      * test case for prepareRowAsPdf() method
      *
-     * @param string $spatial    GIS MULTILINESTRING object
-     * @param string $label      label for the GIS MULTILINESTRING object
-     * @param int[]  $color      color for the GIS MULTILINESTRING object
-     * @param array  $scale_data array containing data related to scaling
-     *
-     * @dataProvider providerForPrepareRowAsPdf
+     * @param string                   $spatial   GIS MULTILINESTRING object
+     * @param string                   $label     label for the GIS MULTILINESTRING object
+     * @param int[]                    $color     color for the GIS MULTILINESTRING object
+     * @param array<string, int|float> $scaleData array containing data related to scaling
      */
+    #[DataProvider('providerForPrepareRowAsPdf')]
     public function testPrepareRowAsPdf(
         string $spatial,
         string $label,
         array $color,
-        array $scale_data,
+        array $scaleData,
         TCPDF $pdf,
     ): void {
         $object = GisMultiLineString::singleton();
-        $return = $object->prepareRowAsPdf($spatial, $label, $color, $scale_data, $pdf);
+        $return = $object->prepareRowAsPdf($spatial, $label, $color, $scaleData, $pdf);
 
         $fileExpected = $this->testDir . '/multilinestring-expected.pdf';
         $fileActual = $this->testDir . '/multilinestring-actual.pdf';
@@ -296,7 +203,7 @@ class GisMultiLineStringTest extends GisGeomTestCase
     /**
      * data provider for testPrepareRowAsPdf() test case
      *
-     * @return array test data for testPrepareRowAsPdf() test case
+     * @return array<array{string, string, int[], array<string, int|float>, TCPDF}>
      */
     public static function providerForPrepareRowAsPdf(): array
     {
@@ -315,14 +222,13 @@ class GisMultiLineStringTest extends GisGeomTestCase
     /**
      * test case for prepareRowAsSvg() method
      *
-     * @param string $spatial   GIS MULTILINESTRING object
-     * @param string $label     label for the GIS MULTILINESTRING object
-     * @param int[]  $color     color for the GIS MULTILINESTRING object
-     * @param array  $scaleData array containing data related to scaling
-     * @param string $output    expected output
-     *
-     * @dataProvider providerForPrepareRowAsSvg
+     * @param string                   $spatial   GIS MULTILINESTRING object
+     * @param string                   $label     label for the GIS MULTILINESTRING object
+     * @param int[]                    $color     color for the GIS MULTILINESTRING object
+     * @param array<string, int|float> $scaleData array containing data related to scaling
+     * @param string                   $output    expected output
      */
+    #[DataProvider('providerForPrepareRowAsSvg')]
     public function testPrepareRowAsSvg(
         string $spatial,
         string $label,
@@ -338,7 +244,7 @@ class GisMultiLineStringTest extends GisGeomTestCase
     /**
      * data provider for testPrepareRowAsSvg() test case
      *
-     * @return array test data for testPrepareRowAsSvg() test case
+     * @return array<array{string, string, int[], array<string, int|float>, string}>
      */
     public static function providerForPrepareRowAsSvg(): array
     {
@@ -347,12 +253,7 @@ class GisMultiLineStringTest extends GisGeomTestCase
                 'MULTILINESTRING((36 14,47 23,62 75),(36 10,17 23,178 53))',
                 'svg',
                 [176, 46, 224],
-                [
-                    'x' => 12,
-                    'y' => 69,
-                    'scale' => 2,
-                    'height' => 150,
-                ],
+                ['x' => 12, 'y' => 69, 'scale' => 2, 'height' => 150],
                 '<polyline points="48,260 70,242 100,138 " name="svg" '
                 . 'class="linestring vector" fill="none" stroke="#b02ee0" '
                 . 'stroke-width="2" id="svg1234567890"/><polyline points="48,268 10,'
@@ -370,9 +271,8 @@ class GisMultiLineStringTest extends GisGeomTestCase
      * @param string $label   label for the GIS MULTILINESTRING object
      * @param int[]  $color   color for the GIS MULTILINESTRING object
      * @param string $output  expected output
-     *
-     * @dataProvider providerForPrepareRowAsOl
      */
+    #[DataProvider('providerForPrepareRowAsOl')]
     public function testPrepareRowAsOl(
         string $spatial,
         int $srid,
@@ -388,7 +288,7 @@ class GisMultiLineStringTest extends GisGeomTestCase
     /**
      * data provider for testPrepareRowAsOl() test case
      *
-     * @return array test data for testPrepareRowAsOl() test case
+     * @return array<array{string, int, string, int[], string}>
      */
     public static function providerForPrepareRowAsOl(): array
     {

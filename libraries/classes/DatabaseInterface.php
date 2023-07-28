@@ -7,7 +7,6 @@ namespace PhpMyAdmin;
 use PhpMyAdmin\Config\Settings\Server;
 use PhpMyAdmin\ConfigStorage\Relation;
 use PhpMyAdmin\Dbal\Connection;
-use PhpMyAdmin\Dbal\DatabaseName;
 use PhpMyAdmin\Dbal\DbalInterface;
 use PhpMyAdmin\Dbal\DbiExtension;
 use PhpMyAdmin\Dbal\DbiMysqli;
@@ -15,6 +14,7 @@ use PhpMyAdmin\Dbal\ResultInterface;
 use PhpMyAdmin\Dbal\Statement;
 use PhpMyAdmin\Dbal\Warning;
 use PhpMyAdmin\Html\Generator;
+use PhpMyAdmin\Identifiers\DatabaseName;
 use PhpMyAdmin\Query\Cache;
 use PhpMyAdmin\Query\Compatibility;
 use PhpMyAdmin\Query\Generator as QueryGenerator;
@@ -35,13 +35,11 @@ use function array_shift;
 use function array_slice;
 use function basename;
 use function closelog;
-use function count;
 use function defined;
 use function explode;
 use function implode;
 use function is_array;
 use function is_int;
-use function is_string;
 use function mb_strtolower;
 use function microtime;
 use function openlog;
@@ -50,7 +48,6 @@ use function sprintf;
 use function str_contains;
 use function str_starts_with;
 use function stripos;
-use function strlen;
 use function strtolower;
 use function strtoupper;
 use function strtr;
@@ -168,7 +165,7 @@ class DatabaseInterface implements DbalInterface
             // The following statement will exit
             Generator::mysqlDie($this->getError($connectionType), $query);
 
-            exit;
+            ResponseRenderer::getInstance()->callExit();
         }
 
         return $result;
@@ -204,11 +201,14 @@ class DatabaseInterface implements DbalInterface
 
         $result = $this->extension->realQuery($query, $this->connections[$connectionType], $options);
 
+        if ($connectionType === Connection::TYPE_USER) {
+            $this->lastQueryExecutionTime = microtime(true) - $time;
+        }
+
         if ($cacheAffectedRows) {
             $GLOBALS['cached_affected_rows'] = $this->affectedRows($connectionType, false);
         }
 
-        $this->lastQueryExecutionTime = microtime(true) - $time;
         if ($debug) {
             $errorMessage = $this->getError($connectionType);
             Utilities::debugLogQueryIntoSession(
@@ -225,7 +225,7 @@ class DatabaseInterface implements DbalInterface
                     sprintf(
                         'SQL[%s?route=%s]: %0.3f(W:%d,C:%s,L:0x%02X) > %s',
                         basename($_SERVER['SCRIPT_NAME']),
-                        Common::getRequest()->getRoute(),
+                        Application::getRequest()->getRoute(),
                         $this->lastQueryExecutionTime,
                         $this->getWarningCount($connectionType),
                         $cacheAffectedRows ? 'y' : 'n',
@@ -337,17 +337,17 @@ class DatabaseInterface implements DbalInterface
      * $dbi->getTablesFull('my_database', 'my_tables_', true));
      * </code>
      *
-     * @param string       $database     database
-     * @param string|array $table        table name(s)
-     * @param bool         $tableIsGroup $table is a table group
-     * @param int          $limitOffset  zero-based offset for the count
-     * @param bool|int     $limitCount   number of tables to return
-     * @param string       $sortBy       table attribute to sort by
-     * @param string       $sortOrder    direction to sort (ASC or DESC)
-     * @param string|null  $tableType    whether table or view
+     * @param string         $database     database
+     * @param string|mixed[] $table        table name(s)
+     * @param bool           $tableIsGroup $table is a table group
+     * @param int            $limitOffset  zero-based offset for the count
+     * @param bool|int       $limitCount   number of tables to return
+     * @param string         $sortBy       table attribute to sort by
+     * @param string         $sortOrder    direction to sort (ASC or DESC)
+     * @param string|null    $tableType    whether table or view
      * @psalm-param ConnectionType $connectionType
      *
-     * @return array           list of tables in given db(s)
+     * @return mixed[]           list of tables in given db(s)
      *
      * @todo    move into Table
      */
@@ -367,6 +367,16 @@ class DatabaseInterface implements DbalInterface
         }
 
         $tables = [];
+        $pagingApplied = false;
+
+        if ($limitCount && is_array($table) && $sortBy === 'Name') {
+            if ($sortOrder === 'DESC') {
+                $table = array_reverse($table);
+            }
+
+            $table = array_slice($table, $limitOffset, $limitCount);
+            $pagingApplied = true;
+        }
 
         if (! $GLOBALS['cfg']['Server']['DisableIS']) {
             $sqlWhereTable = '';
@@ -398,17 +408,14 @@ class DatabaseInterface implements DbalInterface
             // Sort the tables
             $sql .= ' ORDER BY ' . $sortBy . ' ' . $sortOrder;
 
-            if ($limitCount) {
+            if ($limitCount && ! $pagingApplied) {
                 $sql .= ' LIMIT ' . $limitCount . ' OFFSET ' . $limitOffset;
             }
 
-            /** @var array<string, array<string, array<string, mixed>>> $tables */
+            /** @var mixed[][][] $tables */
             $tables = $this->fetchResult(
                 $sql,
-                [
-                    'TABLE_SCHEMA',
-                    'TABLE_NAME',
-                ],
+                ['TABLE_SCHEMA', 'TABLE_NAME'],
                 null,
                 $connectionType,
             );
@@ -428,7 +435,7 @@ class DatabaseInterface implements DbalInterface
                     [
                         $tables[$oneDatabaseName][$oneTableName]['Data_length'],
                         $tables[$oneDatabaseName][$oneTableName]['Index_length'],
-                    ] = StorageEngine::getMroongaLengths($oneDatabaseName, $oneTableName);
+                    ] = StorageEngine::getMroongaLengths((string) $oneDatabaseName, (string) $oneTableName);
                 }
             }
 
@@ -467,6 +474,15 @@ class DatabaseInterface implements DbalInterface
                     $tables[$oneDatabaseName] = $oneDatabaseTables;
                 }
             }
+
+            // on windows with lower_case_table_names = 1
+            // MySQL returns
+            // with SHOW DATABASES or information_schema.SCHEMATA: `Test`
+            // but information_schema.TABLES gives `test`
+            // see https://github.com/phpmyadmin/phpmyadmin/issues/8402
+            $tables = $tables[$database]
+                ?? $tables[mb_strtolower($database)]
+                ?? [];
         }
 
         // If permissions are wrong on even one database directory,
@@ -474,10 +490,10 @@ class DatabaseInterface implements DbalInterface
         // this is why we fall back to SHOW TABLE STATUS even for MySQL >= 50002
         if ($tables === []) {
             $sql = 'SHOW TABLE STATUS FROM ' . Util::backquote($database);
-            if ($table || ($tableIsGroup === true) || $tableType) {
+            if (($table !== '' && $table !== []) || $tableIsGroup || $tableType) {
                 $sql .= ' WHERE';
                 $needAnd = false;
-                if ($table || ($tableIsGroup === true)) {
+                if (($table !== '' && $table !== []) || $tableIsGroup) {
                     if (is_array($table)) {
                         $sql .= ' `Name` IN ('
                             . implode(
@@ -524,7 +540,7 @@ class DatabaseInterface implements DbalInterface
                 [
                     $eachTables[$tableName]['Data_length'],
                     $eachTables[$tableName]['Index_length'],
-                ] = StorageEngine::getMroongaLengths($database, $tableName);
+                ] = StorageEngine::getMroongaLengths($database, (string) $tableName);
             }
 
             // Sort naturally if the config allows it and we're sorting
@@ -566,28 +582,16 @@ class DatabaseInterface implements DbalInterface
                 unset($sortValues);
             }
 
-            if ($limitCount) {
-                $eachTables = array_slice($eachTables, $limitOffset, $limitCount);
+            if ($limitCount && ! $pagingApplied) {
+                $eachTables = array_slice($eachTables, $limitOffset, $limitCount, true);
             }
 
-            $tables[$database] = Compatibility::getISCompatForGetTablesFull($eachTables, $database);
+            $tables = Compatibility::getISCompatForGetTablesFull($eachTables, $database);
         }
 
-        // cache table data
-        // so Table does not require to issue SHOW TABLE STATUS again
-        $this->cache->cacheTableData($tables, $table);
-
-        if (isset($tables[$database])) {
-            return $tables[$database];
-        }
-
-        if (isset($tables[mb_strtolower($database)])) {
-            // on windows with lower_case_table_names = 1
-            // MySQL returns
-            // with SHOW DATABASES or information_schema.SCHEMATA: `Test`
-            // but information_schema.TABLES gives `test`
-            // see https://github.com/phpmyadmin/phpmyadmin/issues/8402
-            return $tables[mb_strtolower($database)];
+        if ($tables !== []) {
+            // cache table data, so Table does not require to issue SHOW TABLE STATUS again
+            $this->cache->cacheTableData($database, $tables);
         }
 
         return $tables;
@@ -629,7 +633,7 @@ class DatabaseInterface implements DbalInterface
      * @param bool|int    $limitCount  row count for LIMIT or true for $GLOBALS['cfg']['MaxDbList']
      * @psalm-param ConnectionType $connectionType
      *
-     * @return array
+     * @return mixed[]
      *
      * @todo    move into ListDatabase?
      */
@@ -683,7 +687,7 @@ class DatabaseInterface implements DbalInterface
             $databases = $this->fetchResult($sql, 'SCHEMA_NAME', null, $connectionType);
 
             $mysqlError = $this->getError($connectionType);
-            if (! count($databases) && isset($GLOBALS['errno'])) {
+            if ($databases === [] && isset($GLOBALS['errno'])) {
                 Generator::mysqlDie($mysqlError, $sql);
             }
 
@@ -772,7 +776,7 @@ class DatabaseInterface implements DbalInterface
      * @param string|null $column   name of specific column
      * @psalm-param ConnectionType $connectionType
      *
-     * @return array
+     * @return mixed[]
      */
     public function getColumnsFull(
         string|null $database = null,
@@ -835,7 +839,17 @@ class DatabaseInterface implements DbalInterface
      * @param bool   $full     whether to return full info or only column names
      * @psalm-param ConnectionType $connectionType
      *
-     * @return array flat array description
+     * @return array{
+     *  Field: string,
+     *  Type: string,
+     *  Collation?: string|null,
+     *  Null:'YES'|'NO',
+     *  Key: string,
+     *  Default: string|null,
+     *  Extra: string,
+     *  Privileges?: string,
+     *  Comment?: string
+     * }|null
      */
     public function getColumn(
         string $database,
@@ -843,19 +857,19 @@ class DatabaseInterface implements DbalInterface
         string $column,
         bool $full = false,
         int $connectionType = Connection::TYPE_USER,
-    ): array {
+    ): array|null {
         $sql = QueryGenerator::getColumnsSql(
             $database,
             $table,
             $this->escapeString($this->escapeMysqlWildcards($column)),
             $full,
         );
-        /** @var array<string, array> $fields */
+        /** @var (string|null)[][] $fields */
         $fields = $this->fetchResult($sql, 'Field', null, $connectionType);
 
         $columns = $this->attachIndexInfoToColumns($database, $table, $fields);
 
-        return array_shift($columns) ?? [];
+        return array_shift($columns);
     }
 
     /**
@@ -866,7 +880,17 @@ class DatabaseInterface implements DbalInterface
      * @param bool   $full     whether to return full info or only column names
      * @psalm-param ConnectionType $connectionType
      *
-     * @return array[] array indexed by column names
+     * @return array{
+     *  Field: string,
+     *  Type: string,
+     *  Collation?: string|null,
+     *  Null:'YES'|'NO',
+     *  Key: string,
+     *  Default: string|null,
+     *  Extra: string,
+     *  Privileges?: string,
+     *  Comment?: string
+     * }[] array indexed by column names
      */
     public function getColumns(
         string $database,
@@ -874,13 +898,8 @@ class DatabaseInterface implements DbalInterface
         bool $full = false,
         int $connectionType = Connection::TYPE_USER,
     ): array {
-        $sql = QueryGenerator::getColumnsSql(
-            $database,
-            $table,
-            null,
-            $full,
-        );
-        /** @var array[] $fields */
+        $sql = QueryGenerator::getColumnsSql($database, $table, null, $full);
+        /** @var (string|null)[][] $fields */
         $fields = $this->fetchResult($sql, 'Field', null, $connectionType);
 
         return $this->attachIndexInfoToColumns($database, $table, $fields);
@@ -889,11 +908,11 @@ class DatabaseInterface implements DbalInterface
     /**
      * Attach index information to the column definition
      *
-     * @param string  $database name of database
-     * @param string  $table    name of table to retrieve columns from
-     * @param array[] $fields   column array indexed by their names
+     * @param string            $database name of database
+     * @param string            $table    name of table to retrieve columns from
+     * @param (string|null)[][] $fields   column array indexed by their names
      *
-     * @return array[] Column defintions with index information
+     * @return (string|null)[][] Column defintions with index information
      */
     private function attachIndexInfoToColumns(
         string $database,
@@ -1037,7 +1056,7 @@ class DatabaseInterface implements DbalInterface
      * been established. It sets the connection collation, and determines the
      * version of MySQL which is running.
      */
-    public function postConnect(): void
+    public function postConnect(Server $currentServer): void
     {
         $version = $this->fetchSingleRow('SELECT @@version, @@version_comment');
 
@@ -1064,9 +1083,9 @@ class DatabaseInterface implements DbalInterface
         }
 
         // Set timezone for the session, if required.
-        if ($GLOBALS['cfg']['Server']['SessionTimeZone'] != '') {
+        if ($currentServer->sessionTimeZone !== '') {
             $sqlQueryTz = 'SET ' . Util::backquote('time_zone') . ' = '
-                . $this->quoteString($GLOBALS['cfg']['Server']['SessionTimeZone']);
+                . $this->quoteString($currentServer->sessionTimeZone);
 
             if (! $this->tryQuery($sqlQueryTz)) {
                 $errorMessageTz = sprintf(
@@ -1077,7 +1096,7 @@ class DatabaseInterface implements DbalInterface
                         . 'phpMyAdmin is currently using the default time zone '
                         . 'of the database server.',
                     ),
-                    $GLOBALS['cfg']['Server']['SessionTimeZone'],
+                    $currentServer->sessionTimeZone,
                     $GLOBALS['server'],
                     $GLOBALS['server'],
                 );
@@ -1202,7 +1221,7 @@ class DatabaseInterface implements DbalInterface
     /**
      * Returns row or element of a row
      *
-     * @param array|string    $row   Row to process
+     * @param mixed[]|string  $row   Row to process
      * @param string|int|null $value Which column to return
      */
     private function fetchValueOrValueByIndex(array|string $row, string|int|null $value): mixed
@@ -1216,6 +1235,8 @@ class DatabaseInterface implements DbalInterface
      * @param ResultInterface $result result set identifier
      * @param string          $mode   either self::FETCH_NUM, self::FETCH_ASSOC or self::FETCH_BOTH
      * @psalm-param self::FETCH_NUM|self::FETCH_ASSOC $mode
+     *
+     * @return mixed[]
      */
     private function fetchByMode(ResultInterface $result, string $mode): array
     {
@@ -1264,14 +1285,14 @@ class DatabaseInterface implements DbalInterface
      * // $users['admin']['John Doe'] = '123'
      * </code>
      *
-     * @param string                $query query to execute
-     * @param string|int|array|null $key   field-name or offset
+     * @param string                  $query query to execute
+     * @param string|int|mixed[]|null $key   field-name or offset
      *                                     used as key for array
      *                                     or array of those
-     * @param string|int|null       $value value-name or offset used as value for array
+     * @param string|int|null         $value value-name or offset used as value for array
      * @psalm-param ConnectionType $connectionType
      *
-     * @return array resultrows or values indexed by $key
+     * @return mixed[] resultrows or values indexed by $key
      */
     public function fetchResult(
         string $query,
@@ -1336,7 +1357,7 @@ class DatabaseInterface implements DbalInterface
     /**
      * Get supported SQL compatibility modes
      *
-     * @return array supported SQL compatibility modes
+     * @return mixed[] supported SQL compatibility modes
      */
     public function getCompatibilities(): array
     {
@@ -1551,47 +1572,32 @@ class DatabaseInterface implements DbalInterface
     /**
      * Connects to the database server.
      *
-     * @param int        $mode   Connection mode.
-     * @param array|null $server Server information like host/port/socket/persistent
-     * @param int|null   $target How to store connection link, defaults to $mode
-     * @psalm-param ConnectionType $mode
+     * @param int|null $target How to store connection link, defaults to $mode
+     * @psalm-param ConnectionType $connectionType
      * @psalm-param ConnectionType|null $target
      */
-    public function connect(int $mode, array|null $server = null, int|null $target = null): Connection|null
+    public function connect(Server $currentServer, int $connectionType, int|null $target = null): Connection|null
     {
-        [$user, $password, $server] = Config::getConnectionParams($mode, $server);
+        $server = Config::getConnectionParams($currentServer, $connectionType);
 
-        if ($target === null) {
-            $target = $mode;
-        }
-
-        if ($user === null || $password === null || ! is_array($server)) {
-            trigger_error(
-                __('Missing connection parameters!'),
-                E_USER_WARNING,
-            );
-
-            return null;
-        }
-
-        $server['host'] = ! is_string($server['host']) || $server['host'] === '' ? 'localhost' : $server['host'];
+        $target ??= $connectionType;
 
         // Do not show location and backtrace for connection errors
         $GLOBALS['errorHandler']->setHideLocation(true);
-        $result = $this->extension->connect($user, $password, new Server($server));
+        $result = $this->extension->connect($server);
         $GLOBALS['errorHandler']->setHideLocation(false);
 
         if ($result !== null) {
             $this->connections[$target] = $result;
             /* Run post connect for user connections */
-            if ($target == Connection::TYPE_USER) {
-                $this->postConnect();
+            if ($target === Connection::TYPE_USER) {
+                $this->postConnect($currentServer);
             }
 
             return $result;
         }
 
-        if ($mode == Connection::TYPE_CONTROL) {
+        if ($connectionType === Connection::TYPE_CONTROL) {
             trigger_error(
                 __(
                     'Connection for controluser as defined in your configuration failed.',
@@ -1602,7 +1608,7 @@ class DatabaseInterface implements DbalInterface
             return null;
         }
 
-        if ($mode === Connection::TYPE_AUXILIARY) {
+        if ($connectionType === Connection::TYPE_AUXILIARY) {
             // Do not go back to main login if connection failed
             // (currently used only in unit testing)
             return null;
@@ -1808,7 +1814,7 @@ class DatabaseInterface implements DbalInterface
              */
             foreach ($fields as $value) {
                 if (
-                    strlen($value->orgtable) === 0 ||
+                    $value->orgtable === '' ||
                         mb_strtolower($value->orgtable) !== mb_strtolower($value->table)
                 ) {
                     continue;

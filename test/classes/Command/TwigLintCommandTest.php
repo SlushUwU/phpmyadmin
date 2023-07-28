@@ -6,6 +6,7 @@ namespace PhpMyAdmin\Tests\Command;
 
 use PhpMyAdmin\Command\TwigLintCommand;
 use PhpMyAdmin\Tests\AbstractTestCase;
+use PHPUnit\Framework\Attributes\CoversClass;
 use Symfony\Component\Console\Command\Command;
 use Twig\Error\SyntaxError;
 use Twig\Source;
@@ -18,7 +19,7 @@ use const SORT_NATURAL;
 use const SORT_REGULAR;
 use const TEST_PATH;
 
-/** @covers \PhpMyAdmin\Command\TwigLintCommand */
+#[CoversClass(TwigLintCommand::class)]
 class TwigLintCommandTest extends AbstractTestCase
 {
     private TwigLintCommand $command;
@@ -71,16 +72,8 @@ class TwigLintCommandTest extends AbstractTestCase
         sort($filesInfos, SORT_REGULAR);
 
         $this->assertEquals([
-            [
-                'template' => '',
-                'file' => $path . DIRECTORY_SEPARATOR . 'one.txt',
-                'valid' => true,
-            ],
-            [
-                'template' => '',
-                'file' => $path . DIRECTORY_SEPARATOR . 'two.md',
-                'valid' => true,
-            ],
+            ['template' => '', 'file' => $path . DIRECTORY_SEPARATOR . 'one.txt', 'valid' => true],
+            ['template' => '', 'file' => $path . DIRECTORY_SEPARATOR . 'two.md', 'valid' => true],
             [
                 'template' => '0000' . "\n",
                 'file' => $path . DIRECTORY_SEPARATOR . 'subfolder' . DIRECTORY_SEPARATOR . 'zero.txt',
@@ -103,10 +96,7 @@ class TwigLintCommandTest extends AbstractTestCase
         $command->expects($this->exactly(1))
             ->method('findFiles')
             ->willReturn(
-                [
-                    'foo.twig',
-                    'foo-invalid.twig',
-                ],
+                ['foo.twig', 'foo-invalid.twig'],
             );
 
         $command->expects($this->exactly(2))->method('getTemplateContents')->willReturnMap([
@@ -119,11 +109,7 @@ class TwigLintCommandTest extends AbstractTestCase
         ]);
 
         $this->assertEquals([
-            [
-                'template' => '{{ file }}',
-                'file' => 'foo.twig',
-                'valid' => true,
-            ],
+            ['template' => '{{ file }}', 'file' => 'foo.twig', 'valid' => true],
             [
                 'template' => '{{ file }',
                 'file' => 'foo-invalid.twig',
@@ -139,24 +125,15 @@ class TwigLintCommandTest extends AbstractTestCase
 
     public function testGetContext(): void
     {
-        $context = $this->callFunction($this->command, TwigLintCommand::class, 'getContext', [
-            '{{ file }',
-            0,
-        ]);
+        $context = $this->callFunction($this->command, TwigLintCommand::class, 'getContext', ['{{ file }', 0]);
 
         $this->assertEquals([1 => '{{ file }'], $context);
 
-        $context = $this->callFunction($this->command, TwigLintCommand::class, 'getContext', [
-            '{{ file }',
-            3,
-        ]);
+        $context = $this->callFunction($this->command, TwigLintCommand::class, 'getContext', ['{{ file }', 3]);
 
         $this->assertEquals([1 => '{{ file }'], $context);
 
-        $context = $this->callFunction($this->command, TwigLintCommand::class, 'getContext', [
-            '{{ file }',
-            5,
-        ]);
+        $context = $this->callFunction($this->command, TwigLintCommand::class, 'getContext', ['{{ file }', 5]);
 
         $this->assertEquals([], $context);
     }

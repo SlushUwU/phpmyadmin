@@ -11,6 +11,7 @@ use mysqli;
 use mysqli_sql_exception;
 use PhpMyAdmin\Config\Settings\Server;
 use PhpMyAdmin\DatabaseInterface;
+use PhpMyAdmin\Identifiers\DatabaseName;
 use PhpMyAdmin\Query\Utilities;
 
 use function __;
@@ -40,7 +41,7 @@ use const MYSQLI_USE_RESULT;
  */
 class DbiMysqli implements DbiExtension
 {
-    public function connect(string $user, string $password, Server $server): Connection|null
+    public function connect(Server $server): Connection|null
     {
         mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
@@ -50,30 +51,29 @@ class DbiMysqli implements DbiExtension
             return null;
         }
 
-        $client_flags = 0;
+        $clientFlags = 0;
 
         /* Optionally compress connection */
         if ($server->compress && defined('MYSQLI_CLIENT_COMPRESS')) {
-            $client_flags |= MYSQLI_CLIENT_COMPRESS;
+            $clientFlags |= MYSQLI_CLIENT_COMPRESS;
         }
 
-        // phpcs:disable Squiz.NamingConventions.ValidVariableName.MemberNotCamelCaps
         /* Optionally enable SSL */
         if ($server->ssl) {
-            $client_flags |= MYSQLI_CLIENT_SSL;
+            $clientFlags |= MYSQLI_CLIENT_SSL;
             if (
-                $server->ssl_key !== null && $server->ssl_key !== '' ||
-                $server->ssl_cert !== null && $server->ssl_cert !== '' ||
-                $server->ssl_ca !== null && $server->ssl_ca !== '' ||
-                $server->ssl_ca_path !== null && $server->ssl_ca_path !== '' ||
-                $server->ssl_ciphers !== null && $server->ssl_ciphers !== ''
+                $server->sslKey !== null && $server->sslKey !== '' ||
+                $server->sslCert !== null && $server->sslCert !== '' ||
+                $server->sslCa !== null && $server->sslCa !== '' ||
+                $server->sslCaPath !== null && $server->sslCaPath !== '' ||
+                $server->sslCiphers !== null && $server->sslCiphers !== ''
             ) {
                 $mysqli->ssl_set(
-                    $server->ssl_key ?? '',
-                    $server->ssl_cert ?? '',
-                    $server->ssl_ca ?? '',
-                    $server->ssl_ca_path ?? '',
-                    $server->ssl_ciphers ?? '',
+                    $server->sslKey ?? '',
+                    $server->sslCert ?? '',
+                    $server->sslCa ?? '',
+                    $server->sslCaPath ?? '',
+                    $server->sslCiphers ?? '',
                 );
             }
 
@@ -83,9 +83,9 @@ class DbiMysqli implements DbiExtension
              * @link https://bugs.php.net/bug.php?id=68344
              * @link https://github.com/phpmyadmin/phpmyadmin/pull/11838
              */
-            if (! $server->ssl_verify) {
-                $mysqli->options(MYSQLI_OPT_SSL_VERIFY_SERVER_CERT, (int) $server->ssl_verify);
-                $client_flags |= MYSQLI_CLIENT_SSL_DONT_VERIFY_SERVER_CERT;
+            if (! $server->sslVerify) {
+                $mysqli->options(MYSQLI_OPT_SSL_VERIFY_SERVER_CERT, (int) $server->sslVerify);
+                $clientFlags |= MYSQLI_CLIENT_SSL_DONT_VERIFY_SERVER_CERT;
             }
         }
 
@@ -98,12 +98,12 @@ class DbiMysqli implements DbiExtension
         try {
             $mysqli->real_connect(
                 $host,
-                $user,
-                $password,
+                $server->user,
+                $server->password,
                 '',
                 (int) $server->port,
                 $server->socket,
-                $client_flags,
+                $clientFlags,
             );
         } catch (mysqli_sql_exception) {
             /**
@@ -114,23 +114,25 @@ class DbiMysqli implements DbiExtension
              * - #2001 - SSL Connection is required. Please specify SSL options and retry.
              * - #9002 - SSL connection is required. Please specify SSL options and retry.
              */
-            $error_number = $mysqli->connect_errno;
-            $error_message = $mysqli->connect_error;
+            // phpcs:ignore Squiz.NamingConventions.ValidVariableName.MemberNotCamelCaps
+            $errorNumber = $mysqli->connect_errno;
+            // phpcs:ignore Squiz.NamingConventions.ValidVariableName.MemberNotCamelCaps
+            $errorMessage = $mysqli->connect_error;
             if (
                 ! $server->ssl
-                && ($error_number == 3159
-                    || (($error_number == 2001 || $error_number == 9002)
-                        && stripos($error_message, 'SSL Connection is required') !== false))
+                && ($errorNumber == 3159
+                    || (($errorNumber == 2001 || $errorNumber == 9002)
+                        && stripos($errorMessage, 'SSL Connection is required') !== false))
             ) {
                 trigger_error(
                     __('SSL connection enforced by server, automatically enabling it.'),
                     E_USER_WARNING,
                 );
 
-                return self::connect($user, $password, $server->withSSL(true));
+                return self::connect($server->withSSL(true));
             }
 
-            if ($error_number === 1045 && $server->hide_connection_errors) {
+            if ($errorNumber === 1045 && $server->hideConnectionErrors) {
                 trigger_error(
                     sprintf(
                         __(
@@ -143,15 +145,13 @@ class DbiMysqli implements DbiExtension
                     E_USER_ERROR,
                 );
             } else {
-                trigger_error($error_number . ': ' . $error_message, E_USER_WARNING);
+                trigger_error($errorNumber . ': ' . $errorMessage, E_USER_WARNING);
             }
 
             mysqli_report(MYSQLI_REPORT_OFF);
 
             return null;
         }
-
-        // phpcs:enable
 
         $mysqli->options(MYSQLI_OPT_LOCAL_INFILE, (int) defined('PMA_ENABLE_LDI'));
 
@@ -295,18 +295,18 @@ class DbiMysqli implements DbiExtension
         /** @var mysqli $mysqli */
         $mysqli = $connection->connection;
 
-        $error_number = $mysqli->errno;
-        $error_message = $mysqli->error;
+        $errorNumber = $mysqli->errno;
+        $errorMessage = $mysqli->error;
 
-        if ($error_number === 0 || $error_message === '') {
+        if ($errorNumber === 0 || $errorMessage === '') {
             return '';
         }
 
         // keep the error number for further check after
         // the call to getError()
-        $GLOBALS['errno'] = $error_number;
+        $GLOBALS['errno'] = $errorNumber;
 
-        return Utilities::formatError($error_number, $error_message);
+        return Utilities::formatError($errorNumber, $errorMessage);
     }
 
     /**

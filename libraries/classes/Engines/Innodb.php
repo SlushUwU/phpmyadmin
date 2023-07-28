@@ -22,7 +22,7 @@ class Innodb extends StorageEngine
     /**
      * Returns array with variable names related to InnoDB storage engine
      *
-     * @return array   variable names
+     * @return mixed[]   variable names
      */
     public function getVariables(): array
     {
@@ -31,9 +31,7 @@ class Innodb extends StorageEngine
                 'title' => __('Data home directory'),
                 'desc' => __('The common part of the directory path for all InnoDB data files.'),
             ],
-            'innodb_data_file_path' => [
-                'title' => __('Data files'),
-            ],
+            'innodb_data_file_path' => ['title' => __('Data files')],
             'innodb_autoextend_increment' => [
                 'title' => __('Autoextend increment'),
                 'desc' => __(
@@ -103,10 +101,7 @@ class Innodb extends StorageEngine
             return [];
         }
 
-        return [
-            'Bufferpool' => __('Buffer Pool'),
-            'Status' => __('InnoDB Status'),
-        ];
+        return ['Bufferpool' => __('Buffer Pool'), 'Status' => __('InnoDB Status')];
     }
 
     /**

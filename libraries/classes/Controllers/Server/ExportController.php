@@ -25,6 +25,7 @@ final class ExportController extends AbstractController
         Template $template,
         private Options $export,
         private DatabaseInterface $dbi,
+        private PageSettings $pageSettings,
     ) {
         parent::__construct($response, $template);
     }
@@ -40,9 +41,9 @@ final class ExportController extends AbstractController
             $this->dbi->selectDb('mysql');
         }
 
-        $pageSettings = new PageSettings('Export');
-        $pageSettingsErrorHtml = $pageSettings->getErrorHTML();
-        $pageSettingsHtml = $pageSettings->getHTML();
+        $this->pageSettings->init('Export');
+        $pageSettingsErrorHtml = $this->pageSettings->getErrorHTML();
+        $pageSettingsHtml = $this->pageSettings->getHTML();
 
         $this->addScriptFiles(['export.js']);
 
@@ -65,7 +66,7 @@ final class ExportController extends AbstractController
 
         $exportList = Plugins::getExport('server', isset($GLOBALS['single_table']));
 
-        if (empty($exportList)) {
+        if ($exportList === []) {
             $this->response->addHTML(Message::error(
                 __('Could not load export plugins, please check your installation!'),
             )->getDisplay());

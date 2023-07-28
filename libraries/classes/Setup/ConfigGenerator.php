@@ -88,34 +88,34 @@ class ConfigGenerator
     /**
      * Returns exported configuration variable
      *
-     * @param string $var_name  configuration name
-     * @param mixed  $var_value configuration value(s)
-     * @param string $eol       line ending
+     * @param string $varName  configuration name
+     * @param mixed  $varValue configuration value(s)
+     * @param string $eol      line ending
      */
-    private static function getVarExport(string $var_name, mixed $var_value, string $eol): string
+    private static function getVarExport(string $varName, mixed $varValue, string $eol): string
     {
-        if ($var_name === 'blowfish_secret') {
-            $secret = self::getBlowfishSecretKey($var_value);
+        if ($varName === 'blowfish_secret') {
+            $secret = self::getBlowfishSecretKey($varValue);
 
             return sprintf('$cfg[\'blowfish_secret\'] = \sodium_hex2bin(\'%s\');%s', sodium_bin2hex($secret), $eol);
         }
 
-        if (! is_array($var_value) || empty($var_value)) {
-            return "\$cfg['" . $var_name . "'] = "
-                . var_export($var_value, true) . ';' . $eol;
+        if (! is_array($varValue) || $varValue === []) {
+            return "\$cfg['" . $varName . "'] = "
+                . var_export($varValue, true) . ';' . $eol;
         }
 
-        if (self::isZeroBasedArray($var_value)) {
-            return "\$cfg['" . $var_name . "'] = "
-                . self::exportZeroBasedArray($var_value, $eol)
+        if (self::isZeroBasedArray($varValue)) {
+            return "\$cfg['" . $varName . "'] = "
+                . self::exportZeroBasedArray($varValue, $eol)
                 . ';' . $eol;
         }
 
         $ret = '';
         // string keys: $cfg[key][subkey] = value
-        foreach ($var_value as $k => $v) {
+        foreach ($varValue as $k => $v) {
             $k = preg_replace('/[^A-Za-z0-9_]/', '_', $k);
-            $ret .= "\$cfg['" . $var_name . "']['" . $k . "'] = "
+            $ret .= "\$cfg['" . $varName . "']['" . $k . "'] = "
                 . var_export($v, true) . ';' . $eol;
         }
 
@@ -125,7 +125,7 @@ class ConfigGenerator
     /**
      * Check whether $array is a continuous 0-based array
      *
-     * @param array $array Array to check
+     * @param mixed[] $array Array to check
      */
     private static function isZeroBasedArray(array $array): bool
     {
@@ -141,8 +141,8 @@ class ConfigGenerator
     /**
      * Exports continuous 0-based array
      *
-     * @param array  $array Array to export
-     * @param string $eol   Newline string
+     * @param mixed[] $array Array to export
+     * @param string  $eol   Newline string
      */
     private static function exportZeroBasedArray(array $array, string $eol): string
     {
@@ -159,6 +159,7 @@ class ConfigGenerator
 
         // more than 4 values - value per line
         $imax = count($retv);
+        /** @infection-ignore-all */
         for ($i = 0; $i < $imax; $i++) {
             $ret .= ($i > 0 ? ',' : '') . $eol . '    ' . $retv[$i];
         }
@@ -171,7 +172,7 @@ class ConfigGenerator
      *
      * @param ConfigFile $cf      Config file
      * @param string     $eol     Carriage return char
-     * @param array      $servers Servers list
+     * @param mixed[]    $servers Servers list
      */
     protected static function getServerPart(ConfigFile $cf, string $eol, array $servers): string|null
     {

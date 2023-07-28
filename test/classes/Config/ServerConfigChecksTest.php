@@ -7,6 +7,7 @@ namespace PhpMyAdmin\Tests\Config;
 use PhpMyAdmin\Config\ConfigFile;
 use PhpMyAdmin\Config\ServerConfigChecks;
 use PhpMyAdmin\Tests\AbstractTestCase;
+use PHPUnit\Framework\Attributes\CoversClass;
 use ReflectionException;
 use ReflectionProperty;
 
@@ -16,7 +17,7 @@ use function str_repeat;
 
 use const SODIUM_CRYPTO_SECRETBOX_KEYBYTES;
 
-/** @covers \PhpMyAdmin\Config\ServerConfigChecks */
+#[CoversClass(ServerConfigChecks::class)]
 class ServerConfigChecksTest extends AbstractTestCase
 {
     private string $sessionID;
@@ -89,13 +90,7 @@ class ServerConfigChecksTest extends AbstractTestCase
         );
 
         $this->assertEquals(
-            [
-                'LoginCookieValidity',
-                'GZipDump',
-                'BZipDump',
-                'ZipDump_import',
-                'ZipDump_export',
-            ],
+            ['LoginCookieValidity', 'GZipDump', 'BZipDump', 'ZipDump_import', 'ZipDump_export'],
             array_keys($_SESSION['messages']['error']),
         );
     }
@@ -105,12 +100,7 @@ class ServerConfigChecksTest extends AbstractTestCase
         $_SESSION[$this->sessionID] = [];
         $_SESSION[$this->sessionID]['blowfish_secret'] = null;
         $_SESSION[$this->sessionID]['Servers'] = [
-            '1' => [
-                'host' => 'localhost',
-                'ssl' => true,
-                'auth_type' => 'cookie',
-                'AllowRoot' => false,
-            ],
+            '1' => ['host' => 'localhost', 'ssl' => true, 'auth_type' => 'cookie', 'AllowRoot' => false],
         ];
         $_SESSION[$this->sessionID]['AllowArbitraryServer'] = false;
         $_SESSION[$this->sessionID]['LoginCookieValidity'] = -1;
@@ -139,17 +129,16 @@ class ServerConfigChecksTest extends AbstractTestCase
         $this->assertArrayNotHasKey('error', $messages);
     }
 
+    /**
+     * @requires extension bz2
+     * @requires extension zip
+     */
     public function testBlowfishWithInvalidSecret(): void
     {
         $_SESSION[$this->sessionID] = [];
         $_SESSION[$this->sessionID]['blowfish_secret'] = str_repeat('a', SODIUM_CRYPTO_SECRETBOX_KEYBYTES + 1);
         $_SESSION[$this->sessionID]['Servers'] = [
-            '1' => [
-                'host' => 'localhost',
-                'ssl' => true,
-                'auth_type' => 'cookie',
-                'AllowRoot' => false,
-            ],
+            '1' => ['host' => 'localhost', 'ssl' => true, 'auth_type' => 'cookie', 'AllowRoot' => false],
         ];
 
         $configChecker = new ServerConfigChecks($GLOBALS['ConfigFile']);
@@ -170,6 +159,10 @@ class ServerConfigChecksTest extends AbstractTestCase
         $this->assertArrayNotHasKey('error', $messages);
     }
 
+    /**
+     * @requires extension bz2
+     * @requires extension zip
+     */
     public function testBlowfishWithValidSecret(): void
     {
         $_SESSION[$this->sessionID] = [];

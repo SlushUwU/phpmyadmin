@@ -6,10 +6,11 @@ namespace PhpMyAdmin\Tests\Engines;
 
 use PhpMyAdmin\Engines\Bdb;
 use PhpMyAdmin\Tests\AbstractTestCase;
+use PHPUnit\Framework\Attributes\CoversClass;
 
 use function __;
 
-/** @covers \PhpMyAdmin\Engines\Bdb */
+#[CoversClass(Bdb::class)]
 class BdbTest extends AbstractTestCase
 {
     protected Bdb $object;
@@ -46,9 +47,7 @@ class BdbTest extends AbstractTestCase
         $this->assertEquals(
             $this->object->getVariables(),
             [
-                'version_bdb' => [
-                    'title' => __('Version information'),
-                ],
+                'version_bdb' => ['title' => __('Version information')],
                 'bdb_cache_size' => ['type' => 1],
                 'bdb_home' => [],
                 'bdb_log_buffer_size' => ['type' => 1],

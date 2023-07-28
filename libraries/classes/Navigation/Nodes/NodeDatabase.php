@@ -7,6 +7,8 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Navigation\Nodes;
 
+use PhpMyAdmin\ConfigStorage\Features\NavigationItemsHidingFeature;
+use PhpMyAdmin\ConfigStorage\RelationParameters;
 use PhpMyAdmin\Dbal\Connection;
 use PhpMyAdmin\Html\Generator;
 use PhpMyAdmin\Url;
@@ -115,10 +117,7 @@ class NodeDatabase extends Node
         $query .= Util::backquote($this->realName);
         $query .= ' WHERE `Table_type` ' . $condition . "('BASE TABLE', 'SYSTEM VERSIONED') ";
         if ($searchClause !== '') {
-            $query .= 'AND ' . $this->getWhereClauseForSearch(
-                $searchClause,
-                'Tables_in_' . $this->realName,
-            );
+            $query .= 'AND ' . $this->getWhereClauseForSearch($searchClause, 'Tables_in_' . $this->realName);
         }
 
         return $GLOBALS['dbi']->queryAndGetNumRows($query);
@@ -258,10 +257,14 @@ class NodeDatabase extends Node
      * @param int    $pos          The offset of the list within the results
      * @param string $searchClause A string used to filter the results of the query
      *
-     * @return array
+     * @return mixed[]
      */
-    public function getData(string $type, int $pos, string $searchClause = ''): array
-    {
+    public function getData(
+        RelationParameters $relationParameters,
+        string $type,
+        int $pos,
+        string $searchClause = '',
+    ): array {
         $retval = [];
         switch ($type) {
             case 'tables':
@@ -284,9 +287,8 @@ class NodeDatabase extends Node
         }
 
         // Remove hidden items so that they are not displayed in navigation tree
-        $relationParameters = $this->relation->getRelationParameters();
         if ($relationParameters->navigationItemsHidingFeature !== null) {
-            $hiddenItems = $this->getHiddenItems(substr($type, 0, -1));
+            $hiddenItems = $this->getHiddenItems($relationParameters, substr($type, 0, -1));
             foreach ($retval as $key => $item) {
                 if (! in_array($item, $hiddenItems)) {
                     continue;
@@ -305,11 +307,10 @@ class NodeDatabase extends Node
      * @param string $type The type of items we are looking for
      *                     ('table', 'function', 'group', etc.)
      *
-     * @return array Array containing hidden items of given type
+     * @return mixed[] Array containing hidden items of given type
      */
-    public function getHiddenItems(string $type): array
+    public function getHiddenItems(RelationParameters $relationParameters, string $type): array
     {
-        $relationParameters = $this->relation->getRelationParameters();
         if ($relationParameters->navigationItemsHidingFeature === null || $relationParameters->user === null) {
             return [];
         }
@@ -338,7 +339,7 @@ class NodeDatabase extends Node
      * @param int    $pos          The offset of the list within the results
      * @param string $searchClause A string used to filter the results of the query
      *
-     * @return array
+     * @return mixed[]
      */
     private function getTablesOrViews(string $which, int $pos, string $searchClause): array
     {
@@ -402,7 +403,7 @@ class NodeDatabase extends Node
      * @param int    $pos          The offset of the list within the results
      * @param string $searchClause A string used to filter the results of the query
      *
-     * @return array
+     * @return mixed[]
      */
     private function getTables(int $pos, string $searchClause): array
     {
@@ -415,7 +416,7 @@ class NodeDatabase extends Node
      * @param int    $pos          The offset of the list within the results
      * @param string $searchClause A string used to filter the results of the query
      *
-     * @return array
+     * @return mixed[]
      */
     private function getViews(int $pos, string $searchClause): array
     {
@@ -429,7 +430,7 @@ class NodeDatabase extends Node
      * @param int    $pos          The offset of the list within the results
      * @param string $searchClause A string used to filter the results of the query
      *
-     * @return array
+     * @return mixed[]
      */
     private function getRoutines(string $routineType, int $pos, string $searchClause): array
     {
@@ -486,7 +487,7 @@ class NodeDatabase extends Node
      * @param int    $pos          The offset of the list within the results
      * @param string $searchClause A string used to filter the results of the query
      *
-     * @return array
+     * @return mixed[]
      */
     private function getProcedures(int $pos, string $searchClause): array
     {
@@ -499,7 +500,7 @@ class NodeDatabase extends Node
      * @param int    $pos          The offset of the list within the results
      * @param string $searchClause A string used to filter the results of the query
      *
-     * @return array
+     * @return mixed[]
      */
     private function getFunctions(int $pos, string $searchClause): array
     {
@@ -512,7 +513,7 @@ class NodeDatabase extends Node
      * @param int    $pos          The offset of the list within the results
      * @param string $searchClause A string used to filter the results of the query
      *
-     * @return array
+     * @return mixed[]
      */
     private function getEvents(int $pos, string $searchClause): array
     {
@@ -567,16 +568,12 @@ class NodeDatabase extends Node
      *
      * @return string HTML for control buttons
      */
-    public function getHtmlForControlButtons(): string
+    public function getHtmlForControlButtons(NavigationItemsHidingFeature|null $navigationItemsHidingFeature): string
     {
         $ret = '';
-        $relationParameters = $this->relation->getRelationParameters();
-        if ($relationParameters->navigationItemsHidingFeature !== null) {
+        if ($navigationItemsHidingFeature !== null) {
             if ($this->hiddenCount > 0) {
-                $params = [
-                    'showUnhideDialog' => true,
-                    'dbName' => $this->realName,
-                ];
+                $params = ['showUnhideDialog' => true, 'dbName' => $this->realName];
                 $ret = '<span class="dbItemControls">'
                     . '<a href="' . Url::getFromRoute('/navigation') . '" data-post="'
                     . Url::getCommon($params, '', false) . '"'

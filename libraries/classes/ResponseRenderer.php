@@ -7,6 +7,9 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin;
 
+use PhpMyAdmin\Exceptions\ExitException;
+use PhpMyAdmin\Http\Factory\ResponseFactory;
+
 use function defined;
 use function header;
 use function headers_sent;
@@ -36,14 +39,14 @@ class ResponseRenderer
     /**
      * HTML data to be used in the response
      */
-    private string $HTML;
+    private string $HTML = '';
     /**
      * An array of JSON key-value pairs
      * to be sent back for ajax requests
      *
-     * @var array
+     * @var mixed[]
      */
-    private array $JSON;
+    private array $JSON = [];
     /**
      * PhpMyAdmin\Footer instance
      */
@@ -55,12 +58,12 @@ class ResponseRenderer
     /**
      * Whether response object is disabled
      */
-    protected bool $isDisabled;
+    protected bool $isDisabled = false;
     /**
      * Whether there were any errors during the processing of the request
      * Only used for ajax responses
      */
-    protected bool $isSuccess;
+    protected bool $isSuccess = true;
 
     /**
      * @see http://www.iana.org/assignments/http-status-codes/http-status-codes.xhtml
@@ -141,16 +144,15 @@ class ResponseRenderer
 
     private OutputBuffering $buffer;
 
+    private ResponseFactory $responseFactory;
+
     private function __construct()
     {
         $this->buffer = new OutputBuffering();
         $this->buffer->start();
         $this->header = new Header();
-        $this->HTML = '';
-        $this->JSON = [];
         $this->footer = new Footer();
-        $this->isSuccess = true;
-        $this->isDisabled = false;
+        $this->responseFactory = ResponseFactory::create();
 
         if (! defined('TESTSUITE')) {
             register_shutdown_function($this->response(...));
@@ -192,7 +194,7 @@ class ResponseRenderer
      */
     public function setRequestStatus(bool $state): void
     {
-        $this->isSuccess = ($state === true);
+        $this->isSuccess = $state;
     }
 
     /**
@@ -234,9 +236,9 @@ class ResponseRenderer
     /**
      * Add JSON code to the response
      *
-     * @param string|int|array $json  Either a key (string) or an array or key-value pairs
-     * @param mixed|null       $value Null, if passing an array in $json otherwise
-     *                                it's a string value to the key
+     * @param string|int|mixed[] $json  Either a key (string) or an array or key-value pairs
+     * @param mixed|null         $value Null, if passing an array in $json otherwise
+     *                                  it's a string value to the key
      */
     public function addJSON(string|int|array $json, mixed $value = null): void
     {
@@ -368,21 +370,24 @@ class ResponseRenderer
     /**
      * Sends an HTML response to the browser
      */
-    public function response(): void
+    public function response(): never
     {
         $this->buffer->stop();
         if ($this->HTML === '') {
             $this->HTML = $this->buffer->getContents();
         }
 
-        if ($this->isAjax()) {
-            echo $this->ajaxResponse();
-        } else {
-            echo $this->getDisplay();
-        }
+        $this->emitBody($this->isAjax() ? $this->ajaxResponse() : $this->getDisplay());
 
         $this->buffer->flush();
-        exit;
+        $this->callExit();
+    }
+
+    private function emitBody(string $body): void
+    {
+        $responseBody = $this->responseFactory->createResponse()->getBody();
+        $responseBody->write($body);
+        echo $responseBody;
     }
 
     /**
@@ -407,11 +412,11 @@ class ResponseRenderer
     /**
      * Wrapper around PHP's http_response_code() function.
      *
-     * @param int $response_code will set the response code.
+     * @param int $responseCode will set the response code.
      */
-    public function httpResponseCode(int $response_code): void
+    public function httpResponseCode(int $responseCode): void
     {
-        http_response_code($response_code);
+        http_response_code($responseCode);
     }
 
     /**
@@ -441,13 +446,11 @@ class ResponseRenderer
      *
      * @param string $location will set location to redirect.
      */
-    public function generateHeader303(string $location): void
+    public function generateHeader303(string $location): never
     {
         $this->setHttpResponseCode(303);
         $this->header('Location: ' . $location);
-        if (! defined('TESTSUITE')) {
-            exit;
-        }
+        $this->callExit();
     }
 
     /**
@@ -489,5 +492,18 @@ class ResponseRenderer
     public function getFooterScripts(): Scripts
     {
         return $this->footer->getScripts();
+    }
+
+    public function callExit(string $message = ''): never
+    {
+        if (defined('TESTSUITE')) {
+            throw new ExitException($message);
+        }
+
+        if ($message !== '') {
+            exit($message);
+        }
+
+        exit;
     }
 }

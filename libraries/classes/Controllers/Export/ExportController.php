@@ -7,11 +7,11 @@ namespace PhpMyAdmin\Controllers\Export;
 use PhpMyAdmin\Controllers\AbstractController;
 use PhpMyAdmin\Controllers\Database\ExportController as DatabaseExportController;
 use PhpMyAdmin\Core;
-use PhpMyAdmin\Dbal\DatabaseName;
 use PhpMyAdmin\Encoding;
 use PhpMyAdmin\Exceptions\ExportException;
-use PhpMyAdmin\Export;
+use PhpMyAdmin\Export\Export;
 use PhpMyAdmin\Http\ServerRequest;
+use PhpMyAdmin\Identifiers\DatabaseName;
 use PhpMyAdmin\Message;
 use PhpMyAdmin\Plugins;
 use PhpMyAdmin\Plugins\Export\ExportSql;
@@ -19,7 +19,6 @@ use PhpMyAdmin\ResponseRenderer;
 use PhpMyAdmin\Sanitize;
 use PhpMyAdmin\SqlParser\Parser;
 use PhpMyAdmin\SqlParser\Statements\SelectStatement;
-use PhpMyAdmin\SqlParser\Utils\Misc;
 use PhpMyAdmin\Template;
 use PhpMyAdmin\Url;
 use PhpMyAdmin\Util;
@@ -85,7 +84,7 @@ final class ExportController extends AbstractController
         $onServerParam = $request->getParsedBodyParam('onserver');
         /** @var array|null $aliasesParam */
         $aliasesParam = $request->getParsedBodyParam('aliases');
-        $structureOrDataForced = $request->hasBodyParam('structure_or_data_forced');
+        $structureOrDataForced = (bool) $request->getParsedBodyParam('structure_or_data_forced');
         $rememberTemplate = $request->getParsedBodyParam('remember_template');
         $dbSelect = $request->getParsedBodyParam('db_select');
         $tableStructure = $request->getParsedBodyParam('table_structure');
@@ -208,7 +207,7 @@ final class ExportController extends AbstractController
         $parser = new Parser($GLOBALS['sql_query']);
         $aliases = [];
         if (! empty($parser->statements[0]) && ($parser->statements[0] instanceof SelectStatement)) {
-            $aliases = Misc::getAliases($parser->statements[0], $GLOBALS['db']);
+            $aliases = $parser->statements[0]->getAliases($GLOBALS['db']);
         }
 
         if ($aliasesParam !== null && $aliasesParam !== []) {
@@ -288,41 +287,38 @@ final class ExportController extends AbstractController
 
                 return;
             }
-        } else {
+        } elseif ($GLOBALS['asfile']) {
             /**
              * Send headers depending on whether the user chose to download a dump file
              * or not
              */
-            if ($GLOBALS['asfile']) {
-                // Download
-                // (avoid rewriting data containing HTML with anchors and forms;
-                // this was reported to happen under Plesk)
-                ini_set('url_rewriter.tags', '');
-                $filename = Sanitize::sanitizeFilename($filename);
-
-                Core::downloadHeader($filename, $mimeType);
-            } else {
-                // HTML
-                if ($GLOBALS['export_type'] === 'database') {
-                    $GLOBALS['num_tables'] = count($GLOBALS['tables']);
-                    if ($GLOBALS['num_tables'] === 0) {
-                        $GLOBALS['message'] = Message::error(
-                            __('No tables found in database.'),
-                        );
-                        $GLOBALS['active_page'] = Url::getFromRoute('/database/export');
-                        /** @var DatabaseExportController $controller */
-                        $controller = Core::getContainerBuilder()->get(DatabaseExportController::class);
-                        $controller($request);
-                        exit;
-                    }
+            // Download
+            // (avoid rewriting data containing HTML with anchors and forms;
+            // this was reported to happen under Plesk)
+            ini_set('url_rewriter.tags', '');
+            $filename = Sanitize::sanitizeFilename($filename);
+            Core::downloadHeader($filename, $mimeType);
+        } else {
+            // HTML
+            if ($GLOBALS['export_type'] === 'database') {
+                $GLOBALS['num_tables'] = count($GLOBALS['tables']);
+                if ($GLOBALS['num_tables'] === 0) {
+                    $GLOBALS['message'] = Message::error(
+                        __('No tables found in database.'),
+                    );
+                    $GLOBALS['active_page'] = Url::getFromRoute('/database/export');
+                    /** @var DatabaseExportController $controller */
+                    $controller = Core::getContainerBuilder()->get(DatabaseExportController::class);
+                    $controller($request);
+                    $this->response->callExit();
                 }
-
-                echo $this->export->getHtmlForDisplayedExportHeader(
-                    $GLOBALS['export_type'],
-                    $GLOBALS['db'],
-                    $GLOBALS['table'],
-                );
             }
+
+            echo $this->export->getHtmlForDisplayedExportHeader(
+                $GLOBALS['export_type'],
+                $GLOBALS['db'],
+                $GLOBALS['table'],
+            );
         }
 
         try {
@@ -386,10 +382,10 @@ final class ExportController extends AbstractController
                 }
 
                 if ($lockTables) {
-                    $this->export->lockTables(DatabaseName::fromValue($GLOBALS['db']), $GLOBALS['tables'], 'READ');
+                    $this->export->lockTables(DatabaseName::from($GLOBALS['db']), $GLOBALS['tables'], 'READ');
                     try {
                         $this->export->exportDatabase(
-                            DatabaseName::fromValue($GLOBALS['db']),
+                            DatabaseName::from($GLOBALS['db']),
                             $GLOBALS['tables'],
                             $whatStrucOrData,
                             $tableStructure,
@@ -409,7 +405,7 @@ final class ExportController extends AbstractController
                     }
                 } else {
                     $this->export->exportDatabase(
-                        DatabaseName::fromValue($GLOBALS['db']),
+                        DatabaseName::from($GLOBALS['db']),
                         $GLOBALS['tables'],
                         $whatStrucOrData,
                         $tableStructure,
@@ -432,7 +428,6 @@ final class ExportController extends AbstractController
                     $GLOBALS['errorUrl'],
                     $GLOBALS['db'],
                     $GLOBALS['sql_query'],
-                    $GLOBALS['export_type'],
                 );
             } else {
                 // We export just one table
@@ -443,7 +438,7 @@ final class ExportController extends AbstractController
 
                 if ($lockTables) {
                     try {
-                        $this->export->lockTables(DatabaseName::fromValue($GLOBALS['db']), [$GLOBALS['table']], 'READ');
+                        $this->export->lockTables(DatabaseName::from($GLOBALS['db']), [$GLOBALS['table']], 'READ');
                         $this->export->exportTable(
                             $GLOBALS['db'],
                             $GLOBALS['table'],

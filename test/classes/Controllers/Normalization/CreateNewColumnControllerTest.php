@@ -12,8 +12,9 @@ use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\ResponseRenderer;
 use PhpMyAdmin\Transformations;
+use PHPUnit\Framework\Attributes\CoversClass;
 
-/** @covers \PhpMyAdmin\Controllers\Normalization\CreateNewColumnController */
+#[CoversClass(CreateNewColumnController::class)]
 class CreateNewColumnControllerTest extends AbstractTestCase
 {
     public function testDefault(): void
@@ -30,9 +31,7 @@ class CreateNewColumnControllerTest extends AbstractTestCase
         $response = new ResponseRenderer();
         $template = new Template();
         $request = $this->createStub(ServerRequest::class);
-        $request->method('getParsedBodyParam')->willReturnMap([
-            ['numFields', null, '1'],
-        ]);
+        $request->method('getParsedBodyParam')->willReturnMap([['numFields', null, '1']]);
 
         $controller = new CreateNewColumnController(
             $response,

@@ -34,21 +34,11 @@ use function substr;
 class CreateController extends AbstractController
 {
     /** @todo Move the whole view rebuilding logic to SQL parser */
-    private const VIEW_SECURITY_OPTIONS = [
-        'DEFINER',
-        'INVOKER',
-    ];
+    private const VIEW_SECURITY_OPTIONS = ['DEFINER', 'INVOKER'];
 
-    private const VIEW_ALGORITHM_OPTIONS = [
-        'UNDEFINED',
-        'MERGE',
-        'TEMPTABLE',
-    ];
+    private const VIEW_ALGORITHM_OPTIONS = ['UNDEFINED', 'MERGE', 'TEMPTABLE'];
 
-    private const VIEW_WITH_OPTIONS = [
-        'CASCADED',
-        'LOCAL',
-    ];
+    private const VIEW_WITH_OPTIONS = ['CASCADED', 'LOCAL'];
 
     public function __construct(ResponseRenderer $response, Template $template, private DatabaseInterface $dbi)
     {
@@ -131,18 +121,20 @@ class CreateController extends AbstractController
         ];
 
         // Used to prefill the fields when editing a view
-        if (isset($_GET['db'], $_GET['table'])) {
+        if ($request->hasQueryParam('db') && $request->hasQueryParam('table')) {
+            $db = $request->getQueryParam('db');
+            $table = $request->getQueryParam('table');
             $item = $this->dbi->fetchSingleRow(
                 sprintf(
                     'SELECT `VIEW_DEFINITION`, `CHECK_OPTION`, `DEFINER`, `SECURITY_TYPE`
                         FROM `INFORMATION_SCHEMA`.`VIEWS`
                         WHERE TABLE_SCHEMA=%s
                         AND TABLE_NAME=%s;',
-                    $this->dbi->quoteString($_GET['db']),
-                    $this->dbi->quoteString($_GET['table']),
+                    $this->dbi->quoteString($db),
+                    $this->dbi->quoteString($table),
                 ),
             );
-            $createView = $this->dbi->getTable($_GET['db'], $_GET['table'])
+            $createView = $this->dbi->getTable($db, $table)
                 ->showCreate();
 
             // CREATE ALGORITHM=<ALGORITHM> DE...
@@ -151,7 +143,7 @@ class CreateController extends AbstractController
             $viewData['operation'] = 'alter';
             $viewData['definer'] = $item['DEFINER'];
             $viewData['sql_security'] = $item['SECURITY_TYPE'];
-            $viewData['name'] = $_GET['table'];
+            $viewData['name'] = $table;
             $viewData['as'] = $item['VIEW_DEFINITION'];
             $viewData['with'] = $item['CHECK_OPTION'];
             $viewData['algorithm'] = $item['ALGORITHM'];
@@ -185,6 +177,7 @@ class CreateController extends AbstractController
         ]);
     }
 
+    /** @param mixed[] $view */
     private function setSuccessResponse(array $view, bool $ajaxdialog, ServerRequest $request): void
     {
         // If different column names defined for VIEW
@@ -231,6 +224,8 @@ class CreateController extends AbstractController
 
     /**
      * Creates the view
+     *
+     * @param mixed[] $view
      */
     private function getSqlQuery(bool $createview, array $view): string
     {

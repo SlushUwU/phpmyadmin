@@ -4,33 +4,49 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Navigation\Nodes;
 
+use PhpMyAdmin\Navigation\Nodes\Node;
 use PhpMyAdmin\Navigation\Nodes\NodeColumnContainer;
 use PhpMyAdmin\Tests\AbstractTestCase;
+use PHPUnit\Framework\Attributes\CoversClass;
 
-/** @covers \PhpMyAdmin\Navigation\Nodes\NodeColumnContainer */
-class NodeColumnContainerTest extends AbstractTestCase
+#[CoversClass(NodeColumnContainer::class)]
+final class NodeColumnContainerTest extends AbstractTestCase
 {
-    /**
-     * SetUp for test cases
-     */
-    protected function setUp(): void
+    public function testColumnContainer(): void
     {
-        parent::setUp();
-
-        $GLOBALS['dbi'] = $this->createDatabaseInterface();
-        $GLOBALS['server'] = 0;
-    }
-
-    public function testConstructor(): void
-    {
-        $parent = new NodeColumnContainer();
-        $this->assertEquals(
+        $nodeColumnContainer = new NodeColumnContainer();
+        $this->assertSame('Columns', $nodeColumnContainer->name);
+        $this->assertSame(Node::CONTAINER, $nodeColumnContainer->type);
+        $this->assertFalse($nodeColumnContainer->isGroup);
+        $this->assertSame(['image' => 'pause', 'title' => 'Columns'], $nodeColumnContainer->icon);
+        $this->assertSame(
             [
                 'text' => ['route' => '/table/structure', 'params' => ['db' => null, 'table' => null]],
                 'icon' => ['route' => '/table/structure', 'params' => ['db' => null, 'table' => null]],
             ],
-            $parent->links,
+            $nodeColumnContainer->links,
         );
-        $this->assertEquals('columns', $parent->realName);
+        $this->assertSame('columns', $nodeColumnContainer->realName);
+        $this->assertCount(1, $nodeColumnContainer->children);
+        $this->assertArrayHasKey(0, $nodeColumnContainer->children);
+        $newNode = $nodeColumnContainer->children[0];
+        $this->assertSame('New', $newNode->name);
+        $this->assertSame('New', $newNode->title);
+        $this->assertTrue($newNode->isNew);
+        $this->assertSame('new_column italics', $newNode->classes);
+        $this->assertSame(['image' => 'b_column_add', 'title' => 'New'], $newNode->icon);
+        $this->assertSame(
+            [
+                'text' => [
+                    'route' => '/table/add-field',
+                    'params' => ['field_where' => 'last', 'after_field' => '', 'db' => null, 'table' => null],
+                ],
+                'icon' => [
+                    'route' => '/table/add-field',
+                    'params' => ['field_where' => 'last', 'after_field' => '', 'db' => null, 'table' => null],
+                ],
+            ],
+            $newNode->links,
+        );
     }
 }

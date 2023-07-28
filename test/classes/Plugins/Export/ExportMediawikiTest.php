@@ -6,7 +6,7 @@ namespace PhpMyAdmin\Tests\Plugins\Export;
 
 use PhpMyAdmin\ConfigStorage\Relation;
 use PhpMyAdmin\DatabaseInterface;
-use PhpMyAdmin\Export;
+use PhpMyAdmin\Export\Export;
 use PhpMyAdmin\Plugins\Export\ExportMediawiki;
 use PhpMyAdmin\Properties\Options\Groups\OptionsPropertyMainGroup;
 use PhpMyAdmin\Properties\Options\Groups\OptionsPropertyRootGroup;
@@ -16,6 +16,8 @@ use PhpMyAdmin\Properties\Options\Items\RadioPropertyItem;
 use PhpMyAdmin\Properties\Plugins\ExportPluginProperties;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Transformations;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Group;
 use ReflectionMethod;
 use ReflectionProperty;
 
@@ -23,10 +25,8 @@ use function __;
 use function ob_get_clean;
 use function ob_start;
 
-/**
- * @covers \PhpMyAdmin\Plugins\Export\ExportMediawiki
- * @group medium
- */
+#[CoversClass(ExportMediawiki::class)]
+#[Group('medium')]
 class ExportMediawikiTest extends AbstractTestCase
 {
     protected ExportMediawiki $object;
@@ -147,11 +147,7 @@ class ExportMediawikiTest extends AbstractTestCase
         );
 
         $this->assertEquals(
-            [
-                'structure' => __('structure'),
-                'data' => __('data'),
-                'structure_and_data' => __('structure and data'),
-            ],
+            ['structure' => __('structure'), 'data' => __('data'), 'structure_and_data' => __('structure and data')],
             $sgHeader->getValues(),
         );
 
@@ -238,14 +234,7 @@ class ExportMediawikiTest extends AbstractTestCase
                 'Default' => '',
                 'Extra' => '',
             ],
-            [
-                'Null' => 'NO',
-                'Field' => 'fields',
-                'Key' => 'COMP',
-                'Type' => '',
-                'Default' => 'def',
-                'Extra' => 'ext',
-            ],
+            ['Null' => 'NO', 'Field' => 'fields', 'Key' => 'COMP', 'Type' => '', 'Default' => 'def', 'Extra' => 'ext'],
         ];
 
         $dbi->expects($this->once())

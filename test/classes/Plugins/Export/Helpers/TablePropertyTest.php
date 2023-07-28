@@ -6,8 +6,10 @@ namespace PhpMyAdmin\Tests\Plugins\Export\Helpers;
 
 use PhpMyAdmin\Plugins\Export\Helpers\TableProperty;
 use PhpMyAdmin\Tests\AbstractTestCase;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 
-/** @covers \PhpMyAdmin\Plugins\Export\Helpers\TableProperty */
+#[CoversClass(TableProperty::class)]
 class TablePropertyTest extends AbstractTestCase
 {
     protected TableProperty $object;
@@ -20,14 +22,7 @@ class TablePropertyTest extends AbstractTestCase
         parent::setUp();
 
         $GLOBALS['server'] = 0;
-        $row = [
-            ' name ',
-            'int ',
-            true,
-            ' PRI',
-            '0',
-            'mysql',
-        ];
+        $row = [' name ', 'int ', true, ' PRI', '0', 'mysql'];
         $this->object = new TableProperty($row);
     }
 
@@ -76,9 +71,8 @@ class TablePropertyTest extends AbstractTestCase
     /**
      * @param string $nullable nullable value
      * @param string $expected expected output
-     *
-     * @dataProvider isNotNullProvider
      */
+    #[DataProvider('isNotNullProvider')]
     public function testIsNotNull(string $nullable, string $expected): void
     {
         $this->object->nullable = $nullable;
@@ -92,32 +86,18 @@ class TablePropertyTest extends AbstractTestCase
     /**
      * Data provider for testIsNotNull
      *
-     * @return array Test Data
+     * @return mixed[] Test Data
      */
     public static function isNotNullProvider(): array
     {
-        return [
-            [
-                'NO',
-                'true',
-            ],
-            [
-                '',
-                'false',
-            ],
-            [
-                'no',
-                'false',
-            ],
-        ];
+        return [['NO', 'true'], ['', 'false'], ['no', 'false']];
     }
 
     /**
      * @param string $key      key value
      * @param string $expected expected output
-     *
-     * @dataProvider isUniqueProvider
      */
+    #[DataProvider('isUniqueProvider')]
     public function testIsUnique(string $key, string $expected): void
     {
         $this->object->key = $key;
@@ -131,40 +111,18 @@ class TablePropertyTest extends AbstractTestCase
     /**
      * Data provider for testIsUnique
      *
-     * @return array Test Data
+     * @return mixed[] Test Data
      */
     public static function isUniqueProvider(): array
     {
-        return [
-            [
-                'PRI',
-                'true',
-            ],
-            [
-                'UNI',
-                'true',
-            ],
-            [
-                '',
-                'false',
-            ],
-            [
-                'pri',
-                'false',
-            ],
-            [
-                'uni',
-                'false',
-            ],
-        ];
+        return [['PRI', 'true'], ['UNI', 'true'], ['', 'false'], ['pri', 'false'], ['uni', 'false']];
     }
 
     /**
      * @param string $type     type value
      * @param string $expected expected output
-     *
-     * @dataProvider getDotNetPrimitiveTypeProvider
      */
+    #[DataProvider('getDotNetPrimitiveTypeProvider')]
     public function testGetDotNetPrimitiveType(string $type, string $expected): void
     {
         $this->object->type = $type;
@@ -178,64 +136,30 @@ class TablePropertyTest extends AbstractTestCase
     /**
      * Data provider for testGetDotNetPrimitiveType
      *
-     * @return array Test Data
+     * @return mixed[] Test Data
      */
     public static function getDotNetPrimitiveTypeProvider(): array
     {
         return [
-            [
-                'int',
-                'int',
-            ],
-            [
-                'long',
-                'long',
-            ],
-            [
-                'char',
-                'string',
-            ],
-            [
-                'varchar',
-                'string',
-            ],
-            [
-                'text',
-                'string',
-            ],
-            [
-                'longtext',
-                'string',
-            ],
-            [
-                'tinyint',
-                'bool',
-            ],
-            [
-                'datetime',
-                'DateTime',
-            ],
-            [
-                '',
-                'unknown',
-            ],
-            [
-                'dummy',
-                'unknown',
-            ],
-            [
-                'INT',
-                'unknown',
-            ],
+            ['int', 'int'],
+            ['long', 'long'],
+            ['char', 'string'],
+            ['varchar', 'string'],
+            ['text', 'string'],
+            ['longtext', 'string'],
+            ['tinyint', 'bool'],
+            ['datetime', 'DateTime'],
+            ['', 'unknown'],
+            ['dummy', 'unknown'],
+            ['INT', 'unknown'],
         ];
     }
 
     /**
      * @param string $type     type value
      * @param string $expected expected output
-     *
-     * @dataProvider getDotNetObjectTypeProvider
      */
+    #[DataProvider('getDotNetObjectTypeProvider')]
     public function testGetDotNetObjectType(string $type, string $expected): void
     {
         $this->object->type = $type;
@@ -249,55 +173,22 @@ class TablePropertyTest extends AbstractTestCase
     /**
      * Data provider for testGetDotNetObjectType
      *
-     * @return array Test Data
+     * @return mixed[] Test Data
      */
     public static function getDotNetObjectTypeProvider(): array
     {
         return [
-            [
-                'int',
-                'Int32',
-            ],
-            [
-                'long',
-                'Long',
-            ],
-            [
-                'char',
-                'String',
-            ],
-            [
-                'varchar',
-                'String',
-            ],
-            [
-                'text',
-                'String',
-            ],
-            [
-                'longtext',
-                'String',
-            ],
-            [
-                'tinyint',
-                'Boolean',
-            ],
-            [
-                'datetime',
-                'DateTime',
-            ],
-            [
-                '',
-                'Unknown',
-            ],
-            [
-                'dummy',
-                'Unknown',
-            ],
-            [
-                'INT',
-                'Unknown',
-            ],
+            ['int', 'Int32'],
+            ['long', 'Long'],
+            ['char', 'String'],
+            ['varchar', 'String'],
+            ['text', 'String'],
+            ['longtext', 'String'],
+            ['tinyint', 'Boolean'],
+            ['datetime', 'DateTime'],
+            ['', 'Unknown'],
+            ['dummy', 'Unknown'],
+            ['INT', 'Unknown'],
         ];
     }
 

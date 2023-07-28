@@ -30,7 +30,7 @@ use function str_contains;
  */
 class DatabasesController extends AbstractController
 {
-    /** @var array array of database details */
+    /** @var mixed[] array of database details */
     private array $databases = [];
 
     /** @var int number of databases */
@@ -194,10 +194,10 @@ class DatabasesController extends AbstractController
     }
 
     /**
-     * @param array $primaryInfo
-     * @param array $replicaInfo
+     * @param mixed[] $primaryInfo
+     * @param mixed[] $replicaInfo
      *
-     * @return array
+     * @return mixed[]
      */
     private function getDatabases(array $primaryInfo, array $replicaInfo): array
     {
@@ -272,50 +272,23 @@ class DatabasesController extends AbstractController
             ];
         }
 
-        return [
-            'databases' => $databases,
-            'total_statistics' => $totalStatistics,
-        ];
+        return ['databases' => $databases, 'total_statistics' => $totalStatistics];
     }
 
     /**
      * Prepares the statistics columns
      *
-     * @return array
+     * @return mixed[]
      */
     private function getStatisticsColumns(): array
     {
         return [
-            'SCHEMA_TABLES' => [
-                'title' => __('Tables'),
-                'format' => 'number',
-                'raw' => 0,
-            ],
-            'SCHEMA_TABLE_ROWS' => [
-                'title' => __('Rows'),
-                'format' => 'number',
-                'raw' => 0,
-            ],
-            'SCHEMA_DATA_LENGTH' => [
-                'title' => __('Data'),
-                'format' => 'byte',
-                'raw' => 0,
-            ],
-            'SCHEMA_INDEX_LENGTH' => [
-                'title' => __('Indexes'),
-                'format' => 'byte',
-                'raw' => 0,
-            ],
-            'SCHEMA_LENGTH' => [
-                'title' => __('Total'),
-                'format' => 'byte',
-                'raw' => 0,
-            ],
-            'SCHEMA_DATA_FREE' => [
-                'title' => __('Overhead'),
-                'format' => 'byte',
-                'raw' => 0,
-            ],
+            'SCHEMA_TABLES' => ['title' => __('Tables'), 'format' => 'number', 'raw' => 0],
+            'SCHEMA_TABLE_ROWS' => ['title' => __('Rows'), 'format' => 'number', 'raw' => 0],
+            'SCHEMA_DATA_LENGTH' => ['title' => __('Data'), 'format' => 'byte', 'raw' => 0],
+            'SCHEMA_INDEX_LENGTH' => ['title' => __('Indexes'), 'format' => 'byte', 'raw' => 0],
+            'SCHEMA_LENGTH' => ['title' => __('Total'), 'format' => 'byte', 'raw' => 0],
+            'SCHEMA_DATA_FREE' => ['title' => __('Overhead'), 'format' => 'byte', 'raw' => 0],
         ];
     }
 }

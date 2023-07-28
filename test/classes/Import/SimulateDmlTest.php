@@ -12,8 +12,10 @@ use PhpMyAdmin\SqlParser\Parser;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\DbiDummy;
 use PhpMyAdmin\Url;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 
-/** @covers \PhpMyAdmin\Import\SimulateDml */
+#[CoversClass(SimulateDml::class)]
 class SimulateDmlTest extends AbstractTestCase
 {
     protected DatabaseInterface $dbi;
@@ -29,7 +31,7 @@ class SimulateDmlTest extends AbstractTestCase
         $GLOBALS['dbi'] = $this->dbi;
     }
 
-    /** @dataProvider providerForTestGetMatchedRows */
+    #[DataProvider('providerForTestGetMatchedRows')]
     public function testGetMatchedRows(string $sqlQuery, string $simulatedQuery): void
     {
         $GLOBALS['db'] = 'PMA';
@@ -64,10 +66,7 @@ class SimulateDmlTest extends AbstractTestCase
                 'UPDATE `table_1` SET `id` = 20 WHERE `id` > 10',
                 'SELECT `id` FROM `table_1` WHERE `id` > 10 AND (`id` <> 20)',
             ],
-            'delete statement' => [
-                'DELETE FROM `table_1` WHERE `id` > 10',
-                'SELECT * FROM `table_1` WHERE `id` > 10',
-            ],
+            'delete statement' => ['DELETE FROM `table_1` WHERE `id` > 10', 'SELECT * FROM `table_1` WHERE `id` > 10'],
         ];
     }
 }

@@ -37,11 +37,11 @@ class Footer
      * Whether to only close the BODY and HTML tags
      * or also include scripts, errors and links
      */
-    private bool $isMinimal;
+    private bool $isMinimal = false;
     /**
      * Whether to display anything
      */
-    private bool $isEnabled;
+    private bool $isEnabled = true;
 
     private Relation $relation;
 
@@ -53,9 +53,7 @@ class Footer
     public function __construct()
     {
         $this->template = new Template();
-        $this->isEnabled = true;
         $this->scripts = new Scripts();
-        $this->isMinimal = false;
         $this->relation = new Relation($GLOBALS['dbi']);
     }
 
@@ -78,8 +76,8 @@ class Footer
     /**
      * Remove recursions and iterator objects from an object
      *
-     * @param mixed $object Object to clean
-     * @param array $stack  Stack used to keep track of recursion, need not be passed for the first time
+     * @param mixed   $object Object to clean
+     * @param mixed[] $stack  Stack used to keep track of recursion, need not be passed for the first time
      *
      * @return mixed Reference passed object
      */
@@ -131,7 +129,7 @@ class Footer
         $GLOBALS['server'] ??= null;
 
         $params = [];
-        $params['route'] = Common::getRequest()->getRoute();
+        $params['route'] = Application::getRequest()->getRoute();
 
         if (isset($GLOBALS['db']) && strlen($GLOBALS['db']) > 0) {
             $params['db'] = $GLOBALS['db'];

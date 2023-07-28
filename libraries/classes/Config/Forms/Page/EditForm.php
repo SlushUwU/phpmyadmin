@@ -13,12 +13,9 @@ use PhpMyAdmin\Config\Forms\User\MainForm;
 
 class EditForm extends BaseForm
 {
-    /** @return array */
+    /** @return mixed[] */
     public static function getForms(): array
     {
-        return [
-            'Edit' => MainForm::getForms()['Edit'],
-            'Text_fields' => FeaturesForm::getForms()['Text_fields'],
-        ];
+        return ['Edit' => MainForm::getForms()['Edit'], 'Text_fields' => FeaturesForm::getForms()['Text_fields']];
     }
 }

@@ -6,6 +6,7 @@ namespace PhpMyAdmin\Tests;
 
 use PhpMyAdmin\Cache;
 use PhpMyAdmin\Config;
+use PhpMyAdmin\ConfigStorage\Relation;
 use PhpMyAdmin\Core;
 use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\Dbal\DbiExtension;
@@ -18,6 +19,7 @@ use PhpMyAdmin\Theme\ThemeManager;
 use PhpMyAdmin\Utils\HttpRequest;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
+use ReflectionProperty;
 
 use function array_keys;
 use function in_array;
@@ -82,6 +84,8 @@ abstract class AbstractTestCase extends TestCase
         // Config before DBI
         $this->setGlobalConfig();
         Cache::purge();
+
+        (new ReflectionProperty(Relation::class, 'cache'))->setValue(null, null);
     }
 
     protected function loadContainerBuilder(): void
@@ -102,14 +106,6 @@ abstract class AbstractTestCase extends TestCase
         $GLOBALS['containerBuilder']->setAlias('response', ResponseRenderer::class);
     }
 
-    protected function setResponseIsAjax(): void
-    {
-        /** @var ResponseRenderer $response */
-        $response = $GLOBALS['containerBuilder']->get(ResponseRenderer::class);
-
-        $response->setAjax(true);
-    }
-
     protected function getResponseHtmlResult(): string
     {
         /** @var ResponseRenderer $response */
@@ -118,6 +114,7 @@ abstract class AbstractTestCase extends TestCase
         return $response->getHTMLResult();
     }
 
+    /** @return mixed[] */
     protected function getResponseJsonResult(): array
     {
         /** @var ResponseRenderer $response */
@@ -163,7 +160,6 @@ abstract class AbstractTestCase extends TestCase
     protected function setGlobalConfig(): void
     {
         $GLOBALS['config'] = $this->createConfig();
-        $GLOBALS['config']->checkServers();
         $GLOBALS['config']->set('environment', 'development');
         $GLOBALS['cfg'] = $GLOBALS['config']->settings;
     }
@@ -216,7 +212,7 @@ abstract class AbstractTestCase extends TestCase
      * @param object|null $object     The object to inspect, pass null for static objects()
      * @param string      $className  The class name
      * @param string      $methodName The method name
-     * @param array       $params     The parameters for the invocation
+     * @param mixed[]     $params     The parameters for the invocation
      * @phpstan-param class-string $className
      *
      * @return mixed the output from the protected method.
@@ -238,7 +234,7 @@ abstract class AbstractTestCase extends TestCase
      * @param mixed       $value        The parameters for the invocation
      * @phpstan-param class-string $className
      */
-    protected function setProperty($object, string $className, string $propertyName, mixed $value): void
+    protected function setProperty(object|null $object, string $className, string $propertyName, mixed $value): void
     {
         $class = new ReflectionClass($className);
         $property = $class->getProperty($propertyName);

@@ -5,15 +5,15 @@ declare(strict_types=1);
 namespace PhpMyAdmin;
 
 use PhpMyAdmin\Config\Settings;
+use PhpMyAdmin\Config\Settings\Server;
 use PhpMyAdmin\Dbal\Connection;
 use PhpMyAdmin\Exceptions\ConfigException;
+use PhpMyAdmin\Routing\Routing;
 use PhpMyAdmin\Theme\ThemeManager;
 use Throwable;
 
 use function __;
-use function array_filter;
 use function array_key_last;
-use function array_merge;
 use function array_replace_recursive;
 use function array_slice;
 use function count;
@@ -32,8 +32,8 @@ use function implode;
 use function ini_get;
 use function intval;
 use function is_array;
+use function is_bool;
 use function is_dir;
-use function is_int;
 use function is_numeric;
 use function is_readable;
 use function is_string;
@@ -52,7 +52,6 @@ use function realpath;
 use function rtrim;
 use function setcookie;
 use function sprintf;
-use function str_contains;
 use function stripos;
 use function strtolower;
 use function substr;
@@ -60,7 +59,6 @@ use function sys_get_temp_dir;
 use function time;
 use function trim;
 
-use const ARRAY_FILTER_USE_KEY;
 use const DIRECTORY_SEPARATOR;
 use const PHP_OS;
 use const PHP_URL_PATH;
@@ -73,14 +71,14 @@ use const PHP_URL_SCHEME;
  */
 class Config
 {
-    /** @var array   default configuration settings */
-    public array $default = [];
+    /** @var mixed[]   default configuration settings */
+    public array $default;
 
-    /** @var array   configuration settings, without user preferences applied */
-    public array $baseSettings = [];
+    /** @var mixed[]   configuration settings, without user preferences applied */
+    public array $baseSettings;
 
-    /** @var array   configuration settings */
-    public array $settings = [];
+    /** @var mixed[]   configuration settings */
+    public array $settings;
 
     /** @var string  config source */
     public string $source = '';
@@ -90,16 +88,22 @@ class Config
 
     public bool $errorConfigFile = false;
 
-    /** @var array */
-    public array $defaultServer = [];
+    private bool $isHttps = false;
 
-    private bool $isHttps;
+    public Settings $config;
+    /** @var int<0, max> */
+    public int $server = 0;
 
-    private Settings|null $config = null;
+    /** @var array<string,string|null> $tempDir */
+    private static array $tempDir = [];
 
     public function __construct()
     {
-        $this->isHttps = $this->isHttps();
+        $this->config = new Settings([]);
+        $config = $this->config->asArray();
+        $this->default = $config;
+        $this->settings = $config;
+        $this->baseSettings = $config;
     }
 
     /**
@@ -109,7 +113,7 @@ class Config
      */
     public function loadAndCheck(string|null $source = null): void
     {
-        $this->settings = ['is_setup' => false];
+        $this->settings['is_setup'] = false;
 
         // functions need to refresh in case of config file changed goes in PhpMyAdmin\Config::load()
         $this->load($source);
@@ -117,6 +121,7 @@ class Config
         // other settings, independent of config file, comes in
         $this->checkSystem();
 
+        $this->isHttps = $this->isHttps();
         $this->baseSettings = $this->settings;
     }
 
@@ -156,19 +161,19 @@ class Config
     /**
      * Sets the client platform based on user agent
      *
-     * @param string $user_agent the user agent
+     * @param string $userAgent the user agent
      */
-    private function setClientPlatform(string $user_agent): void
+    private function setClientPlatform(string $userAgent): void
     {
-        if (mb_strstr($user_agent, 'Win')) {
+        if (mb_strstr($userAgent, 'Win')) {
             $this->set('PMA_USR_OS', 'Win');
-        } elseif (mb_strstr($user_agent, 'Mac')) {
+        } elseif (mb_strstr($userAgent, 'Mac')) {
             $this->set('PMA_USR_OS', 'Mac');
-        } elseif (mb_strstr($user_agent, 'Linux')) {
+        } elseif (mb_strstr($userAgent, 'Linux')) {
             $this->set('PMA_USR_OS', 'Linux');
-        } elseif (mb_strstr($user_agent, 'Unix')) {
+        } elseif (mb_strstr($userAgent, 'Unix')) {
             $this->set('PMA_USR_OS', 'Unix');
-        } elseif (mb_strstr($user_agent, 'OS/2')) {
+        } elseif (mb_strstr($userAgent, 'OS/2')) {
             $this->set('PMA_USR_OS', 'OS/2');
         } else {
             $this->set('PMA_USR_OS', 'Other');
@@ -183,60 +188,60 @@ class Config
      */
     public function checkClient(): void
     {
-        $HTTP_USER_AGENT = '';
+        $httpUserAgent = '';
         if (Core::getenv('HTTP_USER_AGENT')) {
-            $HTTP_USER_AGENT = Core::getenv('HTTP_USER_AGENT');
+            $httpUserAgent = Core::getenv('HTTP_USER_AGENT');
         }
 
         // 1. Platform
-        $this->setClientPlatform($HTTP_USER_AGENT);
+        $this->setClientPlatform($httpUserAgent);
 
         // 2. browser and version
         // (must check everything else before Mozilla)
 
-        $is_mozilla = preg_match('@Mozilla/([0-9]\.[0-9]{1,2})@', $HTTP_USER_AGENT, $mozilla_version);
+        $isMozilla = preg_match('@Mozilla/([0-9]\.[0-9]{1,2})@', $httpUserAgent, $mozillaVersion);
 
-        if (preg_match('@Opera(/| )([0-9]\.[0-9]{1,2})@', $HTTP_USER_AGENT, $log_version)) {
-            $this->set('PMA_USR_BROWSER_VER', $log_version[2]);
+        if (preg_match('@Opera(/| )([0-9]\.[0-9]{1,2})@', $httpUserAgent, $logVersion)) {
+            $this->set('PMA_USR_BROWSER_VER', $logVersion[2]);
             $this->set('PMA_USR_BROWSER_AGENT', 'OPERA');
-        } elseif (preg_match('@(MS)?IE ([0-9]{1,2}\.[0-9]{1,2})@', $HTTP_USER_AGENT, $log_version)) {
-            $this->set('PMA_USR_BROWSER_VER', $log_version[2]);
+        } elseif (preg_match('@(MS)?IE ([0-9]{1,2}\.[0-9]{1,2})@', $httpUserAgent, $logVersion)) {
+            $this->set('PMA_USR_BROWSER_VER', $logVersion[2]);
             $this->set('PMA_USR_BROWSER_AGENT', 'IE');
-        } elseif (preg_match('@Trident/(7)\.0@', $HTTP_USER_AGENT, $log_version)) {
-            $this->set('PMA_USR_BROWSER_VER', intval($log_version[1]) + 4);
+        } elseif (preg_match('@Trident/(7)\.0@', $httpUserAgent, $logVersion)) {
+            $this->set('PMA_USR_BROWSER_VER', intval($logVersion[1]) + 4);
             $this->set('PMA_USR_BROWSER_AGENT', 'IE');
-        } elseif (preg_match('@OmniWeb/([0-9]{1,3})@', $HTTP_USER_AGENT, $log_version)) {
-            $this->set('PMA_USR_BROWSER_VER', $log_version[1]);
+        } elseif (preg_match('@OmniWeb/([0-9]{1,3})@', $httpUserAgent, $logVersion)) {
+            $this->set('PMA_USR_BROWSER_VER', $logVersion[1]);
             $this->set('PMA_USR_BROWSER_AGENT', 'OMNIWEB');
             // Konqueror 2.2.2 says Konqueror/2.2.2
             // Konqueror 3.0.3 says Konqueror/3
-        } elseif (preg_match('@(Konqueror/)(.*)(;)@', $HTTP_USER_AGENT, $log_version)) {
-            $this->set('PMA_USR_BROWSER_VER', $log_version[2]);
+        } elseif (preg_match('@(Konqueror/)(.*)(;)@', $httpUserAgent, $logVersion)) {
+            $this->set('PMA_USR_BROWSER_VER', $logVersion[2]);
             $this->set('PMA_USR_BROWSER_AGENT', 'KONQUEROR');
             // must check Chrome before Safari
-        } elseif ($is_mozilla && preg_match('@Chrome/([0-9.]*)@', $HTTP_USER_AGENT, $log_version)) {
-            $this->set('PMA_USR_BROWSER_VER', $log_version[1]);
+        } elseif ($isMozilla && preg_match('@Chrome/([0-9.]*)@', $httpUserAgent, $logVersion)) {
+            $this->set('PMA_USR_BROWSER_VER', $logVersion[1]);
             $this->set('PMA_USR_BROWSER_AGENT', 'CHROME');
             // newer Safari
-        } elseif ($is_mozilla && preg_match('@Version/(.*) Safari@', $HTTP_USER_AGENT, $log_version)) {
-            $this->set('PMA_USR_BROWSER_VER', $log_version[1]);
+        } elseif ($isMozilla && preg_match('@Version/(.*) Safari@', $httpUserAgent, $logVersion)) {
+            $this->set('PMA_USR_BROWSER_VER', $logVersion[1]);
             $this->set('PMA_USR_BROWSER_AGENT', 'SAFARI');
             // older Safari
-        } elseif ($is_mozilla && preg_match('@Safari/([0-9]*)@', $HTTP_USER_AGENT, $log_version)) {
-            $this->set('PMA_USR_BROWSER_VER', $mozilla_version[1] . '.' . $log_version[1]);
+        } elseif ($isMozilla && preg_match('@Safari/([0-9]*)@', $httpUserAgent, $logVersion)) {
+            $this->set('PMA_USR_BROWSER_VER', $mozillaVersion[1] . '.' . $logVersion[1]);
             $this->set('PMA_USR_BROWSER_AGENT', 'SAFARI');
             // Firefox
         } elseif (
-            ! mb_strstr($HTTP_USER_AGENT, 'compatible')
-            && preg_match('@Firefox/([\w.]+)@', $HTTP_USER_AGENT, $log_version)
+            ! mb_strstr($httpUserAgent, 'compatible')
+            && preg_match('@Firefox/([\w.]+)@', $httpUserAgent, $logVersion)
         ) {
-            $this->set('PMA_USR_BROWSER_VER', $log_version[1]);
+            $this->set('PMA_USR_BROWSER_VER', $logVersion[1]);
             $this->set('PMA_USR_BROWSER_AGENT', 'FIREFOX');
-        } elseif (preg_match('@rv:1\.9(.*)Gecko@', $HTTP_USER_AGENT)) {
+        } elseif (preg_match('@rv:1\.9(.*)Gecko@', $httpUserAgent)) {
             $this->set('PMA_USR_BROWSER_VER', '1.9');
             $this->set('PMA_USR_BROWSER_AGENT', 'GECKO');
-        } elseif ($is_mozilla) {
-            $this->set('PMA_USR_BROWSER_VER', $mozilla_version[1]);
+        } elseif ($isMozilla) {
+            $this->set('PMA_USR_BROWSER_VER', $mozillaVersion[1]);
             $this->set('PMA_USR_BROWSER_AGENT', 'MOZILLA');
         } else {
             $this->set('PMA_USR_BROWSER_VER', 0);
@@ -268,8 +273,8 @@ class Config
         }
 
         if (function_exists('gd_info')) {
-            $gd_nfo = gd_info();
-            if (mb_strstr($gd_nfo['GD Version'], '2.')) {
+            $gdInfo = gd_info();
+            if (mb_strstr($gdInfo['GD Version'], '2.')) {
                 $this->set('PMA_IS_GD2', 1);
 
                 return;
@@ -321,22 +326,6 @@ class Config
     }
 
     /**
-     * loads default values from default source
-     */
-    public function loadDefaults(): void
-    {
-        $settings = new Settings([]);
-        $cfg = $settings->asArray();
-
-        // phpcs:ignore Squiz.NamingConventions.ValidVariableName.MemberNotCamelCaps
-        $this->defaultServer = $settings->Servers[1]->asArray();
-        unset($cfg['Servers']);
-
-        $this->default = $cfg;
-        $this->settings = array_replace_recursive($this->settings, $cfg);
-    }
-
-    /**
      * loads configuration from $source, usually the config file
      * should be called on object creation
      *
@@ -346,8 +335,6 @@ class Config
      */
     public function load(string|null $source = null): bool
     {
-        $this->loadDefaults();
-
         if ($source !== null) {
             $this->setSource($source);
         }
@@ -356,6 +343,7 @@ class Config
             return false;
         }
 
+        /** @var mixed $cfg */
         $cfg = [];
 
         /**
@@ -371,7 +359,7 @@ class Config
         ob_start();
         try {
             /** @psalm-suppress UnresolvableInclude */
-            $eval_result = include $this->getSource();
+            $evalResult = include $this->getSource();
         } catch (Throwable) {
             throw new ConfigException('Failed to load phpMyAdmin configuration.');
         }
@@ -382,31 +370,18 @@ class Config
             error_reporting($oldErrorReporting);
         }
 
-        if ($eval_result === false) {
+        if ($evalResult === false) {
             $this->errorConfigFile = true;
         } else {
             $this->errorConfigFile = false;
             $this->sourceMtime = (int) filemtime($this->getSource());
         }
 
-        /**
-         * Ignore keys with / as we do not use these
-         *
-         * These can be confusing for user configuration layer as it
-         * flatten array using / and thus don't see difference between
-         * $cfg['Export/method'] and $cfg['Export']['method'], while rest
-         * of the code uses the setting only in latter form.
-         *
-         * This could be removed once we consistently handle both values
-         * in the functional code as well.
-         */
-        $cfg = array_filter(
-            $cfg,
-            static fn (string $key): bool => ! str_contains($key, '/'),
-            ARRAY_FILTER_USE_KEY,
-        );
+        if (is_array($cfg)) {
+            $this->config = new Settings($cfg);
+        }
 
-        $this->settings = array_replace_recursive($this->settings, $cfg);
+        $this->settings = array_replace_recursive($this->settings, $this->config->asArray());
 
         return true;
     }
@@ -416,53 +391,54 @@ class Config
      */
     private function setConnectionCollation(): void
     {
-        $collation_connection = $this->get('DefaultConnectionCollation');
-        if (empty($collation_connection) || $collation_connection == $GLOBALS['collation_connection']) {
+        $collationConnection = $this->get('DefaultConnectionCollation');
+        if (empty($collationConnection) || $collationConnection == $GLOBALS['collation_connection']) {
             return;
         }
 
-        $GLOBALS['dbi']->setCollation($collation_connection);
+        $GLOBALS['dbi']->setCollation($collationConnection);
     }
 
     /**
      * Loads user preferences and merges them with current config
      * must be called after control connection has been established
      */
-    public function loadUserPreferences(bool $isMinimumCommon = false): void
+    public function loadUserPreferences(ThemeManager $themeManager, bool $isMinimumCommon = false): void
     {
         // index.php should load these settings, so that phpmyadmin.css.php
         // will have everything available in session cache
         $server = $GLOBALS['server'] ?? (! empty($GLOBALS['cfg']['ServerDefault'])
                 ? $GLOBALS['cfg']['ServerDefault']
                 : 0);
-        $cache_key = 'server_' . $server;
+        $cacheKey = 'server_' . $server;
         if ($server > 0 && ! $isMinimumCommon) {
             // cache user preferences, use database only when needed
             if (
-                ! isset($_SESSION['cache'][$cache_key]['userprefs'])
-                || $_SESSION['cache'][$cache_key]['config_mtime'] < $this->sourceMtime
+                ! isset($_SESSION['cache'][$cacheKey]['userprefs'])
+                || $_SESSION['cache'][$cacheKey]['config_mtime'] < $this->sourceMtime
             ) {
                 $userPreferences = new UserPreferences($GLOBALS['dbi']);
                 $prefs = $userPreferences->load();
-                $_SESSION['cache'][$cache_key]['userprefs'] = $userPreferences->apply($prefs['config_data']);
-                $_SESSION['cache'][$cache_key]['userprefs_mtime'] = $prefs['mtime'];
-                $_SESSION['cache'][$cache_key]['userprefs_type'] = $prefs['type'];
-                $_SESSION['cache'][$cache_key]['config_mtime'] = $this->sourceMtime;
+                $_SESSION['cache'][$cacheKey]['userprefs'] = $userPreferences->apply($prefs['config_data']);
+                $_SESSION['cache'][$cacheKey]['userprefs_mtime'] = $prefs['mtime'];
+                $_SESSION['cache'][$cacheKey]['userprefs_type'] = $prefs['type'];
+                $_SESSION['cache'][$cacheKey]['config_mtime'] = $this->sourceMtime;
             }
-        } elseif ($server == 0 || ! isset($_SESSION['cache'][$cache_key]['userprefs'])) {
+        } elseif ($server == 0 || ! isset($_SESSION['cache'][$cacheKey]['userprefs'])) {
             $this->set('user_preferences', false);
 
             return;
         }
 
-        $config_data = $_SESSION['cache'][$cache_key]['userprefs'];
+        $configData = $_SESSION['cache'][$cacheKey]['userprefs'];
         // type is 'db' or 'session'
-        $this->set('user_preferences', $_SESSION['cache'][$cache_key]['userprefs_type']);
-        $this->set('user_preferences_mtime', $_SESSION['cache'][$cache_key]['userprefs_mtime']);
+        $this->set('user_preferences', $_SESSION['cache'][$cacheKey]['userprefs_type']);
+        $this->set('user_preferences_mtime', $_SESSION['cache'][$cacheKey]['userprefs_mtime']);
 
         // load config array
-        $this->settings = array_replace_recursive($this->settings, $config_data);
-        $GLOBALS['cfg'] = array_replace_recursive($GLOBALS['cfg'], $config_data);
+        $this->settings = array_replace_recursive($this->settings, $configData);
+        $GLOBALS['cfg'] = array_replace_recursive($GLOBALS['cfg'], $configData);
+        $this->config = new Settings($this->settings);
 
         if ($isMinimumCommon) {
             return;
@@ -473,50 +449,45 @@ class Config
         // in frames
 
         // save theme
-        $tmanager = ThemeManager::getInstance();
-        if ($tmanager->getThemeCookie() || isset($_REQUEST['set_theme'])) {
+        if ($themeManager->getThemeCookie() || isset($_REQUEST['set_theme'])) {
             if (
-                (! isset($config_data['ThemeDefault'])
-                && $tmanager->theme->getId() !== 'original')
-                || isset($config_data['ThemeDefault'])
-                && $config_data['ThemeDefault'] != $tmanager->theme->getId()
+                (! isset($configData['ThemeDefault'])
+                && $themeManager->theme->getId() !== 'original')
+                || isset($configData['ThemeDefault'])
+                && $configData['ThemeDefault'] != $themeManager->theme->getId()
             ) {
                 $this->setUserValue(
                     null,
                     'ThemeDefault',
-                    $tmanager->theme->getId(),
+                    $themeManager->theme->getId(),
                     'original',
                 );
             }
-        } else {
+        } elseif (
+            $this->settings['ThemeDefault'] != $themeManager->theme->getId()
+            && $themeManager->checkTheme($this->settings['ThemeDefault'])
+        ) {
             // no cookie - read default from settings
-            if (
-                $this->settings['ThemeDefault'] != $tmanager->theme->getId()
-                && $tmanager->checkTheme($this->settings['ThemeDefault'])
-            ) {
-                $tmanager->setActiveTheme($this->settings['ThemeDefault']);
-                $tmanager->setThemeCookie();
-            }
+            $themeManager->setActiveTheme($this->settings['ThemeDefault']);
+            $themeManager->setThemeCookie();
         }
 
         // save language
         if ($this->issetCookie('pma_lang') || isset($_POST['lang'])) {
             if (
-                (! isset($config_data['lang'])
+                (! isset($configData['lang'])
                 && $GLOBALS['lang'] !== 'en')
-                || isset($config_data['lang'])
-                && $GLOBALS['lang'] != $config_data['lang']
+                || isset($configData['lang'])
+                && $GLOBALS['lang'] != $configData['lang']
             ) {
                 $this->setUserValue(null, 'lang', $GLOBALS['lang'], 'en');
             }
-        } else {
+        } elseif (isset($configData['lang'])) {
             // read language from settings
-            if (isset($config_data['lang'])) {
-                $language = LanguageManager::getInstance()->getLanguage($config_data['lang']);
-                if ($language !== false) {
-                    $language->activate();
-                    $this->setCookie('pma_lang', $language->getCode());
-                }
+            $language = LanguageManager::getInstance()->getLanguage($configData['lang']);
+            if ($language !== false) {
+                $language->activate();
+                $this->setCookie('pma_lang', $language->getCode());
             }
         }
 
@@ -532,42 +503,42 @@ class Config
      * global config and added to a update queue, which is processed
      * by {@link loadUserPreferences()}
      *
-     * @param string|null $cookie_name   can be null
-     * @param string      $cfg_path      configuration path
-     * @param string      $new_cfg_value new value
-     * @param string|null $default_value default value
+     * @param string|null $cookieName   can be null
+     * @param string      $cfgPath      configuration path
+     * @param mixed       $newCfgValue  new value
+     * @param string|null $defaultValue default value
      *
      * @return true|Message
      */
     public function setUserValue(
-        string|null $cookie_name,
-        string $cfg_path,
-        string $new_cfg_value,
-        string|null $default_value = null,
+        string|null $cookieName,
+        string $cfgPath,
+        mixed $newCfgValue,
+        string|null $defaultValue = null,
     ): bool|Message {
         $userPreferences = new UserPreferences($GLOBALS['dbi']);
         $result = true;
         // use permanent user preferences if possible
-        $prefs_type = $this->get('user_preferences');
-        if ($prefs_type) {
-            if ($default_value === null) {
-                $default_value = Core::arrayRead($cfg_path, $this->default);
+        $prefsType = $this->get('user_preferences');
+        if ($prefsType) {
+            if ($defaultValue === null) {
+                $defaultValue = Core::arrayRead($cfgPath, $this->default);
             }
 
-            $result = $userPreferences->persistOption($cfg_path, $new_cfg_value, $default_value);
+            $result = $userPreferences->persistOption($cfgPath, $newCfgValue, $defaultValue);
         }
 
-        if ($prefs_type !== 'db' && $cookie_name) {
+        if ($prefsType !== 'db' && $cookieName) {
             // fall back to cookies
-            if ($default_value === null) {
-                $default_value = Core::arrayRead($cfg_path, $this->settings);
+            if ($defaultValue === null) {
+                $defaultValue = Core::arrayRead($cfgPath, $this->settings);
             }
 
-            $this->setCookie($cookie_name, $new_cfg_value, $default_value);
+            $this->setCookie($cookieName, (string) $newCfgValue, $defaultValue);
         }
 
-        Core::arrayWrite($cfg_path, $GLOBALS['cfg'], $new_cfg_value);
-        Core::arrayWrite($cfg_path, $this->settings, $new_cfg_value);
+        Core::arrayWrite($cfgPath, $GLOBALS['cfg'], $newCfgValue);
+        Core::arrayWrite($cfgPath, $this->settings, $newCfgValue);
 
         return $result;
     }
@@ -575,24 +546,24 @@ class Config
     /**
      * Reads value stored by {@link setUserValue()}
      *
-     * @param string $cookie_name cookie name
-     * @param mixed  $cfg_value   config value
+     * @param string $cookieName cookie name
+     * @param mixed  $cfgValue   config value
      */
-    public function getUserValue(string $cookie_name, mixed $cfg_value): mixed
+    public function getUserValue(string $cookieName, mixed $cfgValue): mixed
     {
-        $cookie_exists = ! empty($this->getCookie($cookie_name));
-        $prefs_type = $this->get('user_preferences');
-        if ($prefs_type === 'db') {
+        $cookieExists = ! empty($this->getCookie($cookieName));
+        $prefsType = $this->get('user_preferences');
+        if ($prefsType === 'db') {
             // permanent user preferences value exists, remove cookie
-            if ($cookie_exists) {
-                $this->removeCookie($cookie_name);
+            if ($cookieExists) {
+                $this->removeCookie($cookieName);
             }
-        } elseif ($cookie_exists) {
-            return $this->getCookie($cookie_name);
+        } elseif ($cookieExists) {
+            return $this->getCookie($cookieName);
         }
 
         // return value from $cfg array
-        return $cfg_value;
+        return $cfgValue;
     }
 
     /**
@@ -719,6 +690,7 @@ class Config
         }
 
         $this->settings[$setting] = $value;
+        $this->config = new Settings($this->settings);
     }
 
     /**
@@ -783,57 +755,50 @@ class Config
      */
     public function isHttps(): bool
     {
-        $is_https = $this->get('is_https');
-        if ($is_https !== null) {
-            return (bool) $is_https;
+        /** @var mixed $isHttps */
+        $isHttps = $this->get('is_https');
+        if (is_bool($isHttps)) {
+            return $isHttps;
         }
 
         $url = $this->get('PmaAbsoluteUri');
 
-        $is_https = false;
+        $isHttps = false;
         if (! empty($url) && parse_url($url, PHP_URL_SCHEME) === 'https') {
-            $is_https = true;
+            $isHttps = true;
         } elseif (strtolower(Core::getenv('HTTP_SCHEME')) === 'https') {
-            $is_https = true;
+            $isHttps = true;
         } elseif (strtolower(Core::getenv('HTTPS')) === 'on') {
-            $is_https = true;
+            $isHttps = true;
         } elseif (strtolower(substr(Core::getenv('REQUEST_URI'), 0, 6)) === 'https:') {
-            $is_https = true;
+            $isHttps = true;
         } elseif (strtolower(Core::getenv('HTTP_HTTPS_FROM_LB')) === 'on') {
             // A10 Networks load balancer
-            $is_https = true;
+            $isHttps = true;
         } elseif (strtolower(Core::getenv('HTTP_FRONT_END_HTTPS')) === 'on') {
-            $is_https = true;
+            $isHttps = true;
         } elseif (strtolower(Core::getenv('HTTP_X_FORWARDED_PROTO')) === 'https') {
-            $is_https = true;
+            $isHttps = true;
         } elseif (strtolower(Core::getenv('HTTP_CLOUDFRONT_FORWARDED_PROTO')) === 'https') {
             // Amazon CloudFront, issue #15621
-            $is_https = true;
+            $isHttps = true;
         } elseif (Util::getProtoFromForwardedHeader(Core::getenv('HTTP_FORWARDED')) === 'https') {
             // RFC 7239 Forwarded header
-            $is_https = true;
+            $isHttps = true;
         } elseif (Core::getenv('SERVER_PORT') == 443) {
-            $is_https = true;
+            $isHttps = true;
         }
 
-        $this->set('is_https', $is_https);
+        $this->set('is_https', $isHttps);
 
-        return $is_https;
+        return $isHttps;
     }
 
     /**
      * Get phpMyAdmin root path
-     *
-     * @staticvar string|null $cookie_path
      */
     public function getRootPath(): string
     {
-        static $cookie_path = null;
-
-        if ($cookie_path !== null && ! defined('TESTSUITE')) {
-            return $cookie_path;
-        }
-
         $url = $this->get('PmaAbsoluteUri');
 
         if (! empty($url)) {
@@ -849,10 +814,7 @@ class Config
 
         $parsedUrlPath = Routing::getCleanPathInfo();
 
-        $parts = explode(
-            '/',
-            $parsedUrlPath,
-        );
+        $parts = explode('/', $parsedUrlPath);
 
         /* Remove filename */
         if (substr($parts[count($parts) - 1], -4) === '.php') {
@@ -1043,15 +1005,11 @@ class Config
      * Returns temporary dir path
      *
      * @param string $name Directory name
-     *
-     * @staticvar array<string,string|null> $temp_dir
      */
     public function getTempDir(string $name): string|null
     {
-        static $temp_dir = [];
-
-        if (isset($temp_dir[$name]) && ! defined('TESTSUITE')) {
-            return $temp_dir[$name];
+        if (isset(self::$tempDir[$name])) {
+            return self::$tempDir[$name];
         }
 
         $path = $this->get('TempDir');
@@ -1068,7 +1026,7 @@ class Config
             }
         }
 
-        $temp_dir[$name] = $path;
+        self::$tempDir[$name] = $path;
 
         return $path;
     }
@@ -1080,11 +1038,7 @@ class Config
     {
         // First try configured temp dir
         // Fallback to PHP upload_tmp_dir
-        $dirs = [
-            $this->getTempDir('upload'),
-            ini_get('upload_tmp_dir'),
-            sys_get_temp_dir(),
-        ];
+        $dirs = [$this->getTempDir('upload'), ini_get('upload_tmp_dir'), sys_get_temp_dir()];
 
         foreach ($dirs as $dir) {
             if (! empty($dir) && @is_writable($dir)) {
@@ -1095,34 +1049,27 @@ class Config
         return null;
     }
 
-    /**
-     * Selects server based on request parameters.
-     */
-    public function selectServer(): int
+    /** @return int<0, max> */
+    public function selectServer(mixed $serverParamFromRequest): int
     {
-        $request = empty($_REQUEST['server']) ? 0 : $_REQUEST['server'];
-
-        /**
-         * Lookup server by name
-         * (see FAQ 4.8)
-         */
-        if (! is_numeric($request)) {
-            foreach ($this->settings['Servers'] as $i => $server) {
-                $verboseToLower = mb_strtolower($server['verbose']);
-                $serverToLower = mb_strtolower($request);
-                if (
-                    $server['host'] == $request
-                    || $server['verbose'] == $request
-                    || $verboseToLower === $serverToLower
-                    || md5($verboseToLower) === $serverToLower
-                ) {
-                    $request = $i;
+        $serverNumber = 0;
+        if (is_numeric($serverParamFromRequest)) {
+            $serverNumber = (int) $serverParamFromRequest;
+            $serverNumber = $serverNumber >= 1 ? $serverNumber : 0;
+        } elseif (is_string($serverParamFromRequest) && $serverParamFromRequest !== '') {
+            /** Lookup server by name (see FAQ 4.8) */
+            foreach ($this->config->Servers as $i => $server) {
+                if ($server->host === $serverParamFromRequest || $server->verbose === $serverParamFromRequest) {
+                    $serverNumber = $i;
                     break;
                 }
-            }
 
-            if (is_string($request)) {
-                $request = 0;
+                $verboseToLower = mb_strtolower($server->verbose);
+                $serverToLower = mb_strtolower($serverParamFromRequest);
+                if ($verboseToLower === $serverToLower || md5($verboseToLower) === $serverToLower) {
+                    $serverNumber = $i;
+                    break;
+                }
             }
         }
 
@@ -1134,181 +1081,95 @@ class Config
          * present a choice of servers in the case that there are multiple servers
          * and '$this->settings['ServerDefault'] = 0' is set.
          */
-
-        if (is_numeric($request) && ! empty($request) && ! empty($this->settings['Servers'][$request])) {
-            $server = $request;
-            $this->settings['Server'] = $this->settings['Servers'][$server];
+        if (isset($this->config->Servers[$serverNumber])) {
+            $this->settings['Server'] = $this->config->Servers[$serverNumber]->asArray();
+        } elseif (isset($this->config->Servers[$this->config->ServerDefault])) {
+            $serverNumber = $this->config->ServerDefault;
+            $this->settings['Server'] = $this->config->Servers[$this->config->ServerDefault]->asArray();
         } else {
-            if (! empty($this->settings['Servers'][$this->settings['ServerDefault']])) {
-                $server = $this->settings['ServerDefault'];
-                $this->settings['Server'] = $this->settings['Servers'][$server];
-            } else {
-                $server = 0;
-                $this->settings['Server'] = [];
-            }
+            $serverNumber = 0;
+            $this->settings['Server'] = [];
         }
 
-        return (int) $server;
-    }
+        $this->server = $serverNumber;
 
-    /**
-     * Checks whether Servers configuration is valid and possibly apply fixups.
-     */
-    public function checkServers(): void
-    {
-        // Do we have some server?
-        if (! isset($this->settings['Servers']) || count($this->settings['Servers']) === 0) {
-            // No server => create one with defaults
-            $this->settings['Servers'] = [1 => $this->defaultServer];
-
-            return;
-        }
-
-        // We have server(s) => apply default configuration
-        $newServers = [];
-
-        foreach ($this->settings['Servers'] as $serverIndex => $server) {
-            // Detect wrong configuration
-            if (! is_int($serverIndex) || $serverIndex < 1 || ! is_array($server)) {
-                continue;
-            }
-
-            $server = array_merge($this->defaultServer, $server);
-
-            // Final solution to bug #582890
-            // If we are using a socket connection
-            // and there is nothing in the verbose server name
-            // or the host field, then generate a name for the server
-            // in the form of "Server 2", localized of course!
-            if (empty($server['host']) && empty($server['verbose'])) {
-                $server['verbose'] = sprintf(__('Server %d'), $serverIndex);
-            }
-
-            $newServers[$serverIndex] = $server;
-        }
-
-        if ($newServers === []) {
-            // Ensures it has at least one valid server config.
-            $newServers = [1 => $this->defaultServer];
-        }
-
-        $this->settings['Servers'] = $newServers;
+        return $this->server;
     }
 
     /**
      * Return connection parameters for the database server
      *
-     * @param int        $mode   Connection mode.
-     * @param array|null $server Server information like host/port/socket/persistent
-     * @psalm-param ConnectionType $mode
-     *
-     * @return array user, host and server settings array
+     * @psalm-param ConnectionType $connectionType
      */
-    public static function getConnectionParams(int $mode, array|null $server = null): array
+    public static function getConnectionParams(Server $currentServer, int $connectionType): Server
     {
-        $user = null;
-        $password = null;
-
-        if ($mode == Connection::TYPE_USER) {
-            $user = $GLOBALS['cfg']['Server']['user'];
-            $password = $GLOBALS['cfg']['Server']['password'];
-            $server = $GLOBALS['cfg']['Server'];
-        } elseif ($mode == Connection::TYPE_CONTROL) {
-            $user = $GLOBALS['cfg']['Server']['controluser'];
-            $password = $GLOBALS['cfg']['Server']['controlpass'];
-
-            $server = [];
-
-            $server['hide_connection_errors'] = $GLOBALS['cfg']['Server']['hide_connection_errors'];
-
-            if (! empty($GLOBALS['cfg']['Server']['controlhost'])) {
-                $server['host'] = $GLOBALS['cfg']['Server']['controlhost'];
-            } else {
-                $server['host'] = $GLOBALS['cfg']['Server']['host'];
+        if ($connectionType !== Connection::TYPE_CONTROL) {
+            if ($currentServer->host !== '' && $currentServer->port !== '') {
+                return $currentServer;
             }
 
-            // Share the settings if the host is same
-            if ($server['host'] == $GLOBALS['cfg']['Server']['host']) {
-                $shared = [
-                    'port',
-                    'socket',
-                    'compress',
-                    'ssl',
-                    'ssl_key',
-                    'ssl_cert',
-                    'ssl_ca',
-                    'ssl_ca_path',
-                    'ssl_ciphers',
-                    'ssl_verify',
-                ];
-                foreach ($shared as $item) {
-                    if (! isset($GLOBALS['cfg']['Server'][$item])) {
-                        continue;
-                    }
+            $server = $currentServer->asArray();
+            $server['host'] = $server['host'] === '' ? 'localhost' : $server['host'];
+            $server['port'] = $server['port'] === '' ? '0' : $server['port'];
 
-                    $server[$item] = $GLOBALS['cfg']['Server'][$item];
-                }
-            }
-
-            // Set configured port
-            if (! empty($GLOBALS['cfg']['Server']['controlport'])) {
-                $server['port'] = $GLOBALS['cfg']['Server']['controlport'];
-            }
-
-            // Set any configuration with control_ prefix
-            foreach ($GLOBALS['cfg']['Server'] as $key => $val) {
-                if (substr($key, 0, 8) !== 'control_') {
-                    continue;
-                }
-
-                $server[substr($key, 8)] = $val;
-            }
-        } else {
-            if ($server === null) {
-                return [
-                    null,
-                    null,
-                    null,
-                ];
-            }
-
-            if (isset($server['user'])) {
-                $user = $server['user'];
-            }
-
-            if (isset($server['password'])) {
-                $password = $server['password'];
-            }
+            return new Server($server);
         }
 
-        // Perform sanity checks on some variables
-        $server['port'] = empty($server['port']) ? 0 : (int) $server['port'];
+        $server = [
+            'user' => $currentServer->controlUser,
+            'password' => $currentServer->controlPass,
+            'host' => $currentServer->controlHost !== '' ? $currentServer->controlHost : $currentServer->host,
+            'port' => '0',
+            'socket' => null,
+            'compress' => null,
+            'ssl' => null,
+            'ssl_key' => null,
+            'ssl_cert' => null,
+            'ssl_ca' => null,
+            'ssl_ca_path' => null,
+            'ssl_ciphers' => null,
+            'ssl_verify' => null,
+            'hide_connection_errors' => null,
+        ];
 
-        if (empty($server['socket'])) {
-            $server['socket'] = null;
+        // Share the settings if the host is same
+        if ($server['host'] === $currentServer->host) {
+            $server['port'] = $currentServer->port !== '' ? $currentServer->port : '0';
+            $server['socket'] = $currentServer->socket;
+            $server['compress'] = $currentServer->compress;
+            $server['ssl'] = $currentServer->ssl;
+            $server['ssl_key'] = $currentServer->sslKey;
+            $server['ssl_cert'] = $currentServer->sslCert;
+            $server['ssl_ca'] = $currentServer->sslCa;
+            $server['ssl_ca_path'] = $currentServer->sslCaPath;
+            $server['ssl_ciphers'] = $currentServer->sslCiphers;
+            $server['ssl_verify'] = $currentServer->sslVerify;
+            $server['hide_connection_errors'] = $currentServer->hideConnectionErrors;
         }
 
-        if (empty($server['host'])) {
+        // Set configured port
+        if ($currentServer->controlPort !== '') {
+            $server['port'] = $currentServer->controlPort;
+        }
+
+        // Set any configuration with control_ prefix
+        $server['socket'] = $currentServer->controlSocket ?? $server['socket'];
+        $server['compress'] = $currentServer->controlCompress ?? $server['compress'];
+        $server['ssl'] = $currentServer->controlSsl ?? $server['ssl'];
+        $server['ssl_key'] = $currentServer->controlSslKey ?? $server['ssl_key'];
+        $server['ssl_cert'] = $currentServer->controlSslCert ?? $server['ssl_cert'];
+        $server['ssl_ca'] = $currentServer->controlSslCa ?? $server['ssl_ca'];
+        $server['ssl_ca_path'] = $currentServer->controlSslCaPath ?? $server['ssl_ca_path'];
+        $server['ssl_ciphers'] = $currentServer->controlSslCiphers ?? $server['ssl_ciphers'];
+        $server['ssl_verify'] = $currentServer->controlSslVerify ?? $server['ssl_verify'];
+        $server['hide_connection_errors'] = $currentServer->controlHideConnectionErrors
+            ?? $server['hide_connection_errors'];
+
+        if ($server['host'] === '') {
             $server['host'] = 'localhost';
         }
 
-        if (! isset($server['ssl'])) {
-            $server['ssl'] = false;
-        }
-
-        if (! isset($server['compress'])) {
-            $server['compress'] = false;
-        }
-
-        if (! isset($server['hide_connection_errors'])) {
-            $server['hide_connection_errors'] = false;
-        }
-
-        return [
-            $user,
-            $password,
-            $server,
-        ];
+        return new Server($server);
     }
 
     /**
@@ -1334,10 +1195,11 @@ class Config
 
     public function getSettings(): Settings
     {
-        if ($this->config === null) {
-            $this->config = new Settings($this->settings);
-        }
-
         return $this->config;
+    }
+
+    public function getCurrentServer(): Server|null
+    {
+        return $this->config->Servers[$this->server] ?? null;
     }
 }

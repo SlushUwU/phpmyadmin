@@ -62,7 +62,7 @@ class HomeController extends AbstractController
         $GLOBALS['show_query'] ??= null;
         $GLOBALS['errorUrl'] ??= null;
 
-        if ($this->response->isAjax() && ! empty($_REQUEST['access_time'])) {
+        if ($request->isAjax() && ! empty($_REQUEST['access_time'])) {
             return;
         }
 
@@ -105,7 +105,7 @@ class HomeController extends AbstractController
                 && (count($GLOBALS['cfg']['Servers']) > 1
                 || ($GLOBALS['server'] == 0 && count($GLOBALS['cfg']['Servers']) === 1)));
             if ($hasServerSelection) {
-                $serverSelection = Select::render(true, true);
+                $serverSelection = Select::render(true);
             }
 
             if ($GLOBALS['server'] > 0) {
@@ -181,7 +181,7 @@ class HomeController extends AbstractController
         }
 
         $relation = new Relation($this->dbi);
-        if ($GLOBALS['server'] > 0) {
+        if ($GLOBALS['server'] > 0 && $relation->arePmadbTablesAllDisabled() === false) {
             $relationParameters = $relation->getRelationParameters();
             if (! $relationParameters->hasAllFeatures() && $GLOBALS['cfg']['PmaNoRelation_DisableWarning'] == false) {
                 $messageText = __(
@@ -252,8 +252,8 @@ class HomeController extends AbstractController
             /**
              * Check whether session.gc_maxlifetime limits session validity.
              */
-            $gc_time = (int) ini_get('session.gc_maxlifetime');
-            if ($gc_time < $GLOBALS['cfg']['LoginCookieValidity']) {
+            $gcTime = (int) ini_get('session.gc_maxlifetime');
+            if ($gcTime < $GLOBALS['cfg']['LoginCookieValidity']) {
                 $this->errors[] = [
                     'message' => __(
                         'Your PHP parameter [a@https://www.php.net/manual/en/session.' .
@@ -453,7 +453,7 @@ class HomeController extends AbstractController
         }
 
         $this->errors[] = [
-            'message' =>  __(
+            'message' => __(
                 'The curl extension was not found and allow_url_fopen is '
                 . 'disabled. Due to this some features such as error reporting '
                 . 'or version check are disabled.',

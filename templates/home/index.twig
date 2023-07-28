@@ -45,6 +45,7 @@
                       <a href="{{ url('/user-password') }}" id="change_password_anchor" class="ajax">
                         {{ get_icon('s_passwd', 'Change password'|trans, true) }}
                       </a>
+                      {{ include('modals/change_password.twig') }}
                     </li>
                   {% endif %}
 
@@ -88,6 +89,7 @@
             </div>
           {% endif %}
 
+            {% if available_languages is not empty or has_theme_manager %}
             <div class="card mt-4">
               <div class="card-header">
                 {% trans 'Appearance settings' %}
@@ -168,6 +170,7 @@
                 {% endif %}
               </ul>
             </div>
+            {% endif %}
           </div>
 
       <div class="col-lg-5 col-12">

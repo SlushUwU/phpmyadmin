@@ -38,7 +38,7 @@ final class RealRowCountController extends AbstractController
         $GLOBALS['errorUrl'] = Util::getScriptNameForOption($GLOBALS['cfg']['DefaultTabDatabase'], 'database');
         $GLOBALS['errorUrl'] .= Url::getCommon(['db' => $GLOBALS['db']], '&');
 
-        if (! $this->hasDatabase() || ! $this->response->isAjax()) {
+        if (! $this->hasDatabase() || ! $request->isAjax()) {
             return;
         }
 
@@ -65,10 +65,7 @@ final class RealRowCountController extends AbstractController
             $rowCount = $this->dbi
                 ->getTable($GLOBALS['db'], $table['TABLE_NAME'])
                 ->getRealRowCountTable();
-            $realRowCountAll[] = [
-                'table' => $table['TABLE_NAME'],
-                'row_count' => $rowCount,
-            ];
+            $realRowCountAll[] = ['table' => $table['TABLE_NAME'], 'row_count' => $rowCount];
         }
 
         $this->response->addJSON(['real_row_count_all' => json_encode($realRowCountAll)]);

@@ -7,7 +7,7 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Plugins\Schema;
 
-use PhpMyAdmin\Dbal\DatabaseName;
+use PhpMyAdmin\Identifiers\DatabaseName;
 use PhpMyAdmin\Plugins\Schema\Pdf\PdfRelationSchema;
 use PhpMyAdmin\Plugins\SchemaPlugin;
 use PhpMyAdmin\Properties\Options\Groups\OptionsPropertyMainGroup;
@@ -63,10 +63,7 @@ class SchemaPdf extends SchemaPlugin
             __('Orientation'),
         );
         $leaf->setValues(
-            [
-                'L' => __('Landscape'),
-                'P' => __('Portrait'),
-            ],
+            ['L' => __('Landscape'), 'P' => __('Portrait')],
         );
         $specificOptions->addProperty($leaf);
 
@@ -94,11 +91,7 @@ class SchemaPdf extends SchemaPlugin
             __('Order of the tables'),
         );
         $leaf->setValues(
-            [
-                '' => __('None'),
-                'name_asc' => __('Name (Ascending)'),
-                'name_desc' => __('Name (Descending)'),
-            ],
+            ['' => __('None'), 'name_asc' => __('Name (Ascending)'), 'name_desc' => __('Name (Descending)')],
         );
         $specificOptions->addProperty($leaf);
 

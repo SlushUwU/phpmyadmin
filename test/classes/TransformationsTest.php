@@ -4,12 +4,18 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests;
 
+use PhpMyAdmin\ConfigStorage\Relation;
 use PhpMyAdmin\ConfigStorage\RelationParameters;
 use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\Tests\Stubs\DummyResult;
 use PhpMyAdmin\Transformations;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
+use PHPUnit\Framework\Attributes\RunInSeparateProcess;
+use ReflectionProperty;
 
-/** @covers \PhpMyAdmin\Transformations */
+#[CoversClass(Transformations::class)]
 class TransformationsTest extends AbstractTestCase
 {
     private Transformations $transformations;
@@ -24,10 +30,7 @@ class TransformationsTest extends AbstractTestCase
         $GLOBALS['dbi'] = $this->createDatabaseInterface();
         $GLOBALS['table'] = 'table';
         $GLOBALS['db'] = 'db';
-        $GLOBALS['cfg'] = [
-            'ServerDefault' => 1,
-            'ActionLinksMode' => 'icons',
-        ];
+        $GLOBALS['cfg'] = ['ServerDefault' => 1, 'ActionLinksMode' => 'icons'];
         $GLOBALS['server'] = 1;
         $GLOBALS['cfg']['Server']['pmadb'] = 'pmadb';
         $GLOBALS['cfg']['Server']['user'] = 'user';
@@ -44,11 +47,10 @@ class TransformationsTest extends AbstractTestCase
     /**
      * Test for parsing options.
      *
-     * @param string $input    String to parse
-     * @param array  $expected Expected result
-     *
-     * @dataProvider getOptionsData
+     * @param string  $input    String to parse
+     * @param mixed[] $expected Expected result
      */
+    #[DataProvider('getOptionsData')]
     public function testGetOptions(string $input, array $expected): void
     {
         $this->assertEquals(
@@ -59,50 +61,22 @@ class TransformationsTest extends AbstractTestCase
 
     /**
      * Data provided for parsing options
+     *
+     * @return mixed[][]
      */
     public static function getOptionsData(): array
     {
         return [
-            [
-                'option1 , option2 ',
-                [
-                    'option1 ',
-                    ' option2 ',
-                ],
-            ],
-            [
-                "'option1' ,' option2' ",
-                [
-                    'option1',
-                    ' option2',
-                ],
-            ],
-            [
-                "'2,3' ,' ,, option ,,' ",
-                [
-                    '2,3',
-                    ' ,, option ,,',
-                ],
-            ],
-            [
-                "'',,",
-                [
-                    '',
-                    '',
-                    '',
-                ],
-            ],
-            [
-                '',
-                [],
-            ],
+            ['option1 , option2 ', ['option1 ', ' option2 ']],
+            ["'option1' ,' option2' ", ['option1', ' option2']],
+            ["'2,3' ,' ,, option ,,' ", ['2,3', ' ,, option ,,']],
+            ["'',,", ['', '', '']],
+            ['', []],
         ];
     }
 
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
+    #[PreserveGlobalState(false)]
+    #[RunInSeparateProcess]
     public function testGetTypes(): void
     {
         $this->assertEquals(
@@ -194,13 +168,13 @@ class TransformationsTest extends AbstractTestCase
      */
     public function testGetMime(): void
     {
-        $_SESSION['relation'] = [];
-        $_SESSION['relation'][$GLOBALS['server']] = RelationParameters::fromArray([
+        $relationParameters = RelationParameters::fromArray([
             'db' => 'pmadb',
             'mimework' => true,
             'trackingwork' => true,
             'column_info' => 'column_info',
-        ])->toArray();
+        ]);
+        (new ReflectionProperty(Relation::class, 'cache'))->setValue(null, $relationParameters);
         $this->assertEquals(
             [
                 'o' => [
@@ -238,16 +212,18 @@ class TransformationsTest extends AbstractTestCase
             ->will($this->returnValue($this->createStub(DummyResult::class)));
         $GLOBALS['dbi'] = $dbi;
 
+        (new ReflectionProperty(Relation::class, 'cache'))->setValue(null, null);
+
         // Case 1 : no configuration storage
         $actual = $this->transformations->clear('db');
         $this->assertFalse($actual);
 
-        $_SESSION['relation'] = [];
-        $_SESSION['relation'][$GLOBALS['server']] = RelationParameters::fromArray([
+        $relationParameters = RelationParameters::fromArray([
             'db' => 'pmadb',
             'mimework' => true,
             'column_info' => 'column_info',
-        ])->toArray();
+        ]);
+        (new ReflectionProperty(Relation::class, 'cache'))->setValue(null, $relationParameters);
 
         // Case 2 : database delete
         $actual = $this->transformations->clear('db');
@@ -265,9 +241,8 @@ class TransformationsTest extends AbstractTestCase
     /**
      * @param string $value    value
      * @param string $expected expected result
-     *
-     * @dataProvider fixupData
      */
+    #[DataProvider('fixupData')]
     public function testFixup(string $value, string $expected): void
     {
         $this->assertEquals(
@@ -276,29 +251,15 @@ class TransformationsTest extends AbstractTestCase
         );
     }
 
+    /** @return mixed[][] */
     public static function fixupData(): array
     {
         return [
-            [
-                'text_plain_bool2text.php',
-                'Text_Plain_Bool2Text.php',
-            ],
-            [
-                'application_octetstream_download.php',
-                'Application_Octetstream_Download.php',
-            ],
-            [
-                'text_plain_json.php',
-                'Text_Plain_Json.php',
-            ],
-            [
-                'image_jpeg_link.php',
-                'Image_JPEG_Link.php',
-            ],
-            [
-                'text_plain_dateformat.php',
-                'Text_Plain_Dateformat.php',
-            ],
+            ['text_plain_bool2text.php', 'Text_Plain_Bool2Text.php'],
+            ['application_octetstream_download.php', 'Application_Octetstream_Download.php'],
+            ['text_plain_json.php', 'Text_Plain_Json.php'],
+            ['image_jpeg_link.php', 'Image_JPEG_Link.php'],
+            ['text_plain_dateformat.php', 'Text_Plain_Dateformat.php'],
         ];
     }
 
@@ -307,9 +268,8 @@ class TransformationsTest extends AbstractTestCase
      *
      * @param string $file                transformation file
      * @param string $expectedDescription expected description
-     *
-     * @dataProvider providerGetDescription
      */
+    #[DataProvider('providerGetDescription')]
     public function testGetDescription(string $file, string $expectedDescription): void
     {
         $this->assertEquals(
@@ -318,21 +278,13 @@ class TransformationsTest extends AbstractTestCase
         );
     }
 
+    /** @return mixed[][] */
     public static function providerGetDescription(): array
     {
         return [
-            [
-                '../../../../test',
-                '',
-            ],
-            [
-                'Input/Text_Plain_SqlEditor',
-                'Syntax highlighted CodeMirror editor for SQL.',
-            ],
-            [
-                'Output/Text_Plain_Sql',
-                'Formats text as SQL query with syntax highlighting.',
-            ],
+            ['../../../../test', ''],
+            ['Input/Text_Plain_SqlEditor', 'Syntax highlighted CodeMirror editor for SQL.'],
+            ['Output/Text_Plain_Sql', 'Formats text as SQL query with syntax highlighting.'],
         ];
     }
 
@@ -341,9 +293,8 @@ class TransformationsTest extends AbstractTestCase
      *
      * @param string $file         transformation file
      * @param string $expectedName expected name
-     *
-     * @dataProvider providerGetName
      */
+    #[DataProvider('providerGetName')]
     public function testGetName(string $file, string $expectedName): void
     {
         $this->assertEquals(
@@ -352,21 +303,9 @@ class TransformationsTest extends AbstractTestCase
         );
     }
 
+    /** @return mixed[][] */
     public static function providerGetName(): array
     {
-        return [
-            [
-                '../../../../test',
-                '',
-            ],
-            [
-                'Input/Text_Plain_SqlEditor',
-                'SQL',
-            ],
-            [
-                'Output/Text_Plain_Sql',
-                'SQL',
-            ],
-        ];
+        return [['../../../../test', ''], ['Input/Text_Plain_SqlEditor', 'SQL'], ['Output/Text_Plain_Sql', 'SQL']];
     }
 }

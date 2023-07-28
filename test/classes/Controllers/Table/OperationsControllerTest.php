@@ -12,8 +12,9 @@ use PhpMyAdmin\StorageEngine;
 use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\DbiDummy;
+use PHPUnit\Framework\Attributes\CoversClass;
 
-/** @covers \PhpMyAdmin\Controllers\Table\OperationsController */
+#[CoversClass(OperationsController::class)]
 class OperationsControllerTest extends AbstractTestCase
 {
     protected DatabaseInterface $dbi;
@@ -38,7 +39,7 @@ class OperationsControllerTest extends AbstractTestCase
         $GLOBALS['db'] = 'test_db';
         $GLOBALS['table'] = 'test_table';
 
-        $GLOBALS['config']->selectServer();
+        $GLOBALS['config']->selectServer('1');
         $GLOBALS['cfg'] = $GLOBALS['config']->settings;
         $GLOBALS['cfg']['MaxDbList'] = 0;
 

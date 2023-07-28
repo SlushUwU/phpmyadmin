@@ -594,7 +594,10 @@ Server connection settings
         :config:option:`$cfg['Servers'][$i]['ssl_ca']`,
         :config:option:`$cfg['Servers'][$i]['ssl_ca_path']`,
         :config:option:`$cfg['Servers'][$i]['ssl_ciphers']`,
-        :config:option:`$cfg['Servers'][$i]['ssl_verify']`
+        :config:option:`$cfg['Servers'][$i]['ssl_verify']`,
+        :config:option:`$cfg['Servers'][$i]['socket']`,
+        :config:option:`$cfg['Servers'][$i]['compress']`,
+        :config:option:`$cfg['Servers'][$i]['hide_connection_errors']`
 
 .. config:option:: $cfg['Servers'][$i]['auth_type']
 
@@ -1585,7 +1588,7 @@ Generic settings
     :type: boolean
     :default: false
 
-    You can disable phpMyAdmin shortcut keys by setting :config:option:`$cfg['DisableShortcutKeys']` to false.
+    You can disable phpMyAdmin shortcut keys by setting :config:option:`$cfg['DisableShortcutKeys']` to true.
 
 .. config:option:: $cfg['ServerDefault']
 
@@ -2990,17 +2993,20 @@ Languages
     You can select here which functions will be used for character set
     conversion. Possible values are:
 
-    * auto - automatically use available one (first is tested iconv, then
-      recode)
-    * iconv - use iconv or libiconv functions
-    * recode - use recode\_string function
-    * mb - use :term:`mbstring` extension
-    * none - disable encoding conversion
+    * ``'auto'`` - automatically use available one (first is tested iconv, then mbstring)
+    * ``'iconv'`` - use iconv or libiconv functions
+    * ``'mb'`` - use :term:`mbstring` extension
+    * ``'none'`` - disable encoding conversion
 
     Enabled charset conversion activates a pull-down menu in the Export
     and Import pages, to choose the character set when exporting a file.
     The default value in this menu comes from
     :config:option:`$cfg['Export']['charset']` and :config:option:`$cfg['Import']['charset']`.
+
+    .. versionchanged:: 6.0.0
+
+        Support for the Recode extension has been removed. The ``'recode'`` value is ignored and the
+        default value (``'auto'``) is used instead.
 
 .. config:option:: $cfg['IconvExtraParams']
 
@@ -3019,7 +3025,7 @@ Languages
     :default: array(...)
 
     Available character sets for MySQL conversion. You can add your own
-    (any of supported by recode/iconv) or remove these which you don't
+    (any of supported by mbstring/iconv) or remove these which you don't
     use. Character sets will be shown in same order as here listed, so if
     you frequently use some of these move them to the top.
 
@@ -3537,6 +3543,15 @@ Various display setting
     specify the amount of saved history items using
     :config:option:`$cfg['QueryHistoryMax']`.
 
+.. config:option:: $cfg['AllowSharedBookmarks']
+
+    :type: boolean
+    :default: true
+
+    .. versionadded:: 6.0.0
+
+    Allow users to create bookmarks that are available for all other users
+
 .. config:option:: $cfg['BrowseMIME']
 
     :type: boolean
@@ -3654,7 +3669,7 @@ Theme manager settings
     :type: string
     :default: ``'pmahomme'``
 
-    The default theme (a subdirectory under :file:`./themes/`).
+    The default theme (a subdirectory under :file:`./public/themes/`).
 
 .. config:option:: $cfg['ThemePerServer']
 

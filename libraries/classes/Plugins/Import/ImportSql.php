@@ -61,10 +61,7 @@ class ImportSql extends ImportPlugin
             );
             $leaf->setValues($values);
             $leaf->setDoc(
-                [
-                    'manual_MySQL_Database_Administration',
-                    'Server_SQL_mode',
-                ],
+                ['manual_MySQL_Database_Administration', 'Server_SQL_mode'],
             );
             $generalOptions->addProperty($leaf);
             $leaf = new BoolPropertyItem(
@@ -72,11 +69,7 @@ class ImportSql extends ImportPlugin
                 __('Do not use <code>AUTO_INCREMENT</code> for zero values'),
             );
             $leaf->setDoc(
-                [
-                    'manual_MySQL_Database_Administration',
-                    'Server_SQL_mode',
-                    'sqlmode_no_auto_value_on_zero',
-                ],
+                ['manual_MySQL_Database_Administration', 'Server_SQL_mode', 'sqlmode_no_auto_value_on_zero'],
             );
             $generalOptions->addProperty($leaf);
 
@@ -135,6 +128,7 @@ class ImportSql extends ImportPlugin
                 // Checking if the input buffer has finished.
                 if ($newData === true) {
                     $GLOBALS['finished'] = true;
+                    /** @infection-ignore-all */
                     break;
                 }
 
@@ -150,6 +144,7 @@ class ImportSql extends ImportPlugin
         }
 
         // Extracting remaining statements.
+        /** @infection-ignore-all */
         while (! $GLOBALS['error'] && ! $GLOBALS['timeout_passed'] && ! empty($bq->query)) {
             $statement = $bq->extract(true);
             if ($statement === false || $statement === '') {
@@ -169,23 +164,23 @@ class ImportSql extends ImportPlugin
      * Handle compatibility options
      *
      * @param DatabaseInterface $dbi     Database interface
-     * @param array             $request Request array
+     * @param mixed[]           $request Request array
      */
     private function setSQLMode(DatabaseInterface $dbi, array $request): void
     {
-        $sql_modes = [];
+        $sqlModes = [];
         if (isset($request['sql_compatibility']) && $request['sql_compatibility'] !== 'NONE') {
-            $sql_modes[] = $request['sql_compatibility'];
+            $sqlModes[] = $request['sql_compatibility'];
         }
 
         if (isset($request['sql_no_auto_value_on_zero'])) {
-            $sql_modes[] = 'NO_AUTO_VALUE_ON_ZERO';
+            $sqlModes[] = 'NO_AUTO_VALUE_ON_ZERO';
         }
 
-        if ($sql_modes === []) {
+        if ($sqlModes === []) {
             return;
         }
 
-        $dbi->tryQuery('SET SQL_MODE="' . implode(',', $sql_modes) . '"');
+        $dbi->tryQuery('SET SQL_MODE="' . implode(',', $sqlModes) . '"');
     }
 }

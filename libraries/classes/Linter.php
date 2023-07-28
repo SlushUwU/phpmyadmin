@@ -13,11 +13,9 @@ use PhpMyAdmin\SqlParser\UtfString;
 use PhpMyAdmin\SqlParser\Utils\Error as ParserError;
 
 use function __;
-use function defined;
 use function htmlspecialchars;
 use function mb_strlen;
 use function sprintf;
-use function strlen;
 
 /**
  * The linter itself.
@@ -33,7 +31,7 @@ class Linter
      */
     public static function getLines(string|UtfString $str): array
     {
-        if ((! ($str instanceof UtfString)) && defined('USE_UTF_STRINGS') && USE_UTF_STRINGS) {
+        if ((! ($str instanceof UtfString))) {
             // If the lexer uses UtfString for processing then the position will
             // represent the position of the character and not the position of
             // the byte.
@@ -52,9 +50,10 @@ class Linter
         // first byte of the third character. The fourth and the last one
         // (which is actually a new line) aren't going to be processed at
         // all.
-        $len = $str instanceof UtfString ? $str->length() : strlen($str);
+        $len = $str->length();
 
         $lines = [0];
+        /** @infection-ignore-all */
         for ($i = 0; $i < $len; ++$i) {
             if ($str[$i] !== "\n") {
                 continue;
@@ -69,10 +68,10 @@ class Linter
     /**
      * Computes the number of the line and column given an absolute position.
      *
-     * @param array $lines The starting position of each line.
-     * @param int   $pos   The absolute position
+     * @param mixed[] $lines The starting position of each line.
+     * @param int     $pos   The absolute position
      *
-     * @return array
+     * @return mixed[]
      */
     public static function findLineNumberAndColumn(array $lines, int $pos): array
     {
@@ -85,10 +84,7 @@ class Linter
             $line = $lineNo;
         }
 
-        return [
-            $line,
-            $pos - $lines[$line],
-        ];
+        return [$line, $pos - $lines[$line]];
     }
 
     /**
@@ -96,7 +92,7 @@ class Linter
      *
      * @param string $query The query to be checked.
      *
-     * @return array
+     * @return mixed[]
      */
     public static function lint(string $query): array
     {

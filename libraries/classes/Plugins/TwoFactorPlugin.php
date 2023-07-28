@@ -16,7 +16,6 @@ use function __;
 use function is_array;
 use function parse_url;
 use function sprintf;
-use function strlen;
 
 /**
  * Two factor authentication plugin class
@@ -122,9 +121,9 @@ class TwoFactorPlugin
      *
      * Either hostname or hostname with scheme.
      *
-     * @param bool $return_url Whether to generate URL
+     * @param bool $returnUrl Whether to generate URL
      */
-    public function getAppId(bool $return_url): string
+    public function getAppId(bool $returnUrl): string
     {
         $GLOBALS['config'] ??= null;
 
@@ -138,15 +137,15 @@ class TwoFactorPlugin
             }
         }
 
-        if (! isset($parsed['scheme']) || strlen($parsed['scheme']) === 0) {
+        if (! isset($parsed['scheme']) || $parsed['scheme'] === '') {
             $parsed['scheme'] = $GLOBALS['config']->isHttps() ? 'https' : 'http';
         }
 
-        if (! isset($parsed['host']) || strlen($parsed['host']) === 0) {
+        if (! isset($parsed['host']) || $parsed['host'] === '') {
             $parsed['host'] = Core::getenv('HTTP_HOST');
         }
 
-        if ($return_url) {
+        if ($returnUrl) {
             $port = '';
             if (isset($parsed['port'])) {
                 $port = ':' . $parsed['port'];

@@ -13,8 +13,9 @@ use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\DbiDummy;
 use PhpMyAdmin\Tests\Stubs\ResponseRenderer;
+use PHPUnit\Framework\Attributes\CoversClass;
 
-/** @covers \PhpMyAdmin\Controllers\Server\Status\Monitor\SlowLogController */
+#[CoversClass(SlowLogController::class)]
 class SlowLogControllerTest extends AbstractTestCase
 {
     protected DatabaseInterface $dbi;
@@ -49,7 +50,6 @@ class SlowLogControllerTest extends AbstractTestCase
     public function testSlowLog(): void
     {
         $response = new ResponseRenderer();
-        $response->setAjax(true);
 
         $controller = new SlowLogController(
             $response,
@@ -60,31 +60,16 @@ class SlowLogControllerTest extends AbstractTestCase
         );
 
         $request = $this->createStub(ServerRequest::class);
-        $request->method('getParsedBodyParam')->willReturnMap([
-            ['time_start', null, '0'],
-            ['time_end', null, '10'],
-        ]);
+        $request->method('isAjax')->willReturn(true);
+        $request->method('getParsedBodyParam')->willReturnMap([['time_start', null, '0'], ['time_end', null, '10']]);
 
         $this->dummyDbi->addSelectDb('mysql');
         $controller($request);
         $this->dummyDbi->assertAllSelectsConsumed();
         $ret = $response->getJSONResult();
 
-        $resultRows = [
-            [
-                'sql_text' => 'insert sql_text',
-                '#' => 11,
-            ],
-            [
-                'sql_text' => 'update sql_text',
-                '#' => 10,
-            ],
-        ];
-        $resultSum = [
-            'insert' => 11,
-            'TOTAL' => 21,
-            'update' => 10,
-        ];
+        $resultRows = [['sql_text' => 'insert sql_text', '#' => 11], ['sql_text' => 'update sql_text', '#' => 10]];
+        $resultSum = ['insert' => 11, 'TOTAL' => 21, 'update' => 10];
         $this->assertEquals(2, $ret['message']['numRows']);
         $this->assertEquals($resultRows, $ret['message']['rows']);
         $this->assertEquals($resultSum, $ret['message']['sum']);

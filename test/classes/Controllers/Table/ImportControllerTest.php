@@ -13,10 +13,16 @@ use PhpMyAdmin\Plugins;
 use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\ResponseRenderer;
+use PhpMyAdmin\UserPreferences;
+use PHPUnit\Framework\Attributes\CoversClass;
 
-/** @covers \PhpMyAdmin\Controllers\Table\ImportController */
+#[CoversClass(ImportController::class)]
 class ImportControllerTest extends AbstractTestCase
 {
+    /**
+     * @requires extension bz2
+     * @requires extension zip
+     */
     public function testImportController(): void
     {
         $this->setTheme();
@@ -25,7 +31,7 @@ class ImportControllerTest extends AbstractTestCase
         $GLOBALS['table'] = 'test_table';
         $GLOBALS['text_dir'] = 'ltr';
         $GLOBALS['lang'] = 'en';
-        $GLOBALS['cfg']['Server'] = $GLOBALS['config']->defaultServer;
+        $GLOBALS['cfg']['Server'] = $GLOBALS['config']->getSettings()->Servers[1]->asArray();
         $_GET['format'] = 'xml';
 
         $dummyDbi = $this->createDbiDummy();
@@ -39,7 +45,8 @@ class ImportControllerTest extends AbstractTestCase
         $choice = Plugins::getChoice($importList, 'xml');
         $options = Plugins::getOptions('Import', $importList);
 
-        $pageSettings = new PageSettings('Import');
+        $pageSettings = new PageSettings(new UserPreferences($GLOBALS['dbi']));
+        $pageSettings->init('Import');
         $template = new Template();
         $expected = $template->render('table/import/index', [
             'page_settings_error_html' => $pageSettings->getErrorHTML(),
@@ -78,7 +85,7 @@ class ImportControllerTest extends AbstractTestCase
         ]);
 
         $response = new ResponseRenderer();
-        (new ImportController($response, $template, $dbi))($this->createStub(ServerRequest::class));
+        (new ImportController($response, $template, $dbi, $pageSettings))($this->createStub(ServerRequest::class));
         $this->assertSame($expected, $response->getHTMLResult());
     }
 }

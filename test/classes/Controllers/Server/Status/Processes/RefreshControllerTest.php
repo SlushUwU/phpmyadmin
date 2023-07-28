@@ -12,11 +12,12 @@ use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\ResponseRenderer;
 use PhpMyAdmin\Url;
+use PHPUnit\Framework\Attributes\CoversClass;
 
 use function __;
 use function htmlspecialchars;
 
-/** @covers \PhpMyAdmin\Controllers\Server\Status\Processes\RefreshController */
+#[CoversClass(RefreshController::class)]
 class RefreshControllerTest extends AbstractTestCase
 {
     private Data $data;
@@ -56,7 +57,6 @@ class RefreshControllerTest extends AbstractTestCase
         $GLOBALS['cfg']['MaxCharactersInDisplayedSQL'] = 12;
 
         $response = new ResponseRenderer();
-        $response->setAjax(true);
 
         $controller = new RefreshController(
             $response,
@@ -66,15 +66,13 @@ class RefreshControllerTest extends AbstractTestCase
         );
 
         $request = $this->createStub(ServerRequest::class);
+        $request->method('isAjax')->willReturn(true);
         $request->method('getParsedBodyParam')->willReturnMap([
             ['column_name', '', ''],
             ['order_by_field', '', 'process'],
             ['sort_order', '', 'DESC'],
         ]);
-        $request->method('hasBodyParam')->willReturnMap([
-            ['full', true],
-            ['showExecuting', false],
-        ]);
+        $request->method('hasBodyParam')->willReturnMap([['full', true], ['showExecuting', false]]);
 
         $controller($request);
         $html = $response->getHTMLResult();
@@ -102,10 +100,7 @@ class RefreshControllerTest extends AbstractTestCase
         );
 
         //validate 4: $process['db']
-        $this->assertStringContainsString(
-            $process['Db'],
-            $html,
-        );
+        $this->assertStringContainsString($process['Db'], $html);
 
         //validate 5: $process['Command']
         $this->assertStringContainsString(

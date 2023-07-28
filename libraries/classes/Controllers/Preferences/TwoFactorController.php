@@ -14,6 +14,7 @@ use PhpMyAdmin\TwoFactor;
 
 use function __;
 use function count;
+use function define;
 
 class TwoFactorController extends AbstractController
 {
@@ -36,9 +37,7 @@ class TwoFactorController extends AbstractController
 
         if ($request->hasBodyParam('2fa_remove')) {
             if (! $twoFactor->check(true)) {
-                echo $this->template->render('preferences/two_factor/confirm', [
-                    'form' => $twoFactor->render(),
-                ]);
+                echo $this->template->render('preferences/two_factor/confirm', ['form' => $twoFactor->render()]);
 
                 return;
             }
@@ -68,5 +67,11 @@ class TwoFactorController extends AbstractController
             'backends' => $twoFactor->getAllBackends(),
             'missing' => $twoFactor->getMissingDeps(),
         ]);
+
+        if ($request->isAjax()) {
+            $this->response->addJSON('disableNaviSettings', true);
+        } else {
+            define('PMA_DISABLE_NAVI_SETTINGS', true);
+        }
     }
 }

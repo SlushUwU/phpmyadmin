@@ -12,8 +12,9 @@ use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\DbiDummy;
 use PhpMyAdmin\Tests\Stubs\ResponseRenderer;
+use PHPUnit\Framework\Attributes\CoversClass;
 
-/** @covers \PhpMyAdmin\Controllers\Server\PrivilegesController */
+#[CoversClass(PrivilegesController::class)]
 class PrivilegesControllerTest extends AbstractTestCase
 {
     protected DatabaseInterface $dbi;
@@ -69,14 +70,9 @@ class PrivilegesControllerTest extends AbstractTestCase
 
         $request = $this->createStub(ServerRequest::class);
 
-        $request->method('getParsedBodyParam')->willReturnMap([
-            ['old_username', '', ''],
-            ['old_hostname', '', ''],
-        ]);
+        $request->method('getParsedBodyParam')->willReturnMap([['old_username', '', ''], ['old_hostname', '', '']]);
 
-        $request->method('getQueryParam')->willReturnMap([
-            ['initial', '', ''],
-        ]);
+        $request->method('getQueryParam')->willReturnMap([['initial', '', '']]);
 
         $response = new ResponseRenderer();
         (new PrivilegesController($response, new Template(), new Relation($this->dbi), $this->dbi))($request);

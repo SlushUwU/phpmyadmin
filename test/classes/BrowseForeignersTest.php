@@ -7,8 +7,9 @@ namespace PhpMyAdmin\Tests;
 use PhpMyAdmin\BrowseForeigners;
 use PhpMyAdmin\Config;
 use PhpMyAdmin\Template;
+use PHPUnit\Framework\Attributes\CoversClass;
 
-/** @covers \PhpMyAdmin\BrowseForeigners */
+#[CoversClass(BrowseForeigners::class)]
 class BrowseForeignersTest extends AbstractTestCase
 {
     private BrowseForeigners $browseForeigners;
@@ -47,7 +48,7 @@ class BrowseForeignersTest extends AbstractTestCase
         );
 
         $config = new Config();
-        $config->settings['MaxRows'] = 50;
+        $config->set('MaxRows', 50);
         $browseForeigners = new BrowseForeigners(new Template(), $config);
 
         $this->assertEquals(
@@ -118,10 +119,7 @@ class BrowseForeignersTest extends AbstractTestCase
         $desc = 'foobar<baz';
 
         $this->assertEquals(
-            [
-                'foobar<baz',
-                '',
-            ],
+            ['foobar<baz', ''],
             $this->callFunction(
                 $this->browseForeigners,
                 BrowseForeigners::class,
@@ -131,14 +129,11 @@ class BrowseForeignersTest extends AbstractTestCase
         );
 
         $config = new Config();
-        $config->settings['LimitChars'] = 5;
+        $config->set('LimitChars', 5);
         $browseForeigners = new BrowseForeigners(new Template(), $config);
 
         $this->assertEquals(
-            [
-                'fooba...',
-                'foobar<baz',
-            ],
+            ['fooba...', 'foobar<baz'],
             $this->callFunction(
                 $browseForeigners,
                 BrowseForeigners::class,
@@ -159,7 +154,7 @@ class BrowseForeignersTest extends AbstractTestCase
         $foreignData = [];
         $foreignData['disp_row'] = '';
         $fieldkey = 'bar';
-        $current_value = '';
+        $currentValue = '';
         $_POST['rownumber'] = 1;
         $_POST['foreign_filter'] = '5';
         $result = $this->browseForeigners->getHtmlForRelationalFieldSelection(
@@ -168,7 +163,7 @@ class BrowseForeignersTest extends AbstractTestCase
             $field,
             $foreignData,
             $fieldkey,
-            $current_value,
+            $currentValue,
         );
 
         $this->assertStringContainsString(
@@ -213,7 +208,7 @@ class BrowseForeignersTest extends AbstractTestCase
             $field,
             $foreignData,
             $fieldkey,
-            $current_value,
+            $currentValue,
         );
 
         $this->assertStringContainsString(

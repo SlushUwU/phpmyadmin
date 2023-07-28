@@ -11,10 +11,11 @@ use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\DbiDummy;
 use PhpMyAdmin\Tests\Stubs\ResponseRenderer;
+use PHPUnit\Framework\Attributes\CoversClass;
 
 use function __;
 
-/** @covers \PhpMyAdmin\Controllers\Server\DatabasesController */
+#[CoversClass(DatabasesController::class)]
 class DatabasesControllerTest extends AbstractTestCase
 {
     protected DatabaseInterface $dbi;
@@ -47,11 +48,7 @@ class DatabasesControllerTest extends AbstractTestCase
 
         $response = new ResponseRenderer();
 
-        $controller = new DatabasesController(
-            $response,
-            $template,
-            $GLOBALS['dbi'],
-        );
+        $controller = new DatabasesController($response, $template, $GLOBALS['dbi']);
 
         $this->dummyDbi->addResult(
             'SELECT `SCHEMA_NAME` FROM `INFORMATION_SCHEMA`.`SCHEMATA`',
@@ -81,11 +78,7 @@ class DatabasesControllerTest extends AbstractTestCase
 
         $response = new ResponseRenderer();
 
-        $controller = new DatabasesController(
-            $response,
-            $template,
-            $GLOBALS['dbi'],
-        );
+        $controller = new DatabasesController($response, $template, $GLOBALS['dbi']);
 
         $GLOBALS['cfg']['ShowCreateDb'] = true;
         $GLOBALS['is_create_db_priv'] = true;

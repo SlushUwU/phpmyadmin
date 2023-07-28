@@ -17,13 +17,10 @@ abstract class AbstractController
     {
     }
 
-    /** @return array */
+    /** @return mixed[] */
     protected function getPages(): array
     {
-        $ignored = [
-            'Config',
-            'Servers',
-        ];
+        $ignored = ['Config', 'Servers'];
         $pages = [];
         foreach (SetupFormList::getAllFormNames() as $formset) {
             if (in_array($formset, $ignored)) {
@@ -33,10 +30,7 @@ abstract class AbstractController
             /** @var BaseForm $formClass */
             $formClass = SetupFormList::get($formset);
 
-            $pages[$formset] = [
-                'name' => $formClass::getName(),
-                'formset' => $formset,
-            ];
+            $pages[$formset] = ['name' => $formClass::getName(), 'formset' => $formset];
         }
 
         return $pages;

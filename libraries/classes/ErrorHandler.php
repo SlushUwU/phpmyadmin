@@ -12,7 +12,6 @@ use function array_splice;
 use function count;
 use function defined;
 use function error_reporting;
-use function headers_sent;
 use function htmlspecialchars;
 use function set_error_handler;
 use function set_exception_handler;
@@ -193,10 +192,10 @@ class ErrorHandler
     ): bool {
         if (Util::isErrorReportingAvailable()) {
             /**
-            * Check if Error Control Operator (@) was used, but still show
-            * user errors even in this case.
-            * See: https://github.com/phpmyadmin/phpmyadmin/issues/16729
-            */
+             * Check if Error Control Operator (@) was used, but still show
+             * user errors even in this case.
+             * See: https://github.com/phpmyadmin/phpmyadmin/issues/16729
+             */
             $isSilenced = ! (error_reporting() & $errno);
 
             if (
@@ -214,10 +213,8 @@ class ErrorHandler
             ) {
                 return false;
             }
-        } else {
-            if (($errno & (E_USER_WARNING | E_USER_ERROR | E_USER_NOTICE | E_USER_DEPRECATED)) == 0) {
-                return false;
-            }
+        } elseif (($errno & (E_USER_WARNING | E_USER_ERROR | E_USER_NOTICE | E_USER_DEPRECATED)) == 0) {
+            return false;
         }
 
         $this->addError($errstr, $errno, $errfile, $errline, true);
@@ -303,9 +300,6 @@ class ErrorHandler
             default:
                 // FATAL error, display it and exit
                 $this->dispFatalError($error);
-                if (! defined('TESTSUITE')) {
-                    exit;
-                }
         }
     }
 
@@ -328,17 +322,19 @@ class ErrorHandler
      *
      * @param Error $error the error
      */
-    protected function dispFatalError(Error $error): void
+    protected function dispFatalError(Error $error): never
     {
-        if (! headers_sent()) {
-            $this->dispPageStart($error);
+        $response = ResponseRenderer::getInstance();
+        if (! $response->headersSent()) {
+            $response->disable();
+            $response->addHTML('<html><head><title>');
+            $response->addHTML($error->getTitle());
+            $response->addHTML('</title></head>' . "\n");
         }
 
-        echo $error->getDisplay();
-        $this->dispPageEnd();
-        if (! defined('TESTSUITE')) {
-            exit;
-        }
+        $response->addHTML($error->getDisplay());
+        $response->addHTML('</body></html>');
+        $response->callExit();
     }
 
     /**
@@ -364,32 +360,6 @@ class ErrorHandler
         }
 
         return $retval;
-    }
-
-    /**
-     * display HTML header
-     *
-     * @param Error $error the error
-     */
-    protected function dispPageStart(Error|null $error = null): void
-    {
-        ResponseRenderer::getInstance()->disable();
-        echo '<html><head><title>';
-        if ($error) {
-            echo $error->getTitle();
-        } else {
-            echo 'phpMyAdmin error reporting page';
-        }
-
-        echo '</title></head>';
-    }
-
-    /**
-     * display HTML footer
-     */
-    protected function dispPageEnd(): void
-    {
-        echo '</body></html>';
     }
 
     /**

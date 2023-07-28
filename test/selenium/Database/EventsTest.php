@@ -5,12 +5,15 @@ declare(strict_types=1);
 namespace PhpMyAdmin\Tests\Selenium\Database;
 
 use PhpMyAdmin\Tests\Selenium\TestBase;
+use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\Attributes\Depends;
+use PHPUnit\Framework\Attributes\Group;
 
 use function date;
 use function sleep;
 use function strtotime;
 
-/** @coversNothing */
+#[CoversNothing]
 class EventsTest extends TestBase
 {
     /**
@@ -72,9 +75,8 @@ class EventsTest extends TestBase
 
     /**
      * Create an event
-     *
-     * @group large
      */
+    #[Group('large')]
     public function testAddEvent(): void
     {
         $this->waitForElement('partialLinkText', 'Events')->click();
@@ -113,10 +115,8 @@ class EventsTest extends TestBase
 
         $this->byCssSelector('div.ui-dialog-buttonset button:nth-child(1)')->click();
 
-        $this->waitForElement(
-            'xpath',
-            '//div[@class=\'alert alert-success\' and contains(., \'Event `test_event` has been created\')]',
-        );
+        $success = $this->waitForElement('cssSelector', '.alert-success');
+        $this->assertStringContainsString('Event `test_event` has been created', $success->getText());
         $this->waitForElementNotPresent(
             'xpath',
             '//div[@id=\'alertLabel\' and not(contains(@style,\'display: none;\'))]',
@@ -156,10 +156,9 @@ class EventsTest extends TestBase
 
     /**
      * Test for editing events
-     *
-     * @depends testAddEvent
-     * @group large
      */
+    #[Depends('testAddEvent')]
+    #[Group('large')]
     public function testEditEvents(): void
     {
         $this->eventSQL();
@@ -176,10 +175,8 @@ class EventsTest extends TestBase
 
         $this->byCssSelector('div.ui-dialog-buttonset button:nth-child(1)')->click();
 
-        $this->waitForElement(
-            'xpath',
-            '//div[@class=\'alert alert-success\' and contains(., \'Event `test_event` has been modified\')]',
-        );
+        $success = $this->waitForElement('cssSelector', '.alert-success');
+        $this->assertStringContainsString('Event `test_event` has been modified', $success->getText());
 
         sleep(2);
         $this->dbQuery(
@@ -194,10 +191,9 @@ class EventsTest extends TestBase
 
     /**
      * Test for dropping event
-     *
-     * @depends testAddEvent
-     * @group large
      */
+    #[Depends('testAddEvent')]
+    #[Group('large')]
     public function testDropEvent(): void
     {
         $this->eventSQL();

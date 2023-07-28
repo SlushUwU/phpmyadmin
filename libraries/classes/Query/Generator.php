@@ -28,7 +28,7 @@ class Generator
         bool $tblIsGroup,
     ): string {
         $sqlWhereTable = 'AND t.`TABLE_NAME` ';
-        if ($tblIsGroup === true) {
+        if ($tblIsGroup) {
             $sqlWhereTable .= 'LIKE ' . $escapedTabletable . '%';
         } else {
             $sqlWhereTable .= Util::getCollateForIS() . ' = ' . $escapedTabletable;
@@ -215,11 +215,10 @@ class Generator
             . ', EVENT_OBJECT_TABLE, ACTION_TIMING, ACTION_STATEMENT'
             . ', EVENT_OBJECT_SCHEMA, EVENT_OBJECT_TABLE, DEFINER'
             . ' FROM information_schema.TRIGGERS'
-            . ' WHERE EVENT_OBJECT_SCHEMA ' . Util::getCollateForIS() . '='
-            . ' \'' . $escapedDb . '\'';
+            . ' WHERE EVENT_OBJECT_SCHEMA ' . Util::getCollateForIS() . '= ' . $escapedDb;
 
         if ($escapedTable !== null) {
-            $query .= ' AND EVENT_OBJECT_TABLE ' . Util::getCollateForIS() . " = '" . $escapedTable . "';";
+            $query .= ' AND EVENT_OBJECT_TABLE ' . Util::getCollateForIS() . ' = ' . $escapedTable . ';';
         }
 
         return $query;
@@ -410,16 +409,16 @@ class Generator
         string $partitionOperation,
         array $partitionNames,
     ): string {
-        $sql_query = 'ALTER TABLE '
+        $sqlQuery = 'ALTER TABLE '
             . Util::backquote($table) . ' '
             . $partitionOperation
             . ' PARTITION ';
 
         if ($partitionOperation === 'COALESCE') {
-            return $sql_query . count($partitionNames);
+            return $sqlQuery . count($partitionNames);
         }
 
-        return $sql_query . implode(', ', $partitionNames) . ';';
+        return $sqlQuery . implode(', ', $partitionNames) . ';';
     }
 
     /** @param string[] $selectedColumns */
@@ -428,5 +427,24 @@ class Generator
         $columnsSql = implode(', ', array_map(Util::backquote(...), $selectedColumns));
 
         return 'ALTER TABLE ' . Util::backquote($table) . ' ADD ' . $indexType . '(' . $columnsSql . ');';
+    }
+
+    /**
+     * Builds the SQL insert query
+     *
+     * @param bool     $isInsertIgnore $_POST['submit_type'] === 'insertignore'
+     * @param string[] $queryFields    column names array
+     * @param string[] $valueSets      array of query values
+     */
+    public static function buildInsertSqlQuery(
+        string $table,
+        bool $isInsertIgnore,
+        array $queryFields,
+        array $valueSets,
+    ): string {
+        return ($isInsertIgnore ? 'INSERT IGNORE ' : 'INSERT ') . 'INTO '
+            . Util::backquote($table)
+            . ' (' . implode(', ', $queryFields) . ') VALUES ('
+            . implode('), (', $valueSets) . ')';
     }
 }

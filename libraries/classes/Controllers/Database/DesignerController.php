@@ -48,7 +48,7 @@ class DesignerController extends AbstractController
             } elseif ($dialog === 'export') {
                 $html = $this->databaseDesigner->getHtmlForSchemaExport(
                     $db,
-                    $request->getParsedBodyParam('selected_page'),
+                    (int) $request->getParsedBodyParam('selected_page'),
                 );
             } elseif ($dialog === 'add_table') {
                 // Pass the db and table to the getTablesInfo so we only have the table we asked for
@@ -111,7 +111,6 @@ class DesignerController extends AbstractController
                 $this->response->addJSON('message', $GLOBALS['message']);
             } elseif ($operation === 'addNewRelation') {
                 [$success, $GLOBALS['message']] = $this->designerCommon->addNewRelation(
-                    $db,
                     $request->getParsedBodyParam('T1'),
                     $request->getParsedBodyParam('F1'),
                     $request->getParsedBodyParam('T2'),

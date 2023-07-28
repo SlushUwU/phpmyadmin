@@ -7,11 +7,11 @@ namespace PhpMyAdmin;
 use PhpMyAdmin\ConfigStorage\Relation;
 use PhpMyAdmin\Database\Events;
 use PhpMyAdmin\Database\Routines;
-use PhpMyAdmin\Database\Triggers;
-use PhpMyAdmin\Dbal\DatabaseName;
 use PhpMyAdmin\Engines\Innodb;
+use PhpMyAdmin\Identifiers\DatabaseName;
 use PhpMyAdmin\Partitioning\Partition;
 use PhpMyAdmin\Plugins\Export\ExportSql;
+use PhpMyAdmin\Triggers\Triggers;
 
 use function __;
 use function array_merge;
@@ -110,7 +110,7 @@ class Operations
      * @param ExportSql $exportSqlPlugin export plugin instance
      * @param string    $db              database name
      *
-     * @return array
+     * @return mixed[]
      */
     public function getViewsAndCreateSqlViewStandIn(
         array $tables,
@@ -155,7 +155,7 @@ class Operations
      * @param bool     $move   whether database name is empty or not
      * @param string   $db     database name
      *
-     * @return array SQL queries for the constraints
+     * @return mixed[] SQL queries for the constraints
      */
     public function copyTables(array $tables, bool $move, string $db, DatabaseName $newDatabaseName): array
     {
@@ -257,9 +257,9 @@ class Operations
     /**
      * Handle the views, return the boolean value whether table rename/copy or not
      *
-     * @param array  $views views as an array
-     * @param bool   $move  whether database name is empty or not
-     * @param string $db    database name
+     * @param mixed[] $views views as an array
+     * @param bool    $move  whether database name is empty or not
+     * @param string  $db    database name
      */
     public function handleTheViews(array $views, bool $move, string $db, DatabaseName $newDatabaseName): void
     {
@@ -423,7 +423,7 @@ class Operations
     /**
      * Create all accumulated constraints
      *
-     * @param array $sqlConstraints array of sql constraints for the database
+     * @param mixed[] $sqlConstraints array of sql constraints for the database
      */
     public function createAllAccumulatedConstraints(array $sqlConstraints, DatabaseName $newDatabaseName): void
     {
@@ -447,11 +447,7 @@ class Operations
             return;
         }
 
-        $getFields = [
-            'user',
-            'label',
-            'query',
-        ];
+        $getFields = ['user', 'label', 'query'];
         $whereFields = ['dbase' => $db];
         $newFields = ['dbase' => $newDatabaseName->getName()];
         Table::duplicateInfo('bookmarkwork', 'bookmark', $getFields, $whereFields, $newFields);
@@ -460,7 +456,7 @@ class Operations
     /**
      * Get array of possible row formats
      *
-     * @return array
+     * @return mixed[]
      */
     public function getPossibleRowFormat(): array
     {
@@ -469,28 +465,11 @@ class Operations
 
         $possibleRowFormats = [
             'ARCHIVE' => ['COMPRESSED' => 'COMPRESSED'],
-            'ARIA' => [
-                'FIXED' => 'FIXED',
-                'DYNAMIC' => 'DYNAMIC',
-                'PAGE' => 'PAGE',
-            ],
-            'MARIA' => [
-                'FIXED' => 'FIXED',
-                'DYNAMIC' => 'DYNAMIC',
-                'PAGE' => 'PAGE',
-            ],
-            'MYISAM' => [
-                'FIXED' => 'FIXED',
-                'DYNAMIC' => 'DYNAMIC',
-            ],
-            'PBXT' => [
-                'FIXED' => 'FIXED',
-                'DYNAMIC' => 'DYNAMIC',
-            ],
-            'INNODB' => [
-                'COMPACT' => 'COMPACT',
-                'REDUNDANT' => 'REDUNDANT',
-            ],
+            'ARIA' => ['FIXED' => 'FIXED', 'DYNAMIC' => 'DYNAMIC', 'PAGE' => 'PAGE'],
+            'MARIA' => ['FIXED' => 'FIXED', 'DYNAMIC' => 'DYNAMIC', 'PAGE' => 'PAGE'],
+            'MYISAM' => ['FIXED' => 'FIXED', 'DYNAMIC' => 'DYNAMIC'],
+            'PBXT' => ['FIXED' => 'FIXED', 'DYNAMIC' => 'DYNAMIC'],
+            'INNODB' => ['COMPACT' => 'COMPACT', 'REDUNDANT' => 'REDUNDANT'],
         ];
 
         /** @var Innodb $innodbEnginePlugin */
@@ -547,10 +526,10 @@ class Operations
     }
 
     /**
-     * @param array $urlParams          Array of url parameters.
-     * @param bool  $hasRelationFeature If relation feature is enabled.
+     * @param mixed[] $urlParams          Array of url parameters.
+     * @param bool    $hasRelationFeature If relation feature is enabled.
      *
-     * @return array
+     * @return mixed[]
      */
     public function getForeignersForReferentialIntegrityCheck(
         array $urlParams,
@@ -599,10 +578,7 @@ class Operations
                 . ' IS NOT NULL';
             $thisUrlParams = array_merge(
                 $urlParams,
-                [
-                    'sql_query' => $joinQuery,
-                    'sql_signature' => Core::signSqlQuery($joinQuery),
-                ],
+                ['sql_query' => $joinQuery, 'sql_signature' => Core::signSqlQuery($joinQuery)],
             );
 
             $foreigners[] = [
@@ -630,7 +606,7 @@ class Operations
      * @param string $transactional       value of transactional
      * @param string $tableCollation      collation of the table
      *
-     * @return array
+     * @return mixed[]
      */
     public function getTableAltersArray(
         Table $pmaTable,
@@ -860,7 +836,7 @@ class Operations
         [$charset] = explode('_', $tableCollation);
 
         $changeAllCollationsQuery .= ' CHARACTER SET ' . $charset
-            . ($charset == $tableCollation ? '' : ' COLLATE ' . $tableCollation);
+            . ($charset === $tableCollation ? '' : ' COLLATE ' . $tableCollation);
 
         $this->dbi->query($changeAllCollationsQuery);
     }
@@ -891,7 +867,7 @@ class Operations
          * A target table name has been sent to this script -> do the work
          */
         if (isset($_POST['new_name']) && is_scalar($_POST['new_name']) && (string) $_POST['new_name'] !== '') {
-            if ($db == $targetDb && $table == $_POST['new_name']) {
+            if ($db === $targetDb && $table == $_POST['new_name']) {
                 if (isset($_POST['submit_move'])) {
                     $message = Message::error(__('Can\'t move table to same one!'));
                 } else {
@@ -929,16 +905,14 @@ class Operations
                             ),
                         );
                     }
+                } elseif (isset($_POST['submit_move'])) {
+                    $message = Message::success(
+                        __('Table %s has been moved to %s.'),
+                    );
                 } else {
-                    if (isset($_POST['submit_move'])) {
-                        $message = Message::success(
-                            __('Table %s has been moved to %s.'),
-                        );
-                    } else {
-                        $message = Message::success(
-                            __('Table %s has been copied to %s.'),
-                        );
-                    }
+                    $message = Message::success(
+                        __('Table %s has been copied to %s.'),
+                    );
                 }
 
                 $old = Util::backquote($db) . '.'

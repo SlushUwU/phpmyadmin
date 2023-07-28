@@ -25,6 +25,7 @@ final class SqlController extends AbstractController
         ResponseRenderer $response,
         Template $template,
         private SqlQueryForm $sqlQueryForm,
+        private PageSettings $pageSettings,
     ) {
         parent::__construct($response, $template);
     }
@@ -37,15 +38,15 @@ final class SqlController extends AbstractController
 
         $this->addScriptFiles(['makegrid.js', 'vendor/jquery/jquery.uitablefilter.js', 'sql.js']);
 
-        $pageSettings = new PageSettings('Sql');
-        $this->response->addHTML($pageSettings->getErrorHTML());
-        $this->response->addHTML($pageSettings->getHTML());
+        $this->pageSettings->init('Sql');
+        $this->response->addHTML($this->pageSettings->getErrorHTML());
+        $this->response->addHTML($this->pageSettings->getHTML());
 
         $this->checkParameters(['db', 'table']);
 
-        $url_params = ['db' => $GLOBALS['db'], 'table' => $GLOBALS['table']];
+        $urlParams = ['db' => $GLOBALS['db'], 'table' => $GLOBALS['table']];
         $GLOBALS['errorUrl'] = Util::getScriptNameForOption($GLOBALS['cfg']['DefaultTabTable'], 'table');
-        $GLOBALS['errorUrl'] .= Url::getCommon($url_params, '&');
+        $GLOBALS['errorUrl'] .= Url::getCommon($urlParams, '&');
 
         DbTableExists::check($GLOBALS['db'], $GLOBALS['table']);
 
@@ -55,15 +56,14 @@ final class SqlController extends AbstractController
          */
         $GLOBALS['goto'] = Url::getFromRoute('/table/sql');
         $GLOBALS['back'] = Url::getFromRoute('/table/sql');
+        $delimiter = $request->getParsedBodyParam('delimiter', ';');
 
         $this->response->addHTML($this->sqlQueryForm->getHtml(
             $GLOBALS['db'],
             $GLOBALS['table'],
-            $_GET['sql_query'] ?? true,
+            $request->getQueryParam('sql_query', true),
             false,
-            isset($_POST['delimiter'])
-                ? htmlspecialchars($_POST['delimiter'])
-                : ';',
+            htmlspecialchars($delimiter),
         ));
     }
 }

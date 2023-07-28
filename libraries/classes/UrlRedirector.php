@@ -12,8 +12,7 @@ use function preg_match;
  */
 final class UrlRedirector
 {
-    /** @psalm-return never */
-    public static function redirect(string $url): void
+    public static function redirect(string $url): never
     {
         // Load database service because services.php is not available here
         $GLOBALS['dbi'] = DatabaseInterface::load();
@@ -32,7 +31,7 @@ final class UrlRedirector
         ) {
             Core::sendHeaderLocation('./');
 
-            exit;
+            $response->callExit();
         }
 
         /**
@@ -47,6 +46,6 @@ final class UrlRedirector
         // Do not display the value of $_GET['url'] to avoid showing injected content
         echo __('Taking you to the target site.');
 
-        exit;
+        $response->callExit();
     }
 }
