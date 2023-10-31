@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests;
 
+use PhpMyAdmin\Bookmarks\BookmarkRepository;
+use PhpMyAdmin\Config;
 use PhpMyAdmin\ConfigStorage\Relation;
 use PhpMyAdmin\ConfigStorage\RelationCleanup;
 use PhpMyAdmin\DatabaseInterface;
@@ -44,32 +46,34 @@ class SqlTest extends AbstractTestCase
 
         $this->dummyDbi = $this->createDbiDummy();
         $this->dbi = $this->createDatabaseInterface($this->dummyDbi);
-        $GLOBALS['dbi'] = $this->dbi;
+        DatabaseInterface::$instance = $this->dbi;
         $GLOBALS['server'] = 1;
         $GLOBALS['db'] = 'db';
         $GLOBALS['table'] = 'table';
-        $GLOBALS['cfg']['AllowThirdPartyFraming'] = false;
-        $GLOBALS['cfg']['SendErrorReports'] = 'ask';
-        $GLOBALS['cfg']['ServerDefault'] = 1;
-        $GLOBALS['cfg']['DefaultTabDatabase'] = 'structure';
-        $GLOBALS['cfg']['DefaultTabTable'] = 'browse';
-        $GLOBALS['cfg']['ShowDatabasesNavigationAsTree'] = true;
-        $GLOBALS['cfg']['NavigationTreeDefaultTabTable'] = 'structure';
-        $GLOBALS['cfg']['NavigationTreeDefaultTabTable2'] = '';
-        $GLOBALS['cfg']['LimitChars'] = 50;
-        $GLOBALS['cfg']['Confirm'] = true;
-        $GLOBALS['cfg']['LoginCookieValidity'] = 1440;
-        $GLOBALS['cfg']['enable_drag_drop_import'] = true;
+        $config = Config::getInstance();
+        $config->settings['AllowThirdPartyFraming'] = false;
+        $config->settings['SendErrorReports'] = 'ask';
+        $config->settings['ServerDefault'] = 1;
+        $config->settings['DefaultTabDatabase'] = 'structure';
+        $config->settings['DefaultTabTable'] = 'browse';
+        $config->settings['ShowDatabasesNavigationAsTree'] = true;
+        $config->settings['NavigationTreeDefaultTabTable'] = 'structure';
+        $config->settings['NavigationTreeDefaultTabTable2'] = '';
+        $config->settings['LimitChars'] = 50;
+        $config->settings['Confirm'] = true;
+        $config->settings['LoginCookieValidity'] = 1440;
+        $config->settings['enable_drag_drop_import'] = true;
         $GLOBALS['showtable'] = null;
 
-        $relation = new Relation($GLOBALS['dbi']);
+        $relation = new Relation($this->dbi);
         $this->sql = new Sql(
-            $GLOBALS['dbi'],
+            $this->dbi,
             $relation,
-            new RelationCleanup($GLOBALS['dbi'], $relation),
-            new Operations($GLOBALS['dbi'], $relation),
+            new RelationCleanup($this->dbi, $relation),
+            new Operations($this->dbi, $relation),
             new Transformations(),
             new Template(),
+            new BookmarkRepository($this->dbi, $relation),
         );
     }
 
@@ -96,7 +100,7 @@ class SqlTest extends AbstractTestCase
     public function testIsRememberSortingOrder(): void
     {
         // Test environment.
-        $GLOBALS['cfg']['RememberSorting'] = true;
+        Config::getInstance()->settings['RememberSorting'] = true;
 
         $this->assertTrue(
             $this->callFunction($this->sql, Sql::class, 'isRememberSortingOrder', [
@@ -419,7 +423,7 @@ class SqlTest extends AbstractTestCase
         string|null $expectedCountQuery = null,
     ): void {
         if ($justBrowsing) {
-            $GLOBALS['cfg']['Server']['DisableIS'] = true;
+            Config::getInstance()->selectedServer['DisableIS'] = true;
         }
 
         $_SESSION['tmpval'] = $sessionTmpVal;
@@ -594,14 +598,14 @@ class SqlTest extends AbstractTestCase
         $GLOBALS['db'] = 'sakila';
         $GLOBALS['table'] = 'country';
         $GLOBALS['sql_query'] = 'SELECT * FROM `sakila`.`country` LIMIT 0, 3;';
-        $GLOBALS['cfg']['Server']['DisableIS'] = true;
-        $GLOBALS['cfg']['Server']['user'] = 'user';
+        $config = Config::getInstance();
+        $config->selectedServer['DisableIS'] = true;
+        $config->selectedServer['user'] = 'user';
         $actual = $this->sql->executeQueryAndSendQueryResponse(
             null,
             false,
             'sakila',
             'different_table',
-            null,
             null,
             null,
             null,

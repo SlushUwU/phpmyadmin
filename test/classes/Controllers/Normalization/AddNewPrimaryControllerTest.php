@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Controllers\Normalization;
 
+use PhpMyAdmin\Config;
 use PhpMyAdmin\ConfigStorage\Relation;
 use PhpMyAdmin\Controllers\Normalization\AddNewPrimaryController;
+use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\Http\ServerRequest;
 use PhpMyAdmin\Normalization;
 use PhpMyAdmin\Template;
@@ -19,7 +21,7 @@ class AddNewPrimaryControllerTest extends AbstractTestCase
 {
     public function testDefault(): void
     {
-        $GLOBALS['cfg']['Server']['DisableIS'] = false;
+        Config::getInstance()->selectedServer['DisableIS'] = false;
         $GLOBALS['col_priv'] = false;
         $GLOBALS['db'] = 'test_db';
         $GLOBALS['table'] = 'test_table';
@@ -27,7 +29,7 @@ class AddNewPrimaryControllerTest extends AbstractTestCase
         $dbiDummy = $this->createDbiDummy();
 
         $dbi = $this->createDatabaseInterface($dbiDummy);
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
         $response = new ResponseRenderer();
         $template = new Template();
 

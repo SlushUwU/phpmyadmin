@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Controllers\Console\Bookmark;
 
+use PhpMyAdmin\Bookmarks\BookmarkRepository;
+use PhpMyAdmin\Config;
 use PhpMyAdmin\ConfigStorage\Relation;
 use PhpMyAdmin\ConfigStorage\RelationParameters;
 use PhpMyAdmin\Controllers\Console\Bookmark\AddController;
+use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\Http\ServerRequest;
 use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\AbstractTestCase;
@@ -20,7 +23,7 @@ class AddControllerTest extends AbstractTestCase
     public function testWithInvalidParams(): void
     {
         $dbi = $this->createDatabaseInterface();
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
         $response = new ResponseRenderer();
         $request = $this->createStub(ServerRequest::class);
         $request->method('getParsedBodyParam')->willReturnMap([
@@ -29,17 +32,19 @@ class AddControllerTest extends AbstractTestCase
             ['bookmark_query', null, null],
             ['shared', null, null],
         ]);
-        $controller = new AddController($response, new Template(), $dbi);
+        $relation = new Relation($dbi);
+        $bookmarkRepository = new BookmarkRepository($dbi, $relation);
+        $controller = new AddController($response, new Template(), $bookmarkRepository);
         $controller($request);
         $this->assertSame(['message' => 'Incomplete params'], $response->getJSONResult());
     }
 
     public function testWithoutRelationParameters(): void
     {
-        $GLOBALS['cfg']['Server']['user'] = 'user';
+        Config::getInstance()->selectedServer['user'] = 'user';
         (new ReflectionProperty(Relation::class, 'cache'))->setValue(null, null);
         $dbi = $this->createDatabaseInterface();
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
         $response = new ResponseRenderer();
         $request = $this->createStub(ServerRequest::class);
         $request->method('getParsedBodyParam')->willReturnMap([
@@ -48,14 +53,16 @@ class AddControllerTest extends AbstractTestCase
             ['bookmark_query', null, 'test'],
             ['shared', null, 'test'],
         ]);
-        $controller = new AddController($response, new Template(), $dbi);
+        $relation = new Relation($dbi);
+        $bookmarkRepository = new BookmarkRepository($dbi, $relation);
+        $controller = new AddController($response, new Template(), $bookmarkRepository);
         $controller($request);
         $this->assertSame(['message' => 'Failed'], $response->getJSONResult());
     }
 
     public function testWithValidParameters(): void
     {
-        $GLOBALS['cfg']['Server']['user'] = 'test_user';
+        Config::getInstance()->selectedServer['user'] = 'test_user';
         $GLOBALS['server'] = 1;
         $relationParameters = RelationParameters::fromArray([
             'user' => 'test_user',
@@ -72,7 +79,7 @@ class AddControllerTest extends AbstractTestCase
             true,
         );
         $dbi = $this->createDatabaseInterface($dbiDummy);
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
         $response = new ResponseRenderer();
         $request = $this->createStub(ServerRequest::class);
         $request->method('getParsedBodyParam')->willReturnMap([
@@ -81,7 +88,9 @@ class AddControllerTest extends AbstractTestCase
             ['bookmark_query', null, 'test_query'],
             ['shared', null, 'true'],
         ]);
-        $controller = new AddController($response, new Template(), $dbi);
+        $relation = new Relation($dbi);
+        $bookmarkRepository = new BookmarkRepository($dbi, $relation);
+        $controller = new AddController($response, new Template(), $bookmarkRepository);
         $controller($request);
         $this->assertSame(
             [

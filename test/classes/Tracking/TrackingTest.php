@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace PhpMyAdmin\Tests\Tracking;
 
 use DateTimeImmutable;
+use PhpMyAdmin\Bookmarks\BookmarkRepository;
+use PhpMyAdmin\Config;
 use PhpMyAdmin\ConfigStorage\Relation;
 use PhpMyAdmin\ConfigStorage\RelationParameters;
 use PhpMyAdmin\DatabaseInterface;
@@ -45,15 +47,17 @@ class TrackingTest extends AbstractTestCase
 
         parent::setTheme();
 
-        $GLOBALS['dbi'] = $this->createDatabaseInterface();
+        $dbi = $this->createDatabaseInterface();
+        DatabaseInterface::$instance = $dbi;
 
         $GLOBALS['server'] = 1;
         $GLOBALS['db'] = 'PMA_db';
         $GLOBALS['table'] = 'PMA_table';
         $GLOBALS['lang'] = 'en';
         $GLOBALS['text_dir'] = 'ltr';
-        $GLOBALS['cfg']['Server']['DisableIS'] = true;
-        $GLOBALS['cfg']['Server']['tracking_default_statements'] = 'DELETE';
+        $config = Config::getInstance();
+        $config->selectedServer['DisableIS'] = true;
+        $config->selectedServer['tracking_default_statements'] = 'DELETE';
 
         $relationParameters = RelationParameters::fromArray([
             'db' => 'pmadb',
@@ -63,11 +67,13 @@ class TrackingTest extends AbstractTestCase
         (new ReflectionProperty(Relation::class, 'cache'))->setValue(null, $relationParameters);
 
         $template = new Template();
+        $relation = new Relation($dbi);
+        $bookmarkRepository = new BookmarkRepository($dbi, $relation);
         $this->tracking = new Tracking(
-            new SqlQueryForm($template, $GLOBALS['dbi']),
+            new SqlQueryForm($template, $dbi, $bookmarkRepository),
             $template,
-            new Relation($GLOBALS['dbi']),
-            $GLOBALS['dbi'],
+            $relation,
+            $dbi,
             $this->createStub(TrackingChecker::class),
         );
     }
@@ -581,14 +587,14 @@ class TrackingTest extends AbstractTestCase
         $dbi->expects($this->exactly(1))
             ->method('queryAsControlUser')
             ->with($sqlQuery)
-            ->will($this->returnValue($resultStub));
+            ->willReturn($resultStub);
         $dbi->expects($this->any())->method('quoteString')
-            ->will($this->returnCallback(static fn (string $string): string => "'" . $string . "'"));
+            ->willReturnCallback(static fn (string $string): string => "'" . $string . "'");
 
         $tracking = new Tracking(
             $this->createStub(SqlQueryForm::class),
             $this->createStub(Template::class),
-            new Relation($GLOBALS['dbi']),
+            new Relation(DatabaseInterface::getInstance()),
             $dbi,
             $this->createStub(TrackingChecker::class),
         );
@@ -628,19 +634,15 @@ class TrackingTest extends AbstractTestCase
         $resultStub2 = $this->createMock(DummyResult::class);
 
         $dbi->method('queryAsControlUser')
-            ->will(
-                $this->returnValueMap(
-                    [[$sqlQuery1, $resultStub1], [$sqlQuery2, $resultStub2]],
-                ),
-            );
+            ->willReturnMap([[$sqlQuery1, $resultStub1], [$sqlQuery2, $resultStub2]]);
 
         $dbi->expects($this->any())->method('quoteString')
-            ->will($this->returnCallback(static fn (string $string): string => "'" . $string . "'"));
+            ->willReturnCallback(static fn (string $string): string => "'" . $string . "'");
 
         $tracking = new Tracking(
             $this->createStub(SqlQueryForm::class),
             $this->createStub(Template::class),
-            new Relation($GLOBALS['dbi']),
+            new Relation(DatabaseInterface::getInstance()),
             $dbi,
             $this->createStub(TrackingChecker::class),
         );
@@ -673,16 +675,16 @@ class TrackingTest extends AbstractTestCase
 
         $dbi->expects($this->once())
             ->method('queryAsControlUser')
-            ->will($this->returnValue($resultStub));
+            ->willReturn($resultStub);
 
         $resultStub->expects($this->once())
             ->method('fetchAssoc')
-            ->will($this->returnValue($fetchArrayReturn));
+            ->willReturn($fetchArrayReturn);
 
         $tracking = new Tracking(
             $this->createStub(SqlQueryForm::class),
             $this->createStub(Template::class),
-            new Relation($GLOBALS['dbi']),
+            new Relation(DatabaseInterface::getInstance()),
             $dbi,
             $this->createStub(TrackingChecker::class),
         );

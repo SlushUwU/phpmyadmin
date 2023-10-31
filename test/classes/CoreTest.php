@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests;
 
+use PhpMyAdmin\Config;
 use PhpMyAdmin\Core;
+use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\Http\ServerRequest;
 use PhpMyAdmin\ResponseRenderer;
 use PhpMyAdmin\Url;
@@ -16,19 +18,15 @@ use PHPUnit\Framework\Attributes\RequiresPhpExtension;
 use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 use stdClass;
 
-use function __;
 use function _pgettext;
 use function hash;
 use function header;
-use function htmlspecialchars;
+use function putenv;
 use function serialize;
 use function str_repeat;
-use function strtr;
-
-use const ENT_QUOTES;
 
 #[CoversClass(Core::class)]
-class CoreTest extends AbstractNetworkTestCase
+class CoreTest extends AbstractTestCase
 {
     /**
      * Setup for test cases
@@ -41,12 +39,12 @@ class CoreTest extends AbstractNetworkTestCase
 
         parent::setLanguage();
 
-        $GLOBALS['dbi'] = $this->createDatabaseInterface();
+        DatabaseInterface::$instance = $this->createDatabaseInterface();
 
         $GLOBALS['server'] = 0;
         $GLOBALS['db'] = '';
         $GLOBALS['table'] = '';
-        $GLOBALS['config']->set('URLQueryEncryption', false);
+        Config::getInstance()->set('URLQueryEncryption', false);
     }
 
     /**
@@ -347,90 +345,6 @@ class CoreTest extends AbstractNetworkTestCase
         ];
     }
 
-    /**
-     * Test for Core::sendHeaderLocation
-     */
-    public function testSendHeaderLocationWithoutSidWithIis(): void
-    {
-        $GLOBALS['server'] = 0;
-        $GLOBALS['config']->set('PMA_IS_IIS', true);
-
-        $testUri = 'https://example.com/test.php';
-
-        $this->mockResponse('Location: ' . $testUri);
-        Core::sendHeaderLocation($testUri); // sets $GLOBALS['header']
-
-        $this->mockResponse('Refresh: 0; ' . $testUri);
-        Core::sendHeaderLocation($testUri, true); // sets $GLOBALS['header']
-    }
-
-    /**
-     * Test for Core::sendHeaderLocation
-     */
-    public function testSendHeaderLocationWithoutSidWithoutIis(): void
-    {
-        $GLOBALS['server'] = 0;
-
-        parent::setGlobalConfig();
-
-        $GLOBALS['config']->set('PMA_IS_IIS', null);
-
-        $testUri = 'https://example.com/test.php';
-
-        $this->mockResponse('Location: ' . $testUri);
-        Core::sendHeaderLocation($testUri); // sets $GLOBALS['header']
-    }
-
-    /**
-     * Test for Core::sendHeaderLocation
-     */
-    public function testSendHeaderLocationIisLongUri(): void
-    {
-        $GLOBALS['server'] = 0;
-
-        parent::setGlobalConfig();
-
-        $GLOBALS['config']->set('PMA_IS_IIS', true);
-
-        // over 600 chars
-        $testUri = 'https://example.com/test.php?testlonguri=over600chars&test=test'
-            . '&test=test&test=test&test=test&test=test&test=test&test=test'
-            . '&test=test&test=test&test=test&test=test&test=test&test=test'
-            . '&test=test&test=test&test=test&test=test&test=test&test=test'
-            . '&test=test&test=test&test=test&test=test&test=test&test=test'
-            . '&test=test&test=test&test=test&test=test&test=test&test=test'
-            . '&test=test&test=test&test=test&test=test&test=test&test=test'
-            . '&test=test&test=test&test=test&test=test&test=test&test=test'
-            . '&test=test&test=test&test=test&test=test&test=test&test=test'
-            . '&test=test&test=test&test=test&test=test&test=test&test=test'
-            . '&test=test&test=test';
-        $testUriJs = strtr($testUri, [
-            ':' => '\u003A',
-            '/' => '\/', // Twig uses the short escape sequence
-            '?' => '\u003F',
-            '&' => '\u0026',
-            '=' => '\u003D',
-        ]);
-
-        $header = "<html>\n<head>\n    <title>- - -</title>"
-            . "\n    <meta http-equiv=\"expires\" content=\"0\">"
-            . "\n    <meta http-equiv=\"Pragma\" content=\"no-cache\">"
-            . "\n    <meta http-equiv=\"Cache-Control\" content=\"no-cache\">"
-            . "\n    <meta http-equiv=\"Refresh\" content=\"0;url=" . htmlspecialchars($testUri, ENT_QUOTES) . '">'
-            . "\n    <script>\n        //<![CDATA["
-            . "\n        setTimeout(function() { window.location = decodeURI('" . $testUriJs . "'); }, 2000);"
-            . "\n        //]]>\n    </script>\n</head>"
-            . "\n<body>\n<script>\n    //<![CDATA["
-            . "\n    document.write('<p><a href=\"" . $testUriJs . '">' . __('Go') . "</a></p>');"
-            . "\n    //]]>\n</script>\n</body>\n</html>\n";
-
-        $this->expectOutputString($header);
-
-        $this->mockResponse();
-
-        Core::sendHeaderLocation($testUri);
-    }
-
     #[DataProvider('provideTestIsAllowedDomain')]
     public function testIsAllowedDomain(string $url, bool $expected): void
     {
@@ -678,16 +592,17 @@ class CoreTest extends AbstractNetworkTestCase
      */
     public function testCheckSqlQuerySignatureFailsBlowfishSecretChanged(): void
     {
-        $GLOBALS['cfg']['blowfish_secret'] = '';
+        $config = Config::getInstance();
+        $config->settings['blowfish_secret'] = '';
         $_SESSION[' HMAC_secret '] = hash('sha1', 'firstSession');
         $sqlQuery = 'SELECT * FROM `test`.`db` WHERE 1;';
         $hmac = Core::signSqlQuery($sqlQuery);
         $this->assertTrue(Core::checkSqlQuerySignature($sqlQuery, $hmac));
-        $GLOBALS['cfg']['blowfish_secret'] = str_repeat('a', 32);
+        $config->settings['blowfish_secret'] = str_repeat('a', 32);
         // Try to use the previous HMAC signature
         $this->assertFalse(Core::checkSqlQuerySignature($sqlQuery, $hmac));
 
-        $GLOBALS['cfg']['blowfish_secret'] = str_repeat('a', 32);
+        $config->settings['blowfish_secret'] = str_repeat('a', 32);
         // Generate the HMAC signature to check that it works
         $hmac = Core::signSqlQuery($sqlQuery);
         // Must work now, (good secret and blowfish_secret)
@@ -697,8 +612,9 @@ class CoreTest extends AbstractNetworkTestCase
     public function testPopulateRequestWithEncryptedQueryParams(): void
     {
         $_SESSION = [];
-        $GLOBALS['config']->set('URLQueryEncryption', true);
-        $GLOBALS['config']->set('URLQueryEncryptionSecretKey', str_repeat('a', 32));
+        $config = Config::getInstance();
+        $config->set('URLQueryEncryption', true);
+        $config->set('URLQueryEncryptionSecretKey', str_repeat('a', 32));
 
         $_GET = ['pos' => '0', 'eq' => Url::encryptQuery('{"db":"test_db","table":"test_table"}')];
         $_REQUEST = $_GET;
@@ -727,8 +643,9 @@ class CoreTest extends AbstractNetworkTestCase
         array $decrypted,
     ): void {
         $_SESSION = [];
-        $GLOBALS['config']->set('URLQueryEncryption', true);
-        $GLOBALS['config']->set('URLQueryEncryptionSecretKey', str_repeat('a', 32));
+        $config = Config::getInstance();
+        $config->set('URLQueryEncryption', true);
+        $config->set('URLQueryEncryptionSecretKey', str_repeat('a', 32));
 
         $_GET = $encrypted;
         $_REQUEST = $encrypted;
@@ -757,7 +674,7 @@ class CoreTest extends AbstractNetworkTestCase
     #[RunInSeparateProcess]
     public function testDownloadHeader(): void
     {
-        $GLOBALS['config']->set('PMA_USR_BROWSER_AGENT', 'FIREFOX');
+        Config::getInstance()->set('PMA_USR_BROWSER_AGENT', 'FIREFOX');
 
         header('Cache-Control: private, max-age=10800');
 
@@ -782,7 +699,7 @@ class CoreTest extends AbstractNetworkTestCase
     #[RunInSeparateProcess]
     public function testDownloadHeader2(): void
     {
-        $GLOBALS['config']->set('PMA_USR_BROWSER_AGENT', 'FIREFOX');
+        Config::getInstance()->set('PMA_USR_BROWSER_AGENT', 'FIREFOX');
 
         header('Cache-Control: private, max-age=10800');
 
@@ -799,5 +716,25 @@ class CoreTest extends AbstractNetworkTestCase
         $this->assertNotContains('Content-Encoding: gzip', $headersList);
         $this->assertContains('Content-Transfer-Encoding: binary', $headersList);
         $this->assertNotContains('Content-Length: 0', $headersList);
+    }
+
+    public function testGetEnv(): void
+    {
+        self::assertSame('', Core::getEnv('PHPMYADMIN_GET_ENV_TEST'));
+
+        $_SERVER['PHPMYADMIN_GET_ENV_TEST'] = 'value_from_server_global';
+        $_ENV['PHPMYADMIN_GET_ENV_TEST'] = 'value_from_env_global';
+        putenv('PHPMYADMIN_GET_ENV_TEST=value_from_getenv');
+
+        self::assertSame('value_from_server_global', Core::getEnv('PHPMYADMIN_GET_ENV_TEST'));
+        unset($_SERVER['PHPMYADMIN_GET_ENV_TEST']);
+
+        self::assertSame('value_from_env_global', Core::getEnv('PHPMYADMIN_GET_ENV_TEST'));
+        unset($_ENV['PHPMYADMIN_GET_ENV_TEST']);
+
+        self::assertSame('value_from_getenv', Core::getEnv('PHPMYADMIN_GET_ENV_TEST'));
+        putenv('PHPMYADMIN_GET_ENV_TEST');
+
+        self::assertSame('', Core::getEnv('PHPMYADMIN_GET_ENV_TEST'));
     }
 }

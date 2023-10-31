@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace PhpMyAdmin\Tests\Controllers\Table;
 
 use Generator;
+use PhpMyAdmin\Config;
 use PhpMyAdmin\ConfigStorage\Relation;
 use PhpMyAdmin\Controllers\Table\RelationController;
 use PhpMyAdmin\DatabaseInterface;
@@ -35,7 +36,7 @@ class RelationControllerTest extends AbstractTestCase
         $GLOBALS['db'] = 'db';
         $GLOBALS['table'] = 'table';
         $GLOBALS['text_dir'] = 'ltr';
-        $GLOBALS['cfg']['Server']['DisableIS'] = false;
+        Config::getInstance()->selectedServer['DisableIS'] = false;
         //$_SESSION
 
         $_POST['foreignDb'] = 'db';
@@ -45,7 +46,7 @@ class RelationControllerTest extends AbstractTestCase
             ->disableOriginalConstructor()
             ->getMock();
 
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
 
         $this->response = new ResponseStub();
         $this->template = new Template();
@@ -65,18 +66,19 @@ class RelationControllerTest extends AbstractTestCase
             ->getMock();
         // Test the situation when the table is a view
         $tableMock->expects($this->any())->method('isView')
-            ->will($this->returnValue(true));
+            ->willReturn(true);
         $tableMock->expects($this->any())->method('getColumns')
-            ->will($this->returnValue($viewColumns));
+            ->willReturn($viewColumns);
 
-        $GLOBALS['dbi']->expects($this->any())->method('getTable')
-            ->will($this->returnValue($tableMock));
+        $dbi = DatabaseInterface::getInstance();
+        $dbi->expects($this->any())->method('getTable')
+            ->willReturn($tableMock);
 
         $ctrl = new RelationController(
             $this->response,
             $this->template,
-            new Relation($GLOBALS['dbi']),
-            $GLOBALS['dbi'],
+            new Relation($dbi),
+            $dbi,
         );
 
         $ctrl->getDropdownValueForTable();
@@ -98,18 +100,19 @@ class RelationControllerTest extends AbstractTestCase
             ->getMock();
         // Test the situation when the table is a view
         $tableMock->expects($this->any())->method('isView')
-            ->will($this->returnValue(false));
+            ->willReturn(false);
         $tableMock->expects($this->any())->method('getIndexedColumns')
-            ->will($this->returnValue($indexedColumns));
+            ->willReturn($indexedColumns);
 
-        $GLOBALS['dbi']->expects($this->any())->method('getTable')
-            ->will($this->returnValue($tableMock));
+        $dbi = DatabaseInterface::getInstance();
+        $dbi->expects($this->any())->method('getTable')
+            ->willReturn($tableMock);
 
         $ctrl = new RelationController(
             $this->response,
             $this->template,
-            new Relation($GLOBALS['dbi']),
-            $GLOBALS['dbi'],
+            new Relation($dbi),
+            $dbi,
         );
 
         $ctrl->getDropdownValueForTable();
@@ -126,21 +129,22 @@ class RelationControllerTest extends AbstractTestCase
     {
         $resultStub = $this->createMock(DummyResult::class);
 
-        $GLOBALS['dbi']->expects($this->exactly(1))
+        $dbi = DatabaseInterface::getInstance();
+        $dbi->expects($this->exactly(1))
             ->method('query')
-            ->will($this->returnValue($resultStub));
+            ->willReturn($resultStub);
 
         $resultStub->expects($this->any())
             ->method('getIterator')
-            ->will($this->returnCallback(static function (): Generator {
+            ->willReturnCallback(static function (): Generator {
                 yield from [['Engine' => 'InnoDB', 'Name' => 'table']];
-            }));
+            });
 
         $ctrl = new RelationController(
             $this->response,
             $this->template,
-            new Relation($GLOBALS['dbi']),
-            $GLOBALS['dbi'],
+            new Relation($dbi),
+            $dbi,
         );
 
         $_POST['foreign'] = 'true';
@@ -161,19 +165,20 @@ class RelationControllerTest extends AbstractTestCase
     {
         $resultStub = $this->createMock(DummyResult::class);
 
-        $GLOBALS['dbi']->expects($this->exactly(1))
+        $dbi = DatabaseInterface::getInstance();
+        $dbi->expects($this->exactly(1))
             ->method('query')
-            ->will($this->returnValue($resultStub));
+            ->willReturn($resultStub);
 
         $resultStub->expects($this->any())
             ->method('fetchAllColumn')
-            ->will($this->returnValue(['table']));
+            ->willReturn(['table']);
 
         $ctrl = new RelationController(
             $this->response,
             $this->template,
-            new Relation($GLOBALS['dbi']),
-            $GLOBALS['dbi'],
+            new Relation($dbi),
+            $dbi,
         );
 
         $_POST['foreign'] = 'false';

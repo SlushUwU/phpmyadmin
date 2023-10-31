@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace PhpMyAdmin\Tests\Controllers\Database;
 
 use PhpMyAdmin\CheckUserPrivileges;
+use PhpMyAdmin\Config;
 use PhpMyAdmin\Controllers\Database\RoutinesController;
 use PhpMyAdmin\Database\Routines;
-use PhpMyAdmin\Http\ServerRequest;
+use PhpMyAdmin\DatabaseInterface;
+use PhpMyAdmin\DbTableExists;
+use PhpMyAdmin\Http\Factory\ServerRequestFactory;
 use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\ResponseRenderer;
@@ -23,7 +26,7 @@ final class RoutinesControllerTest extends AbstractTestCase
         $GLOBALS['text_dir'] = 'ltr';
         $GLOBALS['PMA_PHP_SELF'] = 'index.php';
         $GLOBALS['db'] = 'test_db';
-        $GLOBALS['cfg']['Server']['DisableIS'] = true;
+        Config::getInstance()->selectedServer['DisableIS'] = true;
 
         $dummyDbi = $this->createDbiDummy();
         // phpcs:disable Generic.Files.LineLength.TooLong
@@ -47,7 +50,7 @@ final class RoutinesControllerTest extends AbstractTestCase
         );
         $dummyDbi->addResult('SELECT @@lower_case_table_names', []);
         $dummyDbi->addResult(
-            "SELECT `DEFINER` FROM INFORMATION_SCHEMA.ROUTINES WHERE ROUTINE_SCHEMA COLLATE utf8_bin='test_db' AND SPECIFIC_NAME='test_func'AND ROUTINE_TYPE='FUNCTION';",
+            "SELECT `DEFINER` FROM INFORMATION_SCHEMA.ROUTINES WHERE ROUTINE_SCHEMA COLLATE utf8_bin='test_db' AND SPECIFIC_NAME='test_func' AND ROUTINE_TYPE='FUNCTION';",
             [['definer@localhost']],
             ['DEFINER'],
         );
@@ -67,7 +70,7 @@ final class RoutinesControllerTest extends AbstractTestCase
             ['Function', 'Create Function'],
         );
         $dummyDbi->addResult(
-            "SELECT `DEFINER` FROM INFORMATION_SCHEMA.ROUTINES WHERE ROUTINE_SCHEMA COLLATE utf8_bin='test_db' AND SPECIFIC_NAME='test_proc'AND ROUTINE_TYPE='PROCEDURE';",
+            "SELECT `DEFINER` FROM INFORMATION_SCHEMA.ROUTINES WHERE ROUTINE_SCHEMA COLLATE utf8_bin='test_db' AND SPECIFIC_NAME='test_proc' AND ROUTINE_TYPE='PROCEDURE';",
             [['definer@localhost']],
             ['DEFINER'],
         );
@@ -94,9 +97,12 @@ final class RoutinesControllerTest extends AbstractTestCase
         // phpcs:enable
 
         $dbi = $this->createDatabaseInterface($dummyDbi);
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
         $template = new Template();
         $response = new ResponseRenderer();
+
+        $request = ServerRequestFactory::create()->createServerRequest('GET', 'http://example.com/')
+            ->withQueryParams(['db' => 'test_db']);
 
         (new RoutinesController(
             $response,
@@ -104,7 +110,8 @@ final class RoutinesControllerTest extends AbstractTestCase
             new CheckUserPrivileges($dbi),
             $dbi,
             new Routines($dbi),
-        ))($this->createStub(ServerRequest::class));
+            new DbTableExists($dbi),
+        ))($request);
 
         $actual = $response->getHTMLResult();
         // phpcs:disable Generic.Files.LineLength.TooLong
@@ -242,7 +249,7 @@ HTML;
         $GLOBALS['text_dir'] = 'ltr';
         $GLOBALS['PMA_PHP_SELF'] = 'index.php';
         $GLOBALS['db'] = 'test_db';
-        $GLOBALS['cfg']['Server']['DisableIS'] = true;
+        Config::getInstance()->selectedServer['DisableIS'] = true;
 
         $dummyDbi = $this->createDbiDummy();
         // phpcs:disable Generic.Files.LineLength.TooLong
@@ -264,9 +271,12 @@ HTML;
         // phpcs:enable
 
         $dbi = $this->createDatabaseInterface($dummyDbi);
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
         $template = new Template();
         $response = new ResponseRenderer();
+
+        $request = ServerRequestFactory::create()->createServerRequest('GET', 'http://example.com/')
+            ->withQueryParams(['db' => 'test_db']);
 
         (new RoutinesController(
             $response,
@@ -274,7 +284,8 @@ HTML;
             new CheckUserPrivileges($dbi),
             $dbi,
             new Routines($dbi),
-        ))($this->createStub(ServerRequest::class));
+            new DbTableExists($dbi),
+        ))($request);
 
         $actual = $response->getHTMLResult();
         // phpcs:disable Generic.Files.LineLength.TooLong

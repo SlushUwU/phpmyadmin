@@ -5,15 +5,14 @@ declare(strict_types=1);
 namespace PhpMyAdmin\Tests;
 
 use Exception;
+use PhpMyAdmin\Config;
+use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\Error;
 use PhpMyAdmin\ErrorHandler;
 use PhpMyAdmin\Exceptions\ExitException;
-use PhpMyAdmin\ResponseRenderer;
-use PhpMyAdmin\Tests\Stubs\ResponseRenderer as ResponseRendererStub;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
-use ReflectionProperty;
 use Throwable;
 
 use function array_keys;
@@ -40,12 +39,13 @@ class ErrorHandlerTest extends AbstractTestCase
         parent::setUp();
 
         $GLOBALS['lang'] = 'en';
-        $GLOBALS['dbi'] = $this->createDatabaseInterface();
+        DatabaseInterface::$instance = $this->createDatabaseInterface();
         $this->object = new ErrorHandler();
         $_SESSION['errors'] = [];
         $GLOBALS['server'] = 0;
-        $GLOBALS['cfg']['environment'] = 'production';
-        $GLOBALS['cfg']['SendErrorReports'] = 'always';
+        $config = Config::getInstance();
+        $config->settings['environment'] = 'production';
+        $config->settings['SendErrorReports'] = 'always';
     }
 
     /**
@@ -57,6 +57,14 @@ class ErrorHandlerTest extends AbstractTestCase
         parent::tearDown();
 
         unset($this->object);
+    }
+
+    public function testUniqueness(): void
+    {
+        ErrorHandler::$instance = null;
+        $instanceOne = ErrorHandler::getInstance();
+        $instanceTwo = ErrorHandler::getInstance();
+        $this->assertSame($instanceOne, $instanceTwo);
     }
 
     /**
@@ -93,7 +101,7 @@ class ErrorHandlerTest extends AbstractTestCase
         string $outputHide,
     ): void {
         // TODO: Add other test cases for all combination of 'sendErrorReports'
-        $GLOBALS['cfg']['SendErrorReports'] = 'never';
+        Config::getInstance()->settings['SendErrorReports'] = 'never';
 
         $this->object->handleError($errno, $errstr, $errfile, $errline);
 
@@ -298,10 +306,7 @@ class ErrorHandlerTest extends AbstractTestCase
     {
         $GLOBALS['lang'] = 'en';
         $GLOBALS['text_dir'] = 'ltr';
-        $GLOBALS['config']->set('environment', 'development');
-        $responseStub = new ResponseRendererStub();
-        (new ReflectionProperty(ResponseRenderer::class, 'instance'))->setValue(null, $responseStub);
-        $responseStub->setHeadersSent(true);
+        Config::getInstance()->set('environment', 'development');
         $errorHandler = new ErrorHandler();
         $this->assertSame([], $errorHandler->getCurrentErrors());
         try {
@@ -310,7 +315,7 @@ class ErrorHandlerTest extends AbstractTestCase
         }
 
         $this->assertInstanceOf(ExitException::class, $throwable ?? null);
-        $output = $responseStub->getHTMLResult();
+        $output = $this->getActualOutputForAssertion();
         $errors = $errorHandler->getCurrentErrors();
         $this->assertCount(1, $errors);
         $error = array_pop($errors);
@@ -326,10 +331,7 @@ class ErrorHandlerTest extends AbstractTestCase
     {
         $GLOBALS['lang'] = 'en';
         $GLOBALS['text_dir'] = 'ltr';
-        $GLOBALS['config']->set('environment', 'production');
-        $responseStub = new ResponseRendererStub();
-        (new ReflectionProperty(ResponseRenderer::class, 'instance'))->setValue(null, $responseStub);
-        $responseStub->setHeadersSent(true);
+        Config::getInstance()->set('environment', 'production');
         $errorHandler = new ErrorHandler();
         $this->assertSame([], $errorHandler->getCurrentErrors());
         try {
@@ -338,7 +340,7 @@ class ErrorHandlerTest extends AbstractTestCase
         }
 
         $this->assertInstanceOf(ExitException::class, $throwable ?? null);
-        $output = $responseStub->getHTMLResult();
+        $output = $this->getActualOutputForAssertion();
         $errors = $errorHandler->getCurrentErrors();
         $this->assertCount(1, $errors);
         $error = array_pop($errors);
@@ -349,14 +351,11 @@ class ErrorHandlerTest extends AbstractTestCase
         $this->assertStringNotContainsString('ErrorHandlerTest.php#' . $error->getLine(), $output);
     }
 
-    public function testAddErrorWithFatalErrorAndHeadersSent(): void
+    public function testAddErrorWithFatalError(): void
     {
         $GLOBALS['lang'] = 'en';
         $GLOBALS['text_dir'] = 'ltr';
-        $GLOBALS['config']->set('environment', 'production');
-        $responseStub = new ResponseRendererStub();
-        (new ReflectionProperty(ResponseRenderer::class, 'instance'))->setValue(null, $responseStub);
-        $responseStub->setHeadersSent(true);
+        Config::getInstance()->set('environment', 'production');
         $errorHandler = new ErrorHandler();
         try {
             $errorHandler->addError('Fatal error message!', E_ERROR, './file/name', 1);
@@ -366,37 +365,15 @@ class ErrorHandlerTest extends AbstractTestCase
         $this->assertInstanceOf(ExitException::class, $exception ?? null);
         // phpcs:disable Generic.Files.LineLength.TooLong
         $expectedStart = <<<'HTML'
+<!DOCTYPE html>
+<html lang="en">
+<head><title>Error: Fatal error message!</title></head>
+<body>
 <div class="alert alert-danger" role="alert"><p><strong>Error</strong> in name#1</p><img src="themes/dot.gif" title="" alt="" class="icon ic_s_error"> Fatal error message!<p class="mt-3"><strong>Backtrace</strong></p><ol class="list-group"><li class="list-group-item">
 HTML;
         // phpcs:enable
-        $output = $responseStub->getHTMLResult();
+        $output = $this->getActualOutputForAssertion();
         $this->assertStringStartsWith($expectedStart, $output);
-        $this->assertStringEndsWith('</li></ol></div>' . "\n" . '</body></html>', $output);
-    }
-
-    public function testAddErrorWithFatalErrorAndHeadersNotSent(): void
-    {
-        $GLOBALS['lang'] = 'en';
-        $GLOBALS['text_dir'] = 'ltr';
-        $GLOBALS['config']->set('environment', 'production');
-        $responseStub = new ResponseRendererStub();
-        (new ReflectionProperty(ResponseRenderer::class, 'instance'))->setValue(null, $responseStub);
-        $responseStub->setHeadersSent(false);
-        $errorHandler = new ErrorHandler();
-        try {
-            $errorHandler->addError('Fatal error message!', E_ERROR, './file/name', 1);
-        } catch (Throwable $exception) {
-        }
-
-        $this->assertInstanceOf(ExitException::class, $exception ?? null);
-        // phpcs:disable Generic.Files.LineLength.TooLong
-        $expectedStart = <<<'HTML'
-<html><head><title>Error: Fatal error message!</title></head>
-<div class="alert alert-danger" role="alert"><p><strong>Error</strong> in name#1</p><img src="themes/dot.gif" title="" alt="" class="icon ic_s_error"> Fatal error message!<p class="mt-3"><strong>Backtrace</strong></p><ol class="list-group"><li class="list-group-item">
-HTML;
-        // phpcs:enable
-        $output = $responseStub->getHTMLResult();
-        $this->assertStringStartsWith($expectedStart, $output);
-        $this->assertStringEndsWith('</li></ol></div>' . "\n" . '</body></html>', $output);
+        $this->assertStringEndsWith('</li></ol></div>' . "\n\n" . '</body>' . "\n" . '</html>', $output);
     }
 }

@@ -61,15 +61,15 @@ class OperationsTest extends TestBase
 
         $newDbName = $this->databaseName . 'rename';
 
-        $this->scrollIntoView('createTableMinimalForm');
-        $this->byCssSelector('form#rename_db_form input[name=newname]')
-            ->sendKeys($newDbName);
+        $this->waitForElement('id', 'rename_db_form');
+        $this->scrollIntoView('rename_db_form');
+        $newNameInput = $this->byCssSelector('form#rename_db_form input[name=newname]');
+        $newNameInput->clear();
+        $newNameInput->sendKeys($newDbName);
 
         $this->byCssSelector("form#rename_db_form input[type='submit']")->click();
 
         $this->waitForElement('id', 'functionConfirmOkButton')->click();
-
-        $this->waitForElement('xpath', "//a[contains(text(),'Database: ') and contains(text(),'" . $newDbName . "')]");
 
         $this->dbQuery(
             'SHOW DATABASES LIKE \'' . $newDbName . '\'',
@@ -82,7 +82,8 @@ class OperationsTest extends TestBase
         $this->dbQuery(
             'SHOW DATABASES LIKE \'' . $this->databaseName . '\'',
             function (): void {
-                $this->assertFalse($this->isElementPresent('className', 'table_results'));
+                $this->assertTrue($this->isElementPresent('className', 'table_results'));
+                $this->assertFalse($this->isElementPresent('cssSelector', '.table_results tbody tr'));
             },
         );
 
@@ -100,8 +101,9 @@ class OperationsTest extends TestBase
         $this->reloadPage();// Reload or scrolling will not work ..
         $newDbName = $this->databaseName . 'copy';
         $this->scrollIntoView('renameDbNameInput');
-        $this->byCssSelector('form#copy_db_form input[name=newname]')
-            ->sendKeys($newDbName);
+        $newNameInput = $this->byCssSelector('form#copy_db_form input[name=newname]');
+        $newNameInput->clear();
+        $newNameInput->sendKeys($newDbName);
 
         $this->scrollIntoView('copy_db_form', -150);
         $this->byCssSelector('form#copy_db_form input[name="submit_copy"]')->click();

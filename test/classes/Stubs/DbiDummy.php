@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Stubs;
 
+use PhpMyAdmin\Config;
 use PhpMyAdmin\Config\Settings\Server;
 use PhpMyAdmin\Dbal\Connection;
 use PhpMyAdmin\Dbal\DbiExtension;
@@ -115,7 +116,7 @@ class DbiDummy implements DbiExtension
             return true;
         }
 
-        Assert::markTestIncomplete('Non expected select of database: ' . $databaseName);
+        Assert::fail('Non expected select of database: ' . $databaseName);
     }
 
     public function assertAllQueriesConsumed(): void
@@ -175,8 +176,8 @@ class DbiDummy implements DbiExtension
     {
         $query = trim((string) preg_replace('/  */', ' ', str_replace("\n", ' ', $query)));
         $found = $this->findFifoQuery($query) ?? $this->findDummyQuery($query);
-        if (! $found) {
-            Assert::markTestIncomplete('Not supported query: ' . $query);
+        if ($found === null) {
+            Assert::fail('Not supported query: ' . $query);
         }
 
         if ($found['result'] === false) {
@@ -203,14 +204,6 @@ class DbiDummy implements DbiExtension
      * @param string $query multi query statement to execute
      */
     public function realMultiQuery(Connection $connection, string $query): bool
-    {
-        return false;
-    }
-
-    /**
-     * Check if there are any more query results from a multi query
-     */
-    public function moreResults(Connection $connection): bool
     {
         return false;
     }
@@ -469,10 +462,10 @@ class DbiDummy implements DbiExtension
             ['query' => 'SHOW INDEXES FROM `pma_test`.`table2`', 'result' => []],
             [
                 'query' => 'SHOW COLUMNS FROM `pma`.`table1`',
-                'columns' => ['Field', 'Type', 'Null', 'Key', 'Default', 'Extra', 'Privileges', 'Comment'],
+                'columns' => ['Field', 'Type', 'Null', 'Key', 'Default', 'Extra'],
                 'result' => [
-                    ['i', 'int(11)', 'NO', 'PRI', 'NULL', 'auto_increment', 'select,insert,update,references', ''],
-                    ['o', 'varchar(100)', 'NO', 'MUL', 'NULL', '', 'select,insert,update,references', ''],
+                    ['i', 'int(11)', 'NO', 'PRI', 'NULL', 'auto_increment'],
+                    ['o', 'varchar(100)', 'NO', 'MUL', 'NULL', ''],
                 ],
             ],
             [
@@ -1361,8 +1354,8 @@ class DbiDummy implements DbiExtension
             ['query' => 'SHOW COLUMNS FROM `my_db`.`test_tbl`', 'result' => []],
             [
                 'query' => 'SHOW COLUMNS FROM `mysql`.`tables_priv` LIKE \'Table_priv\';',
-                'columns' => ['Type'],
-                'result' => [['set(\'Select\',\'Insert\',\'Update\',\'References\',\'Create View\',\'Show view\')']],
+                'columns' => ['Field', 'Type', 'Null', 'Key', 'Default', 'Extra'],
+                'result' => [['field', 'set(\'Select\',\'Insert\',\'Update\',\'References\',\'Create View\',\'Show view\')', 'NO', '', null, '']],
             ],
             [
                 'query' => 'SHOW COLUMNS FROM `PMA_db`.`PMA_table`;',
@@ -1476,8 +1469,8 @@ class DbiDummy implements DbiExtension
             ['query' => 'SHOW ALL SLAVES STATUS', 'result' => []],
             [
                 'query' => 'SHOW COLUMNS FROM `mysql`.`user`',
-                'columns' => ['Field', 'Type', 'Null'],
-                'result' => [['host', 'char(60)', 'NO']],
+                'columns' => ['Field', 'Type', 'Null', 'Key', 'Default', 'Extra'],
+                'result' => [['host', 'char(60)', 'NO', '', null, '']],
             ],
             ['query' => 'SHOW INDEXES FROM `mysql`.`user`', 'result' => []],
             ['query' => 'SHOW INDEXES FROM `my_db`.`test_tbl`', 'result' => []],
@@ -1558,16 +1551,10 @@ class DbiDummy implements DbiExtension
                 'result' => [['PMA_table', 'InnoDB']],
             ],
             [
-                'query' => 'SELECT `id` FROM `table_1` WHERE `id` > 10 AND (`id` <> 20)',
-                'columns' => ['id'],
-                'result' => [['11'], ['12']],
-            ],
-            [
-                'query' => 'SELECT * FROM `table_1` WHERE `id` > 10',
+                'query' => 'SELECT * FROM `PMA`.`table_1` LIMIT 1',
                 'columns' => ['column'],
-                'result' => [['row1'], ['row2']],
+                'result' => [['table']],
             ],
-            ['query' => 'SELECT * FROM `PMA`.`table_1` LIMIT 1', 'columns' => ['column'], 'result' => [['table']]],
             ['query' => 'SELECT * FROM `PMA`.`table_2` LIMIT 1', 'columns' => ['column'], 'result' => [['table']]],
             [
                 'query' => 'SELECT `ENGINE` FROM `information_schema`.`tables` WHERE `table_name` = \'table_1\''
@@ -1758,8 +1745,8 @@ class DbiDummy implements DbiExtension
             ['query' => 'SELECT LAST_INSERT_ID();', 'result' => []],
             ['query' => 'SHOW WARNINGS', 'result' => []],
             [
-                'query' => 'SELECT * FROM `information_schema`.`bookmark` WHERE dbase = \'my_db\''
-                . ' AND (user = \'user\') AND `label` = \'test_tbl\' LIMIT 1',
+                'query' => 'SELECT * FROM `information_schema`.`bookmark` WHERE `label` = \'test_tbl\''
+                . ' AND dbase = \'my_db\' AND user = \'user\' LIMIT 1',
                 'result' => [],
             ],
             [
@@ -2240,9 +2227,28 @@ class DbiDummy implements DbiExtension
                 'columns' => ['row_count'],
                 'result' => [['984']],
             ],
+            [
+                'query' => 'SELECT `collapp`.`FULL_COLLATION_NAME` AS `Collation`,'
+                        . ' `collapp`.`CHARACTER_SET_NAME` AS `Charset`,'
+                        . ' `collapp`.`ID` AS `Id`,'
+                        . ' `collapp`.`IS_DEFAULT` AS `Default`,'
+                        . ' `coll`.`IS_COMPILED` AS `Compiled`,'
+                        . ' `coll`.`SORTLEN` AS `Sortlen`'
+                        . ' FROM `information_schema`.`COLLATION_CHARACTER_SET_APPLICABILITY` `collapp`'
+                        . ' LEFT JOIN `information_schema`.`COLLATIONS` `coll`'
+                        . ' ON `collapp`.`COLLATION_NAME`=`coll`.`COLLATION_NAME`',
+                'columns' => ['Collation', 'Charset', 'Id', 'Default', 'Compiled', 'Sortlen'],
+                'result' => [
+                    ['utf8mb4_general_ci', 'utf8mb4', '45', 'Yes', 'Yes', '1'],
+                    ['armscii8_general_ci', 'armscii8', '32', 'Yes', 'Yes', '1'],
+                    ['utf8_general_ci', 'utf8', '33', 'Yes', 'Yes', '1'],
+                    ['utf8_bin', 'utf8', '83', '', 'Yes', '1'],
+                    ['latin1_swedish_ci', 'latin1', '8', 'Yes', 'Yes', '1'],
+                ],
+            ],
         ];
 
         /* Some basic setup for dummy driver */
-        $GLOBALS['cfg']['DBG']['sql'] = false;
+        Config::getInstance()->settings['DBG']['sql'] = false;
     }
 }

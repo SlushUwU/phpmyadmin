@@ -26,7 +26,7 @@ class TablesControllerTest extends AbstractTestCase
 
         $this->dummyDbi = $this->createDbiDummy();
         $this->dbi = $this->createDatabaseInterface($this->dummyDbi);
-        $GLOBALS['dbi'] = $this->dbi;
+        DatabaseInterface::$instance = $this->dbi;
 
         parent::loadContainerBuilder();
 
@@ -45,7 +45,7 @@ class TablesControllerTest extends AbstractTestCase
         /** @var TablesController $multiTableQueryController */
         $multiTableQueryController = $GLOBALS['containerBuilder']->get(TablesController::class);
         $request = $this->createStub(ServerRequest::class);
-        $request->method('getQueryParam')->willReturnOnConsecutiveCalls($_GET['tables'], $_GET['db']);
+        $request->method('getQueryParam')->willReturn($_GET['tables'], $_GET['db']);
         $multiTableQueryController($request);
         $this->assertSame(
             [

@@ -6,13 +6,16 @@ namespace PhpMyAdmin\Tests;
 
 use CodeLts\U2F\U2FServer\RegistrationRequest;
 use CodeLts\U2F\U2FServer\SignRequest;
+use PhpMyAdmin\Config;
 use PhpMyAdmin\DatabaseInterface;
+use PhpMyAdmin\Http\ServerRequest;
 use PhpMyAdmin\Plugins\TwoFactor\Application;
 use PhpMyAdmin\Tests\Stubs\DbiDummy;
 use PhpMyAdmin\TwoFactor;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\RequiresPhpExtension;
+use Psr\Http\Message\ServerRequestInterface;
 
 use function count;
 use function in_array;
@@ -36,13 +39,14 @@ class TwoFactorTest extends AbstractTestCase
 
         $this->dummyDbi = $this->createDbiDummy();
         $this->dbi = $this->createDatabaseInterface($this->dummyDbi);
-        $GLOBALS['dbi'] = $this->dbi;
+        DatabaseInterface::$instance = $this->dbi;
         $GLOBALS['server'] = 1;
         $GLOBALS['db'] = '';
         $GLOBALS['table'] = 'table';
-        $GLOBALS['cfg']['Server']['DisableIS'] = false;
-        $GLOBALS['cfg']['DBG'] = ['simple2fa' => false, 'sql' => false];
-        $GLOBALS['cfg']['NaturalOrder'] = true;
+        $config = Config::getInstance();
+        $config->selectedServer['DisableIS'] = false;
+        $config->settings['DBG'] = ['simple2fa' => false, 'sql' => false];
+        $config->settings['NaturalOrder'] = true;
         $this->initStorageConfigAndData();
     }
 
@@ -53,30 +57,31 @@ class TwoFactorTest extends AbstractTestCase
 
     private function initStorageConfigAndData(): void
     {
-        $GLOBALS['cfg']['Server']['user'] = 'groot';
-        $GLOBALS['cfg']['Server']['bookmarktable'] = '';
-        $GLOBALS['cfg']['Server']['relation'] = '';
-        $GLOBALS['cfg']['Server']['table_info'] = '';
-        $GLOBALS['cfg']['Server']['table_coords'] = '';
-        $GLOBALS['cfg']['Server']['column_info'] = '';
-        $GLOBALS['cfg']['Server']['pdf_pages'] = '';
-        $GLOBALS['cfg']['Server']['history'] = '';
-        $GLOBALS['cfg']['Server']['recent'] = '';
-        $GLOBALS['cfg']['Server']['favorite'] = '';
-        $GLOBALS['cfg']['Server']['table_uiprefs'] = '';
-        $GLOBALS['cfg']['Server']['tracking'] = '';
-        $GLOBALS['cfg']['Server']['userconfig'] = '';
-        $GLOBALS['cfg']['Server']['users'] = '';
-        $GLOBALS['cfg']['Server']['usergroups'] = '';
-        $GLOBALS['cfg']['Server']['navigationhiding'] = '';
-        $GLOBALS['cfg']['Server']['savedsearches'] = '';
-        $GLOBALS['cfg']['Server']['central_columns'] = '';
-        $GLOBALS['cfg']['Server']['designer_settings'] = '';
-        $GLOBALS['cfg']['Server']['export_templates'] = '';
+        $config = Config::getInstance();
+        $config->selectedServer['user'] = 'groot';
+        $config->selectedServer['bookmarktable'] = '';
+        $config->selectedServer['relation'] = '';
+        $config->selectedServer['table_info'] = '';
+        $config->selectedServer['table_coords'] = '';
+        $config->selectedServer['column_info'] = '';
+        $config->selectedServer['pdf_pages'] = '';
+        $config->selectedServer['history'] = '';
+        $config->selectedServer['recent'] = '';
+        $config->selectedServer['favorite'] = '';
+        $config->selectedServer['table_uiprefs'] = '';
+        $config->selectedServer['tracking'] = '';
+        $config->selectedServer['userconfig'] = '';
+        $config->selectedServer['users'] = '';
+        $config->selectedServer['usergroups'] = '';
+        $config->selectedServer['navigationhiding'] = '';
+        $config->selectedServer['savedsearches'] = '';
+        $config->selectedServer['central_columns'] = '';
+        $config->selectedServer['designer_settings'] = '';
+        $config->selectedServer['export_templates'] = '';
 
         $this->dummyDbi = $this->createDbiDummy();
         $this->dbi = $this->createDatabaseInterface($this->dummyDbi);
-        $GLOBALS['dbi'] = $this->dbi;
+        DatabaseInterface::$instance = $this->dbi;
 
         $this->dummyDbi->removeDefaultResults();
 
@@ -158,43 +163,46 @@ class TwoFactorTest extends AbstractTestCase
 
     public function testNone(): void
     {
+        $request = new ServerRequest($this->createStub(ServerRequestInterface::class));
         $object = $this->getTwoFactorAndLoadConfig('user', ['type' => 'db']);
         $backend = $object->getBackend();
         $this->assertEquals('', $backend::$id);
         // Is always valid
-        $this->assertTrue($object->check(true));
+        $this->assertTrue($object->check($request, true));
         // Test session persistence
-        $this->assertTrue($object->check());
-        $this->assertTrue($object->check());
-        $this->assertEquals('', $object->render());
+        $this->assertTrue($object->check($request));
+        $this->assertTrue($object->check($request));
+        $this->assertEquals('', $object->render($request));
 
         $this->dummyDbi->assertAllQueriesConsumed();
 
         $this->loadResultForConfig(['type' => 'db']);
         $this->loadQueriesForConfigure('');
 
-        $this->assertTrue($object->configure(''));
-        $this->assertEquals('', $object->setup());
+        $this->assertTrue($object->configure($request, ''));
+        $this->assertEquals('', $object->setup($request));
     }
 
     public function testSimple(): void
     {
-        $GLOBALS['cfg']['DBG']['simple2fa'] = true;
+        $request = new ServerRequest($this->createStub(ServerRequestInterface::class));
+        $config = Config::getInstance();
+        $config->settings['DBG']['simple2fa'] = true;
         $object = $this->getTwoFactorAndLoadConfig('user', ['type' => 'db', 'backend' => 'simple']);
         $backend = $object->getBackend();
         $this->assertEquals('simple', $backend::$id);
-        $GLOBALS['cfg']['DBG']['simple2fa'] = false;
+        $config->settings['DBG']['simple2fa'] = false;
 
         unset($_POST['2fa_confirm']);
-        $this->assertFalse($object->check(true));
+        $this->assertFalse($object->check($request, true));
 
         $_POST['2fa_confirm'] = 1;
-        $this->assertTrue($object->check(true));
+        $this->assertTrue($object->check($request, true));
         unset($_POST['2fa_confirm']);
 
         /* Test rendering */
-        $this->assertNotEquals('', $object->render());
-        $this->assertEquals('', $object->setup());
+        $this->assertNotEquals('', $object->render($request));
+        $this->assertEquals('', $object->setup($request));
     }
 
     public function testLoad(): void
@@ -206,7 +214,9 @@ class TwoFactorTest extends AbstractTestCase
 
     public function testConfigureSimple(): void
     {
-        $GLOBALS['cfg']['DBG']['simple2fa'] = true;
+        $request = new ServerRequest($this->createStub(ServerRequestInterface::class));
+        $config = Config::getInstance();
+        $config->settings['DBG']['simple2fa'] = true;
         $object = $this->getTwoFactorAndLoadConfig('user', null);
 
         $this->dummyDbi->assertAllQueriesConsumed();
@@ -214,7 +224,7 @@ class TwoFactorTest extends AbstractTestCase
         $this->loadResultForConfig([]);
         $this->loadQueriesForConfigure('simple');
 
-        $this->assertTrue($object->configure('simple'));
+        $this->assertTrue($object->configure($request, 'simple'));
         $backend = $object->getBackend();
         $this->assertEquals('simple', $backend::$id);
 
@@ -223,7 +233,7 @@ class TwoFactorTest extends AbstractTestCase
         $this->loadResultForConfig([]);
         $this->loadQueriesForConfigure('');
 
-        $this->assertTrue($object->configure(''));
+        $this->assertTrue($object->configure($request, ''));
         $backend = $object->getBackend();
         $this->assertEquals('', $backend::$id);
 
@@ -231,9 +241,9 @@ class TwoFactorTest extends AbstractTestCase
 
         $this->initStorageConfigAndData();// Needs a re-init
 
-        $GLOBALS['cfg']['DBG']['simple2fa'] = false;
+        $config->settings['DBG']['simple2fa'] = false;
         $object = $this->getTwoFactorAndLoadConfig('user', null);
-        $this->assertFalse($object->configure('simple'));
+        $this->assertFalse($object->configure($request, 'simple'));
         $this->dummyDbi->assertAllQueriesConsumed();
     }
 
@@ -244,6 +254,8 @@ class TwoFactorTest extends AbstractTestCase
     {
         parent::setLanguage();
 
+        $request = new ServerRequest($this->createStub(ServerRequestInterface::class));
+
         $object = $this->getTwoFactorAndLoadConfig('user', null);
         if (! in_array('application', $object->getAvailable())) {
             $this->markTestSkipped('google2fa not available');
@@ -251,11 +263,11 @@ class TwoFactorTest extends AbstractTestCase
 
         /* Without providing code this should fail */
         unset($_POST['2fa_code']);
-        $this->assertFalse($object->configure('application'));
+        $this->assertFalse($object->configure($request, 'application'));
 
         /* Invalid code */
         $_POST['2fa_code'] = 'invalid';
-        $this->assertFalse($object->configure('application'));
+        $this->assertFalse($object->configure($request, 'application'));
 
         /* Generate valid code */
         /** @var Application $app */
@@ -270,31 +282,33 @@ class TwoFactorTest extends AbstractTestCase
         $this->loadResultForConfig([]);
         $this->loadQueriesForConfigure('application', ['secret' => $object->config['settings']['secret']]);
 
-        $this->assertTrue($object->configure('application'));
+        $this->assertTrue($object->configure($request, 'application'));
 
         $this->dummyDbi->assertAllQueriesConsumed();
         unset($_POST['2fa_code']);
 
         /* Check code */
         unset($_POST['2fa_code']);
-        $this->assertFalse($object->check(true));
+        $this->assertFalse($object->check($request, true));
         $_POST['2fa_code'] = 'invalid';
-        $this->assertFalse($object->check(true));
+        $this->assertFalse($object->check($request, true));
         $_POST['2fa_code'] = $google2fa->oathTotp(
             $object->config['settings']['secret'],
             $google2fa->getTimestamp(),
         );
-        $this->assertTrue($object->check(true));
+        $this->assertTrue($object->check($request, true));
         unset($_POST['2fa_code']);
 
         /* Test rendering */
-        $this->assertNotEquals('', $object->render());
-        $this->assertNotEquals('', $object->setup());
+        $this->assertNotEquals('', $object->render($request));
+        $this->assertNotEquals('', $object->setup($request));
     }
 
     public function testKey(): void
     {
         parent::setLanguage();
+
+        $request = new ServerRequest($this->createStub(ServerRequestInterface::class));
 
         $object = $this->getTwoFactorAndLoadConfig('user', null);
         if (! in_array('key', $object->getAvailable())) {
@@ -304,31 +318,31 @@ class TwoFactorTest extends AbstractTestCase
         $_SESSION['registrationRequest'] = null;
         /* Without providing code this should fail */
         unset($_POST['u2f_registration_response']);
-        $this->assertFalse($object->configure('key'));
+        $this->assertFalse($object->configure($request, 'key'));
 
         /* Invalid code */
         $_POST['u2f_registration_response'] = 'invalid';
-        $this->assertFalse($object->configure('key'));
+        $this->assertFalse($object->configure($request, 'key'));
 
         /* Invalid code */
         $_POST['u2f_registration_response'] = '[]';
-        $this->assertFalse($object->configure('key'));
+        $this->assertFalse($object->configure($request, 'key'));
 
         /* Without providing code this should fail */
         unset($_POST['u2f_authentication_response']);
-        $this->assertFalse($object->check(true));
+        $this->assertFalse($object->check($request, true));
 
         /* Invalid code */
         $_POST['u2f_authentication_response'] = 'invalid';
-        $this->assertFalse($object->check(true));
+        $this->assertFalse($object->check($request, true));
 
         /* Invalid code */
         $_POST['u2f_authentication_response'] = '[]';
-        $this->assertFalse($object->check(true));
+        $this->assertFalse($object->check($request, true));
 
         /* Test rendering */
-        $this->assertNotEquals('', $object->render());
-        $this->assertNotEquals('', $object->setup());
+        $this->assertNotEquals('', $object->render($request));
+        $this->assertNotEquals('', $object->setup($request));
     }
 
     /**
@@ -336,19 +350,20 @@ class TwoFactorTest extends AbstractTestCase
      */
     public function testKeyAppId(): void
     {
+        $config = Config::getInstance();
         $object = $this->getTwoFactorAndLoadConfig('user', null);
-        $GLOBALS['config']->set('PmaAbsoluteUri', 'http://demo.example.com');
+        $config->set('PmaAbsoluteUri', 'http://demo.example.com');
         $this->assertEquals('http://demo.example.com', $object->getBackend()->getAppId(true));
         $this->assertEquals('demo.example.com', $object->getBackend()->getAppId(false));
-        $GLOBALS['config']->set('PmaAbsoluteUri', 'https://demo.example.com:123');
+        $config->set('PmaAbsoluteUri', 'https://demo.example.com:123');
         $this->assertEquals('https://demo.example.com:123', $object->getBackend()->getAppId(true));
         $this->assertEquals('demo.example.com', $object->getBackend()->getAppId(false));
-        $GLOBALS['config']->set('PmaAbsoluteUri', '');
-        $GLOBALS['config']->set('is_https', true);
+        $config->set('PmaAbsoluteUri', '');
+        $config->set('is_https', true);
         $_SERVER['HTTP_HOST'] = 'pma.example.com';
         $this->assertEquals('https://pma.example.com', $object->getBackend()->getAppId(true));
         $this->assertEquals('pma.example.com', $object->getBackend()->getAppId(false));
-        $GLOBALS['config']->set('is_https', false);
+        $config->set('is_https', false);
         $this->assertEquals('http://pma.example.com', $object->getBackend()->getAppId(true));
         $this->assertEquals('pma.example.com', $object->getBackend()->getAppId(false));
     }
@@ -359,6 +374,8 @@ class TwoFactorTest extends AbstractTestCase
      */
     public function testKeyAuthentication(): void
     {
+        $request = new ServerRequest($this->createStub(ServerRequestInterface::class));
+
         $object = $this->getTwoFactorAndLoadConfig('user', null);
         if (! in_array('key', $object->getAvailable())) {
             $this->markTestSkipped('u2f-php-server not available');
@@ -369,10 +386,10 @@ class TwoFactorTest extends AbstractTestCase
             'http://demo.example.com',
         );
         unset($_POST['u2f_registration_response']);
-        $this->assertFalse($object->configure('key'));
+        $this->assertFalse($object->configure($request, 'key'));
 
         $_POST['u2f_registration_response'] = '';
-        $this->assertFalse($object->configure('key'));
+        $this->assertFalse($object->configure($request, 'key'));
 
         $_POST['u2f_registration_response'] = '{ "registrationData": "BQQtEmhWVgvbh-8GpjsHbj_d5F'
             . 'B9iNoRL8mNEq34-ANufKWUpVdIj6BSB_m3eMoZ3GqnaDy3RA5eWP8mhTkT1Ht3QAk1GsmaPIQgXgvrBk'
@@ -421,13 +438,13 @@ class TwoFactorTest extends AbstractTestCase
             ],
         ]);
 
-        $this->assertTrue($object->configure('key'));
+        $this->assertTrue($object->configure($request, 'key'));
 
         unset($_POST['u2f_authentication_response']);
-        $this->assertFalse($object->check(true));
+        $this->assertFalse($object->check($request, true));
 
         $_POST['u2f_authentication_response'] = '';
-        $this->assertFalse($object->check(true));
+        $this->assertFalse($object->check($request, true));
 
         $_SESSION['authenticationRequest'] = [
             new SignRequest([
@@ -436,7 +453,7 @@ class TwoFactorTest extends AbstractTestCase
                 'appId' => 'http://demo.example.com',
             ]),
         ];
-        $this->assertFalse($object->check(true));
+        $this->assertFalse($object->check($request, true));
         $_POST['u2f_authentication_response'] = '{ "signatureData": "AQAAAAQwRQIhAI6FSrMD3KUUtkpiP0'
             . 'jpIEakql-HNhwWFngyw553pS1CAiAKLjACPOhxzZXuZsVO8im-HStEcYGC50PKhsGp_SUAng==", '
             . '"clientData": "eyAiY2hhbGxlbmdlIjogImZFbmM5b1Y3OUVhQmdLNUJvTkVSVTVnUEtNMlhHWVd'
@@ -469,7 +486,7 @@ class TwoFactorTest extends AbstractTestCase
                 ],
             ],
         ]);
-        $this->assertTrue($object->check(true));
+        $this->assertTrue($object->check($request, true));
         $this->dummyDbi->assertAllQueriesConsumed();
     }
 
@@ -478,13 +495,14 @@ class TwoFactorTest extends AbstractTestCase
      */
     public function testBackends(): void
     {
-        $GLOBALS['cfg']['DBG']['simple2fa'] = true;
+        $config = Config::getInstance();
+        $config->settings['DBG']['simple2fa'] = true;
         $object = $this->getTwoFactorAndLoadConfig('user', null);
         $backends = $object->getAllBackends();
         $this->assertCount(
             count($object->getAvailable()) + 1,
             $backends,
         );
-        $GLOBALS['cfg']['DBG']['simple2fa'] = false;
+        $config->settings['DBG']['simple2fa'] = false;
     }
 }

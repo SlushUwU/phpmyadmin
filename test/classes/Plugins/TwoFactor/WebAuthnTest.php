@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Plugins\TwoFactor;
 
+use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\Http\ServerRequest;
 use PhpMyAdmin\Plugins\TwoFactor\WebAuthn;
 use PhpMyAdmin\Plugins\TwoFactorPlugin;
@@ -12,8 +13,10 @@ use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\TwoFactor;
 use PhpMyAdmin\WebAuthn\Server;
 use PhpMyAdmin\WebAuthn\WebAuthnException;
+use PHPUnit\Framework\Attributes\BackupStaticProperties;
 use PHPUnit\Framework\Attributes\CoversClass;
 use Psr\Http\Message\UriInterface;
+use ReflectionProperty;
 
 use function array_column;
 use function json_decode;
@@ -34,12 +37,15 @@ class WebAuthnTest extends AbstractTestCase
         );
     }
 
+    #[BackupStaticProperties(true)]
     public function testRender(): void
     {
+        (new ReflectionProperty(ResponseRenderer::class, 'instance'))->setValue(null, null);
+
         $GLOBALS['lang'] = 'en';
         $GLOBALS['server'] = 1;
         $GLOBALS['text_dir'] = 'ltr';
-        $GLOBALS['dbi'] = $this->createDatabaseInterface();
+        DatabaseInterface::$instance = $this->createDatabaseInterface();
 
         $uri = $this->createStub(UriInterface::class);
         $uri->method('getHost')->willReturn('test.localhost');
@@ -79,8 +85,7 @@ class WebAuthnTest extends AbstractTestCase
 
         $webAuthn = new WebAuthn($twoFactor);
         $webAuthn->setServer($server);
-        $webAuthn->serverRequest = $request;
-        $actual = $webAuthn->render();
+        $actual = $webAuthn->render($request);
 
         $optionsFromSession = $_SESSION['WebAuthnCredentialRequestOptions'] ?? null;
         $this->assertIsString($optionsFromSession);
@@ -97,12 +102,15 @@ class WebAuthnTest extends AbstractTestCase
         $this->assertContains('webauthn.js', array_column($files, 'name'));
     }
 
+    #[BackupStaticProperties(true)]
     public function testSetup(): void
     {
+        (new ReflectionProperty(ResponseRenderer::class, 'instance'))->setValue(null, null);
+
         $GLOBALS['lang'] = 'en';
         $GLOBALS['server'] = 1;
         $GLOBALS['text_dir'] = 'ltr';
-        $GLOBALS['dbi'] = $this->createDatabaseInterface();
+        DatabaseInterface::$instance = $this->createDatabaseInterface();
 
         $uri = $this->createStub(UriInterface::class);
         $uri->method('getHost')->willReturn('test.localhost');
@@ -130,8 +138,7 @@ class WebAuthnTest extends AbstractTestCase
 
         $webAuthn = new WebAuthn($twoFactor);
         $webAuthn->setServer($server);
-        $webAuthn->serverRequest = $request;
-        $actual = $webAuthn->setup();
+        $actual = $webAuthn->setup($request);
 
         $optionsFromSession = $_SESSION['WebAuthnCredentialCreationOptions'] ?? null;
         $this->assertIsString($optionsFromSession);
@@ -154,8 +161,7 @@ class WebAuthnTest extends AbstractTestCase
         $request = $this->createStub(ServerRequest::class);
         $request->method('getParsedBodyParam')->willReturnMap([['webauthn_creation_response', '', '']]);
         $webAuthn = new WebAuthn($this->createStub(TwoFactor::class));
-        $webAuthn->serverRequest = $request;
-        $this->assertFalse($webAuthn->configure());
+        $this->assertFalse($webAuthn->configure($request));
         $this->assertSame('', $webAuthn->getError());
     }
 
@@ -165,8 +171,7 @@ class WebAuthnTest extends AbstractTestCase
         $request = $this->createStub(ServerRequest::class);
         $request->method('getParsedBodyParam')->willReturnMap([['webauthn_creation_response', '', '{}']]);
         $webAuthn = new WebAuthn($this->createStub(TwoFactor::class));
-        $webAuthn->serverRequest = $request;
-        $this->assertFalse($webAuthn->configure());
+        $this->assertFalse($webAuthn->configure($request));
         $this->assertStringContainsString('Two-factor authentication failed:', $webAuthn->getError());
     }
 
@@ -182,8 +187,7 @@ class WebAuthnTest extends AbstractTestCase
 
         $webAuthn = new WebAuthn($this->createStub(TwoFactor::class));
         $webAuthn->setServer($server);
-        $webAuthn->serverRequest = $request;
-        $this->assertFalse($webAuthn->configure());
+        $this->assertFalse($webAuthn->configure($request));
         $this->assertStringContainsString('Two-factor authentication failed.', $webAuthn->getError());
     }
 
@@ -207,8 +211,7 @@ class WebAuthnTest extends AbstractTestCase
 
         $webAuthn = new WebAuthn($twoFactor);
         $webAuthn->setServer($server);
-        $webAuthn->serverRequest = $request;
-        $this->assertTrue($webAuthn->configure());
+        $this->assertTrue($webAuthn->configure($request));
         /** @psalm-var array{backend: string, settings: mixed[]} $config */
         $config = $twoFactor->config;
         $this->assertSame(
@@ -229,8 +232,7 @@ class WebAuthnTest extends AbstractTestCase
         $request = $this->createStub(ServerRequest::class);
         $request->method('getParsedBodyParam')->willReturnMap([['webauthn_request_response', '', '']]);
         $webAuthn = new WebAuthn($this->createStub(TwoFactor::class));
-        $webAuthn->serverRequest = $request;
-        $this->assertFalse($webAuthn->check());
+        $this->assertFalse($webAuthn->check($request));
         $this->assertSame('', $webAuthn->getError());
     }
 
@@ -240,8 +242,7 @@ class WebAuthnTest extends AbstractTestCase
         $request = $this->createStub(ServerRequest::class);
         $request->method('getParsedBodyParam')->willReturnMap([['webauthn_request_response', '', '{}']]);
         $webAuthn = new WebAuthn($this->createStub(TwoFactor::class));
-        $webAuthn->serverRequest = $request;
-        $this->assertFalse($webAuthn->check());
+        $this->assertFalse($webAuthn->check($request));
         $this->assertStringContainsString('Two-factor authentication failed:', $webAuthn->getError());
     }
 
@@ -257,8 +258,7 @@ class WebAuthnTest extends AbstractTestCase
 
         $webAuthn = new WebAuthn($this->createStub(TwoFactor::class));
         $webAuthn->setServer($server);
-        $webAuthn->serverRequest = $request;
-        $this->assertFalse($webAuthn->check());
+        $this->assertFalse($webAuthn->check($request));
         $this->assertStringContainsString('Two-factor authentication failed.', $webAuthn->getError());
     }
 
@@ -293,7 +293,6 @@ class WebAuthnTest extends AbstractTestCase
 
         $webAuthn = new WebAuthn($twoFactor);
         $webAuthn->setServer($server);
-        $webAuthn->serverRequest = $request;
-        $this->assertTrue($webAuthn->check());
+        $this->assertTrue($webAuthn->check($request));
     }
 }

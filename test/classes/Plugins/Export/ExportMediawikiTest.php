@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Plugins\Export;
 
+use PhpMyAdmin\Column;
 use PhpMyAdmin\ConfigStorage\Relation;
 use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\Export\Export;
@@ -38,7 +39,8 @@ class ExportMediawikiTest extends AbstractTestCase
     {
         parent::setUp();
 
-        $GLOBALS['dbi'] = $this->createDatabaseInterface();
+        $dbi = $this->createDatabaseInterface();
+        DatabaseInterface::$instance = $dbi;
         $GLOBALS['server'] = 0;
         $GLOBALS['output_kanji_conversion'] = false;
         $GLOBALS['output_charset_conversion'] = false;
@@ -50,8 +52,8 @@ class ExportMediawikiTest extends AbstractTestCase
         $GLOBALS['lang'] = 'en';
         $GLOBALS['text_dir'] = 'ltr';
         $this->object = new ExportMediawiki(
-            new Relation($GLOBALS['dbi']),
-            new Export($GLOBALS['dbi']),
+            new Relation($dbi),
+            new Export($dbi),
             new Transformations(),
         );
     }
@@ -63,6 +65,7 @@ class ExportMediawikiTest extends AbstractTestCase
     {
         parent::tearDown();
 
+        DatabaseInterface::$instance = null;
         unset($this->object);
     }
 
@@ -226,23 +229,16 @@ class ExportMediawikiTest extends AbstractTestCase
             ->getMock();
 
         $columns = [
-            [
-                'Null' => 'Yes',
-                'Field' => 'name1',
-                'Key' => 'PRI',
-                'Type' => 'set(abc)enum123',
-                'Default' => '',
-                'Extra' => '',
-            ],
-            ['Null' => 'NO', 'Field' => 'fields', 'Key' => 'COMP', 'Type' => '', 'Default' => 'def', 'Extra' => 'ext'],
+            new Column('name1', 'set(abc)enum123', true, 'PRI', '', ''),
+            new Column('fields', '', false, 'COMP', 'def', 'ext'),
         ];
 
         $dbi->expects($this->once())
             ->method('getColumns')
             ->with('db', 'table')
-            ->will($this->returnValue($columns));
+            ->willReturn($columns);
 
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
         $GLOBALS['mediawiki_caption'] = true;
         $GLOBALS['mediawiki_headers'] = true;
 
@@ -275,7 +271,7 @@ class ExportMediawikiTest extends AbstractTestCase
             " | \n" .
             "|-\n" .
             "! Null\n" .
-            " | Yes\n" .
+            " | YES\n" .
             " | NO\n" .
             "|-\n" .
             "! Default\n" .

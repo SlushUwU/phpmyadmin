@@ -7,12 +7,14 @@ on:
     branches:
       - master
     paths:
-      - '*/classes/**.php'
+      - 'src/**.php'
+      - 'test/classes/**.php'
   pull_request:
     branches:
       - master
     paths:
-      - '*/classes/**.php'
+      - 'src/**.php'
+      - 'test/classes/**.php'
   workflow_dispatch:
   schedule:
     - cron: '0 0 * * *'
@@ -32,13 +34,13 @@ jobs:
           - ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 2
 
       - name: Checkout base ref code
         if: github.event_name == 'pull_request'
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.base_ref }}
 
@@ -57,8 +59,6 @@ jobs:
 
       - name: Install Composer dependencies
         uses: ramsey/composer-install@v2
-        with:
-          dependency-versions: highest
 
       - name: Run Infection for changed files only
         if: github.event_name == 'push' || github.event_name == 'pull_request'

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Controllers;
 
+use PhpMyAdmin\Config;
 use PhpMyAdmin\Controllers\NavigationController;
 use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\Http\ServerRequest;
@@ -26,7 +27,7 @@ class NavigationControllerTest extends AbstractTestCase
 
         $this->dummyDbi = $this->createDbiDummy();
         $this->dbi = $this->createDatabaseInterface($this->dummyDbi);
-        $GLOBALS['dbi'] = $this->dbi;
+        DatabaseInterface::$instance = $this->dbi;
     }
 
     public function testIndex(): void
@@ -41,8 +42,9 @@ class NavigationControllerTest extends AbstractTestCase
 
         $GLOBALS['server'] = 1;
         $GLOBALS['db'] = 'air-balloon_burner_dev2';
-        $GLOBALS['cfg']['Server']['DisableIS'] = false;
-        $GLOBALS['cfg']['Server']['auth_type'] = 'cookie';
+        $config = Config::getInstance();
+        $config->selectedServer['DisableIS'] = false;
+        $config->selectedServer['auth_type'] = 'cookie';
 
         parent::loadResponseIntoContainerBuilder();
 
@@ -156,12 +158,12 @@ class NavigationControllerTest extends AbstractTestCase
             . '    ' . "\n"
             . '          <div class="block second">' . "\n"
             . '                  <a href="index.php?route=/database/operations'
-                                . '&db=air-balloon_burner_dev2&lang=en">'
+                                . '&db=air-balloon_burner_dev2&lang=en" class="disableAjax">'
                                 . '<img src="themes/dot.gif" title="Database operations"'
                                 . ' alt="Database operations" class="icon ic_s_db"></a>' . "\n"
             . '              </div>' . "\n"
             . "\n"
-            . '              <a class="hover_show_full"'
+            . '              <a class="hover_show_full disableAjax"'
                     . ' href="index.php?route=/database/structure&db=air-balloon_burner_dev2&lang=en"'
                     . ' title="Structure">air-balloon_burner_dev2</a>' . "\n"
             . '          ' . "\n"
@@ -190,8 +192,9 @@ class NavigationControllerTest extends AbstractTestCase
 
         $GLOBALS['server'] = 1;
         $GLOBALS['db'] = 'air-balloon_burner_dev2';
-        $GLOBALS['cfg']['Server']['DisableIS'] = false;
-        $GLOBALS['cfg']['Server']['auth_type'] = 'cookie';
+        $config = Config::getInstance();
+        $config->selectedServer['DisableIS'] = false;
+        $config->selectedServer['auth_type'] = 'cookie';
 
         parent::loadResponseIntoContainerBuilder();
 
@@ -299,13 +302,13 @@ class NavigationControllerTest extends AbstractTestCase
             . '          </div>' . "\n"
             . '    ' . "\n"
             . '          <div class="block second">' . "\n"
-            . '                  <a href="index.php?route=/database/operations&db=%s&lang=en">'
+            . '                  <a href="index.php?route=/database/operations&db=%s&lang=en" class="disableAjax">'
             . '<img src="themes/dot.gif" title="Database operations" alt="Database operations"'
             . ' class="icon ic_s_db"></a>' . "\n"
             . '              </div>' . "\n"
             . "\n"
-            . '              <a class="hover_show_full" href="index.php?route=/database/structure&db=%s&lang=en"'
-            . ' title="Structure">%s</a>' . "\n"
+            . '              <a class="hover_show_full disableAjax"'
+            . ' href="index.php?route=/database/structure&db=%s&lang=en" title="Structure">%s</a>' . "\n"
             . '          ' . "\n"
             . '    ' . "\n"
             . "\n"
@@ -328,13 +331,13 @@ class NavigationControllerTest extends AbstractTestCase
             . '          </div>' . "\n"
             . '    ' . "\n"
             . '          <div class="block second">' . "\n"
-            . '                  <a href="index.php?route=/database/operations&db=%s&lang=en">'
+            . '                  <a href="index.php?route=/database/operations&db=%s&lang=en" class="disableAjax">'
             . '<img src="themes/dot.gif" title="Database operations" alt="Database operations"'
             . ' class="icon ic_s_db"></a>' . "\n"
             . '              </div>' . "\n"
             . "\n"
-            . '              <a class="hover_show_full" href="index.php?route=/database/structure&db=%s&lang=en"'
-            . ' title="Structure">%s</a>' . "\n"
+            . '              <a class="hover_show_full disableAjax"'
+            . ' href="index.php?route=/database/structure&db=%s&lang=en" title="Structure">%s</a>' . "\n"
             . '          ' . "\n"
             . '    ' . "\n"
             . "\n"
@@ -356,13 +359,13 @@ class NavigationControllerTest extends AbstractTestCase
             . '          </div>' . "\n"
             . '    ' . "\n"
             . '          <div class="block second">' . "\n"
-            . '                  <a href="index.php?route=/database/operations&db=%s&lang=en">'
+            . '                  <a href="index.php?route=/database/operations&db=%s&lang=en" class="disableAjax">'
             . '<img src="themes/dot.gif" title="Database operations" alt="Database operations"'
             . ' class="icon ic_s_db"></a>' . "\n"
             . '              </div>' . "\n"
             . "\n"
-            . '              <a class="hover_show_full" href="index.php?route=/database/structure&db=%s&lang=en"'
-            . ' title="Structure">%s</a>' . "\n"
+            . '              <a class="hover_show_full disableAjax"'
+            . ' href="index.php?route=/database/structure&db=%s&lang=en" title="Structure">%s</a>' . "\n"
             . '          ' . "\n"
             . '    ' . "\n"
             . "\n"

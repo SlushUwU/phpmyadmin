@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Plugins\Export;
 
+use PhpMyAdmin\Column;
+use PhpMyAdmin\Config;
 use PhpMyAdmin\ConfigStorage\Relation;
 use PhpMyAdmin\ConfigStorage\RelationParameters;
 use PhpMyAdmin\DatabaseInterface;
@@ -40,7 +42,8 @@ class ExportLatexTest extends AbstractTestCase
     {
         parent::setUp();
 
-        $GLOBALS['dbi'] = $this->createDatabaseInterface();
+        $dbi = $this->createDatabaseInterface();
+        DatabaseInterface::$instance = $dbi;
         $GLOBALS['server'] = 0;
         $GLOBALS['output_kanji_conversion'] = false;
         $GLOBALS['output_charset_conversion'] = false;
@@ -53,8 +56,8 @@ class ExportLatexTest extends AbstractTestCase
         $GLOBALS['db'] = 'db';
         $GLOBALS['table'] = 'table';
         $this->object = new ExportLatex(
-            new Relation($GLOBALS['dbi']),
-            new Export($GLOBALS['dbi']),
+            new Relation($dbi),
+            new Export($dbi),
             new Transformations(),
         );
     }
@@ -66,6 +69,7 @@ class ExportLatexTest extends AbstractTestCase
     {
         parent::tearDown();
 
+        DatabaseInterface::$instance = null;
         unset($this->object);
     }
 
@@ -427,8 +431,9 @@ class ExportLatexTest extends AbstractTestCase
 
     public function testExportHeader(): void
     {
-        $GLOBALS['cfg']['Server']['port'] = 80;
-        $GLOBALS['cfg']['Server']['host'] = 'localhost';
+        $config = Config::getInstance();
+        $config->selectedServer['port'] = 80;
+        $config->selectedServer['host'] = 'localhost';
 
         ob_start();
         $this->assertTrue(
@@ -479,8 +484,9 @@ class ExportLatexTest extends AbstractTestCase
         $GLOBALS['latex_columns'] = true;
         $GLOBALS['latex_data_label'] = 'datalabel';
         $GLOBALS['latex_null'] = 'null';
-        $GLOBALS['cfg']['Server']['host'] = 'localhost';
-        $GLOBALS['cfg']['Server']['verbose'] = 'verb';
+        $config = Config::getInstance();
+        $config->selectedServer['host'] = 'localhost';
+        $config->selectedServer['verbose'] = 'verb';
 
         ob_start();
         $this->assertTrue($this->object->exportData(
@@ -553,37 +559,37 @@ class ExportLatexTest extends AbstractTestCase
         $dbi->expects($this->once())
             ->method('getTableIndexes')
             ->with('database', '')
-            ->will($this->returnValue($keys));
+            ->willReturn($keys);
 
         $dbi->expects($this->exactly(2))
             ->method('fetchResult')
-            ->willReturnOnConsecutiveCalls(
+            ->willReturn(
                 [],
                 ['name1' => ['values' => 'test-', 'transformation' => 'testfoo', 'mimetype' => 'testmimetype_']],
             );
 
         $columns = [
-            ['Null' => 'Yes', 'Field' => 'name1', 'Key' => 'PRI', 'Type' => 'set(abc)enum123'],
-            ['Null' => 'NO', 'Field' => 'fields', 'Key' => 'COMP', 'Type' => '', 'Default' => 'def'],
+            new Column('name1', 'set(abc)enum123', true, 'PRI', null, ''),
+            new Column('fields', '', false, 'COMP', 'def', ''),
         ];
         $dbi->expects($this->once())
             ->method('getColumns')
             ->with('database', '')
-            ->will($this->returnValue($columns));
+            ->willReturn($columns);
 
         $dbi->expects($this->once())
             ->method('tryQueryAsControlUser')
-            ->will($this->returnValue($resultStub));
+            ->willReturn($resultStub);
 
         $resultStub->expects($this->once())
             ->method('numRows')
-            ->will($this->returnValue(1));
+            ->willReturn(1);
 
         $resultStub->expects($this->once())
             ->method('fetchAssoc')
-            ->will($this->returnValue(['comment' => 'testComment']));
+            ->willReturn(['comment' => 'testComment']);
 
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
         $this->object->relation = new Relation($dbi);
         if (isset($GLOBALS['latex_caption'])) {
             unset($GLOBALS['latex_caption']);
@@ -648,7 +654,7 @@ class ExportLatexTest extends AbstractTestCase
 
         $dbi->expects($this->exactly(2))
             ->method('fetchResult')
-            ->willReturnOnConsecutiveCalls(
+            ->willReturn(
                 ['name1' => ['foreign_table' => 'ftable', 'foreign_field' => 'ffield'], 'foreign_keys_data' => []],
                 ['field' => ['values' => 'test-', 'transformation' => 'testfoo', 'mimetype' => 'test<']],
             );
@@ -656,26 +662,26 @@ class ExportLatexTest extends AbstractTestCase
         $dbi->expects($this->once())
             ->method('getTableIndexes')
             ->with('database', '')
-            ->will($this->returnValue($keys));
+            ->willReturn($keys);
 
         $dbi->expects($this->once())
             ->method('getColumns')
             ->with('database', '')
-            ->will($this->returnValue($columns));
+            ->willReturn($columns);
 
         $dbi->expects($this->once())
             ->method('tryQueryAsControlUser')
-            ->will($this->returnValue($resultStub));
+            ->willReturn($resultStub);
 
         $resultStub->expects($this->once())
             ->method('numRows')
-            ->will($this->returnValue(1));
+            ->willReturn(1);
 
         $resultStub->expects($this->once())
             ->method('fetchAssoc')
-            ->will($this->returnValue(['comment' => 'testComment']));
+            ->willReturn(['comment' => 'testComment']);
 
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
         $this->object->relation = new Relation($dbi);
 
         $relationParameters = RelationParameters::fromArray([
@@ -720,24 +726,25 @@ class ExportLatexTest extends AbstractTestCase
         $dbi->expects($this->once())
             ->method('getTableIndexes')
             ->with('database', '')
-            ->will($this->returnValue($keys));
+            ->willReturn($keys);
 
         $dbi->expects($this->once())
             ->method('getColumns')
             ->with('database', '')
-            ->will($this->returnValue($columns));
+            ->willReturn($columns);
 
         $dbi->expects($this->never())
             ->method('tryQuery');
 
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
 
         $GLOBALS['latex_caption'] = true;
         $GLOBALS['latex_structure_caption'] = 'latexstructure';
         $GLOBALS['latex_structure_label'] = 'latexlabel';
         $GLOBALS['latex_structure_continued_caption'] = 'latexcontinued';
-        $GLOBALS['cfg']['Server']['host'] = 'localhost';
-        $GLOBALS['cfg']['Server']['verbose'] = 'verb';
+        $config = Config::getInstance();
+        $config->selectedServer['host'] = 'localhost';
+        $config->selectedServer['verbose'] = 'verb';
 
         $relationParameters = RelationParameters::fromArray([
             'db' => 'database',

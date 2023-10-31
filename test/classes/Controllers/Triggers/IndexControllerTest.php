@@ -4,13 +4,19 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Controllers\Triggers;
 
+use PhpMyAdmin\Config;
 use PhpMyAdmin\Controllers\Triggers\IndexController;
+use PhpMyAdmin\DatabaseInterface;
+use PhpMyAdmin\DbTableExists;
+use PhpMyAdmin\Http\Factory\ServerRequestFactory;
 use PhpMyAdmin\Http\ServerRequest;
 use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\ResponseRenderer;
 use PhpMyAdmin\Triggers\Triggers;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
+use ReflectionClass;
 
 #[CoversClass(IndexController::class)]
 #[CoversClass(Triggers::class)]
@@ -22,7 +28,7 @@ final class IndexControllerTest extends AbstractTestCase
         $GLOBALS['text_dir'] = 'ltr';
         $GLOBALS['PMA_PHP_SELF'] = 'index.php';
         $GLOBALS['db'] = 'test_db';
-        $GLOBALS['cfg']['Server']['DisableIS'] = true;
+        Config::getInstance()->selectedServer['DisableIS'] = true;
 
         $dummyDbi = $this->createDbiDummy();
         // phpcs:disable Generic.Files.LineLength.TooLong
@@ -41,16 +47,20 @@ final class IndexControllerTest extends AbstractTestCase
         );
         // phpcs:enable
         $dbi = $this->createDatabaseInterface($dummyDbi);
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
         $template = new Template();
         $response = new ResponseRenderer();
+
+        $request = ServerRequestFactory::create()->createServerRequest('GET', 'http://example.com/')
+            ->withQueryParams(['db' => 'test_db']);
 
         (new IndexController(
             $response,
             $template,
             $dbi,
             new Triggers($dbi),
-        ))($this->createStub(ServerRequest::class));
+            new DbTableExists($dbi),
+        ))($request);
 
         $actual = $response->getHTMLResult();
         // phpcs:disable Generic.Files.LineLength.TooLong
@@ -154,7 +164,7 @@ HTML;
         $GLOBALS['text_dir'] = 'ltr';
         $GLOBALS['PMA_PHP_SELF'] = 'index.php';
         $GLOBALS['db'] = 'test_db';
-        $GLOBALS['cfg']['Server']['DisableIS'] = true;
+        Config::getInstance()->selectedServer['DisableIS'] = true;
 
         $dummyDbi = $this->createDbiDummy();
         // phpcs:disable Generic.Files.LineLength.TooLong
@@ -173,16 +183,20 @@ HTML;
         );
         // phpcs:enable
         $dbi = $this->createDatabaseInterface($dummyDbi);
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
         $template = new Template();
         $response = new ResponseRenderer();
+
+        $request = ServerRequestFactory::create()->createServerRequest('GET', 'http://example.com/')
+            ->withQueryParams(['db' => 'test_db']);
 
         (new IndexController(
             $response,
             $template,
             $dbi,
             new Triggers($dbi),
-        ))($this->createStub(ServerRequest::class));
+            new DbTableExists($dbi),
+        ))($request);
 
         $actual = $response->getHTMLResult();
         // phpcs:disable Generic.Files.LineLength.TooLong
@@ -232,5 +246,77 @@ HTML;
         // phpcs:enable
 
         $this->assertSame($expected, $actual);
+    }
+
+    /**
+     * Test for getDataFromRequest
+     *
+     * @param array<string, string> $in  Input
+     * @param array<string, string> $out Expected output
+     */
+    #[DataProvider('providerGetDataFromRequest')]
+    public function testGetDataFromRequest(array $in, array $out): void
+    {
+        unset($_POST);
+        foreach ($in as $key => $value) {
+            if ($value === '') {
+                continue;
+            }
+
+            $_POST[$key] = $value;
+        }
+
+        $method = (new ReflectionClass(IndexController::class))->getMethod('getDataFromRequest');
+
+        $dbi = $this->createStub(DatabaseInterface::class);
+        DatabaseInterface::$instance = $dbi;
+        $template = new Template();
+        $response = new ResponseRenderer();
+        $indexController = new IndexController(
+            $response,
+            $template,
+            $dbi,
+            new Triggers($dbi),
+            new DbTableExists($dbi),
+        );
+
+        $request = $this->createStub(ServerRequest::class);
+        $request->expects($this->any())
+            ->method('getParsedBodyParam')
+            ->willReturn('foo');
+
+        $output = $method->invoke($indexController, $request);
+        $this->assertEquals($out, $output);
+    }
+
+    /**
+     * Data provider for testGetDataFromRequest
+     *
+     * @return array<array{array<string, string>, array<string, string>}>
+     */
+    public static function providerGetDataFromRequest(): array
+    {
+        return [
+            [
+                [
+                    'item_name' => 'foo',
+                    'item_table' => 'foo',
+                    'item_original_name' => 'foo',
+                    'item_action_timing' => 'foo',
+                    'item_event_manipulation' => 'foo',
+                    'item_definition' => 'foo',
+                    'item_definer' => 'foo',
+                ],
+                [
+                    'item_name' => 'foo',
+                    'item_table' => 'foo',
+                    'item_original_name' => 'foo',
+                    'item_action_timing' => 'foo',
+                    'item_event_manipulation' => 'foo',
+                    'item_definition' => 'foo',
+                    'item_definer' => 'foo',
+                ],
+            ],
+        ];
     }
 }

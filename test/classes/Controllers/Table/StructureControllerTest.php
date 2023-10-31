@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Controllers\Table;
 
+use PhpMyAdmin\Config;
 use PhpMyAdmin\Config\PageSettings;
 use PhpMyAdmin\ConfigStorage\Relation;
 use PhpMyAdmin\Controllers\Table\StructureController;
 use PhpMyAdmin\DatabaseInterface;
-use PhpMyAdmin\Http\ServerRequest;
+use PhpMyAdmin\DbTableExists;
+use PhpMyAdmin\Http\Factory\ServerRequestFactory;
 use PhpMyAdmin\Index;
 use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\AbstractTestCase;
@@ -33,7 +35,7 @@ class StructureControllerTest extends AbstractTestCase
 
         $this->dummyDbi = $this->createDbiDummy();
         $this->dbi = $this->createDatabaseInterface($this->dummyDbi);
-        $GLOBALS['dbi'] = $this->dbi;
+        DatabaseInterface::$instance = $this->dbi;
     }
 
     public function testStructureController(): void
@@ -43,10 +45,11 @@ class StructureControllerTest extends AbstractTestCase
         $GLOBALS['table'] = 'test_table';
         $GLOBALS['text_dir'] = 'ltr';
         $GLOBALS['lang'] = 'en';
-        $GLOBALS['cfg']['Server'] = $GLOBALS['config']->getSettings()->Servers[1]->asArray();
-        $GLOBALS['cfg']['Server']['DisableIS'] = true;
-        $GLOBALS['cfg']['ShowStats'] = false;
-        $GLOBALS['cfg']['ShowPropertyComments'] = false;
+        $config = Config::getInstance();
+        $config->selectedServer = $config->getSettings()->Servers[1]->asArray();
+        $config->selectedServer['DisableIS'] = true;
+        $config->settings['ShowStats'] = false;
+        $config->settings['ShowPropertyComments'] = false;
         (new ReflectionProperty(Relation::class, 'cache'))->setValue(null, null);
         (new ReflectionProperty(Template::class, 'twig'))->setValue(null, null);
 
@@ -78,12 +81,14 @@ class StructureControllerTest extends AbstractTestCase
         );
         // phpcs:enable
 
-        $pageSettings = new PageSettings(new UserPreferences($GLOBALS['dbi']));
+        $pageSettings = new PageSettings(
+            new UserPreferences($this->dbi, new Relation($this->dbi), new Template()),
+        );
         $pageSettings->init('TableStructure');
         $fields = $this->dbi->getColumns($GLOBALS['db'], $GLOBALS['table'], true);
 
-        $request = $this->createStub(ServerRequest::class);
-        $request->method('getRoute')->willReturn('/table/structure');
+        $request = ServerRequestFactory::create()->createServerRequest('GET', 'http://example.com/')
+            ->withQueryParams(['route' => '/table/structure', 'db' => 'test_db', 'table' => 'test_table']);
 
         $response = new ResponseRenderer();
         $relation = new Relation($this->dbi);
@@ -95,6 +100,7 @@ class StructureControllerTest extends AbstractTestCase
             new Transformations(),
             $this->dbi,
             $pageSettings,
+            new DbTableExists($this->dbi),
         ))($request);
 
         $expected = $pageSettings->getHTML();
@@ -122,9 +128,9 @@ class StructureControllerTest extends AbstractTestCase
             'table_stats' => null,
             'fields' => $fields,
             'extracted_columnspecs' => [
-                1 => Util::extractColumnSpec($fields['id']['Type']),
-                2 => Util::extractColumnSpec($fields['name']['Type']),
-                3 => Util::extractColumnSpec($fields['datetimefield']['Type']),
+                1 => Util::extractColumnSpec($fields['id']->type),
+                2 => Util::extractColumnSpec($fields['name']->type),
+                3 => Util::extractColumnSpec($fields['datetimefield']->type),
             ],
             'columns_with_index' => [],
             'central_list' => [],

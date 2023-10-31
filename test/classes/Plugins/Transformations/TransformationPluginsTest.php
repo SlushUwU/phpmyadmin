@@ -4,7 +4,25 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Plugins\Transformations;
 
+use PhpMyAdmin\Config;
 use PhpMyAdmin\FieldMetadata;
+use PhpMyAdmin\Plugins\IOTransformationsPlugin;
+use PhpMyAdmin\Plugins\Transformations\Abs\DateFormatTransformationsPlugin;
+use PhpMyAdmin\Plugins\Transformations\Abs\DownloadTransformationsPlugin;
+use PhpMyAdmin\Plugins\Transformations\Abs\ExternalTransformationsPlugin;
+use PhpMyAdmin\Plugins\Transformations\Abs\FormattedTransformationsPlugin;
+use PhpMyAdmin\Plugins\Transformations\Abs\HexTransformationsPlugin;
+use PhpMyAdmin\Plugins\Transformations\Abs\ImageLinkTransformationsPlugin;
+use PhpMyAdmin\Plugins\Transformations\Abs\ImageUploadTransformationsPlugin;
+use PhpMyAdmin\Plugins\Transformations\Abs\InlineTransformationsPlugin;
+use PhpMyAdmin\Plugins\Transformations\Abs\LongToIPv4TransformationsPlugin;
+use PhpMyAdmin\Plugins\Transformations\Abs\PreApPendTransformationsPlugin;
+use PhpMyAdmin\Plugins\Transformations\Abs\RegexValidationTransformationsPlugin;
+use PhpMyAdmin\Plugins\Transformations\Abs\SQLTransformationsPlugin;
+use PhpMyAdmin\Plugins\Transformations\Abs\SubstringTransformationsPlugin;
+use PhpMyAdmin\Plugins\Transformations\Abs\TextFileUploadTransformationsPlugin;
+use PhpMyAdmin\Plugins\Transformations\Abs\TextImageLinkTransformationsPlugin;
+use PhpMyAdmin\Plugins\Transformations\Abs\TextLinkTransformationsPlugin;
 use PhpMyAdmin\Plugins\Transformations\Input\Image_JPEG_Upload;
 use PhpMyAdmin\Plugins\Transformations\Input\Text_Plain_FileUpload;
 use PhpMyAdmin\Plugins\Transformations\Input\Text_Plain_Iptolong;
@@ -26,7 +44,7 @@ use PhpMyAdmin\Plugins\Transformations\Text_Plain_Substring;
 use PhpMyAdmin\Plugins\TransformationsPlugin;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\FieldHelper;
-use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use ReflectionMethod;
@@ -41,7 +59,42 @@ use const MYSQLI_TYPE_TINY;
 /**
  * Tests for different input/output transformation plugins
  */
-#[CoversNothing]
+#[CoversClass(TransformationsPlugin::class)]
+#[CoversClass(IOTransformationsPlugin::class)]
+#[CoversClass(DateFormatTransformationsPlugin::class)]
+#[CoversClass(DownloadTransformationsPlugin::class)]
+#[CoversClass(ExternalTransformationsPlugin::class)]
+#[CoversClass(FormattedTransformationsPlugin::class)]
+#[CoversClass(HexTransformationsPlugin::class)]
+#[CoversClass(ImageLinkTransformationsPlugin::class)]
+#[CoversClass(ImageUploadTransformationsPlugin::class)]
+#[CoversClass(InlineTransformationsPlugin::class)]
+#[CoversClass(LongToIPv4TransformationsPlugin::class)]
+#[CoversClass(PreApPendTransformationsPlugin::class)]
+#[CoversClass(RegexValidationTransformationsPlugin::class)]
+#[CoversClass(SQLTransformationsPlugin::class)]
+#[CoversClass(SubstringTransformationsPlugin::class)]
+#[CoversClass(TextFileUploadTransformationsPlugin::class)]
+#[CoversClass(TextImageLinkTransformationsPlugin::class)]
+#[CoversClass(TextLinkTransformationsPlugin::class)]
+#[CoversClass(Image_JPEG_Upload::class)]
+#[CoversClass(Text_Plain_FileUpload::class)]
+#[CoversClass(Text_Plain_Iptolong::class)]
+#[CoversClass(Text_Plain_RegexValidation::class)]
+#[CoversClass(Application_Octetstream_Download::class)]
+#[CoversClass(Application_Octetstream_Hex::class)]
+#[CoversClass(Image_JPEG_Inline::class)]
+#[CoversClass(Image_JPEG_Link::class)]
+#[CoversClass(Image_PNG_Inline::class)]
+#[CoversClass(Text_Plain_Dateformat::class)]
+#[CoversClass(Text_Plain_External::class)]
+#[CoversClass(Text_Plain_Formatted::class)]
+#[CoversClass(Text_Plain_Imagelink::class)]
+#[CoversClass(Text_Plain_Sql::class)]
+#[CoversClass(Text_Plain_Link::class)]
+#[CoversClass(Text_Plain_Longtoipv4::class)]
+#[CoversClass(Text_Plain_PreApPend::class)]
+#[CoversClass(Text_Plain_Substring::class)]
 class TransformationPluginsTest extends AbstractTestCase
 {
     /**
@@ -71,7 +124,7 @@ class TransformationPluginsTest extends AbstractTestCase
     /** @return array<array{0: TransformationsPlugin, 1: string, 2: mixed, 3?: mixed[]}> */
     public static function multiDataProvider(): array
     {
-        $GLOBALS['cfg']['CodemirrorEnable'] = false;
+        Config::getInstance()->settings['CodemirrorEnable'] = false;
 
         return [
             // Test data for PhpMyAdmin\Plugins\Transformations\Input\Image_JPEG_Upload plugin
@@ -227,7 +280,7 @@ class TransformationPluginsTest extends AbstractTestCase
                 . ' data via standard input. Returns the standard output of the'
                 . ' application. The default is Tidy, to pretty-print HTML code.'
                 . ' For security reasons, you have to manually edit the file'
-                . ' libraries/classes/Plugins/Transformations/Abs/ExternalTransformationsPlugin'
+                . ' src/Plugins/Transformations/Abs/ExternalTransformationsPlugin'
                 . '.php and list the tools you want to make available.'
                 . ' The first option is then the number of the program you want to'
                 . ' use. The second option should be blank for historical reasons.'
@@ -383,7 +436,7 @@ class TransformationPluginsTest extends AbstractTestCase
      */
     public static function transformationDataProvider(): array
     {
-        $GLOBALS['cfg']['CodemirrorEnable'] = false;
+        Config::getInstance()->settings['CodemirrorEnable'] = false;
 
         $result = [
             [new Image_JPEG_Upload(), ['test', [150, 100]], 'test'],

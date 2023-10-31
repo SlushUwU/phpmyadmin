@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Controllers\Server\Status;
 
+use PhpMyAdmin\Config;
 use PhpMyAdmin\Controllers\Server\Status\VariablesController;
 use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\Http\ServerRequest;
@@ -33,23 +34,24 @@ class VariablesControllerTest extends AbstractTestCase
 
         $this->dummyDbi = $this->createDbiDummy();
         $this->dbi = $this->createDatabaseInterface($this->dummyDbi);
-        $GLOBALS['dbi'] = $this->dbi;
+        DatabaseInterface::$instance = $this->dbi;
 
         $GLOBALS['text_dir'] = 'ltr';
         $GLOBALS['server'] = 1;
         $GLOBALS['db'] = 'db';
         $GLOBALS['table'] = 'table';
-        $GLOBALS['cfg']['Server']['DisableIS'] = false;
-        $GLOBALS['cfg']['Server']['host'] = 'localhost';
+        $config = Config::getInstance();
+        $config->selectedServer['DisableIS'] = false;
+        $config->selectedServer['host'] = 'localhost';
 
-        $this->data = new Data($this->dbi, $GLOBALS['config']);
+        $this->data = new Data($this->dbi, $config);
     }
 
     public function testIndex(): void
     {
         $response = new ResponseRenderer();
 
-        $controller = new VariablesController($response, new Template(), $this->data, $GLOBALS['dbi']);
+        $controller = new VariablesController($response, new Template(), $this->data, DatabaseInterface::getInstance());
 
         $this->dummyDbi->addSelectDb('mysql');
         $controller($this->createStub(ServerRequest::class));

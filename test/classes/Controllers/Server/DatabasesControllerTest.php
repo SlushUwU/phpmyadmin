@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Controllers\Server;
 
+use PhpMyAdmin\Config;
 use PhpMyAdmin\Controllers\Server\DatabasesController;
 use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\Http\ServerRequest;
@@ -32,23 +33,24 @@ class DatabasesControllerTest extends AbstractTestCase
 
         $this->dummyDbi = $this->createDbiDummy();
         $this->dbi = $this->createDatabaseInterface($this->dummyDbi);
-        $GLOBALS['dbi'] = $this->dbi;
+        DatabaseInterface::$instance = $this->dbi;
 
         $GLOBALS['server'] = 1;
         $GLOBALS['db'] = 'pma_test';
         $GLOBALS['table'] = '';
-        $GLOBALS['cfg']['Server']['DisableIS'] = false;
+        Config::getInstance()->selectedServer['DisableIS'] = false;
         $GLOBALS['text_dir'] = 'text_dir';
     }
 
     public function testIndexAction(): void
     {
-        $GLOBALS['cfg']['Server']['only_db'] = '';
+        $config = Config::getInstance();
+        $config->selectedServer['only_db'] = '';
         $template = new Template();
 
         $response = new ResponseRenderer();
 
-        $controller = new DatabasesController($response, $template, $GLOBALS['dbi']);
+        $controller = new DatabasesController($response, $template, $this->dbi);
 
         $this->dummyDbi->addResult(
             'SELECT `SCHEMA_NAME` FROM `INFORMATION_SCHEMA`.`SCHEMATA`',
@@ -78,9 +80,9 @@ class DatabasesControllerTest extends AbstractTestCase
 
         $response = new ResponseRenderer();
 
-        $controller = new DatabasesController($response, $template, $GLOBALS['dbi']);
+        $controller = new DatabasesController($response, $template, DatabaseInterface::getInstance());
 
-        $GLOBALS['cfg']['ShowCreateDb'] = true;
+        $config->settings['ShowCreateDb'] = true;
         $GLOBALS['is_create_db_priv'] = true;
         $_REQUEST['statistics'] = '1';
         $_REQUEST['sort_by'] = 'SCHEMA_TABLES';

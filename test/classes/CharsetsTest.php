@@ -100,6 +100,18 @@ class CharsetsTest extends AbstractTestCase
         }
     }
 
+    public function testGetCollationsMariaDB(): void
+    {
+        $dbi = $this->createDatabaseInterface();
+        $dbi->setVersion(['@@version' => '10.10.0-MariaDB']);
+        $collations = Charsets::getCollations($dbi, false);
+        $this->assertCount(4, $collations);
+        $this->assertContainsOnly('array', $collations);
+        foreach ($collations as $collation) {
+            $this->assertContainsOnlyInstancesOf(Charsets\Collation::class, $collation);
+        }
+    }
+
     public function testGetCollationsWithoutIS(): void
     {
         $dummyDbi = $this->createDbiDummy();

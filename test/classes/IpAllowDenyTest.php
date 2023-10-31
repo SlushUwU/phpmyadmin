@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests;
 
+use PhpMyAdmin\Config;
 use PhpMyAdmin\Core;
 use PhpMyAdmin\IpAllowDeny;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -21,14 +22,15 @@ class IpAllowDenyTest extends AbstractTestCase
     {
         parent::setUp();
 
-        $GLOBALS['cfg']['Server']['user'] = 'pma_username';
-        $GLOBALS['cfg']['Server']['AllowDeny']['rules'][] = 'allow % 255.255.255.0/4';
-        $GLOBALS['cfg']['Server']['AllowDeny']['rules'][] = 'allow % from 255.255.2.0/4';
-        $GLOBALS['cfg']['Server']['AllowDeny']['rules'][] = 'allow % from 2001:4998:c:a0d:0000:0000:4998:1020';
-        $GLOBALS['cfg']['Server']['AllowDeny']['rules'][] = 'allow % from 2001:4998:c:a0d:0000:0000:4998:[1001-2010]';
-        $GLOBALS['cfg']['Server']['AllowDeny']['rules'][] = 'allow % from 2001:4998:c:a0d:0000:0000:4998:3020/24';
-        $GLOBALS['cfg']['Server']['AllowDeny']['rules'][] = 'deny % 255.255.0.0/8';
-        $GLOBALS['cfg']['Server']['AllowDeny']['rules'][] = 'deny % from 255.255.0.0/8';
+        $config = Config::getInstance();
+        $config->selectedServer['user'] = 'pma_username';
+        $config->selectedServer['AllowDeny']['rules'][] = 'allow % 255.255.255.0/4';
+        $config->selectedServer['AllowDeny']['rules'][] = 'allow % from 255.255.2.0/4';
+        $config->selectedServer['AllowDeny']['rules'][] = 'allow % from 2001:4998:c:a0d:0000:0000:4998:1020';
+        $config->selectedServer['AllowDeny']['rules'][] = 'allow % from 2001:4998:c:a0d:0000:0000:4998:[1001-2010]';
+        $config->selectedServer['AllowDeny']['rules'][] = 'allow % from 2001:4998:c:a0d:0000:0000:4998:3020/24';
+        $config->selectedServer['AllowDeny']['rules'][] = 'deny % 255.255.0.0/8';
+        $config->selectedServer['AllowDeny']['rules'][] = 'deny % from 255.255.0.0/8';
 
         $this->ipAllowDeny = new IpAllowDeny();
     }
@@ -50,7 +52,8 @@ class IpAllowDenyTest extends AbstractTestCase
     ): void {
         unset($_SERVER['REMOTE_ADDR']);
         unset($_SERVER['TEST_FORWARDED_HEADER']);
-        $GLOBALS['cfg']['TrustedProxies'] = [];
+        $config = Config::getInstance();
+        $config->settings['TrustedProxies'] = [];
 
         if ($remote !== null) {
             $_SERVER['REMOTE_ADDR'] = $remote;
@@ -61,7 +64,7 @@ class IpAllowDenyTest extends AbstractTestCase
                 $proxyip = $remote;
             }
 
-            $GLOBALS['cfg']['TrustedProxies'][$proxyip] = 'TEST_FORWARDED_HEADER';
+            $config->settings['TrustedProxies'][$proxyip] = 'TEST_FORWARDED_HEADER';
             $_SERVER['TEST_FORWARDED_HEADER'] = $header;
         }
 
@@ -72,7 +75,7 @@ class IpAllowDenyTest extends AbstractTestCase
 
         unset($_SERVER['REMOTE_ADDR']);
         unset($_SERVER['TEST_FORWARDED_HEADER']);
-        $GLOBALS['cfg']['TrustedProxies'] = [];
+        $config->settings['TrustedProxies'] = [];
     }
 
     /**

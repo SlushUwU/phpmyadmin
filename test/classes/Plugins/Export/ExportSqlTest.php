@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Plugins\Export;
 
+use PhpMyAdmin\ColumnFull;
+use PhpMyAdmin\Config;
 use PhpMyAdmin\ConfigStorage\Relation;
 use PhpMyAdmin\ConfigStorage\RelationParameters;
 use PhpMyAdmin\DatabaseInterface;
@@ -54,13 +56,14 @@ class ExportSqlTest extends AbstractTestCase
     {
         parent::setUp();
 
-        $GLOBALS['dbi'] = $this->createDatabaseInterface();
+        $dbi = $this->createDatabaseInterface();
+        DatabaseInterface::$instance = $dbi;
         $GLOBALS['server'] = 0;
         $GLOBALS['db'] = '';
         $GLOBALS['table'] = '';
         $GLOBALS['lang'] = 'en';
         $GLOBALS['text_dir'] = 'ltr';
-        $GLOBALS['cfg']['Server']['DisableIS'] = true;
+        Config::getInstance()->selectedServer['DisableIS'] = true;
         $GLOBALS['output_kanji_conversion'] = false;
         $GLOBALS['buffer_needed'] = false;
         $GLOBALS['asfile'] = false;
@@ -73,8 +76,8 @@ class ExportSqlTest extends AbstractTestCase
         $GLOBALS['sql_auto_increments'] = null;
 
         $this->object = new ExportSql(
-            new Relation($GLOBALS['dbi']),
-            new Export($GLOBALS['dbi']),
+            new Relation($dbi),
+            new Export($dbi),
             new Transformations(),
         );
         $this->object->useSqlBackquotes(false);
@@ -87,6 +90,7 @@ class ExportSqlTest extends AbstractTestCase
     {
         parent::tearDown();
 
+        DatabaseInterface::$instance = null;
         unset($this->object);
     }
 
@@ -115,12 +119,9 @@ class ExportSqlTest extends AbstractTestCase
 
         $dbi->expects($this->once())
             ->method('getCompatibilities')
-            ->will($this->returnValue(['v1', 'v2']));
+            ->willReturn(['v1', 'v2']);
 
-        $dbi->expects($this->any())->method('escapeString')
-            ->will($this->returnArgument(0));
-
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
         $GLOBALS['plugin_param']['export_type'] = 'server';
         $GLOBALS['plugin_param']['single_table'] = false;
 
@@ -397,7 +398,7 @@ class ExportSqlTest extends AbstractTestCase
             ->method('query')
             ->with('SET time_zone = "GMT"');
 
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
 
         $this->expectOutputString('SET FOREIGN_KEY_CHECKS=1;' . "\n" . 'COMMIT;' . "\n");
 
@@ -409,8 +410,9 @@ class ExportSqlTest extends AbstractTestCase
     public function testExportHeader(): void
     {
         $GLOBALS['sql_compatibility'] = 'NONE';
-        $GLOBALS['cfg']['Server']['host'] = 'localhost';
-        $GLOBALS['cfg']['Server']['port'] = 80;
+        $config = Config::getInstance();
+        $config->selectedServer['host'] = 'localhost';
+        $config->selectedServer['port'] = 80;
         $GLOBALS['sql_disable_fk'] = true;
         $GLOBALS['sql_use_transaction'] = true;
         $GLOBALS['sql_utc_time'] = true;
@@ -433,13 +435,13 @@ class ExportSqlTest extends AbstractTestCase
         $dbi->expects($this->once())
             ->method('fetchValue')
             ->with('SELECT @@session.time_zone')
-            ->will($this->returnValue('old_tz'));
+            ->willReturn('old_tz');
 
         $dbi->expects($this->once())
             ->method('query')
             ->with('SET time_zone = "+00:00"');
 
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
 
         ob_start();
         $this->assertTrue(
@@ -477,15 +479,13 @@ class ExportSqlTest extends AbstractTestCase
         $dbi = $this->getMockBuilder(DatabaseInterface::class)
             ->disableOriginalConstructor()
             ->getMock();
-        $dbi->expects($this->any())->method('escapeString')
-            ->will($this->returnArgument(0));
 
         $dbi->expects($this->once())
             ->method('getDbCollation')
             ->with('db')
-            ->will($this->returnValue('utf8_general_ci'));
+            ->willReturn('utf8_general_ci');
 
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
 
         $this->object->useSqlBackquotes(true);
 
@@ -508,20 +508,18 @@ class ExportSqlTest extends AbstractTestCase
 
         // case2: no backquotes
         unset($GLOBALS['sql_compatibility']);
-        $GLOBALS['cfg']['Server']['DisableIS'] = true;
+        Config::getInstance()->selectedServer['DisableIS'] = true;
 
         $dbi = $this->getMockBuilder(DatabaseInterface::class)
             ->disableOriginalConstructor()
             ->getMock();
-        $dbi->expects($this->any())->method('escapeString')
-            ->will($this->returnArgument(0));
 
         $dbi->expects($this->once())
             ->method('getDbCollation')
             ->with('db')
-            ->will($this->returnValue('testcollation'));
+            ->willReturn('testcollation');
 
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
 
         $this->object->useSqlBackquotes(false);
 
@@ -588,18 +586,18 @@ class ExportSqlTest extends AbstractTestCase
         $dbi->expects($this->once())
             ->method('fetchResult')
             ->with('SELECT EVENT_NAME FROM information_schema.EVENTS WHERE EVENT_SCHEMA= \'db\'')
-            ->will($this->returnValue(['f1', 'f2']));
+            ->willReturn(['f1', 'f2']);
 
         $dbi->expects($this->exactly(2))
             ->method('fetchValue')
-            ->will($this->returnValueMap([
+            ->willReturnMap([
                 ['SHOW CREATE EVENT `db`.`f1`', 'Create Event', Connection::TYPE_USER, 'f1event'],
                 ['SHOW CREATE EVENT `db`.`f2`', 'Create Event', Connection::TYPE_USER, 'f2event'],
-            ]));
+            ]);
         $dbi->expects($this->any())->method('quoteString')
-            ->will($this->returnCallback(static fn (string $string): string => "'" . $string . "'"));
+            ->willReturnCallback(static fn (string $string): string => "'" . $string . "'");
 
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
 
         ob_start();
         $this->assertTrue(
@@ -627,10 +625,8 @@ class ExportSqlTest extends AbstractTestCase
         $dbi = $this->getMockBuilder(DatabaseInterface::class)
             ->disableOriginalConstructor()
             ->getMock();
-        $dbi->expects($this->any())->method('escapeString')
-            ->will($this->returnArgument(0));
 
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
 
         ob_start();
         $this->assertTrue(
@@ -649,19 +645,13 @@ class ExportSqlTest extends AbstractTestCase
         $dbi = $this->getMockBuilder(DatabaseInterface::class)
             ->disableOriginalConstructor()
             ->getMock();
-        $dbi->expects($this->any())->method('escapeString')
-            ->will($this->returnArgument(0));
 
         $dbi->expects($this->once())
             ->method('getColumnsFull')
             ->with('db', 'view')
-            ->will(
-                $this->returnValue(
-                    ['cname' => ['Type' => 'int']],
-                ),
-            );
+            ->willReturn(['cname' => ['Type' => 'int']]);
 
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
 
         $result = $this->object->getTableDefStandIn('db', 'view');
 
@@ -682,27 +672,26 @@ class ExportSqlTest extends AbstractTestCase
             ->disableOriginalConstructor()
             ->getMock();
         $dbi->expects($this->any())->method('quoteString')
-            ->will($this->returnCallback(static fn (string $string): string => "'" . $string . "'"));
+            ->willReturnCallback(static fn (string $string): string => "'" . $string . "'");
 
         $dbi->expects($this->any())
             ->method('getColumns')
             ->with('db', 'view')
-            ->will(
-                $this->returnValue(
-                    [
-                        'cname' => [
-                            'Type' => 'char',
-                            'Collation' => 'utf-8',
-                            'Null' => 'NO',
-                            'Default' => 'a',
-                            'Comment' => 'cmt',
-                            'Field' => 'fname',
-                        ],
-                    ],
+            ->willReturn([
+                new ColumnFull(
+                    'fname',
+                    'char',
+                    'utf-8',
+                    false,
+                    '',
+                    'a',
+                    '',
+                    '',
+                    'cmt',
                 ),
-            );
+            ]);
 
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
         $GLOBALS['sql_compatibility'] = 'MSSQL';
 
         $method = new ReflectionMethod(ExportSql::class, 'getTableDefForView');
@@ -722,25 +711,25 @@ class ExportSqlTest extends AbstractTestCase
             ->disableOriginalConstructor()
             ->getMock();
         $dbi->expects($this->any())->method('quoteString')
-            ->will($this->returnCallback(static fn (string $string): string => "'" . $string . "'"));
+            ->willReturnCallback(static fn (string $string): string => "'" . $string . "'");
 
         $dbi->expects($this->any())
             ->method('getColumns')
             ->with('db', 'view')
-            ->will(
-                $this->returnValue(
-                    [
-                        'cname' => [
-                            'Type' => 'char',
-                            'Collation' => 'utf-8',
-                            'Null' => 'YES',
-                            'Comment' => 'cmt',
-                            'Field' => 'fname',
-                        ],
-                    ],
+            ->willReturn([
+                new ColumnFull(
+                    'fname',
+                    'char',
+                    'utf-8',
+                    true,
+                    '',
+                    null,
+                    '',
+                    '',
+                    'cmt',
                 ),
-            );
-        $GLOBALS['dbi'] = $dbi;
+            ]);
+        DatabaseInterface::$instance = $dbi;
 
         $result = $method->invoke($this->object, 'db', 'view');
 
@@ -808,8 +797,8 @@ SQL;
             ['Table', 'Create Table'],
         );
 
-        $GLOBALS['dbi'] = $this->createDatabaseInterface($dbiDummy);
-        $GLOBALS['cfg']['Server']['DisableIS'] = false;
+        DatabaseInterface::$instance = $this->createDatabaseInterface($dbiDummy);
+        Config::getInstance()->selectedServer['DisableIS'] = false;
 
         $this->object->useSqlBackquotes(true);
 
@@ -857,8 +846,8 @@ SQL;
         $dbiDummy->addResult('SHOW CREATE TABLE `db`.`table`', []);
         $dbiDummy->addErrorCode('error occurred');
 
-        $GLOBALS['dbi'] = $this->createDatabaseInterface($dbiDummy);
-        $GLOBALS['cfg']['Server']['DisableIS'] = false;
+        DatabaseInterface::$instance = $this->createDatabaseInterface($dbiDummy);
+        Config::getInstance()->selectedServer['DisableIS'] = false;
 
         $this->object->useSqlBackquotes(false);
 
@@ -886,17 +875,14 @@ SQL;
             ->disableOriginalConstructor()
             ->getMock();
 
-        $dbi->expects($this->any())->method('escapeString')
-            ->will($this->returnArgument(0));
-
         $dbi->expects($this->exactly(2))
             ->method('fetchResult')
-            ->willReturnOnConsecutiveCalls(
+            ->willReturn(
                 ['foo' => ['foreign_table' => 'ftable', 'foreign_field' => 'ffield']],
                 ['fieldname' => ['values' => 'test-', 'transformation' => 'testfoo', 'mimetype' => 'test<']],
             );
 
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
         $this->object->relation = new Relation($dbi);
 
         $method = new ReflectionMethod(ExportSql::class, 'getTableComments');
@@ -1077,41 +1063,38 @@ SQL;
         $dbi->expects($this->once())
             ->method('getFieldsMeta')
             ->with($resultStub)
-            ->will($this->returnValue($fields));
+            ->willReturn($fields);
 
         $dbi->expects($this->once())
             ->method('tryQuery')
             ->with('SELECT a FROM b WHERE 1', Connection::TYPE_USER, DatabaseInterface::QUERY_UNBUFFERED)
-            ->will($this->returnValue($resultStub));
+            ->willReturn($resultStub);
 
         $resultStub->expects($this->once())
             ->method('numFields')
-            ->will($this->returnValue(5));
+            ->willReturn(5);
 
         $resultStub->expects($this->exactly(2))
             ->method('fetchRow')
-            ->willReturnOnConsecutiveCalls(
-                [null, 'test', '10', '6', "\x00\x0a\x0d\x1a"],
-                [],
-            );
+            ->willReturn([null, 'test', '10', '6', "\x00\x0a\x0d\x1a"], []);
         $dbi->expects($this->any())->method('quoteString')
-            ->will($this->returnCallback(static fn (string $string): string => "'" . $string . "'"));
+            ->willReturnCallback(static fn (string $string): string => "'" . $string . "'");
 
         $tableObj = $this->getMockBuilder(Table::class)
             ->disableOriginalConstructor()
             ->getMock();
         $tableObj->expects($this->once())
             ->method('isMerge')
-            ->will($this->returnValue(false));
+            ->willReturn(false);
         $tableObj->expects($this->once())
             ->method('isView')
-            ->will($this->returnValue(false));
+            ->willReturn(false);
 
         $dbi->expects($this->any())
             ->method('getTable')
-            ->will($this->returnValue($tableObj));
+            ->willReturn($tableObj);
 
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
         $GLOBALS['sql_compatibility'] = 'MSSQL';
         $GLOBALS['sql_max_query_size'] = 50000;
         $GLOBALS['sql_views_as_tables'] = true;
@@ -1121,7 +1104,7 @@ SQL;
         $GLOBALS['sql_truncate'] = true;
         $GLOBALS['sql_insert_syntax'] = 'both';
         $GLOBALS['sql_hex_for_binary'] = true;
-        $GLOBALS['cfg']['Server']['DisableIS'] = false;
+        Config::getInstance()->selectedServer['DisableIS'] = false;
 
         $this->object->useSqlBackquotes(true);
 
@@ -1180,41 +1163,36 @@ SQL;
         $dbi->expects($this->once())
             ->method('getFieldsMeta')
             ->with($resultStub)
-            ->will($this->returnValue($fields));
+            ->willReturn($fields);
 
         $dbi->expects($this->once())
             ->method('tryQuery')
             ->with('SELECT a FROM b WHERE 1', Connection::TYPE_USER, DatabaseInterface::QUERY_UNBUFFERED)
-            ->will($this->returnValue($resultStub));
+            ->willReturn($resultStub);
 
         $resultStub->expects($this->once())
             ->method('numFields')
-            ->will($this->returnValue(2));
+            ->willReturn(2);
 
         $resultStub->expects($this->exactly(2))
             ->method('fetchRow')
-            ->willReturnOnConsecutiveCalls(
-                [null, null],
-                [],
-            );
+            ->willReturn([null, null], []);
 
         $tableObj = $this->getMockBuilder(Table::class)
             ->disableOriginalConstructor()
             ->getMock();
         $tableObj->expects($this->once())
             ->method('isMerge')
-            ->will($this->returnValue(false));
+            ->willReturn(false);
         $tableObj->expects($this->once())
             ->method('isView')
-            ->will($this->returnValue(false));
+            ->willReturn(false);
 
         $dbi->expects($this->any())
             ->method('getTable')
-            ->will($this->returnValue($tableObj));
-        $dbi->expects($this->any())->method('escapeString')
-            ->will($this->returnArgument(0));
+            ->willReturn($tableObj);
 
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
         $GLOBALS['sql_compatibility'] = 'MSSQL';
         $GLOBALS['sql_views_as_tables'] = true;
         $GLOBALS['sql_type'] = 'UPDATE';
@@ -1223,7 +1201,7 @@ SQL;
         $GLOBALS['sql_truncate'] = true;
         $GLOBALS['sql_insert_syntax'] = 'both';
         $GLOBALS['sql_hex_for_binary'] = true;
-        $GLOBALS['cfg']['Server']['DisableIS'] = false;
+        Config::getInstance()->selectedServer['DisableIS'] = false;
 
         $this->object->useSqlBackquotes(true);
 
@@ -1251,19 +1229,17 @@ SQL;
             ->getMock();
         $tableObj->expects($this->once())
             ->method('isMerge')
-            ->will($this->returnValue(false));
+            ->willReturn(false);
         $tableObj->expects($this->once())
             ->method('isView')
-            ->will($this->returnValue(true));
+            ->willReturn(true);
 
         $dbi->expects($this->any())
             ->method('getTable')
-            ->will($this->returnValue($tableObj));
-        $dbi->expects($this->any())->method('escapeString')
-            ->will($this->returnArgument(0));
+            ->willReturn($tableObj);
 
-        $GLOBALS['dbi'] = $dbi;
-        $GLOBALS['cfg']['Server']['DisableIS'] = false;
+        DatabaseInterface::$instance = $dbi;
+        Config::getInstance()->selectedServer['DisableIS'] = false;
         $GLOBALS['sql_views_as_tables'] = false;
         $GLOBALS['sql_include_comments'] = true;
         $oldVal = $GLOBALS['sql_compatibility'] ?? '';
@@ -1295,26 +1271,24 @@ SQL;
 
         $dbi->expects($this->once())
             ->method('getError')
-            ->will($this->returnValue('err'));
+            ->willReturn('err');
 
         $tableObj = $this->getMockBuilder(Table::class)
             ->disableOriginalConstructor()
             ->getMock();
         $tableObj->expects($this->once())
             ->method('isMerge')
-            ->will($this->returnValue(false));
+            ->willReturn(false);
         $tableObj->expects($this->once())
             ->method('isView')
-            ->will($this->returnValue(false));
+            ->willReturn(false);
 
         $dbi->expects($this->any())
             ->method('getTable')
-            ->will($this->returnValue($tableObj));
-        $dbi->expects($this->any())->method('escapeString')
-            ->will($this->returnArgument(0));
+            ->willReturn($tableObj);
 
-        $GLOBALS['dbi'] = $dbi;
-        $GLOBALS['cfg']['Server']['DisableIS'] = false;
+        DatabaseInterface::$instance = $dbi;
+        Config::getInstance()->selectedServer['DisableIS'] = false;
         $GLOBALS['sql_views_as_tables'] = true;
         $GLOBALS['sql_include_comments'] = true;
 

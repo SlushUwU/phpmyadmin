@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace PhpMyAdmin\Tests\Tracking;
 
 use PhpMyAdmin\Cache;
+use PhpMyAdmin\ColumnFull;
+use PhpMyAdmin\Config;
 use PhpMyAdmin\ConfigStorage\Relation;
 use PhpMyAdmin\ConfigStorage\RelationParameters;
 use PhpMyAdmin\DatabaseInterface;
@@ -29,7 +31,7 @@ class TrackerTest extends AbstractTestCase
         parent::setUp();
 
         $this->loadContainerBuilder();
-        $GLOBALS['dbi'] = $this->createDatabaseInterface();
+        DatabaseInterface::$instance = $this->createDatabaseInterface();
 
         parent::loadDbiIntoContainerBuilder();
 
@@ -37,12 +39,13 @@ class TrackerTest extends AbstractTestCase
          * SET these to avoid undefined index error
          */
         $GLOBALS['server'] = 1;
-        $GLOBALS['cfg']['Server']['tracking_add_drop_table'] = '';
-        $GLOBALS['cfg']['Server']['tracking_add_drop_view'] = '';
-        $GLOBALS['cfg']['Server']['tracking_add_drop_database'] = '';
-        $GLOBALS['cfg']['Server']['tracking_default_statements'] = '';
-        $GLOBALS['cfg']['Server']['tracking_version_auto_create'] = '';
-        $GLOBALS['cfg']['Server']['DisableIS'] = false;
+        $config = Config::getInstance();
+        $config->selectedServer['tracking_add_drop_table'] = '';
+        $config->selectedServer['tracking_add_drop_view'] = '';
+        $config->selectedServer['tracking_add_drop_database'] = '';
+        $config->selectedServer['tracking_default_statements'] = '';
+        $config->selectedServer['tracking_version_auto_create'] = '';
+        $config->selectedServer['DisableIS'] = false;
         $GLOBALS['export_type'] = null;
 
         $relationParameters = RelationParameters::fromArray([
@@ -51,12 +54,6 @@ class TrackerTest extends AbstractTestCase
             'tracking' => 'tracking',
         ]);
         (new ReflectionProperty(Relation::class, 'cache'))->setValue(null, $relationParameters);
-
-        $dbi = $this->getMockBuilder(DatabaseInterface::class)
-            ->disableOriginalConstructor()
-            ->getMock();
-        $dbi->expects($this->any())->method('escapeString')
-            ->will($this->returnArgument(0));
     }
 
     /**
@@ -151,7 +148,7 @@ class TrackerTest extends AbstractTestCase
     public function testGetLogComment(): void
     {
         $date = Util::date('Y-m-d H:i:s');
-        $GLOBALS['cfg']['Server']['user'] = 'pma_test_user';
+        Config::getInstance()->selectedServer['user'] = 'pma_test_user';
 
         $this->assertEquals(
             '# log ' . $date . " pma_test_user\n",
@@ -164,9 +161,10 @@ class TrackerTest extends AbstractTestCase
      */
     public function testCreateVersion(): void
     {
-        $GLOBALS['cfg']['Server']['tracking_add_drop_table'] = true;
-        $GLOBALS['cfg']['Server']['tracking_add_drop_view'] = true;
-        $GLOBALS['cfg']['Server']['user'] = 'pma_test_user';
+        $config = Config::getInstance();
+        $config->selectedServer['tracking_add_drop_table'] = true;
+        $config->selectedServer['tracking_add_drop_view'] = true;
+        $config->selectedServer['user'] = 'pma_test_user';
 
         $resultStub = $this->createMock(DummyResult::class);
 
@@ -181,17 +179,17 @@ class TrackerTest extends AbstractTestCase
          */
 
         $getColumnsResult = [
-            ['Field' => 'field1', 'Type' => 'int(11)', 'Key' => 'PRI'],
-            ['Field' => 'field2', 'Type' => 'text', 'Key' => ''],
+            new ColumnFull('field1', 'int(11)', null, false, 'PRI', null, '', '', ''),
+            new ColumnFull('field2', 'text', null, false, '', null, '', '', ''),
         ];
         $dbi->expects($this->once())->method('getColumns')
             ->with('pma_test', 'pma_tbl')
-            ->will($this->returnValue($getColumnsResult));
+            ->willReturn($getColumnsResult);
 
         $getIndexesResult = [['Table' => 'pma_tbl', 'Field' => 'field1', 'Key' => 'PRIMARY']];
         $dbi->expects($this->once())->method('getTableIndexes')
             ->with('pma_test', 'pma_tbl')
-            ->will($this->returnValue($getIndexesResult));
+            ->willReturn($getIndexesResult);
 
         $showTableStatusQuery = 'SHOW TABLE STATUS FROM `pma_test` WHERE Name = \'pma_tbl\'';
         $useStatement = 'USE `pma_test`';
@@ -203,14 +201,14 @@ class TrackerTest extends AbstractTestCase
         ]);
 
         $dbi->expects($this->any())->method('query')
-            ->will($this->returnValue($resultStub));
+            ->willReturn($resultStub);
 
         $dbi->expects($this->any())->method('getCompatibilities')
-            ->will($this->returnValue([]));
+            ->willReturn([]);
         $dbi->expects($this->any())->method('quoteString')
-            ->will($this->returnCallback(static fn (string $string): string => "'" . $string . "'"));
+            ->willReturnCallback(static fn (string $string): string => "'" . $string . "'");
 
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
         $this->assertTrue(Tracker::createVersion('pma_test', 'pma_tbl', '1', '11', true));
     }
 
@@ -219,9 +217,10 @@ class TrackerTest extends AbstractTestCase
      */
     public function testCreateDatabaseVersion(): void
     {
-        $GLOBALS['cfg']['Server']['tracking_add_drop_table'] = true;
-        $GLOBALS['cfg']['Server']['tracking_add_drop_view'] = true;
-        $GLOBALS['cfg']['Server']['user'] = 'pma_test_user';
+        $config = Config::getInstance();
+        $config->selectedServer['tracking_add_drop_table'] = true;
+        $config->selectedServer['tracking_add_drop_view'] = true;
+        $config->selectedServer['user'] = 'pma_test_user';
 
         $resultStub = $this->createMock(DummyResult::class);
 
@@ -238,12 +237,12 @@ class TrackerTest extends AbstractTestCase
         $dbi->expects($this->exactly(1))
             ->method('queryAsControlUser')
             ->with($this->matches($expectedMainQuery))
-            ->will($this->returnValue($resultStub));
+            ->willReturn($resultStub);
 
         $dbi->expects($this->any())->method('quoteString')
-            ->will($this->returnCallback(static fn (string $string): string => "'" . $string . "'"));
+            ->willReturnCallback(static fn (string $string): string => "'" . $string . "'");
 
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
         $this->assertTrue(Tracker::createDatabaseVersion('pma_test', '1', 'SHOW DATABASES'));
     }
 
@@ -278,12 +277,12 @@ class TrackerTest extends AbstractTestCase
         $dbi->expects($this->exactly(1))
             ->method('queryAsControlUser')
             ->with($sqlQuery)
-            ->will($this->returnValue($resultStub));
+            ->willReturn($resultStub);
 
         $dbi->expects($this->any())->method('quoteString')
-            ->will($this->returnCallback(static fn (string $string): string => "'" . $string . "'"));
+            ->willReturnCallback(static fn (string $string): string => "'" . $string . "'");
 
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
 
         if ($type === null) {
             $method = new ReflectionMethod(Tracker::class, 'changeTracking');
@@ -340,11 +339,11 @@ class TrackerTest extends AbstractTestCase
 
         $this->assertEquals($tableName, $result['tablename']);
 
-        if ($db) {
+        if ($db !== null && $db !== '') {
             $this->assertEquals($db, $GLOBALS['db']);
         }
 
-        if (! $tableNameAfterRename) {
+        if ($tableNameAfterRename === null || $tableNameAfterRename === '') {
             return;
         }
 

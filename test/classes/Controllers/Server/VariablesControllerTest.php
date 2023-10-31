@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Controllers\Server;
 
+use PhpMyAdmin\Config;
 use PhpMyAdmin\Controllers\Server\VariablesController;
 use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\Dbal\Connection;
@@ -41,7 +42,7 @@ class VariablesControllerTest extends AbstractTestCase
         $GLOBALS['server'] = 1;
         $GLOBALS['db'] = 'db';
         $GLOBALS['table'] = 'table';
-        $GLOBALS['cfg']['Server']['DisableIS'] = false;
+        Config::getInstance()->selectedServer['DisableIS'] = false;
 
         $dbi = $this->getMockBuilder(DatabaseInterface::class)
             ->disableOriginalConstructor()
@@ -64,9 +65,9 @@ class VariablesControllerTest extends AbstractTestCase
         ];
 
         $dbi->expects($this->any())->method('fetchResult')
-            ->will($this->returnValueMap($fetchResult));
+            ->willReturnMap($fetchResult);
 
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
     }
 
     public function testIndex(): void
@@ -76,7 +77,7 @@ class VariablesControllerTest extends AbstractTestCase
         $resultStub = $this->createMock(DummyResult::class);
 
         /** @var MockObject&DatabaseInterface $dbi */
-        $dbi = $GLOBALS['dbi'];
+        $dbi = DatabaseInterface::getInstance();
         $dbi->expects($this->once())
             ->method('tryQuery')
             ->with('SHOW SESSION VARIABLES;')
@@ -122,7 +123,11 @@ class VariablesControllerTest extends AbstractTestCase
      */
     public function testFormatVariable(): void
     {
-        $controller = new VariablesController(ResponseRenderer::getInstance(), new Template(), $GLOBALS['dbi']);
+        $controller = new VariablesController(
+            ResponseRenderer::getInstance(),
+            new Template(),
+            DatabaseInterface::getInstance(),
+        );
 
         $nameForValueByte = 'byte_variable';
         $nameForValueNotByte = 'not_a_byte_variable';
@@ -134,7 +139,7 @@ class VariablesControllerTest extends AbstractTestCase
         $voidProviderMock
             ->expects($this->exactly(2))
             ->method('getVariableType')
-            ->willReturnOnConsecutiveCalls('byte', 'string');
+            ->willReturn('byte', 'string');
 
         $response = new ReflectionProperty(ServerVariablesProvider::class, 'instance');
         $response->setValue(null, $voidProviderMock);
@@ -184,7 +189,11 @@ class VariablesControllerTest extends AbstractTestCase
         $response = new ReflectionProperty(ServerVariablesProvider::class, 'instance');
         $response->setValue(null, null);
 
-        $controller = new VariablesController(ResponseRenderer::getInstance(), new Template(), $GLOBALS['dbi']);
+        $controller = new VariablesController(
+            ResponseRenderer::getInstance(),
+            new Template(),
+            DatabaseInterface::getInstance(),
+        );
 
         $nameForValueByte = 'wsrep_replicated_bytes';
         $nameForValueNotByte = 'wsrep_thread_count';
@@ -233,7 +242,11 @@ class VariablesControllerTest extends AbstractTestCase
         $response = new ReflectionProperty(ServerVariablesProvider::class, 'instance');
         $response->setValue(null, new ServerVariablesVoidProvider());
 
-        $controller = new VariablesController(ResponseRenderer::getInstance(), new Template(), $GLOBALS['dbi']);
+        $controller = new VariablesController(
+            ResponseRenderer::getInstance(),
+            new Template(),
+            DatabaseInterface::getInstance(),
+        );
 
         $nameForValueByte = 'wsrep_replicated_bytes';
 

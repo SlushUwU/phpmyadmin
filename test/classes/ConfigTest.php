@@ -7,6 +7,7 @@ namespace PhpMyAdmin\Tests;
 use PhpMyAdmin\Config;
 use PhpMyAdmin\Config\Settings;
 use PhpMyAdmin\Config\Settings\Server;
+use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\Dbal\Connection;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -60,15 +61,16 @@ class ConfigTest extends AbstractTestCase
 
         parent::setTheme();
 
-        $GLOBALS['dbi'] = $this->createDatabaseInterface();
+        DatabaseInterface::$instance = $this->createDatabaseInterface();
         $_SERVER['HTTP_USER_AGENT'] = '';
         $this->object = $this->createConfig();
         $GLOBALS['server'] = 0;
         $_SESSION['git_location'] = '.git';
         $_SESSION['is_git_revision'] = true;
-        $GLOBALS['config'] = new Config();
-        $GLOBALS['config']->loadAndCheck(CONFIG_FILE);
-        $GLOBALS['cfg']['ProxyUrl'] = '';
+        Config::$instance = null;
+        $config = Config::getInstance();
+        $config->loadAndCheck(CONFIG_FILE);
+        $config->settings['ProxyUrl'] = '';
 
         //for testing file permissions
         $this->permTestObj = new Config();
@@ -320,31 +322,6 @@ PHP;
     }
 
     /**
-     * Web server detection test
-     *
-     * @param string $server Server identification
-     * @param int    $iis    Whether server should be detected as IIS
-     */
-    #[DataProvider('serverNames')]
-    public function testCheckWebServer(string $server, int $iis): void
-    {
-        $_SERVER['SERVER_SOFTWARE'] = $server;
-        $this->object->checkWebServer();
-        $this->assertEquals($iis, $this->object->get('PMA_IS_IIS'));
-        unset($_SERVER['SERVER_SOFTWARE']);
-    }
-
-    /**
-     * return server names
-     *
-     * @return mixed[]
-     */
-    public static function serverNames(): array
-    {
-        return [['Microsoft-IIS 7.0', 1], ['Apache/2.2.17', 0]];
-    }
-
-    /**
      * test for CheckWebServerOs
      */
     public function testCheckWebServerOs(): void
@@ -590,7 +567,7 @@ PHP;
             'cfg_val_1',
         );
         $this->object->setUserValue(null, 'NavigationWidth', 300);
-        $this->assertSame($GLOBALS['cfg']['NavigationWidth'], 300);
+        $this->assertSame($this->object->settings['NavigationWidth'], 300);
     }
 
     /**
@@ -717,10 +694,18 @@ PHP;
         $selectedServer = $config->selectServer($request);
         $this->assertSame($expected, $selectedServer);
         $this->assertGreaterThanOrEqual(0, $selectedServer);
-        $expectedServer = $expected >= 1 ? $config->config->Servers[$expected]->asArray() : [];
         $this->assertArrayHasKey('Server', $config->settings);
-        $this->assertSame($config->settings['Server'], $expectedServer);
         $this->assertSame($expected, $config->server);
+        if ($expected >= 1) {
+            $this->assertTrue($config->hasSelectedServer());
+            $expectedServer = $config->config->Servers[$expected]->asArray();
+            $this->assertSame($expectedServer, $config->settings['Server']);
+            $this->assertSame($expectedServer, $config->selectedServer);
+        } else {
+            $this->assertFalse($config->hasSelectedServer());
+            $this->assertSame([], $config->settings['Server']);
+            $this->assertSame((new Server())->asArray(), $config->selectedServer);
+        }
     }
 
     /**
@@ -919,5 +904,29 @@ PHP;
             'test.host',
             '12345',
         ];
+    }
+
+    public function testVendorConfigFile(): void
+    {
+        $vendorConfig = include ROOT_PATH . 'app/vendor_config.php';
+        self::assertIsArray($vendorConfig);
+        self::assertIsString($vendorConfig['autoloadFile']);
+        self::assertFileExists($vendorConfig['autoloadFile']);
+        self::assertIsString($vendorConfig['tempDir']);
+        self::assertIsString($vendorConfig['changeLogFile']);
+        self::assertFileExists($vendorConfig['changeLogFile']);
+        self::assertIsString($vendorConfig['licenseFile']);
+        self::assertFileExists($vendorConfig['licenseFile']);
+        self::assertIsString($vendorConfig['sqlDir']);
+        self::assertDirectoryExists($vendorConfig['sqlDir']);
+        self::assertIsString($vendorConfig['configFile']);
+        self::assertIsString($vendorConfig['customHeaderFile']);
+        self::assertIsString($vendorConfig['customFooterFile']);
+        self::assertIsBool($vendorConfig['versionCheckDefault']);
+        self::assertIsString($vendorConfig['localePath']);
+        self::assertDirectoryExists($vendorConfig['localePath']);
+        self::assertIsString($vendorConfig['cacheDir']);
+        self::assertDirectoryExists($vendorConfig['cacheDir']);
+        self::assertIsString($vendorConfig['versionSuffix']);
     }
 }

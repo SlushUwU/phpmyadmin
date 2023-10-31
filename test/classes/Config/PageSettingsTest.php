@@ -4,10 +4,17 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Config;
 
+use PhpMyAdmin\Config;
 use PhpMyAdmin\Config\PageSettings;
+use PhpMyAdmin\ConfigStorage\Relation;
+use PhpMyAdmin\DatabaseInterface;
+use PhpMyAdmin\ResponseRenderer;
+use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\UserPreferences;
+use PHPUnit\Framework\Attributes\BackupStaticProperties;
 use PHPUnit\Framework\Attributes\CoversClass;
+use ReflectionProperty;
 
 #[CoversClass(PageSettings::class)]
 class PageSettingsTest extends AbstractTestCase
@@ -25,12 +32,12 @@ class PageSettingsTest extends AbstractTestCase
 
         parent::setTheme();
 
-        $GLOBALS['dbi'] = $this->createDatabaseInterface();
+        DatabaseInterface::$instance = $this->createDatabaseInterface();
         $GLOBALS['server'] = 1;
         $GLOBALS['db'] = 'db';
         $GLOBALS['table'] = '';
         $_SERVER['SCRIPT_NAME'] = 'index.php';
-        $GLOBALS['cfg']['Server']['DisableIS'] = false;
+        Config::getInstance()->selectedServer['DisableIS'] = false;
     }
 
     /**
@@ -38,7 +45,8 @@ class PageSettingsTest extends AbstractTestCase
      */
     public function testShowGroupNonExistent(): void
     {
-        $object = new PageSettings(new UserPreferences($GLOBALS['dbi']));
+        $dbi = DatabaseInterface::getInstance();
+        $object = new PageSettings(new UserPreferences($dbi, new Relation($dbi), new Template()));
         $object->init('NonExistent');
 
         $this->assertEquals('', $object->getHTML());
@@ -47,9 +55,15 @@ class PageSettingsTest extends AbstractTestCase
     /**
      * Test showGroup with a known group name
      */
+    #[BackupStaticProperties(true)]
     public function testShowGroupBrowse(): void
     {
-        $object = new PageSettings(new UserPreferences($GLOBALS['dbi']));
+        (new ReflectionProperty(ResponseRenderer::class, 'instance'))->setValue(null, null);
+
+        $dbi = DatabaseInterface::getInstance();
+        $object = new PageSettings(
+            new UserPreferences($dbi, new Relation($dbi), new Template()),
+        );
         $object->init('Browse');
 
         $html = $object->getHTML();
@@ -79,7 +93,10 @@ class PageSettingsTest extends AbstractTestCase
      */
     public function testGetNaviSettings(): void
     {
-        $pageSettings = new PageSettings(new UserPreferences($GLOBALS['dbi']));
+        $dbi = DatabaseInterface::getInstance();
+        $pageSettings = new PageSettings(
+            new UserPreferences($dbi, new Relation($dbi), new Template()),
+        );
         $pageSettings->init('Navi', 'pma_navigation_settings');
 
         $html = $pageSettings->getHTML();

@@ -4,10 +4,16 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Plugins\Export;
 
+use PhpMyAdmin\Column;
+use PhpMyAdmin\ColumnFull;
+use PhpMyAdmin\Config;
 use PhpMyAdmin\ConfigStorage\Relation;
 use PhpMyAdmin\ConfigStorage\RelationParameters;
 use PhpMyAdmin\DatabaseInterface;
+use PhpMyAdmin\Dbal\Connection;
 use PhpMyAdmin\Export\Export;
+use PhpMyAdmin\Identifiers\TableName;
+use PhpMyAdmin\Identifiers\TriggerName;
 use PhpMyAdmin\Plugins\Export\ExportTexytext;
 use PhpMyAdmin\Properties\Options\Groups\OptionsPropertyMainGroup;
 use PhpMyAdmin\Properties\Options\Groups\OptionsPropertyRootGroup;
@@ -18,6 +24,9 @@ use PhpMyAdmin\Properties\Plugins\ExportPluginProperties;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\DbiDummy;
 use PhpMyAdmin\Transformations;
+use PhpMyAdmin\Triggers\Event;
+use PhpMyAdmin\Triggers\Timing;
+use PhpMyAdmin\Triggers\Trigger;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Group;
 use ReflectionMethod;
@@ -45,7 +54,7 @@ class ExportTexytextTest extends AbstractTestCase
 
         $this->dummyDbi = $this->createDbiDummy();
         $this->dbi = $this->createDatabaseInterface($this->dummyDbi);
-        $GLOBALS['dbi'] = $this->dbi;
+        DatabaseInterface::$instance = $this->dbi;
         $GLOBALS['server'] = 0;
         $GLOBALS['output_kanji_conversion'] = false;
         $GLOBALS['buffer_needed'] = false;
@@ -58,10 +67,10 @@ class ExportTexytextTest extends AbstractTestCase
         $GLOBALS['table'] = '';
         $GLOBALS['lang'] = 'en';
         $GLOBALS['text_dir'] = 'ltr';
-        $GLOBALS['cfg']['Server']['DisableIS'] = true;
+        Config::getInstance()->selectedServer['DisableIS'] = true;
         $this->object = new ExportTexytext(
-            new Relation($GLOBALS['dbi']),
-            new Export($GLOBALS['dbi']),
+            new Relation($this->dbi),
+            new Export($this->dbi),
             new Transformations(),
         );
     }
@@ -73,6 +82,7 @@ class ExportTexytextTest extends AbstractTestCase
     {
         parent::tearDown();
 
+        DatabaseInterface::$instance = null;
         unset($this->object);
     }
 
@@ -251,7 +261,7 @@ class ExportTexytextTest extends AbstractTestCase
     {
         $this->object = $this->getMockBuilder(ExportTexytext::class)
             ->onlyMethods(['formatOneColumnDefinition'])
-            ->setConstructorArgs([new Relation($GLOBALS['dbi']), new Export($GLOBALS['dbi']), new Transformations()])
+            ->setConstructorArgs([new Relation($this->dbi), new Export($this->dbi), new Transformations()])
             ->getMock();
 
         // case 1
@@ -265,37 +275,36 @@ class ExportTexytextTest extends AbstractTestCase
         $dbi->expects($this->once())
             ->method('getTableIndexes')
             ->with('db', 'table')
-            ->will($this->returnValue($keys));
+            ->willReturn($keys);
 
         $dbi->expects($this->exactly(2))
             ->method('fetchResult')
-            ->willReturnOnConsecutiveCalls(
+            ->willReturn(
                 ['fname' => ['foreign_table' => '<ftable', 'foreign_field' => 'ffield>']],
                 ['fname' => ['values' => 'test-', 'transformation' => 'testfoo', 'mimetype' => 'test<']],
             );
 
         $dbi->expects($this->once())
             ->method('fetchValue')
-            ->will(
-                $this->returnValue(
-                    'SELECT a FROM b',
-                ),
-            );
+            ->willReturn('SELECT a FROM b');
 
-        $columns = ['Field' => 'fname', 'Comment' => 'comm'];
+        $column = new Column('fname', '', false, '', null, '');
+        $columnFull = new ColumnFull('fname', '', null, false, '', null, '', '', 'comm');
 
         $dbi->expects($this->exactly(2))
             ->method('getColumns')
-            ->with('db', 'table')
-            ->will($this->returnValue([$columns]));
+            ->willReturnMap([
+                ['db', 'table', false, Connection::TYPE_USER, [$column]],
+                ['db', 'table', true, Connection::TYPE_USER, [$columnFull]],
+            ]);
 
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
         $this->object->relation = new Relation($dbi);
 
         $this->object->expects($this->exactly(1))
             ->method('formatOneColumnDefinition')
-            ->with(['Field' => 'fname', 'Comment' => 'comm'], ['cname'])
-            ->will($this->returnValue('1'));
+            ->with($column, ['cname'])
+            ->willReturn('1');
 
         $relationParameters = RelationParameters::fromArray([
             'relwork' => true,
@@ -314,32 +323,18 @@ class ExportTexytextTest extends AbstractTestCase
 
     public function testGetTriggers(): void
     {
-        $GLOBALS['cfg']['Server']['DisableIS'] = false;
-
-        $dbi = $this->getMockBuilder(DatabaseInterface::class)
-            ->disableOriginalConstructor()
-            ->getMock();
-
         $triggers = [
-            [
-                'TRIGGER_SCHEMA' => 'database',
-                'TRIGGER_NAME' => 'tna"me',
-                'EVENT_MANIPULATION' => 'DELETE',
-                'EVENT_OBJECT_TABLE' => 'ta<ble',
-                'ACTION_TIMING' => 'BEFORE',
-                'ACTION_STATEMENT' => 'def',
-                'EVENT_OBJECT_SCHEMA' => 'database',
-                'DEFINER' => 'test_user@localhost',
-            ],
+            new Trigger(
+                TriggerName::from('tna"me'),
+                Timing::Before,
+                Event::Delete,
+                TableName::from('ta<ble'),
+                'def',
+                'test_user@localhost',
+            ),
         ];
 
-        $dbi->expects($this->once())
-            ->method('fetchResult')
-            ->willReturnOnConsecutiveCalls($triggers);
-
-        $GLOBALS['dbi'] = $dbi;
-
-        $result = $this->object->getTriggers('database', 'ta<ble');
+        $result = $this->object->getTriggers('database', 'ta<ble', $triggers);
 
         $this->assertStringContainsString('|tna"me|BEFORE|DELETE|def', $result);
 
@@ -452,7 +447,7 @@ class ExportTexytextTest extends AbstractTestCase
 
     public function testFormatOneColumnDefinition(): void
     {
-        $cols = ['Null' => 'Yes', 'Field' => 'field', 'Key' => 'PRI', 'Type' => 'set(abc)enum123'];
+        $cols = new Column('field', 'set(abc)enum123', true, 'PRI', null, '');
 
         $uniqueKeys = ['field'];
 
@@ -461,7 +456,7 @@ class ExportTexytextTest extends AbstractTestCase
             $this->object->formatOneColumnDefinition($cols, $uniqueKeys),
         );
 
-        $cols = ['Null' => 'NO', 'Field' => 'fields', 'Key' => 'COMP', 'Type' => '', 'Default' => 'def'];
+        $cols = new Column('fields', '', false, 'COMP', 'def', '');
 
         $uniqueKeys = ['field'];
 

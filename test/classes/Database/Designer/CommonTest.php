@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Database\Designer;
 
+use PhpMyAdmin\Config;
 use PhpMyAdmin\ConfigStorage\Relation;
 use PhpMyAdmin\ConfigStorage\RelationParameters;
 use PhpMyAdmin\Database\Designer\Common;
@@ -35,7 +36,7 @@ class CommonTest extends AbstractTestCase
 
         $this->dummyDbi = $this->createDbiDummy();
         $this->dbi = $this->createDatabaseInterface($this->dummyDbi);
-        $GLOBALS['dbi'] = $this->dbi;
+        DatabaseInterface::$instance = $this->dbi;
         $GLOBALS['server'] = 1;
         $relationParameters = RelationParameters::fromArray([
             'db' => 'pmadb',
@@ -56,8 +57,6 @@ class CommonTest extends AbstractTestCase
         $dbi = $this->getMockBuilder(DatabaseInterface::class)
             ->disableOriginalConstructor()
             ->getMock();
-        $dbi->expects($this->any())->method('escapeString')
-            ->will($this->returnArgument(0));
 
         $dbi->expects($this->once())
             ->method('fetchResult')
@@ -75,9 +74,9 @@ class CommonTest extends AbstractTestCase
                 null,
                 Connection::TYPE_CONTROL,
             );
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
 
-        $this->designerCommon = new Common($GLOBALS['dbi'], new Relation($dbi));
+        $this->designerCommon = new Common(DatabaseInterface::getInstance(), new Relation($dbi));
 
         $this->designerCommon->getTablePositions($pg);
     }
@@ -93,8 +92,6 @@ class CommonTest extends AbstractTestCase
         $dbi = $this->getMockBuilder(DatabaseInterface::class)
             ->disableOriginalConstructor()
             ->getMock();
-        $dbi->expects($this->any())->method('escapeString')
-            ->will($this->returnArgument(0));
 
         $dbi->expects($this->once())
             ->method('fetchValue')
@@ -104,10 +101,10 @@ class CommonTest extends AbstractTestCase
                 0,
                 Connection::TYPE_CONTROL,
             )
-            ->will($this->returnValue($pageName));
-        $GLOBALS['dbi'] = $dbi;
+            ->willReturn($pageName);
+        DatabaseInterface::$instance = $dbi;
 
-        $this->designerCommon = new Common($GLOBALS['dbi'], new Relation($dbi));
+        $this->designerCommon = new Common(DatabaseInterface::getInstance(), new Relation($dbi));
 
         $result = $this->designerCommon->getPageName($pg);
 
@@ -129,12 +126,10 @@ class CommonTest extends AbstractTestCase
 
         $dbi->expects($this->exactly(2))
             ->method('queryAsControlUser')
-            ->willReturnOnConsecutiveCalls($resultStub, $resultStub);
-        $dbi->expects($this->any())->method('escapeString')
-            ->will($this->returnArgument(0));
+            ->willReturn($resultStub, $resultStub);
 
-        $GLOBALS['dbi'] = $dbi;
-        $this->designerCommon = new Common($GLOBALS['dbi'], new Relation($dbi));
+        DatabaseInterface::$instance = $dbi;
+        $this->designerCommon = new Common(DatabaseInterface::getInstance(), new Relation($dbi));
 
         $result = $this->designerCommon->deletePage($pg);
         $this->assertTrue($result);
@@ -162,12 +157,12 @@ class CommonTest extends AbstractTestCase
                 0,
                 Connection::TYPE_CONTROL,
             )
-            ->will($this->returnValue($defaultPg));
-        $dbi->expects($this->any())->method('escapeString')
-            ->will($this->returnArgument(0));
+            ->willReturn($defaultPg);
+        $dbi->expects($this->any())->method('quoteString')
+            ->willReturnCallback(static fn (string $string): string => "'" . $string . "'");
 
-        $GLOBALS['dbi'] = $dbi;
-        $this->designerCommon = new Common($GLOBALS['dbi'], new Relation($dbi));
+        DatabaseInterface::$instance = $dbi;
+        $this->designerCommon = new Common(DatabaseInterface::getInstance(), new Relation($dbi));
 
         $result = $this->designerCommon->getDefaultPage($db);
         $this->assertEquals($defaultPg, $result);
@@ -193,12 +188,12 @@ class CommonTest extends AbstractTestCase
                 0,
                 Connection::TYPE_CONTROL,
             )
-            ->will($this->returnValue(false));
-        $dbi->expects($this->any())->method('escapeString')
-            ->will($this->returnArgument(0));
+            ->willReturn(false);
+        $dbi->expects($this->any())->method('quoteString')
+            ->willReturnCallback(static fn (string $string): string => "'" . $string . "'");
 
-        $GLOBALS['dbi'] = $dbi;
-        $this->designerCommon = new Common($GLOBALS['dbi'], new Relation($dbi));
+        DatabaseInterface::$instance = $dbi;
+        $this->designerCommon = new Common(DatabaseInterface::getInstance(), new Relation($dbi));
 
         $result = $this->designerCommon->getDefaultPage($db);
         $this->assertEquals(-1, $result);
@@ -225,12 +220,12 @@ class CommonTest extends AbstractTestCase
                 0,
                 Connection::TYPE_CONTROL,
             )
-            ->will($this->returnValue($defaultPg));
-        $dbi->expects($this->any())->method('escapeString')
-            ->will($this->returnArgument(0));
+            ->willReturn($defaultPg);
+        $dbi->expects($this->any())->method('quoteString')
+            ->willReturnCallback(static fn (string $string): string => "'" . $string . "'");
 
-        $GLOBALS['dbi'] = $dbi;
-        $this->designerCommon = new Common($GLOBALS['dbi'], new Relation($dbi));
+        DatabaseInterface::$instance = $dbi;
+        $this->designerCommon = new Common(DatabaseInterface::getInstance(), new Relation($dbi));
 
         $result = $this->designerCommon->getLoadingPage($db);
         $this->assertEquals($defaultPg, $result);
@@ -250,12 +245,10 @@ class CommonTest extends AbstractTestCase
 
         $dbi->expects($this->exactly(2))
             ->method('fetchValue')
-            ->willReturnOnConsecutiveCalls(false, $firstPg);
-        $dbi->expects($this->any())->method('escapeString')
-            ->will($this->returnArgument(0));
+            ->willReturn(false, $firstPg);
 
-        $GLOBALS['dbi'] = $dbi;
-        $this->designerCommon = new Common($GLOBALS['dbi'], new Relation($dbi));
+        DatabaseInterface::$instance = $dbi;
+        $this->designerCommon = new Common(DatabaseInterface::getInstance(), new Relation($dbi));
 
         $result = $this->designerCommon->getLoadingPage($db);
         $this->assertEquals($firstPg, $result);
@@ -344,8 +337,9 @@ class CommonTest extends AbstractTestCase
 
     public function testRemoveRelationRelationDbNotWorking(): void
     {
-        $GLOBALS['cfg']['Server']['DisableIS'] = false;
-        $GLOBALS['cfg']['NaturalOrder'] = false;
+        $config = Config::getInstance();
+        $config->selectedServer['DisableIS'] = false;
+        $config->settings['NaturalOrder'] = false;
         $relationParameters = RelationParameters::fromArray([
             'db' => 'pmadb',
             'relation' => 'rel db',
@@ -354,7 +348,7 @@ class CommonTest extends AbstractTestCase
 
         $this->dummyDbi = $this->createDbiDummy();
         $this->dbi = $this->createDatabaseInterface($this->dummyDbi);
-        $GLOBALS['dbi'] = $this->dbi;
+        DatabaseInterface::$instance = $this->dbi;
         $this->loadTestDataForRelationDeleteAddTests(
             'CREATE TABLE `table\'2` (`field\'1` int(11) NOT NULL) ENGINE=InnoDB DEFAULT CHARSET=latin1',
         );
@@ -366,8 +360,9 @@ class CommonTest extends AbstractTestCase
 
     public function testRemoveRelationWorkingRelationDb(): void
     {
-        $GLOBALS['cfg']['Server']['DisableIS'] = false;
-        $GLOBALS['cfg']['NaturalOrder'] = false;
+        $config = Config::getInstance();
+        $config->selectedServer['DisableIS'] = false;
+        $config->settings['NaturalOrder'] = false;
         $relationParameters = RelationParameters::fromArray([
             'db' => 'pmadb',
             'relwork' => true,
@@ -377,7 +372,7 @@ class CommonTest extends AbstractTestCase
 
         $this->dummyDbi = $this->createDbiDummy();
         $this->dbi = $this->createDatabaseInterface($this->dummyDbi);
-        $GLOBALS['dbi'] = $this->dbi;
+        DatabaseInterface::$instance = $this->dbi;
 
         $this->loadTestDataForRelationDeleteAddTests(
             'CREATE TABLE `table\'2` (`field\'1` int(11) NOT NULL) ENGINE=InnoDB DEFAULT CHARSET=latin1',
@@ -408,8 +403,9 @@ class CommonTest extends AbstractTestCase
 
     public function testRemoveRelationWorkingRelationDbFoundFk(): void
     {
-        $GLOBALS['cfg']['Server']['DisableIS'] = false;
-        $GLOBALS['cfg']['NaturalOrder'] = false;
+        $config = Config::getInstance();
+        $config->selectedServer['DisableIS'] = false;
+        $config->settings['NaturalOrder'] = false;
         $relationParameters = RelationParameters::fromArray([
             'db' => 'pmadb',
             'relwork' => true,
@@ -419,7 +415,7 @@ class CommonTest extends AbstractTestCase
 
         $this->dummyDbi = $this->createDbiDummy();
         $this->dbi = $this->createDatabaseInterface($this->dummyDbi);
-        $GLOBALS['dbi'] = $this->dbi;
+        DatabaseInterface::$instance = $this->dbi;
 
         $this->loadTestDataForRelationDeleteAddTests(
             'CREATE TABLE `table\'2` ('
@@ -470,8 +466,9 @@ class CommonTest extends AbstractTestCase
 
     public function testRemoveRelationWorkingRelationDbDeleteFails(): void
     {
-        $GLOBALS['cfg']['Server']['DisableIS'] = false;
-        $GLOBALS['cfg']['NaturalOrder'] = false;
+        $config = Config::getInstance();
+        $config->selectedServer['DisableIS'] = false;
+        $config->settings['NaturalOrder'] = false;
         $relationParameters = RelationParameters::fromArray([
             'db' => 'pmadb',
             'relwork' => true,
@@ -481,7 +478,7 @@ class CommonTest extends AbstractTestCase
 
         $this->dummyDbi = $this->createDbiDummy();
         $this->dbi = $this->createDatabaseInterface($this->dummyDbi);
-        $GLOBALS['dbi'] = $this->dbi;
+        DatabaseInterface::$instance = $this->dbi;
 
         $this->loadTestDataForRelationDeleteAddTests(
             'CREATE TABLE `table\'2` (`field\'1` int(11) NOT NULL) ENGINE=InnoDB DEFAULT CHARSET=latin1',

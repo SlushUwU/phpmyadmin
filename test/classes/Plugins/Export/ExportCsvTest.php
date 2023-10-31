@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace PhpMyAdmin\Tests\Plugins\Export;
 
 use PhpMyAdmin\ConfigStorage\Relation;
+use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\Export\Export;
 use PhpMyAdmin\Plugins\Export\ExportCsv;
 use PhpMyAdmin\Properties\Options\Groups\OptionsPropertyMainGroup;
@@ -36,7 +37,8 @@ class ExportCsvTest extends AbstractTestCase
     {
         parent::setUp();
 
-        $GLOBALS['dbi'] = $this->createDatabaseInterface();
+        $dbi = $this->createDatabaseInterface();
+        DatabaseInterface::$instance = $dbi;
         $GLOBALS['server'] = 0;
         $GLOBALS['db'] = '';
         $GLOBALS['table'] = '';
@@ -47,8 +49,8 @@ class ExportCsvTest extends AbstractTestCase
         $GLOBALS['save_filename'] = null;
 
         $this->object = new ExportCsv(
-            new Relation($GLOBALS['dbi']),
-            new Export($GLOBALS['dbi']),
+            new Relation($dbi),
+            new Export($dbi),
             new Transformations(),
         );
     }
@@ -249,7 +251,7 @@ class ExportCsvTest extends AbstractTestCase
 
         $this->assertEquals('"', $GLOBALS['csv_escaped']);
 
-        $this->assertEquals(true, $GLOBALS['csv_columns']);
+        $this->assertTrue($GLOBALS['csv_columns']);
 
         // case 2
 
@@ -269,7 +271,7 @@ class ExportCsvTest extends AbstractTestCase
 
         $this->assertEquals('"', $GLOBALS['csv_escaped']);
 
-        $this->assertEquals(false, $GLOBALS['csv_columns']);
+        $this->assertFalse($GLOBALS['csv_columns']);
 
         // case 3
 
@@ -287,7 +289,7 @@ class ExportCsvTest extends AbstractTestCase
 
         $this->assertEquals('"', $GLOBALS['csv_escaped']);
 
-        $this->assertEquals(false, $GLOBALS['csv_columns']);
+        $this->assertFalse($GLOBALS['csv_columns']);
 
         // case 4
 

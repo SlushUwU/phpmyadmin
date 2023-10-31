@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Controllers\Table;
 
+use PhpMyAdmin\Config;
 use PhpMyAdmin\Config\PageSettings;
 use PhpMyAdmin\ConfigStorage\Relation;
 use PhpMyAdmin\Controllers\Table\ExportController;
+use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\Encoding;
 use PhpMyAdmin\Export\Options;
 use PhpMyAdmin\Export\TemplateModel;
@@ -26,7 +28,14 @@ class ExportControllerTest extends AbstractTestCase
         parent::setUp();
 
         $this->loadContainerBuilder();
-        $GLOBALS['dbi'] = $this->createDatabaseInterface();
+        DatabaseInterface::$instance = $this->createDatabaseInterface();
+    }
+
+    protected function tearDown(): void
+    {
+        parent::tearDown();
+
+        DatabaseInterface::$instance = null;
     }
 
     public function testExportController(): void
@@ -35,17 +44,20 @@ class ExportControllerTest extends AbstractTestCase
 
         $GLOBALS['db'] = 'test_db';
         $GLOBALS['table'] = 'test_table';
-        $GLOBALS['cfg']['Server'] = $GLOBALS['config']->getSettings()->Servers[1]->asArray();
-        $GLOBALS['cfg']['Server']['DisableIS'] = true;
+        $config = Config::getInstance();
+        $config->selectedServer = $config->getSettings()->Servers[1]->asArray();
+        $config->selectedServer['DisableIS'] = true;
         $GLOBALS['single_table'] = '1';
 
         $dummyDbi = $this->createDbiDummy();
         $dummyDbi->addResult('SELECT COUNT(*) FROM `test_db`.`test_table`', [['3']]);
         $dbi = $this->createDatabaseInterface($dummyDbi);
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
 
         $response = new ResponseRenderer();
-        $pageSettings = new PageSettings(new UserPreferences($GLOBALS['dbi']));
+        $pageSettings = new PageSettings(
+            new UserPreferences($dbi, new Relation($dbi), new Template()),
+        );
         $pageSettings->init('Export');
         $template = new Template();
         $exportList = Plugins::getExport('table', true);

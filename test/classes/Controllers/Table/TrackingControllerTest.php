@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Controllers\Table;
 
+use PhpMyAdmin\Bookmarks\BookmarkRepository;
+use PhpMyAdmin\Config;
 use PhpMyAdmin\ConfigStorage\Relation;
 use PhpMyAdmin\Controllers\Table\TrackingController;
 use PhpMyAdmin\DatabaseInterface;
-use PhpMyAdmin\Http\ServerRequest;
+use PhpMyAdmin\DbTableExists;
+use PhpMyAdmin\Http\Factory\ServerRequestFactory;
 use PhpMyAdmin\SqlQueryForm;
 use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\AbstractTestCase;
@@ -30,7 +33,7 @@ class TrackingControllerTest extends AbstractTestCase
 
         $this->dummyDbi = $this->createDbiDummy();
         $this->dbi = $this->createDatabaseInterface($this->dummyDbi);
-        $GLOBALS['dbi'] = $this->dbi;
+        DatabaseInterface::$instance = $this->dbi;
     }
 
     public function testTrackingController(): void
@@ -39,26 +42,33 @@ class TrackingControllerTest extends AbstractTestCase
         $GLOBALS['db'] = 'test_db';
         $GLOBALS['table'] = 'test_table';
         $GLOBALS['text_dir'] = 'ltr';
-        $GLOBALS['cfg']['Server']['DisableIS'] = true;
-        $GLOBALS['cfg']['Server']['tracking_default_statements'] = 'CREATE TABLE,ALTER TABLE,DROP TABLE';
+        $config = Config::getInstance();
+        $config->selectedServer['DisableIS'] = true;
+        $config->selectedServer['tracking_default_statements'] = 'CREATE TABLE,ALTER TABLE,DROP TABLE';
 
         $this->dummyDbi->addSelectDb('test_db');
+
+        $request = ServerRequestFactory::create()->createServerRequest('GET', 'http://example.com/')
+            ->withQueryParams(['db' => 'test_db', 'table' => 'test_table']);
 
         $response = new ResponseRenderer();
         $template = new Template();
         $trackingChecker = $this->createStub(TrackingChecker::class);
+        $relation = new Relation($this->dbi);
+        $bookmarkRepository = new BookmarkRepository($this->dbi, $relation);
         (new TrackingController(
             $response,
             $template,
             new Tracking(
-                new SqlQueryForm($template, $this->dbi),
+                new SqlQueryForm($template, $this->dbi, $bookmarkRepository),
                 $template,
-                new Relation($this->dbi),
+                $relation,
                 $this->dbi,
                 $trackingChecker,
             ),
             $trackingChecker,
-        ))($this->createStub(ServerRequest::class));
+            new DbTableExists($this->dbi),
+        ))($request);
 
         $main = $template->render('table/tracking/main', [
             'url_params' => [
@@ -74,7 +84,7 @@ class TrackingControllerTest extends AbstractTestCase
             'last_version' => 0,
             'versions' => [],
             'type' => 'table',
-            'default_statements' => $GLOBALS['cfg']['Server']['tracking_default_statements'],
+            'default_statements' => $config->selectedServer['tracking_default_statements'],
             'text_dir' => 'ltr',
         ]);
         $expected = $template->render('table/tracking/index', [

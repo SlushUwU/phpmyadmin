@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Plugins\Import;
 
+use PhpMyAdmin\Config;
 use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\File;
 use PhpMyAdmin\Plugins\Import\ImportLdi;
@@ -25,7 +26,7 @@ class ImportLdiTest extends AbstractTestCase
     {
         parent::setUp();
 
-        $GLOBALS['dbi'] = $this->createDatabaseInterface();
+        DatabaseInterface::$instance = $this->createDatabaseInterface();
         $GLOBALS['charset_conversion'] = null;
         $GLOBALS['ldi_terminated'] = null;
         $GLOBALS['ldi_escaped'] = null;
@@ -44,7 +45,8 @@ class ImportLdiTest extends AbstractTestCase
         $GLOBALS['finished'] = false;
         $GLOBALS['read_limit'] = 100000000;
         $GLOBALS['offset'] = 0;
-        $GLOBALS['cfg']['Server']['DisableIS'] = false;
+        $config = Config::getInstance();
+        $config->selectedServer['DisableIS'] = false;
 
         $GLOBALS['import_file'] = 'test/test_data/db_test_ldi.csv';
         $GLOBALS['import_text'] = 'ImportLdi_Test';
@@ -52,14 +54,14 @@ class ImportLdiTest extends AbstractTestCase
         $GLOBALS['import_type'] = 'csv';
 
         //setting for Ldi
-        $GLOBALS['cfg']['Import']['ldi_replace'] = false;
-        $GLOBALS['cfg']['Import']['ldi_ignore'] = false;
-        $GLOBALS['cfg']['Import']['ldi_terminated'] = ';';
-        $GLOBALS['cfg']['Import']['ldi_enclosed'] = '"';
-        $GLOBALS['cfg']['Import']['ldi_escaped'] = '\\';
-        $GLOBALS['cfg']['Import']['ldi_new_line'] = 'auto';
-        $GLOBALS['cfg']['Import']['ldi_columns'] = '';
-        $GLOBALS['cfg']['Import']['ldi_local_option'] = false;
+        $config->settings['Import']['ldi_replace'] = false;
+        $config->settings['Import']['ldi_ignore'] = false;
+        $config->settings['Import']['ldi_terminated'] = ';';
+        $config->settings['Import']['ldi_enclosed'] = '"';
+        $config->settings['Import']['ldi_escaped'] = '\\';
+        $config->settings['Import']['ldi_new_line'] = 'auto';
+        $config->settings['Import']['ldi_columns'] = '';
+        $config->settings['Import']['ldi_local_option'] = false;
         $GLOBALS['table'] = 'phpmyadmintest';
     }
 
@@ -87,22 +89,23 @@ class ImportLdiTest extends AbstractTestCase
     public function testGetPropertiesAutoLdi(): void
     {
         $dbi = $this->createMock(DatabaseInterface::class);
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
 
         $resultStub = $this->createMock(DummyResult::class);
 
         $dbi->expects($this->any())->method('tryQuery')
-            ->will($this->returnValue($resultStub));
+            ->willReturn($resultStub);
 
         $resultStub->expects($this->any())->method('numRows')
-            ->will($this->returnValue(10));
+            ->willReturn(10);
 
         $resultStub->expects($this->any())->method('fetchValue')
-            ->will($this->returnValue('ON'));
+            ->willReturn('ON');
 
-        $GLOBALS['cfg']['Import']['ldi_local_option'] = 'auto';
+        $config = Config::getInstance();
+        $config->settings['Import']['ldi_local_option'] = 'auto';
         $properties = (new ImportLdi())->getProperties();
-        $this->assertTrue($GLOBALS['cfg']['Import']['ldi_local_option']);
+        $this->assertTrue($config->settings['Import']['ldi_local_option']);
         $this->assertEquals(
             __('CSV using LOAD DATA'),
             $properties->getText(),
@@ -124,8 +127,8 @@ class ImportLdiTest extends AbstractTestCase
         $GLOBALS['sql_query_disabled'] = false;
         $dbi = $this->createMock(DatabaseInterface::class);
         $dbi->expects($this->any())->method('quoteString')
-            ->will($this->returnCallback(static fn (string $string): string => "'" . $string . "'"));
-        $GLOBALS['dbi'] = $dbi;
+            ->willReturnCallback(static fn (string $string): string => "'" . $string . "'");
+        DatabaseInterface::$instance = $dbi;
 
         $importHandle = new File($GLOBALS['import_file']);
         $importHandle->open();
@@ -173,8 +176,8 @@ class ImportLdiTest extends AbstractTestCase
         $GLOBALS['sql_query_disabled'] = false;
         $dbi = $this->createMock(DatabaseInterface::class);
         $dbi->expects($this->any())->method('quoteString')
-            ->will($this->returnCallback(static fn (string $string): string => "'" . $string . "'"));
-        $GLOBALS['dbi'] = $dbi;
+            ->willReturnCallback(static fn (string $string): string => "'" . $string . "'");
+        DatabaseInterface::$instance = $dbi;
 
         $GLOBALS['ldi_local_option'] = true;
         $GLOBALS['ldi_replace'] = true;

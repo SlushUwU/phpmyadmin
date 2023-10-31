@@ -6,7 +6,6 @@
   cacheDirectory="build/.phpunit.cache"
   executionOrder="random"
   defaultTestSuite="unit"
-  failOnIncomplete="true"
   failOnRisky="true"
   failOnWarning="true"
   displayDetailsOnTestsThatTriggerWarnings="true"
@@ -23,8 +22,8 @@
       <directory suffix=".php">.</directory>
     </include>
     <exclude>
+      <directory>app/cache</directory>
       <directory>examples</directory>
-      <directory>libraries/cache</directory>
       <directory>node_modules</directory>
       <directory>test</directory>
       <directory>tmp</directory>

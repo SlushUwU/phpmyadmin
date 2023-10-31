@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Controllers\Server;
 
+use PhpMyAdmin\Config;
 use PhpMyAdmin\Controllers\Server\EnginesController;
 use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\Http\ServerRequest;
@@ -35,19 +36,19 @@ class EnginesControllerTest extends AbstractTestCase
 
         $this->dummyDbi = $this->createDbiDummy();
         $this->dbi = $this->createDatabaseInterface($this->dummyDbi);
-        $GLOBALS['dbi'] = $this->dbi;
+        DatabaseInterface::$instance = $this->dbi;
 
         $GLOBALS['server'] = 1;
         $GLOBALS['db'] = 'db';
         $GLOBALS['table'] = 'table';
-        $GLOBALS['cfg']['Server']['DisableIS'] = false;
+        Config::getInstance()->selectedServer['DisableIS'] = false;
     }
 
     public function testIndex(): void
     {
         $response = new ResponseRenderer();
 
-        $controller = new EnginesController($response, new Template(), $GLOBALS['dbi']);
+        $controller = new EnginesController($response, new Template(), DatabaseInterface::getInstance());
 
         $this->dummyDbi->addSelectDb('mysql');
         $controller->__invoke($this->createStub(ServerRequest::class));

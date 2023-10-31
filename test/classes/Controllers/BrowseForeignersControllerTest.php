@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace PhpMyAdmin\Tests\Controllers;
 
 use PhpMyAdmin\BrowseForeigners;
+use PhpMyAdmin\Config;
 use PhpMyAdmin\ConfigStorage\Relation;
 use PhpMyAdmin\Controllers\BrowseForeignersController;
+use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\Http\ServerRequest;
 use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\AbstractTestCase;
@@ -20,7 +22,8 @@ final class BrowseForeignersControllerTest extends AbstractTestCase
     public function testBrowseForeignValues(): void
     {
         $GLOBALS['server'] = 2;
-        $GLOBALS['cfg']['Server']['DisableIS'] = true;
+        $config = Config::getInstance();
+        $config->selectedServer['DisableIS'] = true;
 
         $request = $this->createStub(ServerRequest::class);
         $request->method('getParsedBodyParam')->willReturnMap([
@@ -78,7 +81,7 @@ final class BrowseForeignersControllerTest extends AbstractTestCase
         );
         $dbiDummy->addResult('SELECT COUNT(*) FROM .`actor`', [['3']], ['COUNT(*)']);
         $dbi = $this->createDatabaseInterface($dbiDummy);
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
         $template = new Template();
         $response = new ResponseRenderer();
 
@@ -156,7 +159,7 @@ HTML;
         (new BrowseForeignersController(
             $response,
             $template,
-            new BrowseForeigners($template, $GLOBALS['config']),
+            new BrowseForeigners($template, $config),
             new Relation($dbi),
         ))($request);
 

@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Plugins\Schema;
 
+use PhpMyAdmin\Config;
+use PhpMyAdmin\ConfigStorage\Relation;
+use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\Identifiers\DatabaseName;
 use PhpMyAdmin\Plugins\Schema\Eps\EpsRelationSchema;
 use PhpMyAdmin\Tests\AbstractTestCase;
@@ -23,7 +26,8 @@ class EpsRelationSchemaTest extends AbstractTestCase
     {
         parent::setUp();
 
-        $GLOBALS['dbi'] = $this->createDatabaseInterface();
+        $dbi = $this->createDatabaseInterface();
+        DatabaseInterface::$instance = $dbi;
         $_REQUEST['page_number'] = 33;
         $_REQUEST['eps_show_color'] = true;
         $_REQUEST['eps_show_keys'] = true;
@@ -39,9 +43,9 @@ class EpsRelationSchemaTest extends AbstractTestCase
 
         $GLOBALS['server'] = 1;
         $GLOBALS['db'] = 'test_db';
-        $GLOBALS['cfg']['Server']['DisableIS'] = true;
+        Config::getInstance()->selectedServer['DisableIS'] = true;
 
-        $this->object = new EpsRelationSchema(DatabaseName::from('test_db'));
+        $this->object = new EpsRelationSchema(new Relation($dbi), DatabaseName::from('test_db'));
     }
 
     /**

@@ -5,6 +5,7 @@
     "keywords": ["phpmyadmin","mysql","web"],
     "homepage": "https://www.phpmyadmin.net/",
     "support": {
+        "security": "https://www.phpmyadmin.net/security/",
         "forum": "https://www.phpmyadmin.net/support/",
         "issues": "https://github.com/phpmyadmin/phpmyadmin/issues",
         "wiki": "https://wiki.phpmyadmin.net/",
@@ -22,9 +23,8 @@
     "non-feature-branches": ["RELEASE_.*"],
     "autoload": {
         "psr-4": {
-            "PhpMyAdmin\\": "libraries/classes"
+            "PhpMyAdmin\\": "src"
         },
-        "files": ["vendor/phpmyadmin/motranslator/src/functions.php"],
         "exclude-from-classmap": [
             "/test/",
             "/vendor/tecnickcom/tcpdf/tcpdf_barcodes_*.php",
@@ -61,12 +61,14 @@
         "google/recaptcha": "^1.3",
         "laminas/laminas-httphandlerrunner": "^2.6",
         "nikic/fast-route": "^1.3",
-        "phpmyadmin/motranslator": "^5.0",
-        "phpmyadmin/shapefile": "^3.0.1",
-        "phpmyadmin/sql-parser": "^6.0.x-dev",
-        "phpmyadmin/twig-i18n-extension": "^4.0.1",
+        "phpmyadmin/motranslator": "^6.0-dev",
+        "phpmyadmin/shapefile": "^4.0-dev",
+        "phpmyadmin/sql-parser": "^6.0-dev",
+        "phpmyadmin/twig-i18n-extension": "^5.0-dev",
         "psr/http-factory": "^1.0",
         "psr/http-message": "^1.1",
+        "psr/http-server-handler": "^1.0",
+        "psr/http-server-middleware": "^1.0",
         "slim/psr7": "^1.6.1",
         "symfony/config": "^6.2",
         "symfony/dependency-injection": "^6.2",
@@ -110,13 +112,13 @@
         "phpstan/phpstan-phpunit": "^1.3",
         "phpstan/phpstan-strict-rules": "^1.5",
         "phpstan/phpstan-webmozart-assert": "^1.2",
-        "phpunit/phpunit": "^10.1",
+        "phpunit/phpunit": "^10.4",
         "pragmarx/google2fa-qrcode": "^3.0",
         "psalm/plugin-phpunit": "^0.18.4",
         "roave/security-advisories": "dev-latest",
         "symfony/console": "^6.2",
-        "tecnickcom/tcpdf": "6.6.2",
-        "vimeo/psalm": "^5.12",
+        "tecnickcom/tcpdf": "^6.4.4",
+        "vimeo/psalm": "^5.14",
         "web-auth/webauthn-lib": "^3.3.12"
     },
     "extra": {
@@ -149,6 +151,9 @@
             "dealerdirect/phpcodesniffer-composer-installer": true,
             "phpstan/extension-installer": true,
             "composer/package-versions-deprecated": true
+        },
+        "platform": {
+            "php": "8.1.99"
         }
     }
 }

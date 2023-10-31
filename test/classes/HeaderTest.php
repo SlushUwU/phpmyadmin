@@ -4,8 +4,13 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests;
 
+use PhpMyAdmin\Bookmarks\BookmarkRepository;
+use PhpMyAdmin\Config;
+use PhpMyAdmin\ConfigStorage\Relation;
 use PhpMyAdmin\Console;
+use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\Header;
+use PhpMyAdmin\Template;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
@@ -30,7 +35,7 @@ class HeaderTest extends AbstractTestCase
 
         parent::setLanguage();
 
-        $GLOBALS['dbi'] = $this->createDatabaseInterface();
+        DatabaseInterface::$instance = $this->createDatabaseInterface();
 
         $GLOBALS['server'] = 0;
         $GLOBALS['message'] = 'phpmyadminmessage';
@@ -40,12 +45,22 @@ class HeaderTest extends AbstractTestCase
 
         parent::setGlobalConfig();
 
-        $GLOBALS['cfg']['Servers'] = [];
-        $GLOBALS['cfg']['Server']['DisableIS'] = false;
-        $GLOBALS['cfg']['Server']['verbose'] = 'verbose host';
-        $GLOBALS['cfg']['Server']['pmadb'] = '';
-        $GLOBALS['cfg']['Server']['user'] = '';
-        $GLOBALS['cfg']['Server']['auth_type'] = 'cookie';
+        $config = Config::getInstance();
+        $config->settings['Servers'] = [];
+        $config->selectedServer['DisableIS'] = false;
+        $config->selectedServer['verbose'] = 'verbose host';
+        $config->selectedServer['pmadb'] = '';
+        $config->selectedServer['user'] = '';
+        $config->selectedServer['auth_type'] = 'cookie';
+    }
+
+    private function getNewHeaderInstance(): Header
+    {
+        $dbi = DatabaseInterface::getInstance();
+        $relation = new Relation($dbi);
+        $template = new Template();
+
+        return new Header($template, new Console($relation, $template, new BookmarkRepository($dbi, $relation)));
     }
 
     /**
@@ -53,7 +68,7 @@ class HeaderTest extends AbstractTestCase
      */
     public function testDisable(): void
     {
-        $header = new Header();
+        $header = $this->getNewHeaderInstance();
         $header->disable();
         $this->assertEquals(
             '',
@@ -67,7 +82,7 @@ class HeaderTest extends AbstractTestCase
     public function testEnable(): void
     {
         $GLOBALS['server'] = 0;
-        $header = new Header();
+        $header = $this->getNewHeaderInstance();
         $this->assertStringContainsString(
             '<title>phpMyAdmin</title>',
             $header->getDisplay(),
@@ -79,7 +94,7 @@ class HeaderTest extends AbstractTestCase
      */
     public function testSetBodyId(): void
     {
-        $header = new Header();
+        $header = $this->getNewHeaderInstance();
         $header->setBodyId('PMA_header_id');
         $this->assertStringContainsString(
             'PMA_header_id',
@@ -92,7 +107,7 @@ class HeaderTest extends AbstractTestCase
      */
     public function testGetJsParams(): void
     {
-        $header = new Header();
+        $header = $this->getNewHeaderInstance();
         $this->assertArrayHasKey(
             'common_query',
             $header->getJsParams(),
@@ -101,7 +116,7 @@ class HeaderTest extends AbstractTestCase
 
     public function testGetJsParamsCode(): void
     {
-        $header = new Header();
+        $header = $this->getNewHeaderInstance();
         $this->assertStringContainsString(
             'window.Navigation.update(window.CommonParams.setAll(',
             $header->getJsParamsCode(),
@@ -113,7 +128,7 @@ class HeaderTest extends AbstractTestCase
      */
     public function testGetMessage(): void
     {
-        $header = new Header();
+        $header = $this->getNewHeaderInstance();
         $this->assertStringContainsString(
             'phpmyadminmessage',
             $header->getMessage(),
@@ -127,7 +142,7 @@ class HeaderTest extends AbstractTestCase
     {
         $reflection = new ReflectionProperty(Header::class, 'warningsEnabled');
 
-        $header = new Header();
+        $header = $this->getNewHeaderInstance();
         $header->disableWarnings();
 
         $this->assertFalse($reflection->getValue($header));
@@ -145,14 +160,15 @@ class HeaderTest extends AbstractTestCase
         string $expectedXCsp,
         string $expectedWebKitCsp,
     ): void {
-        $header = new Header();
+        $header = $this->getNewHeaderInstance();
         $date = (string) gmdate(DATE_RFC1123);
 
-        $GLOBALS['cfg']['AllowThirdPartyFraming'] = $frameOptions;
-        $GLOBALS['cfg']['CSPAllow'] = $cspAllow;
-        $GLOBALS['cfg']['CaptchaLoginPrivateKey'] = $privateKey;
-        $GLOBALS['cfg']['CaptchaLoginPublicKey'] = $publicKey;
-        $GLOBALS['cfg']['CaptchaCsp'] = $captchaCsp;
+        $config = Config::getInstance();
+        $config->settings['AllowThirdPartyFraming'] = $frameOptions;
+        $config->settings['CSPAllow'] = $cspAllow;
+        $config->settings['CaptchaLoginPrivateKey'] = $privateKey;
+        $config->settings['CaptchaLoginPublicKey'] = $publicKey;
+        $config->settings['CaptchaCsp'] = $captchaCsp;
 
         $expected = [
             'X-Frame-Options' => $expectedFrameOptions,
@@ -191,13 +207,13 @@ class HeaderTest extends AbstractTestCase
                 '',
                 'DENY',
                 'default-src \'self\' ;script-src \'self\' \'unsafe-inline\' \'unsafe-eval\' ;'
-                    . 'style-src \'self\' \'unsafe-inline\' ;img-src \'self\' data:  *.tile.openstreetmap.org;'
+                    . 'style-src \'self\' \'unsafe-inline\' ;img-src \'self\' data:  tile.openstreetmap.org;'
                     . 'object-src \'none\';',
                 'default-src \'self\' ;options inline-script eval-script;referrer no-referrer;'
-                    . 'img-src \'self\' data:  *.tile.openstreetmap.org;object-src \'none\';',
+                    . 'img-src \'self\' data:  tile.openstreetmap.org;object-src \'none\';',
                 'default-src \'self\' ;script-src \'self\'  \'unsafe-inline\' \'unsafe-eval\';'
                     . 'referrer no-referrer;style-src \'self\' \'unsafe-inline\' ;'
-                    . 'img-src \'self\' data:  *.tile.openstreetmap.org;object-src \'none\';',
+                    . 'img-src \'self\' data:  tile.openstreetmap.org;object-src \'none\';',
             ],
             [
                 'SameOrigin',
@@ -210,15 +226,15 @@ class HeaderTest extends AbstractTestCase
                     . 'script-src \'self\' \'unsafe-inline\' \'unsafe-eval\'  '
                     . 'captcha.tld csp.tld example.com example.net;'
                     . 'style-src \'self\' \'unsafe-inline\'  captcha.tld csp.tld example.com example.net;'
-                    . 'img-src \'self\' data: example.com example.net *.tile.openstreetmap.org captcha.tld csp.tld ;'
+                    . 'img-src \'self\' data: example.com example.net tile.openstreetmap.org captcha.tld csp.tld ;'
                     . 'object-src \'none\';',
                 'default-src \'self\'  captcha.tld csp.tld example.com example.net;'
                     . 'options inline-script eval-script;referrer no-referrer;img-src \'self\' data: example.com '
-                    . 'example.net *.tile.openstreetmap.org captcha.tld csp.tld ;object-src \'none\';',
+                    . 'example.net tile.openstreetmap.org captcha.tld csp.tld ;object-src \'none\';',
                 'default-src \'self\'  captcha.tld csp.tld example.com example.net;script-src \'self\'  '
                     . 'captcha.tld csp.tld example.com example.net \'unsafe-inline\' \'unsafe-eval\';'
                     . 'referrer no-referrer;style-src \'self\' \'unsafe-inline\'  captcha.tld csp.tld ;'
-                    . 'img-src \'self\' data: example.com example.net *.tile.openstreetmap.org captcha.tld csp.tld ;'
+                    . 'img-src \'self\' data: example.com example.net tile.openstreetmap.org captcha.tld csp.tld ;'
                     . 'object-src \'none\';',
             ],
             [
@@ -231,21 +247,21 @@ class HeaderTest extends AbstractTestCase
                 'default-src \'self\'  captcha.tld csp.tld ;'
                     . 'script-src \'self\' \'unsafe-inline\' \'unsafe-eval\'  captcha.tld csp.tld ;'
                     . 'style-src \'self\' \'unsafe-inline\'  captcha.tld csp.tld ;'
-                    . 'img-src \'self\' data:  *.tile.openstreetmap.org captcha.tld csp.tld ;object-src \'none\';',
+                    . 'img-src \'self\' data:  tile.openstreetmap.org captcha.tld csp.tld ;object-src \'none\';',
                 'default-src \'self\'  captcha.tld csp.tld ;'
                     . 'options inline-script eval-script;referrer no-referrer;'
-                    . 'img-src \'self\' data:  *.tile.openstreetmap.org captcha.tld csp.tld ;object-src \'none\';',
+                    . 'img-src \'self\' data:  tile.openstreetmap.org captcha.tld csp.tld ;object-src \'none\';',
                 'default-src \'self\'  captcha.tld csp.tld ;'
                     . 'script-src \'self\'  captcha.tld csp.tld  \'unsafe-inline\' \'unsafe-eval\';'
                     . 'referrer no-referrer;style-src \'self\' \'unsafe-inline\'  captcha.tld csp.tld ;'
-                    . 'img-src \'self\' data:  *.tile.openstreetmap.org captcha.tld csp.tld ;object-src \'none\';',
+                    . 'img-src \'self\' data:  tile.openstreetmap.org captcha.tld csp.tld ;object-src \'none\';',
             ],
         ];
     }
 
     public function testAddedDefaultScripts(): void
     {
-        $header = new Header();
+        $header = $this->getNewHeaderInstance();
         $scripts = $header->getScripts();
         $expected = [
             ['name' => 'runtime.js', 'fire' => 0],
@@ -268,7 +284,7 @@ class HeaderTest extends AbstractTestCase
 
     public function testSetAjax(): void
     {
-        $header = new Header();
+        $header = $this->getNewHeaderInstance();
         $console = (new ReflectionProperty(Header::class, 'console'))->getValue($header);
         $this->assertInstanceOf(Console::class, $console);
         $isAjax = new ReflectionProperty(Header::class, 'isAjax');

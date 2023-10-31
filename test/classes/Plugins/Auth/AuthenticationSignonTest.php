@@ -4,12 +4,18 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Plugins\Auth;
 
+use PhpMyAdmin\Config;
+use PhpMyAdmin\Config\Settings\Server;
 use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\Exceptions\ExitException;
 use PhpMyAdmin\Plugins\Auth\AuthenticationSignon;
 use PhpMyAdmin\ResponseRenderer;
-use PhpMyAdmin\Tests\AbstractNetworkTestCase;
+use PhpMyAdmin\Tests\AbstractTestCase;
+use PhpMyAdmin\Tests\Stubs\ResponseRenderer as ResponseRendererStub;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
+use PHPUnit\Framework\Attributes\RunInSeparateProcess;
+use ReflectionProperty;
 use Throwable;
 
 use function ob_get_clean;
@@ -19,7 +25,7 @@ use function session_id;
 use function session_name;
 
 #[CoversClass(AuthenticationSignon::class)]
-class AuthenticationSignonTest extends AbstractNetworkTestCase
+class AuthenticationSignonTest extends AbstractTestCase
 {
     protected AuthenticationSignon $object;
 
@@ -36,7 +42,7 @@ class AuthenticationSignonTest extends AbstractNetworkTestCase
 
         parent::setTheme();
 
-        $GLOBALS['dbi'] = $this->createDatabaseInterface();
+        DatabaseInterface::$instance = $this->createDatabaseInterface();
         $GLOBALS['server'] = 0;
         $GLOBALS['db'] = 'db';
         $GLOBALS['table'] = 'table';
@@ -53,9 +59,12 @@ class AuthenticationSignonTest extends AbstractNetworkTestCase
         unset($this->object);
     }
 
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
     public function testAuth(): void
     {
-        $GLOBALS['cfg']['Server']['SignonURL'] = '';
+        (new ReflectionProperty(ResponseRenderer::class, 'instance'))->setValue(null, null);
+        Config::getInstance()->selectedServer['SignonURL'] = '';
         $_REQUEST = [];
         ResponseRenderer::getInstance()->setAjax(false);
 
@@ -74,30 +83,46 @@ class AuthenticationSignonTest extends AbstractNetworkTestCase
         $this->assertStringContainsString('You must set SignonURL!', $result);
     }
 
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
     public function testAuthLogoutURL(): void
     {
-        $this->mockResponse('Location: https://example.com/logoutURL');
+        $responseStub = new ResponseRendererStub();
+        (new ReflectionProperty(ResponseRenderer::class, 'instance'))->setValue(null, $responseStub);
 
-        $GLOBALS['cfg']['Server']['SignonURL'] = 'https://example.com/SignonURL';
-        $GLOBALS['cfg']['Server']['LogoutURL'] = 'https://example.com/logoutURL';
+        $config = Config::getInstance();
+        $config->selectedServer['SignonURL'] = 'https://example.com/SignonURL';
+        $config->selectedServer['LogoutURL'] = 'https://example.com/logoutURL';
 
         $this->object->logOut();
+
+        $response = $responseStub->getResponse();
+        $this->assertSame(['https://example.com/logoutURL'], $response->getHeader('Location'));
+        $this->assertSame(302, $response->getStatusCode());
     }
 
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
     public function testAuthLogout(): void
     {
-        $this->mockResponse('Location: https://example.com/SignonURL');
+        $responseStub = new ResponseRendererStub();
+        (new ReflectionProperty(ResponseRenderer::class, 'instance'))->setValue(null, $responseStub);
 
         $GLOBALS['header'] = [];
-        $GLOBALS['cfg']['Server']['SignonURL'] = 'https://example.com/SignonURL';
-        $GLOBALS['cfg']['Server']['LogoutURL'] = '';
+        $config = Config::getInstance();
+        $config->selectedServer['SignonURL'] = 'https://example.com/SignonURL';
+        $config->selectedServer['LogoutURL'] = '';
 
         $this->object->logOut();
+
+        $response = $responseStub->getResponse();
+        $this->assertSame(['https://example.com/SignonURL'], $response->getHeader('Location'));
+        $this->assertSame(302, $response->getStatusCode());
     }
 
     public function testAuthCheckEmpty(): void
     {
-        $GLOBALS['cfg']['Server']['SignonURL'] = 'https://example.com/SignonURL';
+        Config::getInstance()->selectedServer['SignonURL'] = 'https://example.com/SignonURL';
         $_SESSION['LAST_SIGNON_URL'] = 'https://example.com/SignonDiffURL';
 
         $this->assertFalse(
@@ -107,14 +132,15 @@ class AuthenticationSignonTest extends AbstractNetworkTestCase
 
     public function testAuthCheckSession(): void
     {
-        $GLOBALS['cfg']['Server']['SignonURL'] = 'https://example.com/SignonURL';
+        $config = Config::getInstance();
+        $config->selectedServer['SignonURL'] = 'https://example.com/SignonURL';
         $_SESSION['LAST_SIGNON_URL'] = 'https://example.com/SignonURL';
-        $GLOBALS['cfg']['Server']['SignonScript'] = './examples/signon-script.php';
-        $GLOBALS['cfg']['Server']['SignonSession'] = 'session123';
-        $GLOBALS['cfg']['Server']['SignonCookieParams'] = [];
-        $GLOBALS['cfg']['Server']['host'] = 'localhost';
-        $GLOBALS['cfg']['Server']['port'] = '80';
-        $GLOBALS['cfg']['Server']['user'] = 'user';
+        $config->selectedServer['SignonScript'] = './examples/signon-script.php';
+        $config->selectedServer['SignonSession'] = 'session123';
+        $config->selectedServer['SignonCookieParams'] = [];
+        $config->selectedServer['host'] = 'localhost';
+        $config->selectedServer['port'] = '80';
+        $config->selectedServer['user'] = 'user';
 
         $this->assertTrue(
             $this->object->readCredentials(),
@@ -127,18 +153,25 @@ class AuthenticationSignonTest extends AbstractNetworkTestCase
         $this->assertEquals('https://example.com/SignonURL', $_SESSION['LAST_SIGNON_URL']);
     }
 
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
     public function testAuthCheckToken(): void
     {
         $_SESSION = [' PMA_token ' => 'eefefef'];
-        $this->mockResponse('Location: https://example.com/SignonURL');
 
-        $GLOBALS['cfg']['Server']['SignonURL'] = 'https://example.com/SignonURL';
-        $GLOBALS['cfg']['Server']['SignonSession'] = 'session123';
-        $GLOBALS['cfg']['Server']['SignonCookieParams'] = [];
-        $GLOBALS['cfg']['Server']['host'] = 'localhost';
-        $GLOBALS['cfg']['Server']['port'] = '80';
-        $GLOBALS['cfg']['Server']['user'] = 'user';
-        $GLOBALS['cfg']['Server']['SignonScript'] = '';
+        $responseStub = new ResponseRendererStub();
+        (new ReflectionProperty(ResponseRenderer::class, 'instance'))->setValue(null, $responseStub);
+
+        $config = Config::getInstance();
+        $config->selectedServer = (new Server([
+            'SignonURL' => 'https://example.com/SignonURL',
+            'SignonSession' => 'session123',
+            'SignonCookieParams' => [],
+            'host' => 'localhost',
+            'port' => '80',
+            'user' => 'user',
+            'SignonScript' => '',
+        ]))->asArray();
         $_COOKIE['session123'] = true;
         $_SESSION['PMA_single_signon_user'] = 'user123';
         $_SESSION['PMA_single_signon_password'] = 'pass123';
@@ -151,8 +184,12 @@ class AuthenticationSignonTest extends AbstractNetworkTestCase
 
         $this->object->logOut();
 
+        $response = $responseStub->getResponse();
+        $this->assertSame(['https://example.com/SignonURL'], $response->getHeader('Location'));
+        $this->assertSame(302, $response->getStatusCode());
+
         $this->assertEquals(
-            [
+            (new Server([
                 'SignonURL' => 'https://example.com/SignonURL',
                 'SignonScript' => '',
                 'SignonSession' => 'session123',
@@ -160,8 +197,8 @@ class AuthenticationSignonTest extends AbstractNetworkTestCase
                 'host' => 'localhost',
                 'port' => '80',
                 'user' => 'user',
-            ],
-            $GLOBALS['cfg']['Server'],
+            ]))->asArray(),
+            $config->selectedServer,
         );
 
         $this->assertEquals(
@@ -179,13 +216,14 @@ class AuthenticationSignonTest extends AbstractNetworkTestCase
 
     public function testAuthCheckKeep(): void
     {
-        $GLOBALS['cfg']['Server']['SignonURL'] = 'https://example.com/SignonURL';
-        $GLOBALS['cfg']['Server']['SignonSession'] = 'session123';
-        $GLOBALS['cfg']['Server']['SignonCookieParams'] = [];
-        $GLOBALS['cfg']['Server']['host'] = 'localhost';
-        $GLOBALS['cfg']['Server']['port'] = '80';
-        $GLOBALS['cfg']['Server']['user'] = 'user';
-        $GLOBALS['cfg']['Server']['SignonScript'] = '';
+        $config = Config::getInstance();
+        $config->selectedServer['SignonURL'] = 'https://example.com/SignonURL';
+        $config->selectedServer['SignonSession'] = 'session123';
+        $config->selectedServer['SignonCookieParams'] = [];
+        $config->selectedServer['host'] = 'localhost';
+        $config->selectedServer['port'] = '80';
+        $config->selectedServer['user'] = 'user';
+        $config->selectedServer['SignonScript'] = '';
         $_COOKIE['session123'] = true;
         $_REQUEST['old_usr'] = '';
         $_SESSION['PMA_single_signon_user'] = 'user123';
@@ -213,14 +251,15 @@ class AuthenticationSignonTest extends AbstractNetworkTestCase
             $this->object->storeCredentials(),
         );
 
-        $this->assertEquals('testUser123', $GLOBALS['cfg']['Server']['user']);
+        $config = Config::getInstance();
+        $this->assertEquals('testUser123', $config->selectedServer['user']);
 
-        $this->assertEquals('testPass123', $GLOBALS['cfg']['Server']['password']);
+        $this->assertEquals('testPass123', $config->selectedServer['password']);
     }
 
     public function testAuthFailsForbidden(): void
     {
-        $GLOBALS['cfg']['Server']['SignonSession'] = 'newSession';
+        Config::getInstance()->selectedServer['SignonSession'] = 'newSession';
         $_COOKIE['newSession'] = '42';
 
         $this->object = $this->getMockBuilder(AuthenticationSignon::class)
@@ -245,7 +284,7 @@ class AuthenticationSignonTest extends AbstractNetworkTestCase
 
     public function testAuthFailsDeny(): void
     {
-        $GLOBALS['cfg']['Server']['SignonSession'] = 'newSession';
+        Config::getInstance()->selectedServer['SignonSession'] = 'newSession';
         $_COOKIE['newSession'] = '42';
 
         $this->object = $this->getMockBuilder(AuthenticationSignon::class)
@@ -267,7 +306,8 @@ class AuthenticationSignonTest extends AbstractNetworkTestCase
 
     public function testAuthFailsTimeout(): void
     {
-        $GLOBALS['cfg']['Server']['SignonSession'] = 'newSession';
+        $config = Config::getInstance();
+        $config->selectedServer['SignonSession'] = 'newSession';
         $_COOKIE['newSession'] = '42';
 
         $this->object = $this->getMockBuilder(AuthenticationSignon::class)
@@ -279,7 +319,7 @@ class AuthenticationSignonTest extends AbstractNetworkTestCase
             ->method('showLoginForm')
             ->willThrowException(new ExitException());
 
-        $GLOBALS['cfg']['LoginCookieValidity'] = '1440';
+        $config->settings['LoginCookieValidity'] = '1440';
 
         try {
             $this->object->showFailure('no-activity');
@@ -296,7 +336,7 @@ class AuthenticationSignonTest extends AbstractNetworkTestCase
 
     public function testAuthFailsMySQLError(): void
     {
-        $GLOBALS['cfg']['Server']['SignonSession'] = 'newSession';
+        Config::getInstance()->selectedServer['SignonSession'] = 'newSession';
         $_COOKIE['newSession'] = '42';
 
         $this->object = $this->getMockBuilder(AuthenticationSignon::class)
@@ -314,9 +354,9 @@ class AuthenticationSignonTest extends AbstractNetworkTestCase
 
         $dbi->expects($this->once())
             ->method('getError')
-            ->will($this->returnValue('error<123>'));
+            ->willReturn('error<123>');
 
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
 
         try {
             $this->object->showFailure('');
@@ -328,7 +368,7 @@ class AuthenticationSignonTest extends AbstractNetworkTestCase
 
     public function testAuthFailsConnect(): void
     {
-        $GLOBALS['cfg']['Server']['SignonSession'] = 'newSession';
+        Config::getInstance()->selectedServer['SignonSession'] = 'newSession';
         $_COOKIE['newSession'] = '42';
         unset($GLOBALS['errno']);
 
@@ -347,9 +387,9 @@ class AuthenticationSignonTest extends AbstractNetworkTestCase
 
         $dbi->expects($this->once())
             ->method('getError')
-            ->will($this->returnValue(''));
+            ->willReturn('');
 
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
 
         try {
             $this->object->showFailure('');

@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Controllers\Server\Status\Processes;
 
+use PhpMyAdmin\Config;
 use PhpMyAdmin\Controllers\Server\Status\Processes\RefreshController;
+use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\Http\ServerRequest;
 use PhpMyAdmin\Server\Status\Data;
 use PhpMyAdmin\Server\Status\Processes;
@@ -26,7 +28,7 @@ class RefreshControllerTest extends AbstractTestCase
     {
         parent::setUp();
 
-        $GLOBALS['dbi'] = $this->createDatabaseInterface();
+        DatabaseInterface::$instance = $this->createDatabaseInterface();
         $GLOBALS['text_dir'] = 'ltr';
 
         parent::setGlobalConfig();
@@ -36,10 +38,11 @@ class RefreshControllerTest extends AbstractTestCase
         $GLOBALS['server'] = 1;
         $GLOBALS['db'] = 'db';
         $GLOBALS['table'] = 'table';
-        $GLOBALS['cfg']['Server']['DisableIS'] = false;
-        $GLOBALS['cfg']['Server']['host'] = 'localhost';
+        $config = Config::getInstance();
+        $config->selectedServer['DisableIS'] = false;
+        $config->selectedServer['host'] = 'localhost';
 
-        $this->data = new Data($GLOBALS['dbi'], $GLOBALS['config']);
+        $this->data = new Data(DatabaseInterface::getInstance(), $config);
     }
 
     public function testRefresh(): void
@@ -54,7 +57,7 @@ class RefreshControllerTest extends AbstractTestCase
             'State' => 'State1',
             'Time' => 'Time1',
         ];
-        $GLOBALS['cfg']['MaxCharactersInDisplayedSQL'] = 12;
+        Config::getInstance()->settings['MaxCharactersInDisplayedSQL'] = 12;
 
         $response = new ResponseRenderer();
 
@@ -62,7 +65,7 @@ class RefreshControllerTest extends AbstractTestCase
             $response,
             new Template(),
             $this->data,
-            new Processes($GLOBALS['dbi']),
+            new Processes(DatabaseInterface::getInstance()),
         );
 
         $request = $this->createStub(ServerRequest::class);

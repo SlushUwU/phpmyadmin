@@ -7,7 +7,7 @@ distribution or some all in one package including web server and MySQL
 server.
 
 Generally, you can customize some basic aspects (paths to some files and
-behavior) in :file:`libraries/vendor_config.php`.
+behavior) in :file:`app/vendor_config.php`.
 
 For example, if you want setup script to generate a config file in var, change
 ``SETUP_CONFIG_FILE`` to :file:`/var/lib/phpmyadmin/config.inc.php` and you
@@ -24,7 +24,7 @@ one we ship.
 
 Currently known list of external libraries:
 
-js/vendor
+public/js/vendor
     jQuery js framework libraries and various js libraries.
 
 vendor/

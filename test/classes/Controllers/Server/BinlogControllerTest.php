@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Controllers\Server;
 
+use PhpMyAdmin\Config;
 use PhpMyAdmin\Controllers\Server\BinlogController;
 use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\Http\ServerRequest;
@@ -34,11 +35,12 @@ class BinlogControllerTest extends AbstractTestCase
 
         $this->dummyDbi = $this->createDbiDummy();
         $this->dbi = $this->createDatabaseInterface($this->dummyDbi);
-        $GLOBALS['dbi'] = $this->dbi;
+        DatabaseInterface::$instance = $this->dbi;
 
-        $GLOBALS['cfg']['MaxRows'] = 10;
-        $GLOBALS['cfg']['ServerDefault'] = 'server';
-        $GLOBALS['cfg']['Server']['DisableIS'] = false;
+        $config = Config::getInstance();
+        $config->settings['MaxRows'] = 10;
+        $config->settings['ServerDefault'] = 'server';
+        $config->selectedServer['DisableIS'] = false;
 
         $GLOBALS['server'] = 1;
         $GLOBALS['db'] = 'db';
@@ -51,7 +53,7 @@ class BinlogControllerTest extends AbstractTestCase
     {
         $response = new ResponseRenderer();
 
-        $controller = new BinlogController($response, new Template(), $GLOBALS['dbi']);
+        $controller = new BinlogController($response, new Template(), DatabaseInterface::getInstance());
 
         $request = $this->createStub(ServerRequest::class);
         $request->method('getParsedBodyParam')->willReturnMap([['log', null, 'index1'], ['pos', 0, '3']]);

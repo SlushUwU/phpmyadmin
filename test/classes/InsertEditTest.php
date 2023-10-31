@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace PhpMyAdmin\Tests;
 
 use PhpMyAdmin\ColumnFull;
+use PhpMyAdmin\Config;
 use PhpMyAdmin\ConfigStorage\Relation;
 use PhpMyAdmin\Core;
 use PhpMyAdmin\DatabaseInterface;
@@ -65,33 +66,34 @@ class InsertEditTest extends AbstractTestCase
 
         $this->dummyDbi = $this->createDbiDummy();
         $this->dbi = $this->createDatabaseInterface($this->dummyDbi);
-        $GLOBALS['dbi'] = $this->dbi;
+        DatabaseInterface::$instance = $this->dbi;
         $GLOBALS['server'] = 1;
-        $GLOBALS['cfg']['ServerDefault'] = 1;
+        $config = Config::getInstance();
+        $config->settings['ServerDefault'] = 1;
         $GLOBALS['text_dir'] = 'ltr';
         $GLOBALS['db'] = 'db';
         $GLOBALS['table'] = 'table';
-        $GLOBALS['cfg']['LimitChars'] = 50;
-        $GLOBALS['cfg']['LongtextDoubleTextarea'] = false;
-        $GLOBALS['cfg']['ShowFieldTypesInDataEditView'] = true;
-        $GLOBALS['cfg']['ShowFunctionFields'] = true;
-        $GLOBALS['cfg']['ProtectBinary'] = 'blob';
-        $GLOBALS['cfg']['MaxSizeForInputField'] = 10;
-        $GLOBALS['cfg']['MinSizeForInputField'] = 2;
-        $GLOBALS['cfg']['TextareaRows'] = 5;
-        $GLOBALS['cfg']['TextareaCols'] = 4;
-        $GLOBALS['cfg']['CharTextareaRows'] = 5;
-        $GLOBALS['cfg']['CharTextareaCols'] = 6;
-        $GLOBALS['cfg']['AllowThirdPartyFraming'] = false;
-        $GLOBALS['cfg']['SendErrorReports'] = 'ask';
-        $GLOBALS['cfg']['DefaultTabDatabase'] = 'structure';
-        $GLOBALS['cfg']['ShowDatabasesNavigationAsTree'] = true;
-        $GLOBALS['cfg']['DefaultTabTable'] = 'browse';
-        $GLOBALS['cfg']['NavigationTreeDefaultTabTable'] = 'structure';
-        $GLOBALS['cfg']['NavigationTreeDefaultTabTable2'] = '';
-        $GLOBALS['cfg']['Confirm'] = true;
-        $GLOBALS['cfg']['LoginCookieValidity'] = 1440;
-        $GLOBALS['cfg']['enable_drag_drop_import'] = true;
+        $config->settings['LimitChars'] = 50;
+        $config->settings['LongtextDoubleTextarea'] = false;
+        $config->settings['ShowFieldTypesInDataEditView'] = true;
+        $config->settings['ShowFunctionFields'] = true;
+        $config->settings['ProtectBinary'] = 'blob';
+        $config->settings['MaxSizeForInputField'] = 10;
+        $config->settings['MinSizeForInputField'] = 2;
+        $config->settings['TextareaRows'] = 5;
+        $config->settings['TextareaCols'] = 4;
+        $config->settings['CharTextareaRows'] = 5;
+        $config->settings['CharTextareaCols'] = 6;
+        $config->settings['AllowThirdPartyFraming'] = false;
+        $config->settings['SendErrorReports'] = 'ask';
+        $config->settings['DefaultTabDatabase'] = 'structure';
+        $config->settings['ShowDatabasesNavigationAsTree'] = true;
+        $config->settings['DefaultTabTable'] = 'browse';
+        $config->settings['NavigationTreeDefaultTabTable'] = 'structure';
+        $config->settings['NavigationTreeDefaultTabTable2'] = '';
+        $config->settings['Confirm'] = true;
+        $config->settings['LoginCookieValidity'] = 1440;
+        $config->settings['enable_drag_drop_import'] = true;
         $this->insertEdit = new InsertEdit(
             $this->dbi,
             new Relation($this->dbi),
@@ -115,6 +117,7 @@ class InsertEditTest extends AbstractTestCase
 
         $response = new ReflectionProperty(ResponseRenderer::class, 'instance');
         $response->setValue(null, null);
+        DatabaseInterface::$instance = null;
     }
 
     /**
@@ -200,27 +203,24 @@ class InsertEditTest extends AbstractTestCase
 
         $dbi->expects($this->exactly(2))
             ->method('query')
-            ->willReturnOnConsecutiveCalls($resultStub1, $resultStub2);
+            ->willReturn($resultStub1, $resultStub2);
 
         $resultStub1->expects($this->once())
             ->method('fetchAssoc')
-            ->will($this->returnValue(['assoc1']));
+            ->willReturn(['assoc1']);
 
         $resultStub2->expects($this->once())
             ->method('fetchAssoc')
-            ->will($this->returnValue(['assoc2']));
+            ->willReturn(['assoc2']);
 
         $dbi->expects($this->exactly(2))
             ->method('getFieldsMeta')
-            ->willReturnOnConsecutiveCalls(
-                [],
-                [],
-            );
+            ->willReturn([], []);
 
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
         $this->insertEdit = new InsertEdit(
-            $GLOBALS['dbi'],
-            new Relation($GLOBALS['dbi']),
+            $dbi,
+            new Relation($dbi),
             new Transformations(),
             new FileListing(),
             new Template(),
@@ -259,12 +259,12 @@ class InsertEditTest extends AbstractTestCase
         $dbi->expects($this->once())
             ->method('getFieldsMeta')
             ->with($resultStub)
-            ->will($this->returnValue([$meta]));
+            ->willReturn([$meta]);
 
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
         $this->insertEdit = new InsertEdit(
-            $GLOBALS['dbi'],
-            new Relation($GLOBALS['dbi']),
+            $dbi,
+            new Relation($dbi),
             new Transformations(),
             new FileListing(),
             new Template(),
@@ -280,7 +280,7 @@ class InsertEditTest extends AbstractTestCase
         $this->assertTrue($result);
 
         // case 2
-        $GLOBALS['cfg']['ShowSQL'] = false;
+        Config::getInstance()->settings['ShowSQL'] = false;
 
         $responseMock = $this->getMockBuilder(ResponseRenderer::class)
             ->disableOriginalConstructor()
@@ -314,12 +314,12 @@ class InsertEditTest extends AbstractTestCase
         $dbi->expects($this->once())
             ->method('query')
             ->with('SELECT * FROM `db`.`table` LIMIT 1;')
-            ->will($this->returnValue($resultStub));
+            ->willReturn($resultStub);
 
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
         $this->insertEdit = new InsertEdit(
-            $GLOBALS['dbi'],
-            new Relation($GLOBALS['dbi']),
+            $dbi,
+            new Relation($dbi),
             new Transformations(),
             new FileListing(),
             new Template(),
@@ -335,10 +335,10 @@ class InsertEditTest extends AbstractTestCase
         $this->assertEquals($resultStub, $result);
     }
 
-    /** @return list<array{int|string, array<false>}> */
+    /** @return list<array{int, array<false>}> */
     public static function dataProviderConfigValueInsertRows(): array
     {
-        return [[2, [false, false]], ['2', [false, false]], [3, [false, false, false]], ['3', [false, false, false]]];
+        return [[2, [false, false]], [3, [false, false, false]]];
     }
 
     /**
@@ -347,9 +347,9 @@ class InsertEditTest extends AbstractTestCase
      * @param array<false> $rowsValue
      */
     #[DataProvider('dataProviderConfigValueInsertRows')]
-    public function testGetInsertRows(string|int $configValue, array $rowsValue): void
+    public function testGetInsertRows(int $configValue, array $rowsValue): void
     {
-        $GLOBALS['cfg']['InsertRows'] = $configValue;
+        Config::getInstance()->settings['InsertRows'] = $configValue;
 
         $result = $this->callFunction(
             $this->insertEdit,
@@ -366,8 +366,9 @@ class InsertEditTest extends AbstractTestCase
      */
     public function testShowTypeOrFunction(): void
     {
-        $GLOBALS['cfg']['ShowFieldTypesInDataEditView'] = true;
-        $GLOBALS['cfg']['ServerDefault'] = 1;
+        $config = Config::getInstance();
+        $config->settings['ShowFieldTypesInDataEditView'] = true;
+        $config->settings['ServerDefault'] = 1;
         $urlParams = ['ShowFunctionFields' => 2];
 
         $result = $this->insertEdit->showTypeOrFunction('function', $urlParams, false);
@@ -578,11 +579,12 @@ class InsertEditTest extends AbstractTestCase
      */
     public function testGetTextarea(): void
     {
-        $GLOBALS['cfg']['TextareaRows'] = 20;
-        $GLOBALS['cfg']['TextareaCols'] = 10;
-        $GLOBALS['cfg']['CharTextareaRows'] = 7;
-        $GLOBALS['cfg']['CharTextareaCols'] = 1;
-        $GLOBALS['cfg']['LimitChars'] = 20;
+        $config = Config::getInstance();
+        $config->settings['TextareaRows'] = 20;
+        $config->settings['TextareaCols'] = 10;
+        $config->settings['CharTextareaRows'] = 7;
+        $config->settings['CharTextareaCols'] = 1;
+        $config->settings['LimitChars'] = 20;
 
         $column = new InsertEditColumn(
             'f',
@@ -620,7 +622,7 @@ class InsertEditTest extends AbstractTestCase
      */
     public function testGetHTMLinput(): void
     {
-        $GLOBALS['cfg']['ShowFunctionFields'] = true;
+        Config::getInstance()->settings['ShowFunctionFields'] = true;
         $column = new InsertEditColumn('f', 'date', false, 'PRI', null, '', -1, false, false, false, false);
         (new ReflectionProperty(InsertEdit::class, 'fieldIndex'))->setValue($this->insertEdit, 23);
         $result = $this->callFunction(
@@ -684,7 +686,8 @@ class InsertEditTest extends AbstractTestCase
      */
     public function testGetMaxUploadSize(): void
     {
-        $GLOBALS['config']->set('max_upload_size', 257);
+        $config = Config::getInstance();
+        $config->set('max_upload_size', 257);
         $pmaType = 'tinyblob';
         $result = $this->callFunction(
             $this->insertEdit,
@@ -696,7 +699,7 @@ class InsertEditTest extends AbstractTestCase
         $this->assertEquals("(Max: 256B)\n", $result);
 
         // case 2
-        $GLOBALS['config']->set('max_upload_size', 250);
+        $config->set('max_upload_size', 250);
         $pmaType = 'tinyblob';
         $result = $this->callFunction(
             $this->insertEdit,
@@ -714,15 +717,16 @@ class InsertEditTest extends AbstractTestCase
     public function testGetValueColumnForOtherDatatypes(): void
     {
         $column = new InsertEditColumn('f', 'char(25)', false, '', null, '', 20, false, false, true, false);
-        $GLOBALS['cfg']['CharEditing'] = '';
-        $GLOBALS['cfg']['MaxSizeForInputField'] = 30;
-        $GLOBALS['cfg']['MinSizeForInputField'] = 10;
-        $GLOBALS['cfg']['TextareaRows'] = 20;
-        $GLOBALS['cfg']['TextareaCols'] = 10;
-        $GLOBALS['cfg']['CharTextareaRows'] = 7;
-        $GLOBALS['cfg']['CharTextareaCols'] = 1;
-        $GLOBALS['cfg']['LimitChars'] = 50;
-        $GLOBALS['cfg']['ShowFunctionFields'] = true;
+        $config = Config::getInstance();
+        $config->settings['CharEditing'] = '';
+        $config->settings['MaxSizeForInputField'] = 30;
+        $config->settings['MinSizeForInputField'] = 10;
+        $config->settings['TextareaRows'] = 20;
+        $config->settings['TextareaCols'] = 10;
+        $config->settings['CharTextareaRows'] = 7;
+        $config->settings['CharTextareaCols'] = 1;
+        $config->settings['LimitChars'] = 50;
+        $config->settings['ShowFunctionFields'] = true;
 
         $extractedColumnSpec = [];
         $extractedColumnSpec['spec_in_brackets'] = '25';
@@ -923,8 +927,9 @@ class InsertEditTest extends AbstractTestCase
             false,
         );
         $specInBrackets = '45';
-        $GLOBALS['cfg']['MinSizeForInputField'] = 30;
-        $GLOBALS['cfg']['MaxSizeForInputField'] = 40;
+        $config = Config::getInstance();
+        $config->settings['MinSizeForInputField'] = 30;
+        $config->settings['MaxSizeForInputField'] = 40;
 
         $this->assertEquals(
             40,
@@ -936,7 +941,7 @@ class InsertEditTest extends AbstractTestCase
             ),
         );
 
-        $this->assertEquals('textarea', $GLOBALS['cfg']['CharEditing']);
+        $this->assertEquals('textarea', $config->settings['CharEditing']);
 
         // case 2
         $column = new InsertEditColumn(
@@ -969,8 +974,9 @@ class InsertEditTest extends AbstractTestCase
     public function testGetContinueInsertionForm(): void
     {
         $whereClauseArray = ['a<b'];
-        $GLOBALS['cfg']['InsertRows'] = 1;
-        $GLOBALS['cfg']['ServerDefault'] = 1;
+        $config = Config::getInstance();
+        $config->settings['InsertRows'] = 1;
+        $config->settings['ServerDefault'] = 1;
         $GLOBALS['goto'] = 'index.php';
         $_POST['where_clause'] = true;
         $_POST['sql_query'] = 'SELECT 1';
@@ -1012,9 +1018,10 @@ class InsertEditTest extends AbstractTestCase
      */
     public function testGetHeadAndFootOfInsertRowTable(): void
     {
-        $GLOBALS['cfg']['ShowFieldTypesInDataEditView'] = true;
-        $GLOBALS['cfg']['ShowFunctionFields'] = true;
-        $GLOBALS['cfg']['ServerDefault'] = 1;
+        $config = Config::getInstance();
+        $config->settings['ShowFieldTypesInDataEditView'] = true;
+        $config->settings['ShowFunctionFields'] = true;
+        $config->settings['ServerDefault'] = 1;
         $urlParams = ['ShowFunctionFields' => 2];
 
         $result = $this->callFunction(
@@ -1116,10 +1123,10 @@ class InsertEditTest extends AbstractTestCase
             ->disableOriginalConstructor()
             ->getMock();
 
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
         $this->insertEdit = new InsertEdit(
-            $GLOBALS['dbi'],
-            new Relation($GLOBALS['dbi']),
+            $dbi,
+            new Relation($dbi),
             new Transformations(),
             new FileListing(),
             new Template(),
@@ -1167,10 +1174,11 @@ class InsertEditTest extends AbstractTestCase
             true,
             false,
         );
-        $GLOBALS['cfg']['ProtectBinary'] = false;
+        $config = Config::getInstance();
+        $config->settings['ProtectBinary'] = false;
         $currentRow['f'] = '11001';
         $extractedColumnSpec['spec_in_brackets'] = '20';
-        $GLOBALS['cfg']['ShowFunctionFields'] = true;
+        $config->settings['ShowFunctionFields'] = true;
 
         $result = $this->callFunction(
             $this->insertEdit,
@@ -1221,8 +1229,9 @@ class InsertEditTest extends AbstractTestCase
         string $trueType,
         string $expected,
     ): void {
-        $GLOBALS['cfg']['ProtectBinary'] = false;
-        $GLOBALS['cfg']['ShowFunctionFields'] = true;
+        $config = Config::getInstance();
+        $config->settings['ProtectBinary'] = false;
+        $config->settings['ShowFunctionFields'] = true;
 
         /** @var string $result */
         $result = $this->callFunction(
@@ -1310,23 +1319,23 @@ class InsertEditTest extends AbstractTestCase
         $dbi->expects($this->once())
             ->method('query')
             ->with('SELECT * FROM `db`.`table` WHERE `a` > 2 LIMIT 1;')
-            ->will($this->returnValue($resultStub));
+            ->willReturn($resultStub);
 
         $resultStub->expects($this->once())
             ->method('fetchRow')
-            ->will($this->returnValue($row));
+            ->willReturn($row);
 
         $dbi->expects($this->once())
             ->method('getFieldsMeta')
             ->with($resultStub)
-            ->will($this->returnValue([$meta]));
+            ->willReturn([$meta]);
 
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
         $GLOBALS['db'] = 'db';
         $GLOBALS['table'] = 'table';
         $this->insertEdit = new InsertEdit(
-            $GLOBALS['dbi'],
-            new Relation($GLOBALS['dbi']),
+            $dbi,
+            new Relation($dbi),
             new Transformations(),
             new FileListing(),
             new Template(),
@@ -1376,7 +1385,7 @@ class InsertEditTest extends AbstractTestCase
      */
     public function testGetErrorUrl(): void
     {
-        $GLOBALS['cfg']['ServerDefault'] = 1;
+        Config::getInstance()->settings['ServerDefault'] = 1;
         $this->assertEquals(
             'index.php?route=/table/change&lang=en',
             $this->insertEdit->getErrorUrl([]),
@@ -1395,12 +1404,13 @@ class InsertEditTest extends AbstractTestCase
     public function testExecuteSqlQuery(): void
     {
         $query = ['SELECT * FROM `test_db`.`test_table`;', 'SELECT * FROM `test_db`.`test_table_yaml`;'];
-        $GLOBALS['cfg']['IgnoreMultiSubmitErrors'] = false;
+        Config::getInstance()->settings['IgnoreMultiSubmitErrors'] = false;
         $_POST['submit_type'] = '';
 
+        $dbi = DatabaseInterface::getInstance();
         $this->insertEdit = new InsertEdit(
-            $GLOBALS['dbi'],
-            new Relation($GLOBALS['dbi']),
+            $dbi,
+            new Relation($dbi),
             new Transformations(),
             new FileListing(),
             new Template(),
@@ -1416,12 +1426,13 @@ class InsertEditTest extends AbstractTestCase
     public function testExecuteSqlQueryWithTryQuery(): void
     {
         $query = ['SELECT * FROM `test_db`.`test_table`;', 'SELECT * FROM `test_db`.`test_table_yaml`;'];
-        $GLOBALS['cfg']['IgnoreMultiSubmitErrors'] = true;
+        Config::getInstance()->settings['IgnoreMultiSubmitErrors'] = true;
         $_POST['submit_type'] = '';
 
+        $dbi = DatabaseInterface::getInstance();
         $this->insertEdit = new InsertEdit(
-            $GLOBALS['dbi'],
-            new Relation($GLOBALS['dbi']),
+            $dbi,
+            new Relation($dbi),
             new Transformations(),
             new FileListing(),
             new Template(),
@@ -1447,12 +1458,12 @@ class InsertEditTest extends AbstractTestCase
 
         $dbi->expects($this->once())
             ->method('getWarnings')
-            ->will($this->returnValue($warnings));
+            ->willReturn($warnings);
 
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
         $this->insertEdit = new InsertEdit(
-            $GLOBALS['dbi'],
-            new Relation($GLOBALS['dbi']),
+            $dbi,
+            new Relation($dbi),
             new Transformations(),
             new FileListing(),
             new Template(),
@@ -1487,21 +1498,21 @@ class InsertEditTest extends AbstractTestCase
         $dbi->expects($this->once())
             ->method('tryQuery')
             ->with('SELECT `TABLE_COMMENT` FROM `information_schema`.`TABLES` WHERE `f`=1')
-            ->will($this->returnValue($resultStub));
+            ->willReturn($resultStub);
 
         $resultStub->expects($this->once())
             ->method('numRows')
-            ->will($this->returnValue(2));
+            ->willReturn(2);
 
         $resultStub->expects($this->once())
             ->method('fetchValue')
             ->with(0)
-            ->will($this->returnValue('2'));
+            ->willReturn('2');
 
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
         $this->insertEdit = new InsertEdit(
-            $GLOBALS['dbi'],
-            new Relation($GLOBALS['dbi']),
+            $dbi,
+            new Relation($dbi),
             new Transformations(),
             new FileListing(),
             new Template(),
@@ -1517,7 +1528,7 @@ class InsertEditTest extends AbstractTestCase
      */
     public function testGetLinkForRelationalDisplayField(): void
     {
-        $GLOBALS['cfg']['ServerDefault'] = 1;
+        Config::getInstance()->settings['ServerDefault'] = 1;
         $_SESSION['tmpval']['relational_display'] = 'K';
         $map = [];
         $map['f']['foreign_db'] = 'information_schema';
@@ -1555,8 +1566,9 @@ class InsertEditTest extends AbstractTestCase
     {
         $_SESSION[' HMAC_secret '] = hash('sha1', 'test');
         $editedValues = [['c' => 'cname']];
-        $GLOBALS['cfg']['DefaultTransformations']['PreApPend'] = ['', ''];
-        $GLOBALS['cfg']['ServerDefault'] = 1;
+        $config = Config::getInstance();
+        $config->settings['DefaultTransformations']['PreApPend'] = ['', ''];
+        $config->settings['ServerDefault'] = 1;
         $_POST['where_clause'] = '1';
         $_POST['where_clause_sign'] = Core::signSqlQuery($_POST['where_clause']);
         $transformation = ['transformation_options' => "'','option ,, quoted',abd"];
@@ -2232,16 +2244,16 @@ class InsertEditTest extends AbstractTestCase
         $meta3 = FieldHelper::fromArray(['type' => MYSQLI_TYPE_TIMESTAMP]);
         $dbi->expects($this->exactly(3))
             ->method('getFieldsMeta')
-            ->will($this->onConsecutiveCalls([$meta1], [$meta2], [$meta3]));
+            ->willReturn([$meta1], [$meta2], [$meta3]);
 
         $resultStub->expects($this->exactly(3))
             ->method('fetchValue')
-            ->will($this->onConsecutiveCalls(false, '123', '2013-08-28 06:34:14'));
+            ->willReturn(false, '123', '2013-08-28 06:34:14');
 
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
         $this->insertEdit = new InsertEdit(
-            $GLOBALS['dbi'],
-            new Relation($GLOBALS['dbi']),
+            $dbi,
+            new Relation($dbi),
             new Transformations(),
             new FileListing(),
             new Template(),
@@ -2275,38 +2287,20 @@ class InsertEditTest extends AbstractTestCase
             ->method('selectDb')
             ->with('db');
 
+        $columns = [
+            new ColumnFull('b', 'd', null, false, '', null, '', '', ''),
+            new ColumnFull('f', 'h', null, true, '', null, '', '', ''),
+        ];
+
         $dbi->expects($this->once())
             ->method('getColumns')
             ->with('db', 'table')
-            ->will($this->returnValue([
-                [
-                    'Field' => 'b',
-                    'Type' => 'd',
-                    'Collation' => null,
-                    'Null' => 'NO',
-                    'Key' => '',
-                    'Default' => null,
-                    'Extra' => '',
-                    'Privileges' => '',
-                    'Comment' => '',
-                ],
-                [
-                    'Field' => 'f',
-                    'Type' => 'h',
-                    'Collation' => null,
-                    'Null' => 'YES',
-                    'Key' => '',
-                    'Default' => null,
-                    'Extra' => '',
-                    'Privileges' => '',
-                    'Comment' => '',
-                ],
-            ]));
+            ->willReturn($columns);
 
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
         $this->insertEdit = new InsertEdit(
-            $GLOBALS['dbi'],
-            new Relation($GLOBALS['dbi']),
+            $dbi,
+            new Relation($dbi),
             new Transformations(),
             new FileListing(),
             new Template(),
@@ -2336,16 +2330,17 @@ class InsertEditTest extends AbstractTestCase
 
         $dbi->expects($this->exactly(2))
             ->method('query')
-            ->will($this->returnValue($resultStub));
+            ->willReturn($resultStub);
 
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
         $_POST['where_clause'] = '1';
         $_SESSION['edit_next'] = '1';
         $_POST['ShowFunctionFields'] = true;
         $_POST['ShowFieldTypesInDataEditView'] = true;
         $_POST['after_insert'] = 'edit_next';
-        $GLOBALS['cfg']['InsertRows'] = 2;
-        $GLOBALS['cfg']['ShowSQL'] = false;
+        $config = Config::getInstance();
+        $config->settings['InsertRows'] = 2;
+        $config->settings['ShowSQL'] = false;
         $_POST['default_action'] = 'insert';
 
         $responseMock = $this->getMockBuilder(ResponseRenderer::class)
@@ -2358,8 +2353,8 @@ class InsertEditTest extends AbstractTestCase
         $response->setValue(null, $responseMock);
 
         $this->insertEdit = new InsertEdit(
-            $GLOBALS['dbi'],
-            new Relation($GLOBALS['dbi']),
+            $dbi,
+            new Relation($dbi),
             new Transformations(),
             new FileListing(),
             new Template(),
@@ -2392,7 +2387,8 @@ class InsertEditTest extends AbstractTestCase
      */
     public function testGetCommentsMap(): void
     {
-        $GLOBALS['cfg']['ShowPropertyComments'] = false;
+        $config = Config::getInstance();
+        $config->settings['ShowPropertyComments'] = false;
 
         $dbi = $this->getMockBuilder(DatabaseInterface::class)
             ->disableOriginalConstructor()
@@ -2401,24 +2397,16 @@ class InsertEditTest extends AbstractTestCase
         $dbi->expects($this->once())
             ->method('getColumns')
             ->with('db', 'table', true)
-            ->will(
-                $this->returnValue(
-                    [['Comment' => 'b', 'Field' => 'd']],
-                ),
-            );
+            ->willReturn([new ColumnFull('d', 'd', null, false, '', null, '', '', 'b')]);
 
         $dbi->expects($this->any())
             ->method('getTable')
-            ->will(
-                $this->returnValue(
-                    new Table('table', 'db', $GLOBALS['dbi']),
-                ),
-            );
+            ->willReturn(new Table('table', 'db', $dbi));
 
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
         $this->insertEdit = new InsertEdit(
-            $GLOBALS['dbi'],
-            new Relation($GLOBALS['dbi']),
+            $dbi,
+            new Relation($dbi),
             new Transformations(),
             new FileListing(),
             new Template(),
@@ -2429,7 +2417,7 @@ class InsertEditTest extends AbstractTestCase
             $this->insertEdit->getCommentsMap('db', 'table'),
         );
 
-        $GLOBALS['cfg']['ShowPropertyComments'] = true;
+        $config->settings['ShowPropertyComments'] = true;
 
         $this->assertEquals(
             ['d' => 'b'],
@@ -2599,10 +2587,11 @@ class InsertEditTest extends AbstractTestCase
     public function testGetHtmlForInsertEditRow(): void
     {
         $GLOBALS['plugin_scripts'] = [];
-        $GLOBALS['cfg']['LongtextDoubleTextarea'] = true;
-        $GLOBALS['cfg']['CharEditing'] = 'input';
-        $GLOBALS['cfg']['TextareaRows'] = 10;
-        $GLOBALS['cfg']['TextareaCols'] = 11;
+        $config = Config::getInstance();
+        $config->settings['LongtextDoubleTextarea'] = true;
+        $config->settings['CharEditing'] = 'input';
+        $config->settings['TextareaRows'] = 10;
+        $config->settings['TextareaCols'] = 11;
         $foreigners = ['foreign_keys_data' => []];
         $tableColumns = [
             new ColumnFull('test', 'longtext', null, true, '', null, '', 'select,insert,update,references', ''),
@@ -2611,7 +2600,7 @@ class InsertEditTest extends AbstractTestCase
         $resultStub = $this->createMock(DummyResult::class);
         $resultStub->expects($this->any())
             ->method('getFieldsMeta')
-            ->will($this->returnValue([FieldHelper::fromArray(['type' => 0, 'length' => -1])]));
+            ->willReturn([FieldHelper::fromArray(['type' => 0, 'length' => -1])]);
 
         $actual = $this->insertEdit->getHtmlForInsertEditRow(
             [],
@@ -2647,8 +2636,9 @@ class InsertEditTest extends AbstractTestCase
     public function testGetHtmlForInsertEditRowBasedOnColumnPrivileges(): void
     {
         $GLOBALS['plugin_scripts'] = [];
-        $GLOBALS['cfg']['LongtextDoubleTextarea'] = true;
-        $GLOBALS['cfg']['CharEditing'] = 'input';
+        $config = Config::getInstance();
+        $config->settings['LongtextDoubleTextarea'] = true;
+        $config->settings['CharEditing'] = 'input';
         $foreigners = ['foreign_keys_data' => []];
 
         // edit
@@ -2660,11 +2650,11 @@ class InsertEditTest extends AbstractTestCase
         $resultStub = $this->createMock(DummyResult::class);
         $resultStub->expects($this->any())
             ->method('getFieldsMeta')
-            ->will($this->returnValue([
+            ->willReturn([
                 FieldHelper::fromArray(['type' => 0, 'length' => -1]),
                 FieldHelper::fromArray(['type' => 0, 'length' => -1]),
                 FieldHelper::fromArray(['type' => 0, 'length' => -1]),
-            ]));
+            ]);
 
         $actual = $this->insertEdit->getHtmlForInsertEditRow(
             [],
@@ -2713,9 +2703,8 @@ class InsertEditTest extends AbstractTestCase
             $actual,
         );
         $this->assertStringContainsString(
-            '<a href="#" target="_blank"><span class="text-nowrap"><img src="themes/dot.'
-            . 'gif" title="Edit/Insert" alt="Edit/Insert" class="icon ic_b_edit">&nbsp;Edit/Insert'
-            . '</span></a>',
+            '<a href="#" ><span class="text-nowrap"><img src="themes/dot.gif" title="Edit/Insert"' .
+            ' alt="Edit/Insert" class="icon ic_b_edit">&nbsp;Edit/Insert</span></a>',
             $actual,
         );
     }

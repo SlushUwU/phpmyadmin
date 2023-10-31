@@ -104,14 +104,14 @@ Additionally you need to install dependencies using `Composer <https://getcompos
 
 .. code-block:: sh
 
-    composer update
+    composer install
 
 If you do not intend to develop, you can skip the installation of developer tools
 by invoking:
 
 .. code-block:: sh
 
-    composer update --no-dev
+    composer install --no-dev
 
 Finally, you'll need to use `Yarn`_ to install some JavaScript dependencies:
 
@@ -221,6 +221,16 @@ You can configure several phpMyAdmin features using environment variables:
     Comma-separated ports of the database server to use.
 
     .. note:: Used only if :envvar:`PMA_PORT` is empty.
+
+.. envvar:: PMA_SOCKET
+
+    Socket file for the database connection.
+
+.. envvar:: PMA_SOCKETS
+
+    Comma-separated list of socket files for the database connections.
+
+    .. note:: Used only if :envvar:`PMA_SOCKET` is empty.
 
 .. envvar:: PMA_ABSOLUTE_URI
 
@@ -446,7 +456,7 @@ arbitrary server - allowing you to specify MySQL/MariaDB server on the login pag
 
 .. code-block:: sh
 
-    docker-compose up -d
+    docker compose up -d
 
 Customizing configuration file using docker-compose
 ---------------------------------------------------
@@ -563,7 +573,7 @@ Quick Install
 #. Choose an appropriate distribution kit from the phpmyadmin.net
    Downloads page. Some kits contain only the English messages, others
    contain all languages. We'll assume you chose a kit whose name
-   looks like ``phpMyAdmin-x.x.x -all-languages.tar.gz``.
+   looks like ``phpMyAdmin-x.x.x-all-languages.tar.gz``.
 #. Ensure you have downloaded a genuine archive, see :ref:`verify`.
 #. Untar or unzip the distribution (be sure to unzip the subdirectories):
    ``tar -xzvf phpMyAdmin_x.x.x-all-languages.tar.gz`` in your
@@ -846,27 +856,27 @@ The following three scenarios are covered by the Zero Configuration mode:
 Manual configuration
 --------------------
 
-Please look at your ``./sql/`` directory, where you should find a
+Please look at your ``./resources/sql/`` directory, where you should find a
 file called *create\_tables.sql*. (If you are using a Windows server,
 pay special attention to :ref:`faq1_23`).
 
 If you already had this infrastructure and:
 
 * upgraded to MySQL 4.1.2 or newer, please use
-  :file:`sql/upgrade_tables_mysql_4_1_2+.sql`.
+  :file:`resources/sql/upgrade_tables_mysql_4_1_2+.sql`.
 * upgraded to phpMyAdmin 4.3.0 or newer from 2.5.0 or newer (<= 4.2.x),
-  please use :file:`sql/upgrade_column_info_4_3_0+.sql`.
+  please use :file:`resources/sql/upgrade_column_info_4_3_0+.sql`.
 * upgraded to phpMyAdmin 4.7.0 or newer from 4.3.0 or newer,
-  please use :file:`sql/upgrade_tables_4_7_0+.sql`.
+  please use :file:`resources/sql/upgrade_tables_4_7_0+.sql`.
 
-and then create new tables by importing :file:`sql/create_tables.sql`.
+and then create new tables by importing :file:`resources/sql/create_tables.sql`.
 
 You can use your phpMyAdmin to create the tables for you. Please be
 aware that you may need special (administrator) privileges to create
 the database and tables, and that the script may need some tuning,
 depending on the database name.
 
-After having imported the :file:`sql/create_tables.sql` file, you
+After having imported the :file:`resources/sql/create_tables.sql` file, you
 should specify the table names in your :file:`config.inc.php` file. The
 directives used for that can be found in the :ref:`config`.
 
@@ -934,12 +944,12 @@ The complete upgrade can be performed in a few simple steps:
 If you have upgraded your MySQL server from a version previous to 4.1.2 to
 version 5.x or newer and if you use the phpMyAdmin configuration storage, you
 should run the :term:`SQL` script found in
-:file:`sql/upgrade_tables_mysql_4_1_2+.sql`.
+:file:`resources/sql/upgrade_tables_mysql_4_1_2+.sql`.
 
 If you have upgraded your phpMyAdmin to 4.3.0 or newer from 2.5.0 or
 newer (<= 4.2.x) and if you use the phpMyAdmin configuration storage, you
 should run the :term:`SQL` script found in
-:file:`sql/upgrade_column_info_4_3_0+.sql`.
+:file:`resources/sql/upgrade_column_info_4_3_0+.sql`.
 
 Do not forget to clear the browser cache and to empty the old session by
 logging out and logging in again.

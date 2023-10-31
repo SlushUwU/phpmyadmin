@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Database;
 
+use PhpMyAdmin\Config;
 use PhpMyAdmin\ConfigStorage\Relation;
 use PhpMyAdmin\ConfigStorage\RelationParameters;
 use PhpMyAdmin\Database\Designer;
@@ -27,14 +28,15 @@ class DesignerTest extends AbstractTestCase
     {
         parent::setUp();
 
-        $GLOBALS['dbi'] = $this->createDatabaseInterface();
+        DatabaseInterface::$instance = $this->createDatabaseInterface();
 
         $GLOBALS['server'] = 1;
-        $GLOBALS['cfg']['ServerDefault'] = 1;
-        $GLOBALS['cfg']['PDFPageSizes'] = ['A3', 'A4'];
-        $GLOBALS['cfg']['PDFDefaultPageSize'] = 'A4';
-        $GLOBALS['cfg']['Schema']['pdf_orientation'] = 'L';
-        $GLOBALS['cfg']['Schema']['pdf_paper'] = 'A4';
+        $config = Config::getInstance();
+        $config->settings['ServerDefault'] = 1;
+        $config->settings['PDFPageSizes'] = ['A3', 'A4'];
+        $config->settings['PDFDefaultPageSize'] = 'A4';
+        $config->settings['Schema']['pdf_orientation'] = 'L';
+        $config->settings['Schema']['pdf_paper'] = 'A4';
 
         $_SESSION = [' PMA_token ' => 'token'];
         $relationParameters = RelationParameters::fromArray([
@@ -65,21 +67,20 @@ class DesignerTest extends AbstractTestCase
                 'SELECT `page_nr`, `page_descr` FROM `pmadb`.`pdf_pages`'
                 . " WHERE db_name = '" . $db . "' ORDER BY `page_descr`",
             )
-            ->will($this->returnValue($resultStub));
+            ->willReturn($resultStub);
 
         $resultStub->expects($this->exactly(3))
             ->method('fetchAssoc')
-            ->willReturnOnConsecutiveCalls(
+            ->willReturn(
                 ['page_nr' => '1', 'page_descr' => 'page1'],
                 ['page_nr' => '2', 'page_descr' => 'page2'],
                 [],
             );
 
-        $dbi->expects($this->any())
-            ->method('escapeString')
-            ->will($this->returnArgument(0));
+        $dbi->expects($this->any())->method('quoteString')
+            ->willReturnCallback(static fn (string $string): string => "'" . $string . "'");
 
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
     }
 
     /**
@@ -90,7 +91,8 @@ class DesignerTest extends AbstractTestCase
         $db = 'db';
         $this->mockDatabaseInteraction($db);
 
-        $this->designer = new Designer($GLOBALS['dbi'], new Relation($GLOBALS['dbi']), new Template());
+        $dbi = DatabaseInterface::getInstance();
+        $this->designer = new Designer($dbi, new Relation($dbi), new Template());
 
         $method = new ReflectionMethod(Designer::class, 'getPageIdsAndNames');
         $result = $method->invokeArgs($this->designer, [$db]);
@@ -110,7 +112,8 @@ class DesignerTest extends AbstractTestCase
         $operation = 'edit';
         $this->mockDatabaseInteraction($db);
 
-        $this->designer = new Designer($GLOBALS['dbi'], new Relation($GLOBALS['dbi']), new Template());
+        $dbi = DatabaseInterface::getInstance();
+        $this->designer = new Designer($dbi, new Relation($dbi), new Template());
 
         $result = $this->designer->getHtmlForEditOrDeletePages($db, $operation);
         $this->assertStringContainsString('<input type="hidden" name="operation" value="' . $operation . '">', $result);
@@ -130,7 +133,8 @@ class DesignerTest extends AbstractTestCase
         $db = 'db';
         $this->mockDatabaseInteraction($db);
 
-        $this->designer = new Designer($GLOBALS['dbi'], new Relation($GLOBALS['dbi']), new Template());
+        $dbi = DatabaseInterface::getInstance();
+        $this->designer = new Designer($dbi, new Relation($dbi), new Template());
 
         $result = $this->designer->getHtmlForPageSaveAs($db);
         $this->assertStringContainsString('<input type="hidden" name="operation" value="savePage">', $result);
@@ -160,7 +164,8 @@ class DesignerTest extends AbstractTestCase
         $db = 'db';
         $page = 2;
 
-        $this->designer = new Designer($GLOBALS['dbi'], new Relation($GLOBALS['dbi']), new Template());
+        $dbi = DatabaseInterface::getInstance();
+        $this->designer = new Designer($dbi, new Relation($dbi), new Template());
 
         $result = $this->designer->getHtmlForSchemaExport($db, $page);
         // export type

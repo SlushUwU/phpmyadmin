@@ -4,11 +4,15 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Controllers\Table;
 
+use PhpMyAdmin\Bookmarks\BookmarkRepository;
+use PhpMyAdmin\Config;
 use PhpMyAdmin\Config\PageSettings;
+use PhpMyAdmin\ConfigStorage\Relation;
 use PhpMyAdmin\Controllers\Table\SqlController;
 use PhpMyAdmin\DatabaseInterface;
+use PhpMyAdmin\DbTableExists;
 use PhpMyAdmin\Html\MySQLDocumentation;
-use PhpMyAdmin\Http\ServerRequest;
+use PhpMyAdmin\Http\Factory\ServerRequestFactory;
 use PhpMyAdmin\SqlQueryForm;
 use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\AbstractTestCase;
@@ -31,7 +35,7 @@ class SqlControllerTest extends AbstractTestCase
 
         $this->dummyDbi = $this->createDbiDummy();
         $this->dbi = $this->createDatabaseInterface($this->dummyDbi);
-        $GLOBALS['dbi'] = $this->dbi;
+        DatabaseInterface::$instance = $this->dbi;
     }
 
     public function testSqlController(): void
@@ -41,12 +45,15 @@ class SqlControllerTest extends AbstractTestCase
         $GLOBALS['table'] = 'test_table';
         $GLOBALS['lang'] = 'en';
         $GLOBALS['text_dir'] = 'ltr';
-        $GLOBALS['cfg']['Server'] = $GLOBALS['config']->getSettings()->Servers[1]->asArray();
+        $config = Config::getInstance();
+        $config->selectedServer = $config->getSettings()->Servers[1]->asArray();
 
         $this->dummyDbi->addSelectDb('test_db');
         $this->dummyDbi->addResult('SHOW TABLES LIKE \'test_table\';', [['test_table']]);
 
-        $pageSettings = new PageSettings(new UserPreferences($GLOBALS['dbi']));
+        $pageSettings = new PageSettings(
+            new UserPreferences($this->dbi, new Relation($this->dbi), new Template()),
+        );
         $pageSettings->init('Sql');
         $fields = $this->dbi->getColumns('test_db', 'test_table', true);
         $template = new Template();
@@ -79,12 +86,19 @@ class SqlControllerTest extends AbstractTestCase
             'is_foreign_key_check' => true,
         ]);
 
-        $request = $this->createStub(ServerRequest::class);
-        $request->method('getParsedBodyParam')->willReturnMap([['delimiter', ';', ';']]);
-        $request->method('getQueryParam')->willReturnMap([['sql_query', true, true]]);
+        $request = ServerRequestFactory::create()->createServerRequest('GET', 'http://example.com/')
+            ->withQueryParams(['db' => 'test_db', 'table' => 'test_table']);
 
         $response = new ResponseRenderer();
-        (new SqlController($response, $template, new SqlQueryForm($template, $this->dbi), $pageSettings))($request);
+        $relation = new Relation($this->dbi);
+        $bookmarkRepository = new BookmarkRepository($this->dbi, $relation);
+        (new SqlController(
+            $response,
+            $template,
+            new SqlQueryForm($template, $this->dbi, $bookmarkRepository),
+            $pageSettings,
+            new DbTableExists($this->dbi),
+        ))($request);
         $this->assertSame($expected, $response->getHTMLResult());
     }
 }

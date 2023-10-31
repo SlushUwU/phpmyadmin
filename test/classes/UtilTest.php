@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests;
 
+use PhpMyAdmin\Config;
 use PhpMyAdmin\DatabaseInterface;
-use PhpMyAdmin\FieldMetadata;
 use PhpMyAdmin\Http\ServerRequest;
 use PhpMyAdmin\MoTranslator\Loader;
 use PhpMyAdmin\SqlParser\Context;
@@ -20,7 +20,6 @@ use Psr\Http\Message\ServerRequestInterface;
 
 use function __;
 use function _setlocale;
-use function count;
 use function date_default_timezone_get;
 use function date_default_timezone_set;
 use function file_exists;
@@ -28,23 +27,12 @@ use function floatval;
 use function htmlspecialchars;
 use function ini_get;
 use function ini_set;
-use function str_repeat;
+use function is_readable;
 use function str_replace;
 use function strlen;
 
 use const LC_ALL;
-use const MYSQLI_NUM_FLAG;
-use const MYSQLI_PRI_KEY_FLAG;
-use const MYSQLI_TYPE_BIT;
-use const MYSQLI_TYPE_GEOMETRY;
-use const MYSQLI_TYPE_LONG;
-use const MYSQLI_TYPE_SHORT;
-use const MYSQLI_TYPE_STRING;
-use const MYSQLI_UNIQUE_KEY_FLAG;
-
-const FIELD_TYPE_INTEGER = 1;
-const FIELD_TYPE_VARCHAR = 253;
-const FIELD_TYPE_UNKNOWN = -1;
+use const LOCALE_PATH;
 
 #[CoversClass(Util::class)]
 class UtilTest extends AbstractTestCase
@@ -62,333 +50,6 @@ class UtilTest extends AbstractTestCase
             ['mysqli', 'curl', 'mbstring', 'sodium'],
             Util::listPHPExtensions(),
         );
-    }
-
-    public function testGetUniqueCondition(): void
-    {
-        $GLOBALS['db'] = 'db';
-        $GLOBALS['cfg']['Server']['DisableIS'] = false;
-
-        $actual = Util::getUniqueCondition(0, [], []);
-        $this->assertEquals(['', false, []], $actual);
-
-        $actual = Util::getUniqueCondition(0, [], [], true);
-        $this->assertEquals(['', true, []], $actual);
-    }
-
-    public function testGetUniqueConditionWithMultipleFields(): void
-    {
-        $GLOBALS['dbi'] = $this->createDatabaseInterface();
-
-        $meta = [
-            FieldHelper::fromArray([
-                'type' => MYSQLI_TYPE_STRING,
-                'name' => 'field1',
-                'table' => 'table',
-                'orgtable' => 'table',
-            ]),
-            FieldHelper::fromArray([
-                'type' => MYSQLI_TYPE_STRING,
-                'name' => 'field2',
-                'table' => 'table',
-                'orgtable' => 'table',
-            ]),
-            FieldHelper::fromArray([
-                'type' => MYSQLI_TYPE_SHORT,
-                'flags' => MYSQLI_NUM_FLAG,
-                'name' => 'field3',
-                'table' => 'table',
-                'orgtable' => 'table',
-            ]),
-            FieldHelper::fromArray([
-                'type' => MYSQLI_TYPE_LONG,
-                'flags' => MYSQLI_NUM_FLAG,
-                'name' => 'field4',
-                'table' => 'table',
-                'orgtable' => 'table',
-            ]),
-            FieldHelper::fromArray([
-                'type' => MYSQLI_TYPE_STRING,
-                'name' => 'field5',
-                'table' => 'table',
-                'orgtable' => 'table',
-                'charsetnr' => 63, // binary
-            ]),
-            FieldHelper::fromArray([
-                'type' => MYSQLI_TYPE_STRING,
-                'name' => 'field6',
-                'table' => 'table',
-                'orgtable' => 'table',
-                'charsetnr' => 63, // binary
-            ]),
-            FieldHelper::fromArray([
-                'type' => MYSQLI_TYPE_STRING,
-                'name' => 'field7',
-                'table' => 'table',
-                'orgtable' => 'table',
-                'charsetnr' => 32, // armscii8_general_ci
-            ]),
-            FieldHelper::fromArray([
-                'type' => MYSQLI_TYPE_STRING,
-                'name' => 'field8',
-                'table' => 'table',
-                'orgtable' => 'table',
-                'charsetnr' => 48, // latin1_general_ci
-            ]),
-            FieldHelper::fromArray([
-                'type' => MYSQLI_TYPE_STRING,
-                'name' => 'field9',
-                'table' => 'table',
-                'orgtable' => 'table',
-                'charsetnr' => 63, // binary
-            ]),
-            FieldHelper::fromArray([
-                'type' => MYSQLI_TYPE_GEOMETRY,
-                'name' => 'field10',
-                'table' => 'table',
-                'orgtable' => 'table',
-            ]),
-            FieldHelper::fromArray([
-                'type' => MYSQLI_TYPE_STRING,
-                'name' => 'field11',
-                'table' => 'table2',
-                'orgtable' => 'table2',
-            ]),
-            FieldHelper::fromArray([
-                'type' => MYSQLI_TYPE_BIT,
-                'name' => 'field12',
-                'table' => 'table',
-                'orgtable' => 'table',
-                'length' => 4,
-            ]),
-        ];
-
-        $actual = Util::getUniqueCondition(count($meta), $meta, [
-            null,
-            'value\'s',
-            123456,
-            123.456,
-            'value',
-            str_repeat('*', 1001),
-            'value',
-            'value',
-            'value',
-            'value',
-            'value',
-            0x1,
-        ], false, 'table');
-        $this->assertEquals(
-            [
-                '`table`.`field1` IS NULL AND `table`.`field2` = \'value\\\'s\' AND `table`.`field3` = 123456'
-                . ' AND `table`.`field4` = 123.456 AND `table`.`field5` = CAST(0x76616c7565 AS BINARY)'
-                . ' AND `table`.`field7` = \'value\' AND `table`.`field8` = \'value\''
-                . ' AND `table`.`field9` = CAST(0x76616c7565 AS BINARY)'
-                . ' AND `table`.`field10` = CAST(0x76616c7565 AS BINARY)'
-                . ' AND `table`.`field12` = b\'0001\'',
-                false,
-                [
-                    '`table`.`field1`' => 'IS NULL',
-                    '`table`.`field2`' => '= \'value\\\'s\'',
-                    '`table`.`field3`' => '= 123456',
-                    '`table`.`field4`' => '= 123.456',
-                    '`table`.`field5`' => '= CAST(0x76616c7565 AS BINARY)',
-                    '`table`.`field7`' => '= \'value\'',
-                    '`table`.`field8`' => '= \'value\'',
-                    '`table`.`field9`' => '= CAST(0x76616c7565 AS BINARY)',
-                    '`table`.`field10`' => '',
-                    '`table`.`field12`' => '= b\'0001\'',
-                ],
-            ],
-            $actual,
-        );
-    }
-
-    public function testGetUniqueConditionWithSingleBigBinaryField(): void
-    {
-        $meta = [
-            FieldHelper::fromArray([
-                'type' => MYSQLI_TYPE_STRING,
-                'name' => 'field',
-                'table' => 'table',
-                'orgtable' => 'table',
-                'charsetnr' => 63, // binary
-            ]),
-        ];
-
-        $actual = Util::getUniqueCondition(1, $meta, [str_repeat('*', 1001)]);
-        $this->assertEquals(
-            ['CHAR_LENGTH(`table`.`field`)  = 1001', false, ['`table`.`field`' => ' = 1001']],
-            $actual,
-        );
-    }
-
-    public function testGetUniqueConditionWithPrimaryKey(): void
-    {
-        $GLOBALS['dbi'] = $this->createDatabaseInterface();
-
-        $meta = [
-            FieldHelper::fromArray([
-                'type' => MYSQLI_TYPE_LONG,
-                'flags' => MYSQLI_PRI_KEY_FLAG | MYSQLI_NUM_FLAG,
-                'name' => 'id',
-                'table' => 'table',
-                'orgtable' => 'table',
-            ]),
-            FieldHelper::fromArray([
-                'type' => MYSQLI_TYPE_STRING,
-                'name' => 'field',
-                'table' => 'table',
-                'orgtable' => 'table',
-            ]),
-        ];
-
-        $actual = Util::getUniqueCondition(count($meta), $meta, [1, 'value']);
-        $this->assertEquals(['`table`.`id` = 1', true, ['`table`.`id`' => '= 1']], $actual);
-    }
-
-    public function testGetUniqueConditionWithUniqueKey(): void
-    {
-        $GLOBALS['dbi'] = $this->createDatabaseInterface();
-
-        $meta = [
-            FieldHelper::fromArray([
-                'type' => MYSQLI_TYPE_STRING,
-                'flags' => MYSQLI_UNIQUE_KEY_FLAG,
-                'name' => 'id',
-                'table' => 'table',
-                'orgtable' => 'table',
-            ]),
-            FieldHelper::fromArray([
-                'type' => MYSQLI_TYPE_STRING,
-                'name' => 'field',
-                'table' => 'table',
-                'orgtable' => 'table',
-            ]),
-        ];
-
-        $actual = Util::getUniqueCondition(count($meta), $meta, ['unique', 'value']);
-        $this->assertEquals(['`table`.`id` = \'unique\'', true, ['`table`.`id`' => '= \'unique\'']], $actual);
-    }
-
-    /**
-     * Test for Util::getUniqueCondition
-     * note: GROUP_FLAG = MYSQLI_NUM_FLAG = 32769
-     *
-     * @param FieldMetadata[] $meta     Meta Information for Field
-     * @param array           $row      Current Ddata Row
-     * @param array           $expected Expected Result
-     * @psalm-param array<int, mixed> $row
-     * @psalm-param array{string, bool, array<string, string>} $expected
-     */
-    #[DataProvider('providerGetUniqueConditionForGroupFlag')]
-    public function testGetUniqueConditionForGroupFlag(array $meta, array $row, array $expected): void
-    {
-        $GLOBALS['dbi'] = $this->createDatabaseInterface();
-
-        $fieldsCount = count($meta);
-        $actual = Util::getUniqueCondition($fieldsCount, $meta, $row);
-
-        $this->assertEquals($expected, $actual);
-    }
-
-    /**
-     * Provider for testGetUniqueConditionForGroupFlag
-     *
-     * @return array<string, array{FieldMetadata[], array<int, mixed>, array{string, bool, array<string, string>}}>
-     */
-    public static function providerGetUniqueConditionForGroupFlag(): array
-    {
-        return [
-            'field type is integer, value is number - not escape string' => [
-                [
-                    FieldHelper::fromArray([
-                        'type' => FIELD_TYPE_INTEGER,
-                        'flags' => MYSQLI_NUM_FLAG,
-                        'name' => 'col',
-                        'table' => 'table',
-                        'orgtable' => 'table',
-                    ]),
-                ],
-                [123],
-                ['`table`.`col` = 123', false, ['`table`.`col`' => '= 123']],
-            ],
-            'field type is unknown, value is string - escape string' => [
-                [
-                    FieldHelper::fromArray([
-                        'type' => FIELD_TYPE_UNKNOWN,
-                        'flags' => MYSQLI_NUM_FLAG,
-                        'name' => 'col',
-                        'table' => 'table',
-                        'orgtable' => 'table',
-                    ]),
-                ],
-                ['test'],
-                ["`table`.`col` = 'test'", false, ['`table`.`col`' => "= 'test'"]],
-            ],
-            'field type is varchar, value is string - escape string' => [
-                [
-                    FieldHelper::fromArray([
-                        'type' => FIELD_TYPE_VARCHAR,
-                        'flags' => MYSQLI_NUM_FLAG,
-                        'name' => 'col',
-                        'table' => 'table',
-                        'orgtable' => 'table',
-                    ]),
-                ],
-                ['test'],
-                ["`table`.`col` = 'test'", false, ['`table`.`col`' => "= 'test'"]],
-            ],
-            'field type is varchar, value is string with double quote - escape string' => [
-                [
-                    FieldHelper::fromArray([
-                        'type' => FIELD_TYPE_VARCHAR,
-                        'flags' => MYSQLI_NUM_FLAG,
-                        'name' => 'col',
-                        'table' => 'table',
-                        'orgtable' => 'table',
-                    ]),
-                ],
-                ['"test"'],
-                ["`table`.`col` = '\\\"test\\\"'", false, ['`table`.`col`' => "= '\\\"test\\\"'"]],
-            ],
-            'field type is varchar, value is string with single quote - escape string' => [
-                [
-                    FieldHelper::fromArray([
-                        'type' => FIELD_TYPE_VARCHAR,
-                        'flags' => MYSQLI_NUM_FLAG,
-                        'name' => 'col',
-                        'table' => 'table',
-                        'orgtable' => 'table',
-                    ]),
-                ],
-                ["'test'"],
-                ["`table`.`col` = '\'test\''", false, ['`table`.`col`' => "= '\'test\''"]],
-            ],
-            'group by multiple columns and field type is mixed' => [
-                [
-                    FieldHelper::fromArray([
-                        'type' => FIELD_TYPE_VARCHAR,
-                        'flags' => MYSQLI_NUM_FLAG,
-                        'name' => 'col',
-                        'table' => 'table',
-                        'orgtable' => 'table',
-                    ]),
-                    FieldHelper::fromArray([
-                        'type' => FIELD_TYPE_INTEGER,
-                        'flags' => MYSQLI_NUM_FLAG,
-                        'name' => 'status_id',
-                        'table' => 'table',
-                        'orgtable' => 'table',
-                    ]),
-                ],
-                ['test', 2],
-                [
-                    "`table`.`col` = 'test' AND `table`.`status_id` = 2",
-                    false,
-                    ['`table`.`col`' => "= 'test'", '`table`.`status_id`' => '= 2'],
-                ],
-            ],
-        ];
     }
 
     /**
@@ -444,6 +105,7 @@ class UtilTest extends AbstractTestCase
 
     public function testClearUserCache(): void
     {
+        Config::getInstance()->selectedServer['user'] = null;
         $GLOBALS['server'] = 'server';
         SessionCache::set('is_superuser', 'yes');
         $this->assertEquals('yes', $_SESSION['cache']['server_server']['is_superuser']);
@@ -501,7 +163,9 @@ class UtilTest extends AbstractTestCase
     {
         parent::setGlobalConfig();
 
-        $GLOBALS['cfg'] = ['Server' => ['host' => 'host&', 'verbose' => 'verbose']];
+        $config = Config::getInstance();
+        $config->selectedServer['host'] = 'host&';
+        $config->selectedServer['verbose'] = 'verbose';
         $GLOBALS['db'] = 'database';
         $GLOBALS['table'] = 'table';
 
@@ -545,7 +209,7 @@ class UtilTest extends AbstractTestCase
     #[DataProvider('providerExtractColumnSpec')]
     public function testExtractColumnSpec(string $in, array $out): void
     {
-        $GLOBALS['cfg']['LimitChars'] = 1000;
+        Config::getInstance()->settings['LimitChars'] = 1000;
 
         $this->assertEquals(
             $out,
@@ -607,14 +271,14 @@ class UtilTest extends AbstractTestCase
                 ],
             ],
             [
-                "ENUM('a&b', 'b''c\\'d', 'e\\\\f')",
+                "ENUM('a&b','b''c\\'d','e\\\\f')",
                 [
                     'type' => 'enum',
                     'print_type' => "enum('a&b', 'b''c\\'d', 'e\\\\f')",
                     'binary' => false,
                     'unsigned' => false,
                     'zerofill' => false,
-                    'spec_in_brackets' => "'a&b', 'b''c\\'d', 'e\\\\f'",
+                    'spec_in_brackets' => "'a&b','b''c\\'d','e\\\\f'",
                     'enum_set_values' => ['a&b', 'b\'c\'d', 'e\\f'],
                     'attribute' => ' ',
                     'can_contain_collation' => true,
@@ -943,6 +607,10 @@ class UtilTest extends AbstractTestCase
     #[DataProvider('providerLocalisedDate')]
     public function testLocalisedDate(int $a, string $b, string $e, string $tz, string $locale): void
     {
+        if (! is_readable(LOCALE_PATH . '/cs/LC_MESSAGES/phpmyadmin.mo')) {
+            $this->markTestSkipped('Missing compiled locales.');
+        }
+
         parent::setLanguage();
 
         // A test case for #15830 could be added for using the php setlocale on a Windows CI
@@ -1159,7 +827,7 @@ class UtilTest extends AbstractTestCase
         Context::load();
         foreach (Context::$keywords as $keyword => $type) {
             $expected = $keyword;
-            if ($type & Token::FLAG_KEYWORD_RESERVED) {
+            if (($type & Token::FLAG_KEYWORD_RESERVED) !== 0) {
                 $expected = '`' . $keyword . '`';
             }
 
@@ -1176,7 +844,7 @@ class UtilTest extends AbstractTestCase
     #[DataProvider('providerUserDir')]
     public function testUserDir(string $a, string $e): void
     {
-        $GLOBALS['cfg']['Server']['user'] = 'root';
+        Config::getInstance()->selectedServer['user'] = 'root';
 
         $this->assertEquals($e, Util::userDir($a));
     }
@@ -1312,7 +980,7 @@ class UtilTest extends AbstractTestCase
     {
         $dbiDummy = $this->createDbiDummy();
         $dbiDummy->addResult('SELECT CURRENT_USER();', []);
-        $GLOBALS['dbi'] = $this->createDatabaseInterface($dbiDummy);
+        DatabaseInterface::$instance = $this->createDatabaseInterface($dbiDummy);
 
         $this->assertTrue(Util::currentUserHasPrivilege('EVENT'));
         $dbiDummy->assertAllQueriesConsumed();
@@ -1328,7 +996,7 @@ SQL;
         $dbiDummy = $this->createDbiDummy();
         $dbiDummy->addResult('SELECT CURRENT_USER();', [['groot_%@%']]);
         $dbiDummy->addResult($globalPrivilegeQuery, [['EVENT']]);
-        $GLOBALS['dbi'] = $this->createDatabaseInterface($dbiDummy);
+        DatabaseInterface::$instance = $this->createDatabaseInterface($dbiDummy);
 
         $this->assertTrue(Util::currentUserHasPrivilege('EVENT'));
         $dbiDummy->assertAllQueriesConsumed();
@@ -1344,7 +1012,7 @@ SQL;
         $dbiDummy = $this->createDbiDummy();
         $dbiDummy->addResult('SELECT CURRENT_USER();', [['groot_%@%']]);
         $dbiDummy->addResult($globalPrivilegeQuery, []);
-        $GLOBALS['dbi'] = $this->createDatabaseInterface($dbiDummy);
+        DatabaseInterface::$instance = $this->createDatabaseInterface($dbiDummy);
 
         $this->assertFalse(Util::currentUserHasPrivilege('EVENT'));
         $dbiDummy->assertAllQueriesConsumed();
@@ -1364,7 +1032,7 @@ SQL;
         $dbiDummy->addResult('SELECT CURRENT_USER();', [['groot_%@%']]);
         $dbiDummy->addResult($globalPrivilegeQuery, []);
         $dbiDummy->addResult($databasePrivilegeQuery, [['EVENT']]);
-        $GLOBALS['dbi'] = $this->createDatabaseInterface($dbiDummy);
+        DatabaseInterface::$instance = $this->createDatabaseInterface($dbiDummy);
 
         $this->assertTrue(Util::currentUserHasPrivilege('EVENT', 'my_data_base'));
         $dbiDummy->assertAllQueriesConsumed();
@@ -1384,7 +1052,7 @@ SQL;
         $dbiDummy->addResult('SELECT CURRENT_USER();', [['groot_%@%']]);
         $dbiDummy->addResult($globalPrivilegeQuery, []);
         $dbiDummy->addResult($databasePrivilegeQuery, []);
-        $GLOBALS['dbi'] = $this->createDatabaseInterface($dbiDummy);
+        DatabaseInterface::$instance = $this->createDatabaseInterface($dbiDummy);
 
         $this->assertFalse(Util::currentUserHasPrivilege('EVENT', 'my_data_base'));
         $dbiDummy->assertAllQueriesConsumed();
@@ -1408,7 +1076,7 @@ SQL;
         $dbiDummy->addResult($globalPrivilegeQuery, []);
         $dbiDummy->addResult($databasePrivilegeQuery, []);
         $dbiDummy->addResult($tablePrivilegeQuery, [['EVENT']]);
-        $GLOBALS['dbi'] = $this->createDatabaseInterface($dbiDummy);
+        DatabaseInterface::$instance = $this->createDatabaseInterface($dbiDummy);
 
         $this->assertTrue(Util::currentUserHasPrivilege('EVENT', 'my_data_base', 'my_data_table'));
         $dbiDummy->assertAllQueriesConsumed();
@@ -1432,7 +1100,7 @@ SQL;
         $dbiDummy->addResult($globalPrivilegeQuery, []);
         $dbiDummy->addResult($databasePrivilegeQuery, []);
         $dbiDummy->addResult($tablePrivilegeQuery, []);
-        $GLOBALS['dbi'] = $this->createDatabaseInterface($dbiDummy);
+        DatabaseInterface::$instance = $this->createDatabaseInterface($dbiDummy);
 
         $this->assertFalse(Util::currentUserHasPrivilege('EVENT', 'my_data_base', 'my_data_table'));
         $dbiDummy->assertAllQueriesConsumed();
@@ -1554,29 +1222,32 @@ SQL;
 
     public function testShowIcons(): void
     {
-        $GLOBALS['cfg']['ActionLinksMode'] = 'icons';
+        $config = Config::getInstance();
+        $config->settings['ActionLinksMode'] = 'icons';
         $this->assertTrue(Util::showIcons('ActionLinksMode'));
-        $GLOBALS['cfg']['ActionLinksMode'] = 'both';
+        $config->settings['ActionLinksMode'] = 'both';
         $this->assertTrue(Util::showIcons('ActionLinksMode'));
-        $GLOBALS['cfg']['ActionLinksMode'] = 'text';
+        $config->settings['ActionLinksMode'] = 'text';
         $this->assertFalse(Util::showIcons('ActionLinksMode'));
     }
 
     public function testShowText(): void
     {
-        $GLOBALS['cfg']['ActionLinksMode'] = 'text';
+        $config = Config::getInstance();
+        $config->settings['ActionLinksMode'] = 'text';
         $this->assertTrue(Util::showText('ActionLinksMode'));
-        $GLOBALS['cfg']['ActionLinksMode'] = 'both';
+        $config->settings['ActionLinksMode'] = 'both';
         $this->assertTrue(Util::showText('ActionLinksMode'));
-        $GLOBALS['cfg']['ActionLinksMode'] = 'icons';
+        $config->settings['ActionLinksMode'] = 'icons';
         $this->assertFalse(Util::showText('ActionLinksMode'));
     }
 
     #[DataProvider('providerForTestGetMySQLDocuURL')]
     public function testGetMySQLDocuURL(string $link, string $anchor, string $version, string $expected): void
     {
-        $GLOBALS['dbi'] = $this->createDatabaseInterface();
-        $GLOBALS['dbi']->setVersion(['@@version' => $version, '@@version_comment' => 'MySQL Community Server (GPL)']);
+        $dbi = $this->createDatabaseInterface();
+        DatabaseInterface::$instance = $dbi;
+        $dbi->setVersion(['@@version' => $version, '@@version_comment' => 'MySQL Community Server (GPL)']);
         $this->assertSame($expected, Util::getMySQLDocuURL($link, $anchor));
     }
 
@@ -1627,6 +1298,9 @@ SQL;
 
     public function testGetDocuURL(): void
     {
+        $dbi = $this->createDatabaseInterface();
+        $dbi->setVersion(['@@version' => '5.5.0']);
+        DatabaseInterface::$instance = $dbi;
         $this->assertSame(
             'index.php?route=/url&url=https%3A%2F%2Fmariadb.com%2Fkb%2Fen%2Fdocumentation%2F',
             Util::getDocuURL(true),
@@ -1653,11 +1327,11 @@ SQL;
 
     public function testGetDbInfo(): void
     {
-        $GLOBALS['cfg']['Server']['DisableIS'] = true;
+        Config::getInstance()->selectedServer['DisableIS'] = true;
 
         $dbiDummy = $this->createDbiDummy();
         $dbiDummy->addResult('SHOW TABLES FROM `test_db`;', [['test_table']], ['Tables_in_test_db']);
-        $GLOBALS['dbi'] = $this->createDatabaseInterface($dbiDummy);
+        DatabaseInterface::$instance = $this->createDatabaseInterface($dbiDummy);
 
         $tableInfo = [
             'Name' => 'test_table',
@@ -1742,15 +1416,15 @@ SQL;
 
         $dbi->expects($this->any())
             ->method('isMariaDB')
-            ->will($this->returnValue($isMariaDB));
+            ->willReturn($isMariaDB);
 
         $dbi->expects($this->any())
             ->method('getVersion')
-            ->will($this->returnValue($version));
+            ->willReturn($version);
 
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
         $this->assertEquals(Util::isUUIDSupported(), $expected);
-        unset($GLOBALS['dbi']);
+        DatabaseInterface::$instance = null;
     }
 
     /**
@@ -1769,7 +1443,7 @@ SQL;
     {
         $dbiDummy = $this->createDbiDummy();
         $dbiDummy->addResult('SELECT @@lower_case_table_names', [[$lowerCaseTableNames]], ['@@lower_case_table_names']);
-        $GLOBALS['dbi'] = $this->createDatabaseInterface($dbiDummy);
+        DatabaseInterface::$instance = $this->createDatabaseInterface($dbiDummy);
         $this->assertSame($expected, Util::getCollateForIS());
         $dbiDummy->assertAllQueriesConsumed();
     }
@@ -1785,7 +1459,7 @@ SQL;
     public function testGetSupportedDatatypes(): void
     {
         $dbiDummy = $this->createDbiDummy();
-        $GLOBALS['dbi'] = $this->createDatabaseInterface($dbiDummy);
+        DatabaseInterface::$instance = $this->createDatabaseInterface($dbiDummy);
         $expected = [
             'INT',
             'VARCHAR',

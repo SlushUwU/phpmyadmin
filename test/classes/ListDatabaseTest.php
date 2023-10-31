@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests;
 
+use PhpMyAdmin\Config;
+use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\ListDatabase;
 use PHPUnit\Framework\Attributes\CoversClass;
 
@@ -22,10 +24,11 @@ class ListDatabaseTest extends AbstractTestCase
     {
         parent::setUp();
 
-        $GLOBALS['dbi'] = $this->createDatabaseInterface();
+        DatabaseInterface::$instance = $this->createDatabaseInterface();
         $GLOBALS['server'] = 1;
-        $GLOBALS['cfg']['Server']['DisableIS'] = false;
-        $GLOBALS['cfg']['Server']['only_db'] = ['single\\_db'];
+        $config = Config::getInstance();
+        $config->selectedServer['DisableIS'] = false;
+        $config->selectedServer['only_db'] = ['single\\_db'];
         $this->object = new ListDatabase();
     }
 
@@ -69,7 +72,7 @@ class ListDatabaseTest extends AbstractTestCase
      */
     public function testCheckHideDatabase(): void
     {
-        $GLOBALS['cfg']['Server']['hide_db'] = 'single\\_db';
+        Config::getInstance()->selectedServer['hide_db'] = 'single\\_db';
         $this->assertEquals(
             $this->callFunction(
                 $this->object,

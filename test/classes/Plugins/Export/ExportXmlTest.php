@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Plugins\Export;
 
+use PhpMyAdmin\Config;
 use PhpMyAdmin\ConfigStorage\Relation;
 use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\Export\Export;
@@ -37,7 +38,8 @@ class ExportXmlTest extends AbstractTestCase
     {
         parent::setUp();
 
-        $GLOBALS['dbi'] = $this->createDatabaseInterface();
+        $dbi = $this->createDatabaseInterface();
+        DatabaseInterface::$instance = $dbi;
         $GLOBALS['server'] = 0;
         $GLOBALS['output_kanji_conversion'] = false;
         $GLOBALS['buffer_needed'] = false;
@@ -47,10 +49,10 @@ class ExportXmlTest extends AbstractTestCase
         $GLOBALS['plugin_param']['export_type'] = 'table';
         $GLOBALS['plugin_param']['single_table'] = false;
         $GLOBALS['db'] = 'db';
-        $GLOBALS['cfg']['Server']['DisableIS'] = true;
+        Config::getInstance()->selectedServer['DisableIS'] = true;
         $this->object = new ExportXml(
-            new Relation($GLOBALS['dbi']),
-            new Export($GLOBALS['dbi']),
+            new Relation($dbi),
+            new Export($dbi),
             new Transformations(),
         );
     }
@@ -62,6 +64,7 @@ class ExportXmlTest extends AbstractTestCase
     {
         parent::tearDown();
 
+        DatabaseInterface::$instance = null;
         unset($this->object);
     }
 
@@ -173,9 +176,10 @@ class ExportXmlTest extends AbstractTestCase
         $GLOBALS['xml_export_contents'] = 1;
         $GLOBALS['output_charset_conversion'] = 1;
         $GLOBALS['charset'] = 'iso-8859-1';
-        $GLOBALS['cfg']['Server']['port'] = 80;
-        $GLOBALS['cfg']['Server']['host'] = 'localhost';
-        $GLOBALS['cfg']['Server']['DisableIS'] = false;
+        $config = Config::getInstance();
+        $config->selectedServer['port'] = 80;
+        $config->selectedServer['host'] = 'localhost';
+        $config->selectedServer['DisableIS'] = false;
         $GLOBALS['xml_export_tables'] = 1;
         $GLOBALS['xml_export_triggers'] = 1;
         $GLOBALS['xml_export_procedures'] = 1;
@@ -207,19 +211,17 @@ class ExportXmlTest extends AbstractTestCase
 
         $dbi->expects($this->exactly(5))
             ->method('fetchResult')
-            ->willReturnOnConsecutiveCalls($result, $result, $triggers, $functions, $procedures);
+            ->willReturn($result, $result, $triggers, $functions, $procedures);
 
         $dbi->expects($this->exactly(3))
             ->method('fetchValue')
-            ->willReturnOnConsecutiveCalls(false, 'fndef', 'prdef');
+            ->willReturn(false, 'fndef', 'prdef');
 
         $dbi->expects($this->once())
             ->method('getTable')
-            ->will($this->returnValue(new Table('table', 'd<"b', $dbi)));
-        $dbi->expects($this->any())->method('escapeString')
-            ->will($this->returnArgument(0));
+            ->willReturn(new Table('table', 'd<"b', $dbi));
 
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
 
         $GLOBALS['tables'] = [];
         $GLOBALS['table'] = 'table';
@@ -280,17 +282,17 @@ class ExportXmlTest extends AbstractTestCase
 
         $dbi->expects($this->exactly(3))
             ->method('fetchResult')
-            ->willReturnOnConsecutiveCalls($result1, $result2, $result3);
+            ->willReturn($result1, $result2, $result3);
 
         $dbi->expects($this->exactly(2))
             ->method('fetchValue')
-            ->willReturnOnConsecutiveCalls('table', false);
+            ->willReturn('table', false);
 
         $dbi->expects($this->any())
             ->method('getTable')
-            ->will($this->returnValue(new Table('table', 'd<"b', $dbi)));
+            ->willReturn(new Table('table', 'd<"b', $dbi));
 
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
 
         $GLOBALS['tables'] = ['t1', 't2'];
 

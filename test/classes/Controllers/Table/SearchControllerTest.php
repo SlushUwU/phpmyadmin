@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Controllers\Table;
 
+use PhpMyAdmin\ColumnFull;
+use PhpMyAdmin\Config;
 use PhpMyAdmin\ConfigStorage\Relation;
 use PhpMyAdmin\Controllers\Table\SearchController;
 use PhpMyAdmin\Core;
 use PhpMyAdmin\DatabaseInterface;
+use PhpMyAdmin\DbTableExists;
 use PhpMyAdmin\Table\Search;
 use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\AbstractTestCase;
@@ -43,7 +46,7 @@ class SearchControllerTest extends AbstractTestCase
 
         $this->dummyDbi = $this->createDbiDummy();
         $this->dbi = $this->createDatabaseInterface($this->dummyDbi);
-        $GLOBALS['dbi'] = $this->dbi;
+        DatabaseInterface::$instance = $this->dbi;
 
         /**
          * SET these to avoid undefined index error
@@ -54,8 +57,7 @@ class SearchControllerTest extends AbstractTestCase
         $GLOBALS['db'] = 'PMA';
         $GLOBALS['table'] = 'PMA_BookMark';
         $GLOBALS['text_dir'] = 'ltr';
-        $relation = new Relation($GLOBALS['dbi']);
-        $GLOBALS['cfg']['Server']['DisableIS'] = false;
+        Config::getInstance()->selectedServer['DisableIS'] = false;
 
         $dbi = $this->getMockBuilder(DatabaseInterface::class)
             ->disableOriginalConstructor()
@@ -63,11 +65,11 @@ class SearchControllerTest extends AbstractTestCase
         $dbi->types = new Types($dbi);
 
         $columns = [
-            ['Field' => 'Field1', 'Type' => 'Type1', 'Null' => 'Null1', 'Collation' => 'Collation1'],
-            ['Field' => 'Field2', 'Type' => 'Type2', 'Null' => 'Null2', 'Collation' => 'Collation2'],
+            new ColumnFull('Field1', 'Type1', 'Collation1', false, '', null, '', '', ''),
+            new ColumnFull('Field2', 'Type2', 'Collation2', false, '', null, '', '', ''),
         ];
         $dbi->expects($this->any())->method('getColumns')
-            ->will($this->returnValue($columns));
+            ->willReturn($columns);
 
         $showCreateTable = "CREATE TABLE `pma_bookmark` (
         `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -81,12 +83,9 @@ class SearchControllerTest extends AbstractTestCase
         . "COMMENT='Bookmarks'";
 
         $dbi->expects($this->any())->method('fetchValue')
-            ->will($this->returnValue($showCreateTable));
-        $dbi->expects($this->any())->method('escapeString')
-            ->will($this->returnArgument(0));
+            ->willReturn($showCreateTable);
 
-        $GLOBALS['dbi'] = $dbi;
-        $relation->dbi = $dbi;
+        DatabaseInterface::$instance = $dbi;
 
         $this->response = new ResponseStub();
         $this->template = new Template();
@@ -99,17 +98,19 @@ class SearchControllerTest extends AbstractTestCase
     {
         $expected = 'SELECT MIN(`column`) AS `min`, MAX(`column`) AS `max` FROM `PMA`.`PMA_BookMark`';
 
-        $GLOBALS['dbi']->expects($this->any())
+        $dbi = DatabaseInterface::getInstance();
+        $dbi->expects($this->any())
             ->method('fetchSingleRow')
             ->with($expected)
-            ->will($this->returnValue([$expected]));
+            ->willReturn([$expected]);
 
         $ctrl = new SearchController(
             $this->response,
             $this->template,
-            new Search($GLOBALS['dbi']),
-            new Relation($GLOBALS['dbi']),
-            $GLOBALS['dbi'],
+            new Search($dbi),
+            new Relation($dbi),
+            $dbi,
+            new DbTableExists($dbi),
         );
 
         $result = $ctrl->getColumnMinMax('column');
@@ -123,7 +124,7 @@ class SearchControllerTest extends AbstractTestCase
     {
         $this->dummyDbi = $this->createDbiDummy();
         $this->dbi = $this->createDatabaseInterface($this->dummyDbi);
-        $GLOBALS['dbi'] = $this->dbi;
+        DatabaseInterface::$instance = $this->dbi;
         $this->loadContainerBuilder();
 
         parent::loadDbiIntoContainerBuilder();

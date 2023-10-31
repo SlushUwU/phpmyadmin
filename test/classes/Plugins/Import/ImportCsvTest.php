@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Plugins\Import;
 
+use PhpMyAdmin\Config;
 use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\File;
 use PhpMyAdmin\Plugins\Import\ImportCsv;
@@ -34,7 +35,7 @@ class ImportCsvTest extends AbstractTestCase
 
         $this->dummyDbi = $this->createDbiDummy();
         $this->dbi = $this->createDatabaseInterface($this->dummyDbi);
-        $GLOBALS['dbi'] = $this->dbi;
+        DatabaseInterface::$instance = $this->dbi;
         $GLOBALS['server'] = 0;
         $GLOBALS['plugin_param'] = 'csv';
         $GLOBALS['errorUrl'] = 'index.php?route=/';
@@ -59,7 +60,7 @@ class ImportCsvTest extends AbstractTestCase
         $GLOBALS['finished'] = false;
         $GLOBALS['read_limit'] = 100000000;
         $GLOBALS['offset'] = 0;
-        $GLOBALS['cfg']['Server']['DisableIS'] = false;
+        Config::getInstance()->selectedServer['DisableIS'] = false;
 
         $GLOBALS['import_file'] = 'test/test_data/db_test.csv';
         $GLOBALS['import_text'] = 'ImportCsv_Test';
@@ -80,7 +81,7 @@ class ImportCsvTest extends AbstractTestCase
         $dbi = $this->getMockBuilder(DatabaseInterface::class)
             ->disableOriginalConstructor()
             ->getMock();
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
     }
 
     /**
@@ -243,7 +244,7 @@ class ImportCsvTest extends AbstractTestCase
 
         $this->dummyDbi = $this->createDbiDummy();
         $this->dbi = $this->createDatabaseInterface($this->dummyDbi);
-        $GLOBALS['dbi'] = $this->dbi;
+        DatabaseInterface::$instance = $this->dbi;
 
         $this->dummyDbi->addResult(
             'SHOW DATABASES',
@@ -266,7 +267,7 @@ class ImportCsvTest extends AbstractTestCase
             $GLOBALS['sql_query'],
         );
 
-        $this->assertEquals(true, $GLOBALS['finished']);
+        $this->assertTrue($GLOBALS['finished']);
         $this->dummyDbi->assertAllQueriesConsumed();
     }
 
@@ -288,7 +289,7 @@ class ImportCsvTest extends AbstractTestCase
 
         $this->dummyDbi = $this->createDbiDummy();
         $this->dbi = $this->createDatabaseInterface($this->dummyDbi);
-        $GLOBALS['dbi'] = $this->dbi;
+        DatabaseInterface::$instance = $this->dbi;
 
         $this->dummyDbi->addResult(
             'SHOW DATABASES',
@@ -311,7 +312,7 @@ class ImportCsvTest extends AbstractTestCase
             $GLOBALS['sql_query'],
         );
 
-        $this->assertEquals(true, $GLOBALS['finished']);
+        $this->assertTrue($GLOBALS['finished']);
         $this->dummyDbi->assertAllQueriesConsumed();
     }
 }

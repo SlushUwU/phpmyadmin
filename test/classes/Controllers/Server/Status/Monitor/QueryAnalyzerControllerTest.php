@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Controllers\Server\Status\Monitor;
 
+use PhpMyAdmin\Config;
 use PhpMyAdmin\Controllers\Server\Status\Monitor\QueryAnalyzerController;
+use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\Http\ServerRequest;
 use PhpMyAdmin\Server\Status\Data;
 use PhpMyAdmin\Server\Status\Monitor;
@@ -22,13 +24,14 @@ class QueryAnalyzerControllerTest extends AbstractTestCase
     {
         parent::setUp();
 
-        $GLOBALS['dbi'] = $this->createDatabaseInterface();
+        DatabaseInterface::$instance = $this->createDatabaseInterface();
     }
 
     public function testQueryAnalyzer(): void
     {
-        $GLOBALS['cfg']['Server']['DisableIS'] = false;
-        $GLOBALS['cfg']['Server']['host'] = 'localhost';
+        $config = Config::getInstance();
+        $config->selectedServer['DisableIS'] = false;
+        $config->selectedServer['host'] = 'localhost';
         $GLOBALS['cached_affected_rows'] = 'cached_affected_rows';
         SessionCache::set('profiling_supported', true);
 
@@ -39,7 +42,7 @@ class QueryAnalyzerControllerTest extends AbstractTestCase
         $dummyDbi = new DbiDummy();
         $dbi = $this->createDatabaseInterface($dummyDbi);
 
-        $statusData = new Data($dbi, $GLOBALS['config']);
+        $statusData = new Data($dbi, $config);
         $controller = new QueryAnalyzerController($response, new Template(), $statusData, new Monitor($dbi), $dbi);
 
         $request = $this->createStub(ServerRequest::class);

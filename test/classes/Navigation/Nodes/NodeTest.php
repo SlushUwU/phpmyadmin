@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Navigation\Nodes;
 
+use PhpMyAdmin\Config;
 use PhpMyAdmin\ConfigStorage\RelationParameters;
 use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\Navigation\Nodes\Node;
+use PhpMyAdmin\Navigation\NodeType;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\DummyResult;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -20,7 +22,7 @@ final class NodeTest extends AbstractTestCase
         $node = new Node('Object Node');
         $this->assertSame('Object Node', $node->name);
         $this->assertSame('Object Node', $node->realName);
-        $this->assertSame(Node::OBJECT, $node->type);
+        $this->assertSame(NodeType::Object, $node->type);
         $this->assertFalse($node->isGroup);
     }
 
@@ -29,25 +31,25 @@ final class NodeTest extends AbstractTestCase
         $node = new Node('');
         $this->assertSame('', $node->name);
         $this->assertSame('', $node->realName);
-        $this->assertSame(Node::OBJECT, $node->type);
+        $this->assertSame(NodeType::Object, $node->type);
         $this->assertFalse($node->isGroup);
     }
 
     public function testNewContainerNode(): void
     {
-        $node = new Node('Container Node', Node::CONTAINER);
+        $node = new Node('Container Node', NodeType::Container);
         $this->assertSame('Container Node', $node->name);
         $this->assertSame('Container Node', $node->realName);
-        $this->assertSame(Node::CONTAINER, $node->type);
+        $this->assertSame(NodeType::Container, $node->type);
         $this->assertFalse($node->isGroup);
     }
 
     public function testNewGroupNode(): void
     {
-        $node = new Node('Group Node', Node::OBJECT, true);
+        $node = new Node('Group Node', NodeType::Object, true);
         $this->assertSame('Group Node', $node->name);
         $this->assertSame('Group Node', $node->realName);
-        $this->assertSame(Node::OBJECT, $node->type);
+        $this->assertSame(NodeType::Object, $node->type);
         $this->assertTrue($node->isGroup);
     }
 
@@ -109,11 +111,11 @@ final class NodeTest extends AbstractTestCase
 
     public function testParents(): void
     {
-        $dbContainer = new Node('root', Node::CONTAINER);
-        $dbGroup = new Node('db_group', Node::CONTAINER, true);
+        $dbContainer = new Node('root', NodeType::Container);
+        $dbGroup = new Node('db_group', NodeType::Container, true);
         $dbOne = new Node('db_group__one');
         $dbTwo = new Node('db_group__two');
-        $tableContainer = new Node('tables', Node::CONTAINER);
+        $tableContainer = new Node('tables', NodeType::Container);
         $table = new Node('table');
         $dbContainer->addChild($dbGroup);
         $dbGroup->addChild($dbOne);
@@ -162,8 +164,8 @@ final class NodeTest extends AbstractTestCase
     public function testNodeHasChildrenWithContainers(): void
     {
         $parent = new Node('parent');
-        $containerOne = new Node('container 1', Node::CONTAINER);
-        $containerTwo = new Node('container 2', Node::CONTAINER);
+        $containerOne = new Node('container 1', NodeType::Container);
+        $containerTwo = new Node('container 2', NodeType::Container);
         $child = new Node('child');
         $this->assertFalse($parent->hasChildren());
         $this->assertFalse($parent->hasChildren(false));
@@ -194,8 +196,8 @@ final class NodeTest extends AbstractTestCase
     {
         $parent = new Node('parent');
         $childOne = new Node('child one');
-        $containerOne = new Node('container 1', Node::CONTAINER);
-        $containerTwo = new Node('container 2', Node::CONTAINER);
+        $containerOne = new Node('container 1', NodeType::Container);
+        $containerTwo = new Node('container 2', NodeType::Container);
         $childTwo = new Node('child two');
         $parent->addChild($childOne);
         $parent->addChild($containerOne);
@@ -235,7 +237,7 @@ final class NodeTest extends AbstractTestCase
         $child->addChild(new Node('child two'));
         $this->assertSame(1, $parent->numChildren());
         // add a container, this one doesn't count wither
-        $container = new Node('container', Node::CONTAINER);
+        $container = new Node('container', NodeType::Container);
         $parent->addChild($container);
         $this->assertSame(1, $parent->numChildren());
         // add a grandchild to container, this one counts
@@ -249,9 +251,9 @@ final class NodeTest extends AbstractTestCase
     public function testGetPaths(): void
     {
         $parent = new Node('parent');
-        $group = new Node('group', Node::CONTAINER, true);
+        $group = new Node('group', NodeType::Container, true);
         $childOne = new Node('child one');
-        $container = new Node('container', Node::CONTAINER);
+        $container = new Node('container', NodeType::Container);
         $childTwo = new Node('child two');
         $parent->addChild($group);
         $group->addChild($childOne);
@@ -270,7 +272,7 @@ final class NodeTest extends AbstractTestCase
 
     public function testGetWhereClause(): void
     {
-        $GLOBALS['dbi'] = $this->createDatabaseInterface();
+        DatabaseInterface::$instance = $this->createDatabaseInterface();
         $method = new ReflectionMethod(Node::class, 'getWhereClause');
 
         // Vanilla case
@@ -283,33 +285,34 @@ final class NodeTest extends AbstractTestCase
             $method->invoke($node, 'SCHEMA_NAME', 'schemaName'),
         );
 
-        if (! isset($GLOBALS['cfg']['Server'])) {
-            $GLOBALS['cfg']['Server'] = [];
+        $config = Config::getInstance();
+        if (! isset($config->selectedServer)) {
+            $config->selectedServer = [];
         }
 
         // When hide_db regular expression is present
-        $GLOBALS['cfg']['Server']['hide_db'] = 'regexpHideDb';
+        $config->selectedServer['hide_db'] = 'regexpHideDb';
         $this->assertSame(
             "WHERE TRUE AND `SCHEMA_NAME` NOT REGEXP 'regexpHideDb' ",
             $method->invoke($node, 'SCHEMA_NAME'),
         );
-        unset($GLOBALS['cfg']['Server']['hide_db']);
+        unset($config->selectedServer['hide_db']);
 
         // When only_db directive is present and it's a single db
-        $GLOBALS['cfg']['Server']['only_db'] = 'stringOnlyDb';
+        $config->selectedServer['only_db'] = 'stringOnlyDb';
         $this->assertSame(
             "WHERE TRUE AND ( `SCHEMA_NAME` LIKE 'stringOnlyDb' ) ",
             $method->invoke($node, 'SCHEMA_NAME'),
         );
-        unset($GLOBALS['cfg']['Server']['only_db']);
+        unset($config->selectedServer['only_db']);
 
         // When only_db directive is present and it's an array of dbs
-        $GLOBALS['cfg']['Server']['only_db'] = ['onlyDbOne', 'onlyDbTwo'];
+        $config->selectedServer['only_db'] = ['onlyDbOne', 'onlyDbTwo'];
         $this->assertSame(
             'WHERE TRUE AND ( `SCHEMA_NAME` LIKE \'onlyDbOne\' OR `SCHEMA_NAME` LIKE \'onlyDbTwo\' ) ',
             $method->invoke($node, 'SCHEMA_NAME'),
         );
-        unset($GLOBALS['cfg']['Server']['only_db']);
+        unset($config->selectedServer['only_db']);
     }
 
     /**
@@ -317,10 +320,11 @@ final class NodeTest extends AbstractTestCase
      */
     public function testGetDataWithEnabledISAndGroupingEnabled(): void
     {
-        $GLOBALS['cfg']['Server']['DisableIS'] = false;
-        $GLOBALS['cfg']['NavigationTreeEnableGrouping'] = true;
-        $GLOBALS['cfg']['FirstLevelNavigationItems'] = 20;
-        $GLOBALS['cfg']['NavigationTreeDbSeparator'] = '_';
+        $config = Config::getInstance();
+        $config->selectedServer['DisableIS'] = false;
+        $config->settings['NavigationTreeEnableGrouping'] = true;
+        $config->settings['FirstLevelNavigationItems'] = 20;
+        $config->settings['NavigationTreeDbSeparator'] = '_';
 
         $expectedSql = 'SELECT `SCHEMA_NAME` ';
         $expectedSql .= 'FROM `INFORMATION_SCHEMA`.`SCHEMATA`, ';
@@ -350,8 +354,9 @@ final class NodeTest extends AbstractTestCase
 
         $dbi = $this->createMock(DatabaseInterface::class);
         $dbi->expects($this->once())->method('fetchResult')->with($expectedSql);
-        $dbi->expects($this->any())->method('escapeString')->will($this->returnArgument(0));
-        $GLOBALS['dbi'] = $dbi;
+        $dbi->expects($this->any())->method('quoteString')
+            ->willReturnCallback(static fn (string $string): string => "'" . $string . "'");
+        DatabaseInterface::$instance = $dbi;
         $node->getData($relationParameters, '', 10);
     }
 
@@ -360,9 +365,10 @@ final class NodeTest extends AbstractTestCase
      */
     public function testGetDataWithEnabledISAndGroupingDisabled(): void
     {
-        $GLOBALS['cfg']['Server']['DisableIS'] = false;
-        $GLOBALS['cfg']['NavigationTreeEnableGrouping'] = false;
-        $GLOBALS['cfg']['FirstLevelNavigationItems'] = 20;
+        $config = Config::getInstance();
+        $config->selectedServer['DisableIS'] = false;
+        $config->settings['NavigationTreeEnableGrouping'] = false;
+        $config->settings['FirstLevelNavigationItems'] = 20;
 
         $expectedSql = 'SELECT `SCHEMA_NAME` ';
         $expectedSql .= 'FROM `INFORMATION_SCHEMA`.`SCHEMATA` ';
@@ -380,9 +386,8 @@ final class NodeTest extends AbstractTestCase
 
         $dbi = $this->createMock(DatabaseInterface::class);
         $dbi->expects($this->once())->method('fetchResult')->with($expectedSql);
-        $dbi->expects($this->any())->method('escapeString')->will($this->returnArgument(0));
 
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
         $node->getData($relationParameters, '', 10);
     }
 
@@ -391,11 +396,12 @@ final class NodeTest extends AbstractTestCase
      */
     public function testGetDataWithDisabledISAndGroupingEnabled(): void
     {
-        $GLOBALS['cfg']['Server']['DisableIS'] = true;
+        $config = Config::getInstance();
+        $config->selectedServer['DisableIS'] = true;
         $GLOBALS['dbs_to_test'] = false;
-        $GLOBALS['cfg']['NavigationTreeEnableGrouping'] = true;
-        $GLOBALS['cfg']['FirstLevelNavigationItems'] = 10;
-        $GLOBALS['cfg']['NavigationTreeDbSeparator'] = '_';
+        $config->settings['NavigationTreeEnableGrouping'] = true;
+        $config->settings['FirstLevelNavigationItems'] = 10;
+        $config->settings['NavigationTreeDbSeparator'] = '_';
 
         $relationParameters = RelationParameters::fromArray([
             'db' => 'pmadb',
@@ -411,14 +417,10 @@ final class NodeTest extends AbstractTestCase
         $dbi->expects($this->once())
             ->method('tryQuery')
             ->with("SHOW DATABASES WHERE TRUE AND `Database` LIKE '%db%' ")
-            ->will($this->returnValue($resultStub));
+            ->willReturn($resultStub);
         $resultStub->expects($this->exactly(3))
             ->method('fetchRow')
-            ->willReturnOnConsecutiveCalls(
-                ['0' => 'db'],
-                ['0' => 'aa_db'],
-                [],
-            );
+            ->willReturn(['0' => 'db'], ['0' => 'aa_db'], []);
 
         $dbi->expects($this->once())
             ->method('fetchResult')
@@ -427,10 +429,12 @@ final class NodeTest extends AbstractTestCase
                 . " LOCATE('db_', CONCAT(`Database`, '_')) = 1"
                 . " OR LOCATE('aa_', CONCAT(`Database`, '_')) = 1 )",
             );
-        $dbi->expects($this->any())->method('escapeString')
-            ->will($this->returnArgument(0));
+        $dbi->expects($this->any())->method('escapeMysqlWildcards')
+            ->willReturnArgument(0);
+        $dbi->expects($this->any())->method('quoteString')
+            ->willReturnCallback(static fn (string $string): string => "'" . $string . "'");
 
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
         $node->getData($relationParameters, '', 0, 'db');
     }
 
@@ -439,9 +443,10 @@ final class NodeTest extends AbstractTestCase
      */
     public function testGetPresenceWithEnabledISAndGroupingEnabled(): void
     {
-        $GLOBALS['cfg']['Server']['DisableIS'] = false;
-        $GLOBALS['cfg']['NavigationTreeEnableGrouping'] = true;
-        $GLOBALS['cfg']['NavigationTreeDbSeparator'] = '_';
+        $config = Config::getInstance();
+        $config->selectedServer['DisableIS'] = false;
+        $config->settings['NavigationTreeEnableGrouping'] = true;
+        $config->settings['NavigationTreeDbSeparator'] = '_';
 
         $query = 'SELECT COUNT(*) ';
         $query .= 'FROM ( ';
@@ -455,7 +460,7 @@ final class NodeTest extends AbstractTestCase
 
         $dbi = $this->createMock(DatabaseInterface::class);
         $dbi->expects($this->once())->method('fetchValue')->with($query);
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
         $this->assertSame(0, $node->getPresence());
     }
 
@@ -464,8 +469,9 @@ final class NodeTest extends AbstractTestCase
      */
     public function testGetPresenceWithEnabledISAndGroupingDisabled(): void
     {
-        $GLOBALS['cfg']['Server']['DisableIS'] = false;
-        $GLOBALS['cfg']['NavigationTreeEnableGrouping'] = false;
+        $config = Config::getInstance();
+        $config->selectedServer['DisableIS'] = false;
+        $config->settings['NavigationTreeEnableGrouping'] = false;
 
         $query = 'SELECT COUNT(*) ';
         $query .= 'FROM INFORMATION_SCHEMA.SCHEMATA ';
@@ -474,7 +480,7 @@ final class NodeTest extends AbstractTestCase
         $node = new Node('node');
         $dbi = $this->createMock(DatabaseInterface::class);
         $dbi->expects($this->once())->method('fetchValue')->with($query);
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
         $this->assertSame(0, $node->getPresence());
     }
 
@@ -483,9 +489,10 @@ final class NodeTest extends AbstractTestCase
      */
     public function testGetPresenceWithDisabledIS(): void
     {
-        $GLOBALS['cfg']['Server']['DisableIS'] = true;
+        $config = Config::getInstance();
+        $config->selectedServer['DisableIS'] = true;
         $GLOBALS['dbs_to_test'] = false;
-        $GLOBALS['cfg']['NavigationTreeEnableGrouping'] = true;
+        $config->settings['NavigationTreeEnableGrouping'] = true;
 
         $node = new Node('node');
 
@@ -496,10 +503,9 @@ final class NodeTest extends AbstractTestCase
         $dbi->expects($this->once())
             ->method('tryQuery')
             ->with('SHOW DATABASES WHERE TRUE ')
-            ->will($this->returnValue($resultStub));
-        $dbi->expects($this->any())->method('escapeString')->will($this->returnArgument(0));
+            ->willReturn($resultStub);
 
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
         $this->assertSame(0, $node->getPresence());
 
         // test with a search clause
@@ -507,11 +513,24 @@ final class NodeTest extends AbstractTestCase
         $dbi->expects($this->once())
             ->method('tryQuery')
             ->with("SHOW DATABASES WHERE TRUE AND `Database` LIKE '%dbname%' ")
-            ->will($this->returnValue($resultStub));
-        $dbi->expects($this->any())->method('escapeString')
-            ->will($this->returnArgument(0));
+            ->willReturn($resultStub);
+        $dbi->expects($this->any())->method('escapeMysqlWildcards')
+            ->willReturnArgument(0);
+        $dbi->expects($this->any())->method('quoteString')
+            ->willReturnCallback(static fn (string $string): string => "'" . $string . "'");
 
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
         $this->assertSame(0, $node->getPresence('', 'dbname'));
+    }
+
+    public function testGetInstanceForNewNode(): void
+    {
+        $node = (new Node())->getInstanceForNewNode('New', 'new_database italics');
+        $this->assertEquals('New', $node->name);
+        $this->assertEquals(NodeType::Object, $node->type);
+        $this->assertFalse($node->isGroup);
+        $this->assertEquals('New', $node->title);
+        $this->assertTrue($node->isNew);
+        $this->assertEquals('new_database italics', $node->classes);
     }
 }

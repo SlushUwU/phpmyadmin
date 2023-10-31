@@ -30,39 +30,36 @@ class OptionsTest extends AbstractTestCase
 
         parent::setGlobalConfig();
 
-        $GLOBALS['dbi'] = $this->createDatabaseInterface();
+        $dbi = $this->createDatabaseInterface();
+        DatabaseInterface::$instance = $dbi;
 
         parent::loadDbiIntoContainerBuilder();
 
-        $GLOBALS['cfg']['Server']['host'] = 'localhost';
-        $GLOBALS['cfg']['Server']['user'] = 'pma_user';
         $GLOBALS['server'] = 0;
 
         $GLOBALS['table'] = 'table';
         $GLOBALS['db'] = 'PMA';
 
-        $pmaconfig = $this->getMockBuilder(Config::class)
-            ->disableOriginalConstructor()
-            ->getMock();
-
-        $pmaconfig->expects($this->any())
-            ->method('getUserValue')
-            ->will($this->returnValue('user value for test'));
-
-        $GLOBALS['config'] = $pmaconfig;
-
         $this->export = new Options(
-            new Relation($GLOBALS['dbi']),
-            new TemplateModel($GLOBALS['dbi']),
+            new Relation($dbi),
+            new TemplateModel($dbi),
         );
+    }
+
+    protected function tearDown(): void
+    {
+        parent::tearDown();
+
+        Config::$instance = null;
     }
 
     public function testGetOptions(): void
     {
-        $GLOBALS['cfg']['Export']['method'] = 'XML';
-        $GLOBALS['cfg']['SaveDir'] = '/tmp';
-        $GLOBALS['cfg']['ZipDump'] = false;
-        $GLOBALS['cfg']['GZipDump'] = false;
+        $config = Config::getInstance();
+        $config->settings['Export']['method'] = 'XML';
+        $config->settings['SaveDir'] = '/tmp';
+        $config->settings['ZipDump'] = false;
+        $config->settings['GZipDump'] = false;
 
         $exportType = 'server';
         $db = 'PMA';
@@ -70,7 +67,7 @@ class OptionsTest extends AbstractTestCase
         $numTablesStr = '10';
         $unlimNumRowsStr = 'unlim_num_rows_str';
         //$single_table = "single_table";
-        $GLOBALS['dbi']->getCache()->cacheTableContent([$db, $table, 'ENGINE'], 'MERGE');
+        DatabaseInterface::getInstance()->getCache()->cacheTableContent([$db, $table, 'ENGINE'], 'MERGE');
 
         $columnsInfo = [
             'test_column1' => ['COLUMN_NAME' => 'test_column1'],
@@ -81,14 +78,19 @@ class OptionsTest extends AbstractTestCase
             ->getMock();
 
         $dbi->expects($this->any())->method('getColumnsFull')
-            ->will($this->returnValue($columnsInfo));
+            ->willReturn($columnsInfo);
         $dbi->expects($this->any())->method('getCompatibilities')
-            ->will($this->returnValue([]));
+            ->willReturn([]);
 
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
 
         $exportList = Plugins::getExport($exportType, true);
         $dropdown = Plugins::getChoice($exportList, 'sql');
+
+        $config = $config;
+        $config->selectedServer['host'] = 'localhost';
+        $config->selectedServer['user'] = 'pma_user';
+        $_POST['filename_template'] = 'user value for test';
 
         //Call the test function
         $actual = $this->export->getOptions($exportType, $db, $table, '', $numTablesStr, $unlimNumRowsStr, $exportList);
@@ -103,35 +105,35 @@ class OptionsTest extends AbstractTestCase
                 'db' => $db,
                 'table' => $table,
                 'export_type' => $exportType,
-                'export_method' => $GLOBALS['cfg']['Export']['method'],
+                'export_method' => $config->settings['Export']['method'],
                 'template_id' => '',
             ],
-            'export_method' => $GLOBALS['cfg']['Export']['method'],
+            'export_method' => $config->settings['Export']['method'],
             'plugins_choice' => $dropdown,
             'options' => Plugins::getOptions('Export', $exportList),
             'can_convert_kanji' => Encoding::canConvertKanji(),
-            'exec_time_limit' => $GLOBALS['cfg']['ExecTimeLimit'],
+            'exec_time_limit' => $config->settings['ExecTimeLimit'],
             'rows' => [],
             'has_save_dir' => true,
-            'save_dir' => Util::userDir($GLOBALS['cfg']['SaveDir']),
-            'export_is_checked' => $GLOBALS['cfg']['Export']['quick_export_onserver'],
-            'export_overwrite_is_checked' => $GLOBALS['cfg']['Export']['quick_export_onserver_overwrite'],
+            'save_dir' => Util::userDir($config->settings['SaveDir']),
+            'export_is_checked' => $config->settings['Export']['quick_export_onserver'],
+            'export_overwrite_is_checked' => $config->settings['Export']['quick_export_onserver_overwrite'],
             'has_aliases' => false,
             'aliases' => [],
-            'is_checked_lock_tables' => $GLOBALS['cfg']['Export']['lock_tables'],
-            'is_checked_asfile' => $GLOBALS['cfg']['Export']['asfile'],
-            'is_checked_as_separate_files' => $GLOBALS['cfg']['Export']['as_separate_files'],
-            'is_checked_export' => $GLOBALS['cfg']['Export']['onserver'],
-            'is_checked_export_overwrite' => $GLOBALS['cfg']['Export']['onserver_overwrite'],
-            'is_checked_remember_file_template' => $GLOBALS['cfg']['Export']['remember_file_template'],
-            'repopulate' => '',
-            'lock_tables' => '',
+            'is_checked_lock_tables' => $config->settings['Export']['lock_tables'],
+            'is_checked_asfile' => $config->settings['Export']['asfile'],
+            'is_checked_as_separate_files' => $config->settings['Export']['as_separate_files'],
+            'is_checked_export' => $config->settings['Export']['onserver'],
+            'is_checked_export_overwrite' => $config->settings['Export']['onserver_overwrite'],
+            'is_checked_remember_file_template' => $config->settings['Export']['remember_file_template'],
+            'repopulate' => false,
+            'lock_tables' => false,
             'is_encoding_supported' => true,
             'encodings' => Encoding::listEncodings(),
-            'export_charset' => $GLOBALS['cfg']['Export']['charset'],
-            'export_asfile' => $GLOBALS['cfg']['Export']['asfile'],
-            'has_zip' => $GLOBALS['cfg']['ZipDump'],
-            'has_gzip' => $GLOBALS['cfg']['GZipDump'],
+            'export_charset' => $config->settings['Export']['charset'],
+            'export_asfile' => $config->settings['Export']['asfile'],
+            'has_zip' => $config->settings['ZipDump'],
+            'has_gzip' => $config->settings['GZipDump'],
             'selected_compression' => 'none',
             'filename_template' => 'user value for test',
         ];

@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Controllers\Table;
 
+use PhpMyAdmin\Config;
 use PhpMyAdmin\Controllers\Table\PrivilegesController;
+use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\Http\ServerRequest;
 use PhpMyAdmin\Server\Privileges;
 use PhpMyAdmin\Template;
@@ -29,7 +31,7 @@ class PrivilegesControllerTest extends AbstractTestCase
 
         parent::setTheme();
 
-        $GLOBALS['dbi'] = $this->createDatabaseInterface();
+        DatabaseInterface::$instance = $this->createDatabaseInterface();
     }
 
     public function testIndex(): void
@@ -37,7 +39,7 @@ class PrivilegesControllerTest extends AbstractTestCase
         $GLOBALS['db'] = 'db';
         $GLOBALS['table'] = 'table';
         $GLOBALS['server'] = 0;
-        $GLOBALS['cfg']['Server']['DisableIS'] = false;
+        Config::getInstance()->selectedServer['DisableIS'] = false;
 
         $privileges = [];
 
@@ -53,7 +55,7 @@ class PrivilegesControllerTest extends AbstractTestCase
             $response,
             new Template(),
             $serverPrivileges,
-            $GLOBALS['dbi'],
+            DatabaseInterface::getInstance(),
         ))($request);
         $actual = $response->getHTMLResult();
 

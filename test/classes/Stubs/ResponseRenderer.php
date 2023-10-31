@@ -11,10 +11,18 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Stubs;
 
+use PhpMyAdmin\Bookmarks\BookmarkRepository;
+use PhpMyAdmin\Config;
+use PhpMyAdmin\ConfigStorage\Relation;
+use PhpMyAdmin\Console;
+use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\Exceptions\ExitException;
 use PhpMyAdmin\Footer;
 use PhpMyAdmin\Header;
+use PhpMyAdmin\Http\Factory\ResponseFactory;
+use PhpMyAdmin\Http\Response;
 use PhpMyAdmin\Message;
+use PhpMyAdmin\Template;
 
 use function is_array;
 
@@ -33,10 +41,6 @@ class ResponseRenderer extends \PhpMyAdmin\ResponseRenderer
      */
     protected array $json = [];
 
-    private int $responseCode = 200;
-
-    private bool $isHeadersSent = false;
-
     /**
      * Creates a new class instance
      */
@@ -49,8 +53,18 @@ class ResponseRenderer extends \PhpMyAdmin\ResponseRenderer
         $GLOBALS['lang'] = 'en';
         $GLOBALS['server'] ??= 1;
         $GLOBALS['text_dir'] ??= 'ltr';
-        $this->header = new Header();
-        $this->footer = new Footer();
+        $this->template = new Template();
+        Config::getInstance()->selectedServer['pmadb'] = 'phpmyadmin';
+        $dummyDbi = new DbiDummy();
+        $dummyDbi->addSelectDb('phpmyadmin');
+        $dbi = new DatabaseInterface($dummyDbi);
+        $relation = new Relation($dbi);
+        $this->header = new Header(
+            $this->template,
+            new Console($relation, $this->template, new BookmarkRepository($dbi, $relation)),
+        );
+        $this->footer = new Footer($this->template);
+        $this->response = ResponseFactory::create()->createResponse();
     }
 
     /**
@@ -158,33 +172,18 @@ class ResponseRenderer extends \PhpMyAdmin\ResponseRenderer
         return $this->isAjax;
     }
 
-    public function setHttpResponseCode(int $responseCode): void
-    {
-        $this->responseCode = $responseCode;
-    }
-
-    public function getHttpResponseCode(): int
-    {
-        return $this->responseCode;
-    }
-
     public function isDisabled(): bool
     {
         return $this->isDisabled;
     }
 
-    public function headersSent(): bool
-    {
-        return $this->isHeadersSent;
-    }
-
-    public function setHeadersSent(bool $isHeadersSent): void
-    {
-        $this->isHeadersSent = $isHeadersSent;
-    }
-
     public function callExit(string $message = ''): never
     {
         throw new ExitException($message);
+    }
+
+    public function getResponse(): Response
+    {
+        return $this->response;
     }
 }

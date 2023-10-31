@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Table;
 
+use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\Table\Search;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -17,9 +18,9 @@ class SearchTest extends AbstractTestCase
     {
         parent::setUp();
 
-        $GLOBALS['dbi'] = $this->createDatabaseInterface();
+        DatabaseInterface::$instance = $this->createDatabaseInterface();
 
-        $this->search = new Search($GLOBALS['dbi']);
+        $this->search = new Search(DatabaseInterface::getInstance());
     }
 
     public function testBuildSqlQuery(): void
@@ -184,5 +185,22 @@ class SearchTest extends AbstractTestCase
             "SELECT *  FROM `PMA` WHERE `id` = '07ca1fdd-4805-11ed-a4dc-0242ac110002'",
             $this->search->buildSqlQuery(),
         );
+    }
+
+    public function testBuildSqlQueryWithoutConditions(): void
+    {
+        $_POST['db'] = 'opengis';
+        $_POST['table'] = 'world_cities';
+        $_POST['back'] = 'index.php?route=/table/search';
+        $_POST['geom_func'] = [2 => ' '];
+        $_POST['customWhereClause'] = '';
+        $_POST['session_max_rows'] = '25';
+        $_POST['orderByColumn'] = '--nil--';
+        $_POST['order'] = 'ASC';
+        $_POST['submit'] = 'Go';
+        $_POST['ajax_request'] = 'true';
+        $_POST['displayAllColumns'] = 'true';
+
+        $this->assertSame('SELECT *  FROM `world_cities`', $this->search->buildSqlQuery());
     }
 }

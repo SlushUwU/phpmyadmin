@@ -39,11 +39,12 @@ class TemplateTest extends AbstractTestCase
     {
         $this->loadContainerBuilder();
 
-        $GLOBALS['cfg']['environment'] = 'production';
+        $config = Config::getInstance();
+        $config->settings['environment'] = 'production';
         $twig = Template::getTwigEnvironment(null);
         $this->assertFalse($twig->isDebug());
         $this->assertFalse(TransNode::$enableAddDebugInfo);
-        $GLOBALS['cfg']['environment'] = 'development';
+        $config->settings['environment'] = 'development';
         $twig = Template::getTwigEnvironment(null);
         $this->assertTrue($twig->isDebug());
         $this->assertTrue(TransNode::$enableAddDebugInfo);
@@ -129,7 +130,7 @@ class TemplateTest extends AbstractTestCase
      */
     public static function providerTestRender(): array
     {
-        return [['test/static', 'static content']];
+        return [['test/static', "static content\n"]];
     }
 
     /**
@@ -174,10 +175,10 @@ class TemplateTest extends AbstractTestCase
         $config->expects($this->once())->method('getTempDir')->with($this->equalTo('twig'))->willReturn(null);
 
         $template = new Template($config);
-        $this->assertSame('static content', $template->render('test/static'));
+        $this->assertSame("static content\n", $template->render('test/static'));
 
         $template2 = new Template($config);
-        $this->assertSame('static content', $template2->render('test/static'));
+        $this->assertSame("static content\n", $template2->render('test/static'));
     }
 
     public function testDisableCache(): void

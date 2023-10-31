@@ -4,17 +4,25 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Setup;
 
+use PhpMyAdmin\Config;
 use PhpMyAdmin\Config\FormDisplay;
+use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\Exceptions\ExitException;
+use PhpMyAdmin\ResponseRenderer;
 use PhpMyAdmin\Setup\FormProcessing;
-use PhpMyAdmin\Tests\AbstractNetworkTestCase;
+use PhpMyAdmin\Tests\AbstractTestCase;
+use PhpMyAdmin\Tests\Stubs\ResponseRenderer as ResponseRendererStub;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
+use PHPUnit\Framework\Attributes\RunInSeparateProcess;
+use ReflectionProperty;
+use Throwable;
 
 use function ob_get_clean;
 use function ob_start;
 
 #[CoversClass(FormProcessing::class)]
-class FormProcessingTest extends AbstractNetworkTestCase
+class FormProcessingTest extends AbstractTestCase
 {
     /**
      * Prepares environment for the test.
@@ -28,17 +36,17 @@ class FormProcessingTest extends AbstractNetworkTestCase
         $GLOBALS['server'] = 1;
         $GLOBALS['db'] = 'db';
         $GLOBALS['table'] = 'table';
-        $GLOBALS['cfg']['ServerDefault'] = 1;
+        Config::getInstance()->settings['ServerDefault'] = 1;
     }
 
-    /**
-     * Test for process_formset()
-     */
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
     public function testProcessFormSet(): void
     {
-        $this->mockResponse(
-            [['status: 303 See Other'], ['Location: ../setup/index.php?route=%2Fsetup&lang=en'], 303],
-        );
+        DatabaseInterface::$instance = $this->createDatabaseInterface();
+
+        $responseStub = new ResponseRendererStub();
+        (new ReflectionProperty(ResponseRenderer::class, 'instance'))->setValue(null, $responseStub);
 
         // case 1
         $formDisplay = $this->getMockBuilder(FormDisplay::class)
@@ -49,7 +57,7 @@ class FormProcessingTest extends AbstractNetworkTestCase
         $formDisplay->expects($this->once())
             ->method('process')
             ->with(false)
-            ->will($this->returnValue(false));
+            ->willReturn(false);
 
         $formDisplay->expects($this->once())
             ->method('getDisplay');
@@ -65,12 +73,12 @@ class FormProcessingTest extends AbstractNetworkTestCase
         $formDisplay->expects($this->once())
             ->method('process')
             ->with(false)
-            ->will($this->returnValue(true));
+            ->willReturn(true);
 
         $formDisplay->expects($this->once())
             ->method('hasErrors')
             ->with()
-            ->will($this->returnValue(true));
+            ->willReturn(true);
 
         ob_start();
         FormProcessing::process($formDisplay);
@@ -95,14 +103,21 @@ class FormProcessingTest extends AbstractNetworkTestCase
         $formDisplay->expects($this->once())
             ->method('process')
             ->with(false)
-            ->will($this->returnValue(true));
+            ->willReturn(true);
 
         $formDisplay->expects($this->once())
             ->method('hasErrors')
             ->with()
-            ->will($this->returnValue(false));
+            ->willReturn(false);
 
-        $this->expectException(ExitException::class);
-        FormProcessing::process($formDisplay);
+        try {
+            FormProcessing::process($formDisplay);
+        } catch (Throwable $throwable) {
+        }
+
+        $this->assertInstanceOf(ExitException::class, $throwable ?? null);
+        $response = $responseStub->getResponse();
+        $this->assertSame(['../setup/index.php?route=%2Fsetup&lang=en'], $response->getHeader('Location'));
+        $this->assertSame(303, $response->getStatusCode());
     }
 }

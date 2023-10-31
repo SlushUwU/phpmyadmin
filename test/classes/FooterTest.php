@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace PhpMyAdmin\Tests;
 
 use ArrayIterator;
-use PhpMyAdmin\ErrorHandler;
+use PhpMyAdmin\Config;
+use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\Footer;
 use PhpMyAdmin\Template;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -36,20 +37,20 @@ class FooterTest extends AbstractTestCase
 
         parent::setTheme();
 
-        $GLOBALS['dbi'] = $this->createDatabaseInterface();
+        DatabaseInterface::$instance = $this->createDatabaseInterface();
         $_SERVER['SCRIPT_NAME'] = 'index.php';
         $GLOBALS['db'] = '';
         $GLOBALS['table'] = '';
         $GLOBALS['text_dir'] = 'ltr';
-        $GLOBALS['cfg']['Server']['DisableIS'] = false;
-        $GLOBALS['cfg']['Server']['verbose'] = 'verbose host';
+        $config = Config::getInstance();
+        $config->selectedServer['DisableIS'] = false;
+        $config->selectedServer['verbose'] = 'verbose host';
         $GLOBALS['server'] = '1';
         $_GET['reload_left_frame'] = '1';
         $GLOBALS['focus_querywindow'] = 'main_pane_left';
-        $this->object = new Footer();
+        $this->object = new Footer(new Template());
         unset($GLOBALS['error_message']);
         unset($GLOBALS['sql_query']);
-        $GLOBALS['errorHandler'] = new ErrorHandler();
         $_POST = [];
     }
 
@@ -70,7 +71,7 @@ class FooterTest extends AbstractTestCase
     #[Group('medium')]
     public function testGetDebugMessage(): void
     {
-        $GLOBALS['cfg']['DBG']['sql'] = true;
+        Config::getInstance()->settings['DBG']['sql'] = true;
         $_SESSION['debug']['queries'] = [
             ['count' => 1, 'time' => 0.2, 'query' => 'SELECT * FROM `pma_bookmark` WHERE 1'],
             ['count' => 1, 'time' => 2.5, 'query' => 'SELECT * FROM `db` WHERE 1'],
@@ -105,7 +106,7 @@ class FooterTest extends AbstractTestCase
      */
     public function testDisable(): void
     {
-        $footer = new Footer();
+        $footer = new Footer(new Template());
         $footer->disable();
         $this->assertEquals(
             '',
@@ -115,9 +116,9 @@ class FooterTest extends AbstractTestCase
 
     public function testGetDisplayWhenAjaxIsEnabled(): void
     {
-        $footer = new Footer();
-        $footer->setAjax(true);
         $template = new Template();
+        $footer = new Footer($template);
+        $footer->setAjax(true);
         $this->assertEquals(
             $template->render('modals/function_confirm') . "\n"
             . $template->render('modals/add_index') . "\n"
@@ -131,7 +132,7 @@ class FooterTest extends AbstractTestCase
      */
     public function testGetScripts(): void
     {
-        $footer = new Footer();
+        $footer = new Footer(new Template());
         $this->assertStringContainsString(
             '<script data-cfasync="false">',
             $footer->getScripts()->getDisplay(),
@@ -144,7 +145,7 @@ class FooterTest extends AbstractTestCase
     #[Group('medium')]
     public function testDisplay(): void
     {
-        $footer = new Footer();
+        $footer = new Footer(new Template());
         $this->assertStringContainsString(
             'Open new phpMyAdmin window',
             $footer->getDisplay(),
@@ -156,9 +157,9 @@ class FooterTest extends AbstractTestCase
      */
     public function testMinimal(): void
     {
-        $footer = new Footer();
-        $footer->setMinimal();
         $template = new Template();
+        $footer = new Footer($template);
+        $footer->setMinimal();
         $this->assertEquals(
             $template->render('modals/function_confirm') . "\n"
             . $template->render('modals/add_index') . "\n"
@@ -171,7 +172,7 @@ class FooterTest extends AbstractTestCase
     public function testSetAjax(): void
     {
         $isAjax = new ReflectionProperty(Footer::class, 'isAjax');
-        $footer = new Footer();
+        $footer = new Footer(new Template());
 
         $this->assertFalse($isAjax->getValue($footer));
         $footer->setAjax(true);

@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Controllers\Table;
 
+use PhpMyAdmin\Config;
 use PhpMyAdmin\ConfigStorage\Relation;
 use PhpMyAdmin\Controllers\Table\AddFieldController;
-use PhpMyAdmin\Http\ServerRequest;
+use PhpMyAdmin\DatabaseInterface;
+use PhpMyAdmin\DbTableExists;
+use PhpMyAdmin\Http\Factory\ServerRequestFactory;
 use PhpMyAdmin\Table\ColumnsDefinition;
 use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\AbstractTestCase;
@@ -22,11 +25,11 @@ class AddFieldControllerTest extends AbstractTestCase
         $GLOBALS['db'] = 'test_db';
         $GLOBALS['table'] = 'test_table';
         $GLOBALS['regenerate'] = null;
-        $GLOBALS['cfg']['Server'] = $GLOBALS['config']->getSettings()->Servers[1]->asArray();
+        $config = Config::getInstance();
+        $config->selectedServer = $config->getSettings()->Servers[1]->asArray();
         $_POST = [
             'db' => 'test_db',
             'table' => 'test_table',
-            'num_fields' => '1',
             'field_where' => 'after',
             'after_field' => 'datetimefield',
         ];
@@ -35,7 +38,7 @@ class AddFieldControllerTest extends AbstractTestCase
         $dummyDbi->addSelectDb('test_db');
         $dummyDbi->addResult('SHOW TABLES LIKE \'test_table\';', [['test_table']]);
         $dbi = $this->createDatabaseInterface($dummyDbi);
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
 
         $contentCell = [
             'column_number' => 0,
@@ -249,8 +252,9 @@ class AddFieldControllerTest extends AbstractTestCase
             'disable_is' => true,
         ]);
 
-        $request = $this->createStub(ServerRequest::class);
-        $request->method('getParsedBodyParam')->willReturnMap([['num_fields', null, '1']]);
+        $request = ServerRequestFactory::create()->createServerRequest('POST', 'http://example.com/')
+            ->withQueryParams(['db' => 'test_db', 'table' => 'test_table'])
+            ->withParsedBody(['num_fields' => '1']);
 
         $transformations = new Transformations();
         (new AddFieldController(
@@ -260,6 +264,7 @@ class AddFieldControllerTest extends AbstractTestCase
             $this->createConfig(),
             $dbi,
             new ColumnsDefinition($dbi, $relation, $transformations),
+            new DbTableExists($dbi),
         ))($request);
 
         $this->assertSame($expected, $response->getHTMLResult());

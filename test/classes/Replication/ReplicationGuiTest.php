@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Replication;
 
+use PhpMyAdmin\Config;
+use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\Replication\Replication;
 use PhpMyAdmin\Replication\ReplicationGui;
 use PhpMyAdmin\Replication\ReplicationInfo;
@@ -27,27 +29,28 @@ class ReplicationGuiTest extends AbstractTestCase
     {
         parent::setUp();
 
-        $GLOBALS['dbi'] = $this->createDatabaseInterface();
+        DatabaseInterface::$instance = $this->createDatabaseInterface();
         //$_POST
         $_POST['primary_add_user'] = 'primary_add_user';
 
         //$GLOBALS
-        $GLOBALS['cfg']['MaxRows'] = 10;
-        $GLOBALS['cfg']['ServerDefault'] = 'server';
-        $GLOBALS['cfg']['RememberSorting'] = true;
-        $GLOBALS['cfg']['SQP'] = [];
-        $GLOBALS['cfg']['MaxCharactersInDisplayedSQL'] = 1000;
-        $GLOBALS['cfg']['ShowSQL'] = true;
-        $GLOBALS['cfg']['TableNavigationLinksMode'] = 'icons';
-        $GLOBALS['cfg']['LimitChars'] = 100;
-        $GLOBALS['cfg']['DBG']['sql'] = false;
-        $GLOBALS['cfg']['ShowHint'] = true;
+        $config = Config::getInstance();
+        $config->settings['MaxRows'] = 10;
+        $config->settings['ServerDefault'] = 'server';
+        $config->settings['RememberSorting'] = true;
+        $config->settings['SQP'] = [];
+        $config->settings['MaxCharactersInDisplayedSQL'] = 1000;
+        $config->settings['ShowSQL'] = true;
+        $config->settings['TableNavigationLinksMode'] = 'icons';
+        $config->settings['LimitChars'] = 100;
+        $config->settings['DBG']['sql'] = false;
+        $config->settings['ShowHint'] = true;
 
         $GLOBALS['table'] = 'table';
         $GLOBALS['server'] = 0;
         $GLOBALS['urlParams'] = [];
 
-        $this->replicationGui = new ReplicationGui(new Replication($GLOBALS['dbi']), new Template());
+        $this->replicationGui = new ReplicationGui(new Replication(DatabaseInterface::getInstance()), new Template());
     }
 
     #[Group('medium')]
@@ -89,7 +92,7 @@ class ReplicationGuiTest extends AbstractTestCase
 
     public function testGetHtmlForReplicaConfiguration(): void
     {
-        $replicationInfo = new ReplicationInfo($GLOBALS['dbi']);
+        $replicationInfo = new ReplicationInfo(DatabaseInterface::getInstance());
         $replicationInfo->load();
 
         //Call the test function

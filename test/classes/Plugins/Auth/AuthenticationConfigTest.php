@@ -4,19 +4,24 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Plugins\Auth;
 
+use PhpMyAdmin\Config;
 use PhpMyAdmin\DatabaseInterface;
-use PhpMyAdmin\ErrorHandler;
 use PhpMyAdmin\Exceptions\ExitException;
 use PhpMyAdmin\Plugins\Auth\AuthenticationConfig;
 use PhpMyAdmin\ResponseRenderer;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Medium;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
+use PHPUnit\Framework\Attributes\RunInSeparateProcess;
+use ReflectionProperty;
 use Throwable;
 
 use function ob_get_clean;
 use function ob_start;
 
 #[CoversClass(AuthenticationConfig::class)]
+#[Medium]
 class AuthenticationConfigTest extends AbstractTestCase
 {
     protected AuthenticationConfig $object;
@@ -34,7 +39,7 @@ class AuthenticationConfigTest extends AbstractTestCase
 
         parent::setTheme();
 
-        $GLOBALS['dbi'] = $this->createDatabaseInterface();
+        DatabaseInterface::$instance = $this->createDatabaseInterface();
         $GLOBALS['server'] = 0;
         $GLOBALS['db'] = 'db';
         $GLOBALS['table'] = 'table';
@@ -53,8 +58,11 @@ class AuthenticationConfigTest extends AbstractTestCase
         unset($this->object);
     }
 
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
     public function testAuth(): void
     {
+        (new ReflectionProperty(ResponseRenderer::class, 'instance'))->setValue(null, null);
         ResponseRenderer::getInstance()->setAjax(true);
         $this->expectException(ExitException::class);
         $this->object->showLoginForm();
@@ -62,7 +70,7 @@ class AuthenticationConfigTest extends AbstractTestCase
 
     public function testAuthCheck(): void
     {
-        $GLOBALS['cfg']['Server'] = ['user' => 'username', 'password' => 'password'];
+        Config::getInstance()->selectedServer = ['user' => 'username', 'password' => 'password'];
         $this->assertTrue(
             $this->object->readCredentials(),
         );
@@ -75,16 +83,19 @@ class AuthenticationConfigTest extends AbstractTestCase
         );
     }
 
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
     public function testAuthFails(): void
     {
-        $GLOBALS['errorHandler'] = new ErrorHandler();
-        $GLOBALS['cfg']['Servers'] = [1];
+        Config::getInstance()->settings['Servers'] = [1];
         $GLOBALS['allowDeny_forbidden'] = false;
 
         $dbi = $this->getMockBuilder(DatabaseInterface::class)
             ->disableOriginalConstructor()
             ->getMock();
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
+
+        (new ReflectionProperty(ResponseRenderer::class, 'instance'))->setValue(null, null);
 
         ob_start();
         try {

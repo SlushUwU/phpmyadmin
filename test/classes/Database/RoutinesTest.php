@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Database;
 
+use PhpMyAdmin\Config;
 use PhpMyAdmin\Database\Routines;
 use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\Dbal\Connection;
@@ -30,9 +31,10 @@ class RoutinesTest extends AbstractTestCase
 
         parent::setTheme();
 
-        $GLOBALS['dbi'] = $this->createDatabaseInterface();
-        $GLOBALS['cfg']['Server']['DisableIS'] = false;
-        $GLOBALS['cfg']['ActionLinksMode'] = 'icons';
+        DatabaseInterface::$instance = $this->createDatabaseInterface();
+        $config = Config::getInstance();
+        $config->selectedServer['DisableIS'] = false;
+        $config->settings['ActionLinksMode'] = 'icons';
         $GLOBALS['server'] = 0;
         $GLOBALS['db'] = 'db';
         $GLOBALS['table'] = 'table';
@@ -41,7 +43,7 @@ class RoutinesTest extends AbstractTestCase
         $GLOBALS['is_reload_priv'] = false;
         $GLOBALS['errors'] = [];
 
-        $this->routines = new Routines($GLOBALS['dbi']);
+        $this->routines = new Routines(DatabaseInterface::getInstance());
     }
 
     /**
@@ -238,27 +240,22 @@ class RoutinesTest extends AbstractTestCase
     #[DataProvider('providerGetQueryFromRequest')]
     public function testGetQueryFromRequest(array $request, string $query, int $numErr): void
     {
-        $GLOBALS['cfg']['ShowFunctionFields'] = false;
+        Config::getInstance()->settings['ShowFunctionFields'] = false;
 
         $GLOBALS['errors'] = [];
 
-        $oldDbi = $GLOBALS['dbi'] ?? null;
+        $oldDbi = DatabaseInterface::getInstance();
         $dbi = $this->getMockBuilder(DatabaseInterface::class)
             ->disableOriginalConstructor()
             ->getMock();
         $dbi->types = new Types($dbi);
         $dbi->expects($this->any())
-            ->method('escapeString')
-            ->will(
-                $this->returnValueMap(
-                    [
-                        ['foo', Connection::TYPE_USER, 'foo'],
-                        ["foo's bar", Connection::TYPE_USER, "foo\'s bar"],
-                        ['', Connection::TYPE_USER, ''],
-                    ],
-                ),
-            );
-        $GLOBALS['dbi'] = $dbi;
+            ->method('quoteString')
+            ->willReturnMap([
+                ['foo', Connection::TYPE_USER, "'foo'"],
+                ["foo's bar", Connection::TYPE_USER, "'foo\'s bar'"],
+            ]);
+        DatabaseInterface::$instance = $dbi;
 
         $routines = new Routines($dbi);
 
@@ -268,7 +265,7 @@ class RoutinesTest extends AbstractTestCase
         $this->assertCount($numErr, $GLOBALS['errors']);
 
         // reset
-        $GLOBALS['dbi'] = $oldDbi;
+        DatabaseInterface::$instance = $oldDbi;
     }
 
     /**

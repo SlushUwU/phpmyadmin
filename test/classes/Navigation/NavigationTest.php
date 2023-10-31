@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Navigation;
 
+use PhpMyAdmin\Config;
 use PhpMyAdmin\ConfigStorage\Relation;
 use PhpMyAdmin\ConfigStorage\RelationParameters;
 use PhpMyAdmin\DatabaseInterface;
@@ -28,13 +29,15 @@ class NavigationTest extends AbstractTestCase
 
         parent::setLanguage();
 
-        $GLOBALS['dbi'] = $this->createDatabaseInterface();
+        $dbi = $this->createDatabaseInterface();
+        DatabaseInterface::$instance = $dbi;
         $GLOBALS['server'] = 1;
         $GLOBALS['db'] = 'db';
         $GLOBALS['table'] = '';
-        $GLOBALS['cfg']['Server']['user'] = 'user';
-        $GLOBALS['cfg']['Server']['DisableIS'] = false;
-        $GLOBALS['cfg']['ActionLinksMode'] = 'both';
+        $config = Config::getInstance();
+        $config->selectedServer['user'] = 'user';
+        $config->selectedServer['DisableIS'] = false;
+        $config->settings['ActionLinksMode'] = 'both';
 
         $relationParameters = RelationParameters::fromArray([
             'db' => 'pmadb',
@@ -45,8 +48,8 @@ class NavigationTest extends AbstractTestCase
 
         $this->object = new Navigation(
             new Template(),
-            new Relation($GLOBALS['dbi']),
-            $GLOBALS['dbi'],
+            new Relation($dbi),
+            $dbi,
         );
     }
 
@@ -75,9 +78,9 @@ class NavigationTest extends AbstractTestCase
             ->method('tryQueryAsControlUser')
             ->with($expectedQuery);
         $dbi->expects($this->any())->method('quoteString')
-            ->will($this->returnCallback(static fn (string $string): string => "'" . $string . "'"));
+            ->willReturnCallback(static fn (string $string): string => "'" . $string . "'");
 
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
         $this->object = new Navigation(new Template(), new Relation($dbi), $dbi);
         $this->object->hideNavigationItem('itemName', 'itemType', 'db');
     }
@@ -98,8 +101,8 @@ class NavigationTest extends AbstractTestCase
             ->with($expectedQuery);
 
         $dbi->expects($this->any())->method('quoteString')
-            ->will($this->returnCallback(static fn (string $string): string => "'" . $string . "'"));
-        $GLOBALS['dbi'] = $dbi;
+            ->willReturnCallback(static fn (string $string): string => "'" . $string . "'");
+        DatabaseInterface::$instance = $dbi;
         $this->object = new Navigation(new Template(), new Relation($dbi), $dbi);
         $this->object->unhideNavigationItem('itemName', 'itemType', 'db');
     }

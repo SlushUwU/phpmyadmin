@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Controllers\Table;
 
+use PhpMyAdmin\Config;
 use PhpMyAdmin\Controllers\Table\IndexesController;
 use PhpMyAdmin\DatabaseInterface;
+use PhpMyAdmin\DbTableExists;
 use PhpMyAdmin\Html\Generator;
 use PhpMyAdmin\Html\MySQLDocumentation;
 use PhpMyAdmin\Index;
@@ -41,10 +43,24 @@ class IndexesControllerTest extends AbstractTestCase
         $GLOBALS['db'] = 'db';
         $GLOBALS['table'] = 'table';
         $GLOBALS['text_dir'] = 'ltr';
-        $GLOBALS['cfg']['Server']['pmadb'] = '';
-        $GLOBALS['cfg']['Server']['DisableIS'] = false;
+        $config = Config::getInstance();
+        $config->selectedServer['pmadb'] = '';
+        $config->selectedServer['DisableIS'] = false;
         $GLOBALS['urlParams'] = ['db' => 'db', 'server' => 1];
+    }
 
+    protected function tearDown(): void
+    {
+        parent::tearDown();
+
+        DatabaseInterface::$instance = null;
+    }
+
+    /**
+     * Tests for displayFormAction()
+     */
+    public function testDisplayFormAction(): void
+    {
         $dbi = $this->getMockBuilder(DatabaseInterface::class)
             ->disableOriginalConstructor()
             ->getMock();
@@ -56,30 +72,22 @@ class IndexesControllerTest extends AbstractTestCase
         ];
 
         $dbi->expects($this->any())->method('getTableIndexes')
-            ->will($this->returnValue($indexs));
+            ->willReturn($indexs);
 
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
 
-        //$_SESSION
-    }
-
-    /**
-     * Tests for displayFormAction()
-     */
-    public function testDisplayFormAction(): void
-    {
         $table = $this->getMockBuilder(Table::class)
             ->disableOriginalConstructor()
             ->getMock();
         $table->expects($this->any())->method('getStatusInfo')
-            ->will($this->returnValue(''));
+            ->willReturn('');
         $table->expects($this->any())->method('isView')
-            ->will($this->returnValue(false));
+            ->willReturn(false);
         $table->expects($this->any())->method('getNameAndTypeOfTheColumns')
-            ->will($this->returnValue(['field_name' => 'field_type']));
+            ->willReturn(['field_name' => 'field_type']);
 
-        $GLOBALS['dbi']->expects($this->any())->method('getTable')
-            ->will($this->returnValue($table));
+        $dbi->expects($this->any())->method('getTable')
+            ->willReturn($table);
 
         $response = new ResponseStub();
         $index = new Index();
@@ -90,8 +98,9 @@ class IndexesControllerTest extends AbstractTestCase
         $ctrl = new IndexesController(
             $response,
             $template,
-            $GLOBALS['dbi'],
-            new Indexes($response, $template, $GLOBALS['dbi']),
+            $dbi,
+            new Indexes($response, $template, $dbi),
+            new DbTableExists($dbi),
         );
 
         $_POST['create_index'] = true;

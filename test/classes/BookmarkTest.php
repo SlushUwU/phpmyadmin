@@ -4,13 +4,15 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests;
 
-use PhpMyAdmin\Bookmark;
-use PhpMyAdmin\ConfigStorage\Features\BookmarkFeature;
+use PhpMyAdmin\Bookmarks\Bookmark;
+use PhpMyAdmin\Bookmarks\BookmarkRepository;
+use PhpMyAdmin\Config;
+use PhpMyAdmin\ConfigStorage\Relation;
+use PhpMyAdmin\ConfigStorage\RelationParameters;
 use PhpMyAdmin\DatabaseInterface;
-use PhpMyAdmin\Identifiers\DatabaseName;
-use PhpMyAdmin\Identifiers\TableName;
 use PhpMyAdmin\Tests\Stubs\DbiDummy;
 use PHPUnit\Framework\Attributes\CoversClass;
+use ReflectionProperty;
 
 #[CoversClass(Bookmark::class)]
 class BookmarkTest extends AbstractTestCase
@@ -29,17 +31,25 @@ class BookmarkTest extends AbstractTestCase
 
         $this->dummyDbi = $this->createDbiDummy();
         $this->dbi = $this->createDatabaseInterface($this->dummyDbi);
-        $GLOBALS['dbi'] = $this->dbi;
-        $GLOBALS['cfg']['Server']['user'] = 'root';
-        $GLOBALS['cfg']['Server']['pmadb'] = 'phpmyadmin';
-        $GLOBALS['cfg']['Server']['bookmarktable'] = 'pma_bookmark';
-        $GLOBALS['cfg']['MaxCharactersInDisplayedSQL'] = 1000;
-        $GLOBALS['cfg']['ServerDefault'] = 1;
+        DatabaseInterface::$instance = $this->dbi;
+        $config = Config::getInstance();
+        $config->selectedServer['user'] = 'root';
+        $config->selectedServer['pmadb'] = 'phpmyadmin';
+        $config->selectedServer['bookmarktable'] = 'pma_bookmark';
+        $config->settings['MaxCharactersInDisplayedSQL'] = 1000;
+        $config->settings['ServerDefault'] = 1;
         $GLOBALS['server'] = 1;
+
+        $relationParameters = RelationParameters::fromArray([
+            'bookmarkwork' => true,
+            'db' => 'phpmyadmin',
+            'bookmark' => 'pma_bookmark',
+        ]);
+        (new ReflectionProperty(Relation::class, 'cache'))->setValue(null, $relationParameters);
     }
 
     /**
-     * Tests for Bookmark::getList()
+     * Tests for BookmarkRepository::getList()
      */
     public function testGetList(): void
     {
@@ -49,10 +59,9 @@ class BookmarkTest extends AbstractTestCase
             [['1', 'sakila', 'root', 'label', 'SELECT * FROM `actor` WHERE `actor_id` < 10;']],
             ['id', 'dbase', 'user', 'label', 'query'],
         );
-        $actual = Bookmark::getList(
-            new BookmarkFeature(DatabaseName::from('phpmyadmin'), TableName::from('pma_bookmark')),
-            $GLOBALS['dbi'],
-            $GLOBALS['cfg']['Server']['user'],
+        $dbi = DatabaseInterface::getInstance();
+        $actual = (new BookmarkRepository($dbi, new Relation($dbi)))->getList(
+            Config::getInstance()->selectedServer['user'],
             'sakila',
         );
         $this->assertContainsOnlyInstancesOf(Bookmark::class, $actual);
@@ -60,20 +69,22 @@ class BookmarkTest extends AbstractTestCase
     }
 
     /**
-     * Tests for Bookmark::get()
+     * Tests for BookmarkRepository::get()
      */
     public function testGet(): void
     {
-        $this->dummyDbi->addSelectDb('phpmyadmin');
+        $this->dummyDbi->addResult(
+            "SELECT * FROM `phpmyadmin`.`pma_bookmark` WHERE `id` = 1 AND (user = 'root' OR user = '') LIMIT 1",
+            [],
+            ['id', 'dbase', 'user', 'label', 'query'],
+        );
+        $dbi = DatabaseInterface::getInstance();
         $this->assertNull(
-            Bookmark::get(
-                $GLOBALS['dbi'],
-                $GLOBALS['cfg']['Server']['user'],
-                DatabaseName::from('phpmyadmin'),
-                '1',
+            (new BookmarkRepository($dbi, new Relation($dbi)))->get(
+                Config::getInstance()->selectedServer['user'],
+                1,
             ),
         );
-        $this->dummyDbi->assertAllSelectsConsumed();
     }
 
     /**
@@ -81,17 +92,19 @@ class BookmarkTest extends AbstractTestCase
      */
     public function testSave(): void
     {
-        $bookmarkData = [
-            'bkm_database' => 'phpmyadmin',
-            'bkm_user' => 'root',
-            'bkm_sql_query' => 'SELECT "phpmyadmin"',
-            'bkm_label' => 'bookmark1',
-        ];
-
-        $bookmark = Bookmark::createBookmark($GLOBALS['dbi'], $bookmarkData);
+        $this->dummyDbi->addResult(
+            'INSERT INTO `phpmyadmin`.`pma_bookmark` (id, dbase, user, query, label)' .
+            " VALUES (NULL, 'phpmyadmin', 'root', 'SELECT \\\"phpmyadmin\\\"', 'bookmark1')",
+            true,
+        );
+        $dbi = DatabaseInterface::getInstance();
+        $bookmark = (new BookmarkRepository($dbi, new Relation($dbi)))->createBookmark(
+            'SELECT "phpmyadmin"',
+            'bookmark1',
+            'root',
+            'phpmyadmin',
+        );
         $this->assertNotFalse($bookmark);
-        $this->dummyDbi->addSelectDb('phpmyadmin');
-        $this->assertFalse($bookmark->save());
-        $this->dummyDbi->assertAllSelectsConsumed();
+        $this->assertTrue($bookmark->save());
     }
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests;
 
+use PhpMyAdmin\Config;
 use PhpMyAdmin\ConfigStorage\Relation;
 use PhpMyAdmin\ConfigStorage\RelationParameters;
 use PhpMyAdmin\DatabaseInterface;
@@ -27,19 +28,20 @@ class TransformationsTest extends AbstractTestCase
     {
         parent::setUp();
 
-        $GLOBALS['dbi'] = $this->createDatabaseInterface();
+        DatabaseInterface::$instance = $this->createDatabaseInterface();
         $GLOBALS['table'] = 'table';
         $GLOBALS['db'] = 'db';
-        $GLOBALS['cfg'] = ['ServerDefault' => 1, 'ActionLinksMode' => 'icons'];
+        $config = Config::getInstance();
+        $config->settings = ['ServerDefault' => 1, 'ActionLinksMode' => 'icons'];
         $GLOBALS['server'] = 1;
-        $GLOBALS['cfg']['Server']['pmadb'] = 'pmadb';
-        $GLOBALS['cfg']['Server']['user'] = 'user';
-        $GLOBALS['cfg']['Server']['bookmarktable'] = '';
-        $GLOBALS['cfg']['Server']['relation'] = '';
-        $GLOBALS['cfg']['Server']['table_info'] = '';
-        $GLOBALS['cfg']['Server']['table_coords'] = '';
-        $GLOBALS['cfg']['Server']['column_info'] = 'column_info';
-        $GLOBALS['cfg']['DBG']['sql'] = false;
+        $config->selectedServer['pmadb'] = 'pmadb';
+        $config->selectedServer['user'] = 'user';
+        $config->selectedServer['bookmarktable'] = '';
+        $config->selectedServer['relation'] = '';
+        $config->selectedServer['table_info'] = '';
+        $config->selectedServer['table_coords'] = '';
+        $config->selectedServer['column_info'] = 'column_info';
+        $config->settings['DBG']['sql'] = false;
 
         $this->transformations = new Transformations();
     }
@@ -209,8 +211,8 @@ class TransformationsTest extends AbstractTestCase
             ->getMock();
         $dbi->expects($this->any())
             ->method('tryQuery')
-            ->will($this->returnValue($this->createStub(DummyResult::class)));
-        $GLOBALS['dbi'] = $dbi;
+            ->willReturn($this->createStub(DummyResult::class));
+        DatabaseInterface::$instance = $dbi;
 
         (new ReflectionProperty(Relation::class, 'cache'))->setValue(null, null);
 

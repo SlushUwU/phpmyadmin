@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests;
 
+use PhpMyAdmin\ColumnFull;
+use PhpMyAdmin\Config;
 use PhpMyAdmin\ConfigStorage\Relation;
 use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\Dbal\Connection;
@@ -39,16 +41,17 @@ class NormalizationTest extends AbstractTestCase
 
         $this->dummyDbi = $this->createDbiDummy();
         $this->dbi = $this->createDatabaseInterface($this->dummyDbi);
-        $GLOBALS['dbi'] = $this->dbi;
-        $GLOBALS['cfg']['LimitChars'] = 50;
-        $GLOBALS['cfg']['ServerDefault'] = 'PMA_server';
-        $GLOBALS['cfg']['ShowHint'] = true;
-        $GLOBALS['cfg']['CharEditing'] = '';
-        $GLOBALS['cfg']['ActionLinksMode'] = 'icons';
+        DatabaseInterface::$instance = $this->dbi;
+        $config = Config::getInstance();
+        $config->settings['LimitChars'] = 50;
+        $config->settings['ServerDefault'] = 'PMA_server';
+        $config->settings['ShowHint'] = true;
+        $config->settings['CharEditing'] = '';
+        $config->settings['ActionLinksMode'] = 'icons';
         $GLOBALS['db'] = 'PMA_db';
         $GLOBALS['table'] = 'PMA_table';
         $GLOBALS['server'] = 1;
-        $GLOBALS['cfg']['Server']['DisableIS'] = false;
+        $config->selectedServer['DisableIS'] = false;
         $_POST['change_column'] = null;
 
         //$_SESSION
@@ -58,25 +61,21 @@ class NormalizationTest extends AbstractTestCase
             ->disableOriginalConstructor()
             ->getMock();
         $dbi->types = new Types($dbi);
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
         // set expectations
         $dbi->expects($this->any())
             ->method('selectDb')
-            ->will($this->returnValue(true));
+            ->willReturn(true);
         $dbi->expects($this->any())
             ->method('getColumns')
-            ->will(
-                $this->returnValue(
-                    [
-                        'id' => ['Field' => 'id', 'Type' => 'integer'],
-                        'col1' => ['Field' => 'col1', 'Type' => 'varchar(100)'],
-                        'col2' => ['Field' => 'col2', 'Type' => 'DATETIME'],
-                    ],
-                ),
-            );
+            ->willReturn([
+                'id' => new ColumnFull('id', 'integer', null, false, '', null, '', '', ''),
+                'col1' => new ColumnFull('col1', 'varchar(100)', null, false, '', null, '', '', ''),
+                'col2' => new ColumnFull('col2', 'DATETIME', null, false, '', null, '', '', ''),
+            ]);
         $dbi->expects($this->any())
             ->method('getColumnNames')
-            ->will($this->returnValue(['id', 'col1', 'col2']));
+            ->willReturn(['id', 'col1', 'col2']);
         $map = [
             ['PMA_db', 'PMA_table1', Connection::TYPE_USER, []],
             ['PMA_db', 'PMA_table', Connection::TYPE_USER, [['Key_name' => 'PRIMARY', 'Column_name' => 'id']]],
@@ -89,13 +88,13 @@ class NormalizationTest extends AbstractTestCase
         ];
         $dbi->expects($this->any())
             ->method('getTableIndexes')
-            ->will($this->returnValueMap($map));
+            ->willReturnMap($map);
         $dbi->expects($this->any())
             ->method('tryQuery')
-            ->will($this->returnValue($this->createStub(DummyResult::class)));
+            ->willReturn($this->createStub(DummyResult::class));
         $dbi->expects($this->any())
             ->method('fetchResult')
-            ->will($this->returnValue([0]));
+            ->willReturn([0]);
 
         $this->normalization = new Normalization($dbi, new Relation($dbi), new Transformations(), new Template());
     }
@@ -122,11 +121,12 @@ class NormalizationTest extends AbstractTestCase
      */
     public function testGetHtmlForCreateNewColumn(): void
     {
-        $GLOBALS['cfg']['BrowseMIME'] = true;
-        $GLOBALS['cfg']['MaxRows'] = 25;
+        $config = Config::getInstance();
+        $config->settings['BrowseMIME'] = true;
+        $config->settings['MaxRows'] = 25;
         $GLOBALS['col_priv'] = false;
-        $GLOBALS['cfg']['Server']['DisableIS'] = false;
-        $GLOBALS['dbi'] = $this->dbi;
+        $config->selectedServer['DisableIS'] = false;
+        DatabaseInterface::$instance = $this->dbi;
         $db = 'testdb';
         $table = 'mytable';
         $numFields = 1;

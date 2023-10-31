@@ -12,6 +12,7 @@ use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\Dbal\DbiExtension;
 use PhpMyAdmin\LanguageManager;
 use PhpMyAdmin\SqlParser\Translator;
+use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\Stubs\DbiDummy;
 use PhpMyAdmin\Tests\Stubs\ResponseRenderer;
 use PhpMyAdmin\Theme\Theme;
@@ -95,7 +96,7 @@ abstract class AbstractTestCase extends TestCase
 
     protected function loadDbiIntoContainerBuilder(): void
     {
-        $GLOBALS['containerBuilder']->set(DatabaseInterface::class, $GLOBALS['dbi']);
+        $GLOBALS['containerBuilder']->set(DatabaseInterface::class, DatabaseInterface::getInstance());
         $GLOBALS['containerBuilder']->setAlias('dbi', DatabaseInterface::class);
     }
 
@@ -159,9 +160,10 @@ abstract class AbstractTestCase extends TestCase
 
     protected function setGlobalConfig(): void
     {
-        $GLOBALS['config'] = $this->createConfig();
-        $GLOBALS['config']->set('environment', 'development');
-        $GLOBALS['cfg'] = $GLOBALS['config']->settings;
+        Config::$instance = null;
+        $config = Config::getInstance();
+        $config->loadAndCheck();
+        $config->set('environment', 'development');
     }
 
     protected function setTheme(): void
@@ -197,6 +199,9 @@ abstract class AbstractTestCase extends TestCase
      */
     protected function tearDown(): void
     {
+        DatabaseInterface::$instance = null;
+        Config::$instance = null;
+        (new ReflectionProperty(Template::class, 'twig'))->setValue(null, null);
         foreach (array_keys($GLOBALS) as $key) {
             if (in_array($key, $this->globalsAllowList)) {
                 continue;

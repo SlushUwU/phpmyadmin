@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests;
 
+use PhpMyAdmin\Config;
 use PhpMyAdmin\ConfigStorage\Relation;
+use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\Export\Export;
 use PhpMyAdmin\Plugins;
 use PhpMyAdmin\Transformations;
@@ -19,7 +21,7 @@ class PluginsTest extends AbstractTestCase
         parent::setUp();
 
         $this->loadContainerBuilder();
-        $GLOBALS['dbi'] = $this->createDatabaseInterface();
+        DatabaseInterface::$instance = $this->createDatabaseInterface();
 
         parent::loadDbiIntoContainerBuilder();
     }
@@ -73,7 +75,7 @@ class PluginsTest extends AbstractTestCase
         $GLOBALS['strLatexContinued'] = '(continued)';
         $GLOBALS['strLatexStructure'] = 'Structure of table @TABLE@';
         /** @psalm-suppress InvalidArrayOffset, PossiblyInvalidArrayAssignment */
-        $GLOBALS['cfg'][$section][$option] = $actualConfig;
+        Config::getInstance()->settings[$section][$option] = $actualConfig;
         $default = Plugins::getDefault($section, $option);
         $this->assertSame($expected, $default);
     }
@@ -107,25 +109,26 @@ class PluginsTest extends AbstractTestCase
     {
         $GLOBALS['server'] = 1;
         $GLOBALS['plugin_param'] = ['export_type' => 'database', 'single_table' => false];
+        $dbi = DatabaseInterface::getInstance();
         $exportList = [
             new Plugins\Export\ExportJson(
-                new Relation($GLOBALS['dbi']),
-                new Export($GLOBALS['dbi']),
+                new Relation($dbi),
+                new Export($dbi),
                 new Transformations(),
             ),
             new Plugins\Export\ExportOds(
-                new Relation($GLOBALS['dbi']),
-                new Export($GLOBALS['dbi']),
+                new Relation($dbi),
+                new Export($dbi),
                 new Transformations(),
             ),
             new Plugins\Export\ExportSql(
-                new Relation($GLOBALS['dbi']),
-                new Export($GLOBALS['dbi']),
+                new Relation($dbi),
+                new Export($dbi),
                 new Transformations(),
             ),
             new Plugins\Export\ExportXml(
-                new Relation($GLOBALS['dbi']),
-                new Export($GLOBALS['dbi']),
+                new Relation($dbi),
+                new Export($dbi),
                 new Transformations(),
             ),
         ];

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests;
 
+use PhpMyAdmin\Bookmarks\BookmarkRepository;
+use PhpMyAdmin\Config;
 use PhpMyAdmin\ConfigStorage\Relation;
 use PhpMyAdmin\ConfigStorage\RelationParameters;
 use PhpMyAdmin\DatabaseInterface;
@@ -41,8 +43,8 @@ class SqlQueryFormTest extends AbstractTestCase
         $this->dummyDbi = $this->createDbiDummy();
         $this->dummyDbi->addResult(
             'SHOW FULL COLUMNS FROM `PMA_db`.`PMA_table`',
-            [['field1', 'Comment1']],
-            ['Field', 'Comment'],
+            [['field1', '', null, 'NO', '', null, '', '', 'Comment1']],
+            ['Field', 'Type', 'Collation', 'Null', 'Key', 'Default', 'Extra', 'Privileges', 'Comment'],
         );
 
         $this->dummyDbi->addResult(
@@ -50,8 +52,10 @@ class SqlQueryFormTest extends AbstractTestCase
             [],
         );
         $this->dbi = $this->createDatabaseInterface($this->dummyDbi);
-        $GLOBALS['dbi'] = $this->dbi;
-        $this->sqlQueryForm = new SqlQueryForm(new Template(), $this->dbi);
+        DatabaseInterface::$instance = $this->dbi;
+        $relation = new Relation($this->dbi);
+        $bookmarkRepository = new BookmarkRepository($this->dbi, $relation);
+        $this->sqlQueryForm = new SqlQueryForm(new Template(), $this->dbi, $bookmarkRepository);
 
         //$GLOBALS
         $GLOBALS['db'] = 'PMA_db';
@@ -59,19 +63,20 @@ class SqlQueryFormTest extends AbstractTestCase
         $GLOBALS['text_dir'] = 'text_dir';
         $GLOBALS['server'] = 0;
 
-        $GLOBALS['cfg']['GZipDump'] = false;
-        $GLOBALS['cfg']['BZipDump'] = false;
-        $GLOBALS['cfg']['ZipDump'] = false;
-        $GLOBALS['cfg']['ServerDefault'] = 'default';
-        $GLOBALS['cfg']['TextareaAutoSelect'] = true;
-        $GLOBALS['cfg']['TextareaRows'] = 100;
-        $GLOBALS['cfg']['TextareaCols'] = 11;
-        $GLOBALS['cfg']['DefaultTabDatabase'] = 'structure';
-        $GLOBALS['cfg']['RetainQueryBox'] = true;
-        $GLOBALS['cfg']['ActionLinksMode'] = 'both';
-        $GLOBALS['cfg']['DefaultTabTable'] = 'browse';
-        $GLOBALS['cfg']['CodemirrorEnable'] = true;
-        $GLOBALS['cfg']['DefaultForeignKeyChecks'] = 'default';
+        $config = Config::getInstance();
+        $config->settings['GZipDump'] = false;
+        $config->settings['BZipDump'] = false;
+        $config->settings['ZipDump'] = false;
+        $config->settings['ServerDefault'] = 'default';
+        $config->settings['TextareaAutoSelect'] = true;
+        $config->settings['TextareaRows'] = 100;
+        $config->settings['TextareaCols'] = 11;
+        $config->settings['DefaultTabDatabase'] = 'structure';
+        $config->settings['RetainQueryBox'] = true;
+        $config->settings['ActionLinksMode'] = 'both';
+        $config->settings['DefaultTabTable'] = 'browse';
+        $config->settings['CodemirrorEnable'] = true;
+        $config->settings['DefaultForeignKeyChecks'] = 'default';
 
         $relationParameters = RelationParameters::fromArray([
             'table_coords' => 'table_name',
@@ -83,9 +88,9 @@ class SqlQueryFormTest extends AbstractTestCase
         ]);
         (new ReflectionProperty(Relation::class, 'cache'))->setValue(null, $relationParameters);
 
-        $GLOBALS['cfg']['Server']['user'] = 'user';
-        $GLOBALS['cfg']['Server']['pmadb'] = 'pmadb';
-        $GLOBALS['cfg']['Server']['bookmarktable'] = 'bookmarktable';
+        $config->selectedServer['user'] = 'user';
+        $config->selectedServer['pmadb'] = 'pmadb';
+        $config->selectedServer['bookmarktable'] = 'bookmarktable';
     }
 
     /**

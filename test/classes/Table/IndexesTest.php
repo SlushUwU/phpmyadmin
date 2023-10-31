@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Table;
 
+use PhpMyAdmin\Config;
 use PhpMyAdmin\DatabaseInterface;
+use PhpMyAdmin\Http\Factory\ServerRequestFactory;
 use PhpMyAdmin\Index;
-use PhpMyAdmin\ResponseRenderer;
 use PhpMyAdmin\Table;
 use PhpMyAdmin\Table\Indexes;
 use PhpMyAdmin\Template;
@@ -30,8 +31,9 @@ class IndexesTest extends AbstractTestCase
         $GLOBALS['db'] = 'db';
         $GLOBALS['table'] = 'table';
         $GLOBALS['text_dir'] = 'ltr';
-        $GLOBALS['cfg']['Server']['pmadb'] = '';
-        $GLOBALS['cfg']['Server']['DisableIS'] = false;
+        $config = Config::getInstance();
+        $config->selectedServer['pmadb'] = '';
+        $config->selectedServer['DisableIS'] = false;
         $GLOBALS['urlParams'] = ['db' => 'db', 'server' => 1];
 
         $dbi = $this->getMockBuilder(DatabaseInterface::class)
@@ -45,9 +47,9 @@ class IndexesTest extends AbstractTestCase
         ];
 
         $dbi->expects($this->any())->method('getTableIndexes')
-            ->will($this->returnValue($indexs));
+            ->willReturn($indexs);
 
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
 
         //$_SESSION
     }
@@ -60,31 +62,31 @@ class IndexesTest extends AbstractTestCase
             ->disableOriginalConstructor()
             ->getMock();
         $table->expects($this->any())->method('getSqlQueryForIndexCreateOrEdit')
-            ->will($this->returnValue($sqlQuery));
+            ->willReturn($sqlQuery);
 
-        $GLOBALS['dbi']->expects($this->any())->method('getTable')
-            ->will($this->returnValue($table));
+        $dbi = DatabaseInterface::getInstance();
+        $dbi->expects($this->any())->method('getTable')
+            ->willReturn($table);
 
         $response = new ResponseStub();
         $index = new Index();
 
-        $indexes = new Indexes($response, new Template(), $GLOBALS['dbi']);
+        $indexes = new Indexes($response, new Template(), $dbi);
+
+        $request = ServerRequestFactory::create()->createServerRequest('GET', 'http://example.com/')
+            ->withQueryParams(['ajax_request' => '1']);
 
         // Preview SQL
-        $_POST['preview_sql'] = true;
-        $indexes->doSaveData($index, false, $GLOBALS['db'], $GLOBALS['table']);
+        $indexes->doSaveData($request, $index, false, $GLOBALS['db'], $GLOBALS['table'], true);
         $jsonArray = $response->getJSONResult();
         $this->assertArrayHasKey('sql_data', $jsonArray);
         $this->assertStringContainsString($sqlQuery, $jsonArray['sql_data']);
 
         // Alter success
         $response->clear();
-        ResponseRenderer::getInstance()->setAjax(true);
-        unset($_POST['preview_sql']);
-        $indexes->doSaveData($index, false, $GLOBALS['db'], $GLOBALS['table']);
+        $indexes->doSaveData($request, $index, false, $GLOBALS['db'], $GLOBALS['table'], false);
         $jsonArray = $response->getJSONResult();
         $this->assertArrayHasKey('index_table', $jsonArray);
         $this->assertArrayHasKey('message', $jsonArray);
-        ResponseRenderer::getInstance()->setAjax(false);
     }
 }

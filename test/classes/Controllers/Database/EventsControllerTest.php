@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Controllers\Database;
 
+use PhpMyAdmin\Config;
 use PhpMyAdmin\Controllers\Database\EventsController;
 use PhpMyAdmin\Database\Events;
-use PhpMyAdmin\Http\ServerRequest;
+use PhpMyAdmin\DatabaseInterface;
+use PhpMyAdmin\DbTableExists;
+use PhpMyAdmin\Http\Factory\ServerRequestFactory;
 use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\ResponseRenderer;
@@ -22,7 +25,7 @@ final class EventsControllerTest extends AbstractTestCase
         $GLOBALS['text_dir'] = 'ltr';
         $GLOBALS['PMA_PHP_SELF'] = 'index.php';
         $GLOBALS['db'] = 'test_db';
-        $GLOBALS['cfg']['Server']['DisableIS'] = true;
+        Config::getInstance()->selectedServer['DisableIS'] = true;
 
         $dummyDbi = $this->createDbiDummy();
         // phpcs:disable Generic.Files.LineLength.TooLong
@@ -46,16 +49,20 @@ final class EventsControllerTest extends AbstractTestCase
         );
         // phpcs:enable
         $dbi = $this->createDatabaseInterface($dummyDbi);
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
         $response = new ResponseRenderer();
         $template = new Template();
+
+        $request = ServerRequestFactory::create()->createServerRequest('GET', 'http://example.com/')
+            ->withQueryParams(['db' => 'test_db']);
 
         (new EventsController(
             $response,
             $template,
             new Events($dbi),
             $dbi,
-        ))($this->createStub(ServerRequest::class));
+            new DbTableExists($dbi),
+        ))($request);
 
         $actual = $response->getHTMLResult();
         // phpcs:disable Generic.Files.LineLength.TooLong
@@ -189,7 +196,7 @@ HTML;
         $GLOBALS['text_dir'] = 'ltr';
         $GLOBALS['PMA_PHP_SELF'] = 'index.php';
         $GLOBALS['db'] = 'test_db';
-        $GLOBALS['cfg']['Server']['DisableIS'] = true;
+        Config::getInstance()->selectedServer['DisableIS'] = true;
 
         $dummyDbi = $this->createDbiDummy();
         // phpcs:disable Generic.Files.LineLength.TooLong
@@ -213,16 +220,20 @@ HTML;
         );
         // phpcs:enable
         $dbi = $this->createDatabaseInterface($dummyDbi);
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
         $response = new ResponseRenderer();
         $template = new Template();
+
+        $request = ServerRequestFactory::create()->createServerRequest('GET', 'http://example.com/')
+            ->withQueryParams(['db' => 'test_db']);
 
         (new EventsController(
             $response,
             $template,
             new Events($dbi),
             $dbi,
-        ))($this->createStub(ServerRequest::class));
+            new DbTableExists($dbi),
+        ))($request);
 
         $actual = $response->getHTMLResult();
         // phpcs:disable Generic.Files.LineLength.TooLong

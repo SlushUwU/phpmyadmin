@@ -4,18 +4,23 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Plugins\Auth;
 
+use PhpMyAdmin\Config;
 use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\ErrorHandler;
 use PhpMyAdmin\Exceptions\ExitException;
-use PhpMyAdmin\Header;
 use PhpMyAdmin\Plugins\Auth\AuthenticationCookie;
 use PhpMyAdmin\ResponseRenderer;
-use PhpMyAdmin\Tests\AbstractNetworkTestCase;
+use PhpMyAdmin\Tests\AbstractTestCase;
+use PhpMyAdmin\Tests\Stubs\ResponseRenderer as ResponseRendererStub;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
+use PHPUnit\Framework\Attributes\Medium;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
+use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 use ReflectionException;
 use ReflectionMethod;
+use ReflectionProperty;
 use Throwable;
 
 use function base64_decode;
@@ -33,7 +38,8 @@ use function time;
 use const SODIUM_CRYPTO_SECRETBOX_KEYBYTES;
 
 #[CoversClass(AuthenticationCookie::class)]
-class AuthenticationCookieTest extends AbstractNetworkTestCase
+#[Medium]
+class AuthenticationCookieTest extends AbstractTestCase
 {
     protected AuthenticationCookie $object;
 
@@ -50,7 +56,7 @@ class AuthenticationCookieTest extends AbstractNetworkTestCase
 
         parent::setGlobalConfig();
 
-        $GLOBALS['dbi'] = $this->createDatabaseInterface();
+        DatabaseInterface::$instance = $this->createDatabaseInterface();
         $GLOBALS['server'] = 0;
         $GLOBALS['text_dir'] = 'ltr';
         $GLOBALS['db'] = 'db';
@@ -58,7 +64,7 @@ class AuthenticationCookieTest extends AbstractNetworkTestCase
         $_POST['pma_password'] = '';
         $this->object = new AuthenticationCookie();
         $_SERVER['PHP_SELF'] = '/phpmyadmin/index.php';
-        $GLOBALS['cfg']['Server']['DisableIS'] = false;
+        Config::getInstance()->selectedServer['DisableIS'] = false;
         $GLOBALS['conn_error'] = null;
     }
 
@@ -73,76 +79,30 @@ class AuthenticationCookieTest extends AbstractNetworkTestCase
     }
 
     #[Group('medium')]
-    public function testAuthErrorAJAX(): never
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
+    public function testAuthErrorAJAX(): void
     {
-        $mockResponse = $this->mockResponse();
-
-        $mockResponse->expects($this->once())
-            ->method('isAjax')
-            ->with()
-            ->will($this->returnValue(true));
-
-        $mockResponse->expects($this->once())
-            ->method('setRequestStatus')
-            ->with(false);
-
-        $mockResponse->expects($this->once())
-            ->method('addJSON')
-            ->with('redirect_flag', '1');
-
         $GLOBALS['conn_error'] = true;
 
-        $this->expectException(ExitException::class);
-        $this->object->showLoginForm();
+        $responseStub = new ResponseRendererStub();
+        $responseStub->setAjax(true);
+        (new ReflectionProperty(ResponseRenderer::class, 'instance'))->setValue(null, $responseStub);
+
+        try {
+            $this->object->showLoginForm();
+        } catch (Throwable $throwable) {
+        }
+
+        $this->assertInstanceOf(ExitException::class, $throwable);
+        $response = $responseStub->getResponse();
+        $this->assertSame(200, $response->getStatusCode());
+        $this->assertFalse($responseStub->hasSuccessState());
+        $this->assertSame(['redirect_flag' => '1'], $responseStub->getJSONResult());
     }
 
     private function getAuthErrorMockResponse(): void
     {
-        $mockResponse = $this->mockResponse();
-
-        $mockResponse->expects($this->once())
-            ->method('isAjax')
-            ->with()
-            ->will($this->returnValue(false));
-
-        // mock header
-
-        $mockHeader = $this->getMockBuilder(Header::class)
-            ->disableOriginalConstructor()
-            ->onlyMethods(
-                ['setBodyId', 'setTitle', 'disableMenuAndConsole', 'disableWarnings'],
-            )
-            ->getMock();
-
-        $mockHeader->expects($this->once())
-            ->method('setBodyId')
-            ->with('loginform');
-
-        $mockHeader->expects($this->once())
-            ->method('setTitle')
-            ->with('phpMyAdmin');
-
-        $mockHeader->expects($this->once())
-            ->method('disableMenuAndConsole')
-            ->with();
-
-        $mockHeader->expects($this->once())
-            ->method('disableWarnings')
-            ->with();
-
-        // set mocked headers and footers
-
-        $mockResponse->expects($this->once())
-            ->method('setMinimalFooter')
-            ->with();
-
-        $mockResponse->expects($this->once())
-            ->method('getHeader')
-            ->with()
-            ->will($this->returnValue($mockHeader));
-
-        $GLOBALS['cfg']['Servers'] = [1, 2];
-
         // mock error handler
 
         $mockErrorHandler = $this->getMockBuilder(ErrorHandler::class)
@@ -153,47 +113,48 @@ class AuthenticationCookieTest extends AbstractNetworkTestCase
         $mockErrorHandler->expects($this->once())
             ->method('hasDisplayErrors')
             ->with()
-            ->will($this->returnValue(true));
+            ->willReturn(true);
 
-        $GLOBALS['errorHandler'] = $mockErrorHandler;
+        ErrorHandler::$instance = $mockErrorHandler;
     }
 
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
     #[Group('medium')]
     public function testAuthError(): void
     {
         $_REQUEST = [];
-        ResponseRenderer::getInstance()->setAjax(false);
 
         $_REQUEST['old_usr'] = '';
-        $GLOBALS['cfg']['LoginCookieRecall'] = true;
-        $GLOBALS['cfg']['blowfish_secret'] = str_repeat('a', 32);
+        $config = Config::getInstance();
+        $config->settings['LoginCookieRecall'] = true;
+        $config->settings['blowfish_secret'] = str_repeat('a', 32);
         $this->object->user = 'pmauser';
         $GLOBALS['pma_auth_server'] = 'localhost';
 
         $GLOBALS['conn_error'] = true;
-        $GLOBALS['cfg']['Lang'] = 'en';
-        $GLOBALS['cfg']['AllowArbitraryServer'] = true;
-        $GLOBALS['cfg']['CaptchaApi'] = '';
-        $GLOBALS['cfg']['CaptchaRequestParam'] = '';
-        $GLOBALS['cfg']['CaptchaResponseParam'] = '';
-        $GLOBALS['cfg']['CaptchaLoginPrivateKey'] = '';
-        $GLOBALS['cfg']['CaptchaLoginPublicKey'] = '';
+        $config->settings['Lang'] = 'en';
+        $config->settings['AllowArbitraryServer'] = true;
+        $config->settings['CaptchaApi'] = '';
+        $config->settings['CaptchaRequestParam'] = '';
+        $config->settings['CaptchaResponseParam'] = '';
+        $config->settings['CaptchaLoginPrivateKey'] = '';
+        $config->settings['CaptchaLoginPublicKey'] = '';
         $GLOBALS['db'] = 'testDb';
         $GLOBALS['table'] = 'testTable';
-        $GLOBALS['cfg']['Servers'] = [1, 2];
-        $GLOBALS['errorHandler'] = new ErrorHandler();
+        $config->settings['Servers'] = [1, 2];
 
-        ob_start();
+        $responseStub = new ResponseRendererStub();
+        (new ReflectionProperty(ResponseRenderer::class, 'instance'))->setValue(null, $responseStub);
+
         try {
             $this->object->showLoginForm();
         } catch (Throwable $throwable) {
         }
 
-        $result = ob_get_clean();
+        $result = $responseStub->getHTMLResult();
 
         $this->assertInstanceOf(ExitException::class, $throwable);
-
-        $this->assertIsString($result);
 
         $this->assertStringContainsString(' id="imLogo"', $result);
 
@@ -234,51 +195,36 @@ class AuthenticationCookieTest extends AbstractNetworkTestCase
         $this->assertStringContainsString('<input type="hidden" name="table" value="testTable">', $result);
     }
 
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
     #[Group('medium')]
     public function testAuthCaptcha(): void
     {
-        $mockResponse = $this->mockResponse();
-
-        $mockResponse->expects($this->once())
-            ->method('isAjax')
-            ->with()
-            ->will($this->returnValue(false));
-
-        $mockResponse->expects($this->once())
-            ->method('setMinimalFooter')
-            ->with();
-
-        $mockResponse->expects($this->once())
-            ->method('getHeader')
-            ->with()
-            ->will($this->returnValue(new Header()));
-
         $_REQUEST['old_usr'] = '';
-        $GLOBALS['cfg']['LoginCookieRecall'] = false;
+        $config = Config::getInstance();
+        $config->settings['LoginCookieRecall'] = false;
 
-        $GLOBALS['cfg']['Lang'] = '';
-        $GLOBALS['cfg']['AllowArbitraryServer'] = false;
-        $GLOBALS['cfg']['Servers'] = [1];
-        $GLOBALS['cfg']['CaptchaApi'] = 'https://www.google.com/recaptcha/api.js';
-        $GLOBALS['cfg']['CaptchaRequestParam'] = 'g-recaptcha';
-        $GLOBALS['cfg']['CaptchaResponseParam'] = 'g-recaptcha-response';
-        $GLOBALS['cfg']['CaptchaLoginPrivateKey'] = 'testprivkey';
-        $GLOBALS['cfg']['CaptchaLoginPublicKey'] = 'testpubkey';
+        $config->settings['Lang'] = '';
+        $config->settings['AllowArbitraryServer'] = false;
+        $config->settings['Servers'] = [1];
+        $config->settings['CaptchaApi'] = 'https://www.google.com/recaptcha/api.js';
+        $config->settings['CaptchaRequestParam'] = 'g-recaptcha';
+        $config->settings['CaptchaResponseParam'] = 'g-recaptcha-response';
+        $config->settings['CaptchaLoginPrivateKey'] = 'testprivkey';
+        $config->settings['CaptchaLoginPublicKey'] = 'testpubkey';
         $GLOBALS['server'] = 0;
 
-        $GLOBALS['errorHandler'] = new ErrorHandler();
+        $responseStub = new ResponseRendererStub();
+        (new ReflectionProperty(ResponseRenderer::class, 'instance'))->setValue(null, $responseStub);
 
-        ob_start();
         try {
             $this->object->showLoginForm();
         } catch (Throwable $throwable) {
         }
 
-        $result = ob_get_clean();
+        $result = $responseStub->getHTMLResult();
 
         $this->assertInstanceOf(ExitException::class, $throwable);
-
-        $this->assertIsString($result);
 
         $this->assertStringContainsString('id="imLogo"', $result);
 
@@ -312,52 +258,37 @@ class AuthenticationCookieTest extends AbstractNetworkTestCase
         );
     }
 
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
     #[Group('medium')]
     public function testAuthCaptchaCheckbox(): void
     {
-        $mockResponse = $this->mockResponse();
-
-        $mockResponse->expects($this->once())
-            ->method('isAjax')
-            ->with()
-            ->will($this->returnValue(false));
-
-        $mockResponse->expects($this->once())
-            ->method('setMinimalFooter')
-            ->with();
-
-        $mockResponse->expects($this->once())
-            ->method('getHeader')
-            ->with()
-            ->will($this->returnValue(new Header()));
-
         $_REQUEST['old_usr'] = '';
-        $GLOBALS['cfg']['LoginCookieRecall'] = false;
+        $config = Config::getInstance();
+        $config->settings['LoginCookieRecall'] = false;
 
-        $GLOBALS['cfg']['Lang'] = '';
-        $GLOBALS['cfg']['AllowArbitraryServer'] = false;
-        $GLOBALS['cfg']['Servers'] = [1];
-        $GLOBALS['cfg']['CaptchaApi'] = 'https://www.google.com/recaptcha/api.js';
-        $GLOBALS['cfg']['CaptchaRequestParam'] = 'g-recaptcha';
-        $GLOBALS['cfg']['CaptchaResponseParam'] = 'g-recaptcha-response';
-        $GLOBALS['cfg']['CaptchaLoginPrivateKey'] = 'testprivkey';
-        $GLOBALS['cfg']['CaptchaLoginPublicKey'] = 'testpubkey';
-        $GLOBALS['cfg']['CaptchaMethod'] = 'checkbox';
+        $config->settings['Lang'] = '';
+        $config->settings['AllowArbitraryServer'] = false;
+        $config->settings['Servers'] = [1];
+        $config->settings['CaptchaApi'] = 'https://www.google.com/recaptcha/api.js';
+        $config->settings['CaptchaRequestParam'] = 'g-recaptcha';
+        $config->settings['CaptchaResponseParam'] = 'g-recaptcha-response';
+        $config->settings['CaptchaLoginPrivateKey'] = 'testprivkey';
+        $config->settings['CaptchaLoginPublicKey'] = 'testpubkey';
+        $config->settings['CaptchaMethod'] = 'checkbox';
         $GLOBALS['server'] = 0;
 
-        $GLOBALS['errorHandler'] = new ErrorHandler();
+        $responseStub = new ResponseRendererStub();
+        (new ReflectionProperty(ResponseRenderer::class, 'instance'))->setValue(null, $responseStub);
 
-        ob_start();
         try {
             $this->object->showLoginForm();
         } catch (Throwable $throwable) {
         }
 
-        $result = ob_get_clean();
+        $result = $responseStub->getHTMLResult();
 
         $this->assertInstanceOf(ExitException::class, $throwable);
-
-        $this->assertIsString($result);
 
         $this->assertStringContainsString('id="imLogo"', $result);
 
@@ -392,41 +323,58 @@ class AuthenticationCookieTest extends AbstractNetworkTestCase
         );
     }
 
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
     public function testAuthHeader(): void
     {
-        $GLOBALS['cfg']['LoginCookieDeleteAll'] = false;
-        $GLOBALS['cfg']['Servers'] = [1];
+        $config = Config::getInstance();
+        $config->settings['LoginCookieDeleteAll'] = false;
+        $config->settings['Servers'] = [1];
 
-        $this->mockResponse('Location: https://example.com/logout');
+        $responseStub = new ResponseRendererStub();
+        (new ReflectionProperty(ResponseRenderer::class, 'instance'))->setValue(null, $responseStub);
 
-        $GLOBALS['cfg']['Server']['LogoutURL'] = 'https://example.com/logout';
-        $GLOBALS['cfg']['Server']['auth_type'] = 'cookie';
+        $config->selectedServer['LogoutURL'] = 'https://example.com/logout';
+        $config->selectedServer['auth_type'] = 'cookie';
 
         $this->object->logOut();
+
+        $response = $responseStub->getResponse();
+        $this->assertSame(['https://example.com/logout'], $response->getHeader('Location'));
+        $this->assertSame(302, $response->getStatusCode());
     }
 
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
     public function testAuthHeaderPartial(): void
     {
-        $GLOBALS['config']->set('is_https', false);
-        $GLOBALS['cfg']['LoginCookieDeleteAll'] = false;
-        $GLOBALS['cfg']['Servers'] = [1, 2, 3];
-        $GLOBALS['cfg']['Server']['LogoutURL'] = 'https://example.com/logout';
-        $GLOBALS['cfg']['Server']['auth_type'] = 'cookie';
+        $config = Config::getInstance();
+        $config->set('is_https', false);
+        $config->settings['LoginCookieDeleteAll'] = false;
+        $config->settings['Servers'] = [1, 2, 3];
+        $config->selectedServer['LogoutURL'] = 'https://example.com/logout';
+        $config->selectedServer['auth_type'] = 'cookie';
 
         $_COOKIE['pmaAuth-2'] = '';
 
-        $this->mockResponse('Location: /phpmyadmin/index.php?route=/&server=2&lang=en');
+        $responseStub = new ResponseRendererStub();
+        (new ReflectionProperty(ResponseRenderer::class, 'instance'))->setValue(null, $responseStub);
 
         $this->object->logOut();
+
+        $response = $responseStub->getResponse();
+        $this->assertSame(['/phpmyadmin/index.php?route=/&server=2&lang=en'], $response->getHeader('Location'));
+        $this->assertSame(302, $response->getStatusCode());
     }
 
     public function testAuthCheckCaptcha(): void
     {
-        $GLOBALS['cfg']['CaptchaApi'] = 'https://www.google.com/recaptcha/api.js';
-        $GLOBALS['cfg']['CaptchaRequestParam'] = 'g-recaptcha';
-        $GLOBALS['cfg']['CaptchaResponseParam'] = 'g-recaptcha-response';
-        $GLOBALS['cfg']['CaptchaLoginPrivateKey'] = 'testprivkey';
-        $GLOBALS['cfg']['CaptchaLoginPublicKey'] = 'testpubkey';
+        $config = Config::getInstance();
+        $config->settings['CaptchaApi'] = 'https://www.google.com/recaptcha/api.js';
+        $config->settings['CaptchaRequestParam'] = 'g-recaptcha';
+        $config->settings['CaptchaResponseParam'] = 'g-recaptcha-response';
+        $config->settings['CaptchaLoginPrivateKey'] = 'testprivkey';
+        $config->settings['CaptchaLoginPublicKey'] = 'testpubkey';
         $_POST['g-recaptcha-response'] = '';
         $_POST['pma_username'] = 'testPMAUser';
 
@@ -435,67 +383,84 @@ class AuthenticationCookieTest extends AbstractNetworkTestCase
         );
 
         $this->assertEquals(
-            'Missing reCAPTCHA verification, maybe it has been blocked by adblock?',
+            'Missing Captcha verification, maybe it has been blocked by adblock?',
             $GLOBALS['conn_error'],
         );
     }
 
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
     public function testLogoutDelete(): void
     {
-        $this->mockResponse('Location: /phpmyadmin/index.php?route=/');
+        $responseStub = new ResponseRendererStub();
+        (new ReflectionProperty(ResponseRenderer::class, 'instance'))->setValue(null, $responseStub);
 
-        $GLOBALS['cfg']['CaptchaApi'] = '';
-        $GLOBALS['cfg']['CaptchaRequestParam'] = '';
-        $GLOBALS['cfg']['CaptchaResponseParam'] = '';
-        $GLOBALS['cfg']['CaptchaLoginPrivateKey'] = '';
-        $GLOBALS['cfg']['CaptchaLoginPublicKey'] = '';
-        $GLOBALS['cfg']['LoginCookieDeleteAll'] = true;
-        $GLOBALS['config']->set('PmaAbsoluteUri', '');
-        $GLOBALS['config']->set('is_https', false);
-        $GLOBALS['cfg']['Servers'] = [1];
+        $config = Config::getInstance();
+        $config->settings['CaptchaApi'] = '';
+        $config->settings['CaptchaRequestParam'] = '';
+        $config->settings['CaptchaResponseParam'] = '';
+        $config->settings['CaptchaLoginPrivateKey'] = '';
+        $config->settings['CaptchaLoginPublicKey'] = '';
+        $config->settings['LoginCookieDeleteAll'] = true;
+        $config->set('PmaAbsoluteUri', '');
+        $config->set('is_https', false);
+        $config->settings['Servers'] = [1];
 
         $_COOKIE['pmaAuth-0'] = 'test';
 
         $this->object->logOut();
 
+        $response = $responseStub->getResponse();
+        $this->assertSame(['/phpmyadmin/index.php?route=/'], $response->getHeader('Location'));
+        $this->assertSame(302, $response->getStatusCode());
+
         $this->assertArrayNotHasKey('pmaAuth-0', $_COOKIE);
     }
 
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
     public function testLogout(): void
     {
-        $this->mockResponse('Location: /phpmyadmin/index.php?route=/');
+        $responseStub = new ResponseRendererStub();
+        (new ReflectionProperty(ResponseRenderer::class, 'instance'))->setValue(null, $responseStub);
 
-        $GLOBALS['cfg']['CaptchaApi'] = '';
-        $GLOBALS['cfg']['CaptchaRequestParam'] = '';
-        $GLOBALS['cfg']['CaptchaResponseParam'] = '';
-        $GLOBALS['cfg']['CaptchaLoginPrivateKey'] = '';
-        $GLOBALS['cfg']['CaptchaLoginPublicKey'] = '';
-        $GLOBALS['cfg']['LoginCookieDeleteAll'] = false;
-        $GLOBALS['config']->set('PmaAbsoluteUri', '');
-        $GLOBALS['config']->set('is_https', false);
-        $GLOBALS['cfg']['Servers'] = [1];
+        $config = Config::getInstance();
+        $config->settings['CaptchaApi'] = '';
+        $config->settings['CaptchaRequestParam'] = '';
+        $config->settings['CaptchaResponseParam'] = '';
+        $config->settings['CaptchaLoginPrivateKey'] = '';
+        $config->settings['CaptchaLoginPublicKey'] = '';
+        $config->settings['LoginCookieDeleteAll'] = false;
+        $config->set('PmaAbsoluteUri', '');
+        $config->set('is_https', false);
+        $config->settings['Servers'] = [1];
         $GLOBALS['server'] = 1;
-        $GLOBALS['cfg']['Server'] = ['auth_type' => 'cookie'];
+        $config->selectedServer = ['auth_type' => 'cookie'];
 
         $_COOKIE['pmaAuth-1'] = 'test';
 
         $this->object->logOut();
+
+        $response = $responseStub->getResponse();
+        $this->assertSame(['/phpmyadmin/index.php?route=/'], $response->getHeader('Location'));
+        $this->assertSame(302, $response->getStatusCode());
 
         $this->assertArrayNotHasKey('pmaAuth-1', $_COOKIE);
     }
 
     public function testAuthCheckArbitrary(): void
     {
-        $GLOBALS['cfg']['CaptchaApi'] = '';
-        $GLOBALS['cfg']['CaptchaRequestParam'] = '';
-        $GLOBALS['cfg']['CaptchaResponseParam'] = '';
-        $GLOBALS['cfg']['CaptchaLoginPrivateKey'] = '';
-        $GLOBALS['cfg']['CaptchaLoginPublicKey'] = '';
+        $config = Config::getInstance();
+        $config->settings['CaptchaApi'] = '';
+        $config->settings['CaptchaRequestParam'] = '';
+        $config->settings['CaptchaResponseParam'] = '';
+        $config->settings['CaptchaLoginPrivateKey'] = '';
+        $config->settings['CaptchaLoginPublicKey'] = '';
         $_REQUEST['old_usr'] = '';
         $_POST['pma_username'] = 'testPMAUser';
         $_REQUEST['pma_servername'] = 'testPMAServer';
         $_POST['pma_password'] = 'testPMAPSWD';
-        $GLOBALS['cfg']['AllowArbitraryServer'] = true;
+        $config->settings['AllowArbitraryServer'] = true;
 
         $this->assertTrue(
             $this->object->readCredentials(),
@@ -512,7 +477,7 @@ class AuthenticationCookieTest extends AbstractNetworkTestCase
 
     public function testAuthCheckInvalidCookie(): void
     {
-        $GLOBALS['cfg']['AllowArbitraryServer'] = true;
+        Config::getInstance()->settings['AllowArbitraryServer'] = true;
         $_REQUEST['pma_servername'] = 'testPMAServer';
         $_POST['pma_password'] = 'testPMAPSWD';
         $_POST['pma_username'] = '';
@@ -532,9 +497,10 @@ class AuthenticationCookieTest extends AbstractNetworkTestCase
         $_COOKIE['pmaUser-1'] = 'pmaUser1';
         $_COOKIE['pma_iv-1'] = base64_encode('testiv09testiv09');
         $_COOKIE['pmaAuth-1'] = '';
-        $GLOBALS['cfg']['blowfish_secret'] = str_repeat('a', 32);
+        $config = Config::getInstance();
+        $config->settings['blowfish_secret'] = str_repeat('a', 32);
         $_SESSION['last_access_time'] = time() - 1000;
-        $GLOBALS['cfg']['LoginCookieValidity'] = 1440;
+        $config->settings['LoginCookieValidity'] = 1440;
 
         $this->assertFalse(
             $this->object->readCredentials(),
@@ -549,14 +515,15 @@ class AuthenticationCookieTest extends AbstractNetworkTestCase
         $_COOKIE['pmaServer-1'] = 'pmaServ1';
         $_COOKIE['pmaUser-1'] = 'pmaUser1';
         $_COOKIE['pma_iv-1'] = base64_encode('testiv09testiv09');
-        $GLOBALS['cfg']['blowfish_secret'] = str_repeat('a', 32);
+        $config = Config::getInstance();
+        $config->settings['blowfish_secret'] = str_repeat('a', 32);
         $_SESSION['last_access_time'] = '';
-        $GLOBALS['cfg']['CaptchaApi'] = '';
-        $GLOBALS['cfg']['CaptchaRequestParam'] = '';
-        $GLOBALS['cfg']['CaptchaResponseParam'] = '';
-        $GLOBALS['cfg']['CaptchaLoginPrivateKey'] = '';
-        $GLOBALS['cfg']['CaptchaLoginPublicKey'] = '';
-        $GLOBALS['config']->set('is_https', false);
+        $config->settings['CaptchaApi'] = '';
+        $config->settings['CaptchaRequestParam'] = '';
+        $config->settings['CaptchaResponseParam'] = '';
+        $config->settings['CaptchaLoginPrivateKey'] = '';
+        $config->settings['CaptchaLoginPublicKey'] = '';
+        $config->set('is_https', false);
 
         // mock for blowfish function
         $this->object = $this->getMockBuilder(AuthenticationCookie::class)
@@ -566,7 +533,7 @@ class AuthenticationCookieTest extends AbstractNetworkTestCase
 
         $this->object->expects($this->once())
             ->method('cookieDecrypt')
-            ->will($this->returnValue('testBF'));
+            ->willReturn('testBF');
 
         $this->assertFalse(
             $this->object->readCredentials(),
@@ -584,15 +551,16 @@ class AuthenticationCookieTest extends AbstractNetworkTestCase
         $_COOKIE['pmaUser-1'] = 'pmaUser1';
         $_COOKIE['pmaAuth-1'] = 'pmaAuth1';
         $_COOKIE['pma_iv-1'] = base64_encode('testiv09testiv09');
-        $GLOBALS['cfg']['blowfish_secret'] = str_repeat('a', 32);
-        $GLOBALS['cfg']['CaptchaApi'] = '';
-        $GLOBALS['cfg']['CaptchaRequestParam'] = '';
-        $GLOBALS['cfg']['CaptchaResponseParam'] = '';
-        $GLOBALS['cfg']['CaptchaLoginPrivateKey'] = '';
-        $GLOBALS['cfg']['CaptchaLoginPublicKey'] = '';
+        $config = Config::getInstance();
+        $config->settings['blowfish_secret'] = str_repeat('a', 32);
+        $config->settings['CaptchaApi'] = '';
+        $config->settings['CaptchaRequestParam'] = '';
+        $config->settings['CaptchaResponseParam'] = '';
+        $config->settings['CaptchaLoginPrivateKey'] = '';
+        $config->settings['CaptchaLoginPublicKey'] = '';
         $_SESSION['browser_access_time']['default'] = time() - 1000;
-        $GLOBALS['cfg']['LoginCookieValidity'] = 1440;
-        $GLOBALS['config']->set('is_https', false);
+        $config->settings['LoginCookieValidity'] = 1440;
+        $config->set('is_https', false);
 
         // mock for blowfish function
         $this->object = $this->getMockBuilder(AuthenticationCookie::class)
@@ -602,7 +570,7 @@ class AuthenticationCookieTest extends AbstractNetworkTestCase
 
         $this->object->expects($this->exactly(2))
             ->method('cookieDecrypt')
-            ->will($this->returnValue('{"password":""}'));
+            ->willReturn('{"password":""}');
 
         $this->assertTrue(
             $this->object->readCredentials(),
@@ -621,16 +589,17 @@ class AuthenticationCookieTest extends AbstractNetworkTestCase
         $_COOKIE['pmaServer-1'] = 'pmaServ1';
         $_COOKIE['pmaUser-1'] = 'pmaUser1';
         $_COOKIE['pma_iv-1'] = base64_encode('testiv09testiv09');
-        $GLOBALS['cfg']['blowfish_secret'] = str_repeat('a', 32);
+        $config = Config::getInstance();
+        $config->settings['blowfish_secret'] = str_repeat('a', 32);
         $_SESSION['last_access_time'] = 1;
-        $GLOBALS['cfg']['CaptchaApi'] = '';
-        $GLOBALS['cfg']['CaptchaRequestParam'] = '';
-        $GLOBALS['cfg']['CaptchaResponseParam'] = '';
-        $GLOBALS['cfg']['CaptchaLoginPrivateKey'] = '';
-        $GLOBALS['cfg']['CaptchaLoginPublicKey'] = '';
-        $GLOBALS['cfg']['LoginCookieValidity'] = 0;
+        $config->settings['CaptchaApi'] = '';
+        $config->settings['CaptchaRequestParam'] = '';
+        $config->settings['CaptchaResponseParam'] = '';
+        $config->settings['CaptchaLoginPrivateKey'] = '';
+        $config->settings['CaptchaLoginPublicKey'] = '';
+        $config->settings['LoginCookieValidity'] = 0;
         $_SESSION['browser_access_time']['default'] = -1;
-        $GLOBALS['config']->set('is_https', false);
+        $config->set('is_https', false);
 
         // mock for blowfish function
         $this->object = $this->getMockBuilder(AuthenticationCookie::class)
@@ -640,7 +609,7 @@ class AuthenticationCookieTest extends AbstractNetworkTestCase
 
         $this->object->expects($this->once())
             ->method('cookieDecrypt')
-            ->will($this->returnValue('testBF'));
+            ->willReturn('testBF');
 
         $this->object->expects($this->once())
             ->method('showFailure')
@@ -655,16 +624,17 @@ class AuthenticationCookieTest extends AbstractNetworkTestCase
         $this->object->user = 'pmaUser2';
         $arr = ['host' => 'a', 'port' => 1, 'socket' => true, 'ssl' => true, 'user' => 'pmaUser2'];
 
-        $GLOBALS['cfg']['Server'] = $arr;
-        $GLOBALS['cfg']['Server']['user'] = 'pmaUser';
-        $GLOBALS['cfg']['Servers'][1] = $arr;
-        $GLOBALS['cfg']['AllowArbitraryServer'] = true;
+        $config = Config::getInstance();
+        $config->selectedServer = $arr;
+        $config->selectedServer['user'] = 'pmaUser';
+        $config->settings['Servers'][1] = $arr;
+        $config->settings['AllowArbitraryServer'] = true;
         $GLOBALS['pma_auth_server'] = 'b 2';
         $this->object->password = 'testPW';
         $GLOBALS['server'] = 2;
-        $GLOBALS['cfg']['LoginCookieStore'] = true;
+        $config->settings['LoginCookieStore'] = 100;
         $GLOBALS['from_cookie'] = true;
-        $GLOBALS['config']->set('is_https', false);
+        $config->set('is_https', false);
 
         $this->object->storeCredentials();
 
@@ -677,7 +647,7 @@ class AuthenticationCookieTest extends AbstractNetworkTestCase
         $arr['password'] = 'testPW';
         $arr['host'] = 'b';
         $arr['port'] = '2';
-        $this->assertEquals($arr, $GLOBALS['cfg']['Server']);
+        $this->assertEquals($arr, $config->selectedServer);
     }
 
     public function testAuthSetUserWithHeaders(): void
@@ -685,26 +655,28 @@ class AuthenticationCookieTest extends AbstractNetworkTestCase
         $this->object->user = 'pmaUser2';
         $arr = ['host' => 'a', 'port' => 1, 'socket' => true, 'ssl' => true, 'user' => 'pmaUser2'];
 
-        $GLOBALS['cfg']['Server'] = $arr;
-        $GLOBALS['cfg']['Server']['host'] = 'b';
-        $GLOBALS['cfg']['Server']['user'] = 'pmaUser';
-        $GLOBALS['cfg']['Servers'][1] = $arr;
-        $GLOBALS['cfg']['AllowArbitraryServer'] = true;
+        $config = Config::getInstance();
+        $config->selectedServer = $arr;
+        $config->selectedServer['host'] = 'b';
+        $config->selectedServer['user'] = 'pmaUser';
+        $config->settings['Servers'][1] = $arr;
+        $config->settings['AllowArbitraryServer'] = true;
         $GLOBALS['pma_auth_server'] = 'b 2';
         $this->object->password = 'testPW';
         $GLOBALS['server'] = 2;
-        $GLOBALS['cfg']['LoginCookieStore'] = true;
+        $config->settings['LoginCookieStore'] = 100;
         $GLOBALS['from_cookie'] = false;
 
-        $this->mockResponse(
-            $this->stringContains('&server=2&lang=en'),
-        );
+        $responseStub = new ResponseRendererStub();
+        (new ReflectionProperty(ResponseRenderer::class, 'instance'))->setValue(null, $responseStub);
 
         $this->object->storeCredentials();
         $this->expectException(ExitException::class);
         $this->object->rememberCredentials();
     }
 
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
     public function testAuthFailsNoPass(): void
     {
         $this->object = $this->getMockBuilder(AuthenticationCookie::class)
@@ -719,14 +691,19 @@ class AuthenticationCookieTest extends AbstractNetworkTestCase
         $GLOBALS['server'] = 2;
         $_COOKIE['pmaAuth-2'] = 'pass';
 
-        $this->mockResponse(
-            ['Cache-Control: no-store, no-cache, must-revalidate'],
-            ['Pragma: no-cache'],
-        );
+        $responseStub = new ResponseRendererStub();
+        (new ReflectionProperty(ResponseRenderer::class, 'instance'))->setValue(null, $responseStub);
+
         try {
             $this->object->showFailure('empty-denied');
-        } catch (ExitException) {
+        } catch (Throwable $throwable) {
         }
+
+        $this->assertInstanceOf(ExitException::class, $throwable);
+        $response = $responseStub->getResponse();
+        $this->assertSame(['no-store, no-cache, must-revalidate'], $response->getHeader('Cache-Control'));
+        $this->assertSame(['no-cache'], $response->getHeader('Pragma'));
+        $this->assertSame(200, $response->getStatusCode());
 
         $this->assertEquals(
             $GLOBALS['conn_error'],
@@ -774,6 +751,8 @@ class AuthenticationCookieTest extends AbstractNetworkTestCase
         $this->assertEquals($GLOBALS['conn_error'], $connError);
     }
 
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
     public function testAuthFailsDeny(): void
     {
         $this->object = $this->getMockBuilder(AuthenticationCookie::class)
@@ -788,18 +767,25 @@ class AuthenticationCookieTest extends AbstractNetworkTestCase
         $GLOBALS['server'] = 2;
         $_COOKIE['pmaAuth-2'] = 'pass';
 
-        $this->mockResponse(
-            ['Cache-Control: no-store, no-cache, must-revalidate'],
-            ['Pragma: no-cache'],
-        );
+        $responseStub = new ResponseRendererStub();
+        (new ReflectionProperty(ResponseRenderer::class, 'instance'))->setValue(null, $responseStub);
+
         try {
             $this->object->showFailure('allow-denied');
-        } catch (ExitException) {
+        } catch (Throwable $throwable) {
         }
+
+        $this->assertInstanceOf(ExitException::class, $throwable);
+        $response = $responseStub->getResponse();
+        $this->assertSame(['no-store, no-cache, must-revalidate'], $response->getHeader('Cache-Control'));
+        $this->assertSame(['no-cache'], $response->getHeader('Pragma'));
+        $this->assertSame(200, $response->getStatusCode());
 
         $this->assertEquals($GLOBALS['conn_error'], 'Access denied!');
     }
 
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
     public function testAuthFailsActivity(): void
     {
         $this->object = $this->getMockBuilder(AuthenticationCookie::class)
@@ -815,16 +801,21 @@ class AuthenticationCookieTest extends AbstractNetworkTestCase
         $_COOKIE['pmaAuth-2'] = 'pass';
 
         $GLOBALS['allowDeny_forbidden'] = '';
-        $GLOBALS['cfg']['LoginCookieValidity'] = 10;
+        Config::getInstance()->settings['LoginCookieValidity'] = 10;
 
-        $this->mockResponse(
-            ['Cache-Control: no-store, no-cache, must-revalidate'],
-            ['Pragma: no-cache'],
-        );
+        $responseStub = new ResponseRendererStub();
+        (new ReflectionProperty(ResponseRenderer::class, 'instance'))->setValue(null, $responseStub);
+
         try {
             $this->object->showFailure('no-activity');
-        } catch (ExitException) {
+        } catch (Throwable $throwable) {
         }
+
+        $this->assertInstanceOf(ExitException::class, $throwable);
+        $response = $responseStub->getResponse();
+        $this->assertSame(['no-store, no-cache, must-revalidate'], $response->getHeader('Cache-Control'));
+        $this->assertSame(['no-cache'], $response->getHeader('Pragma'));
+        $this->assertSame(200, $response->getStatusCode());
 
         $this->assertEquals(
             $GLOBALS['conn_error'],
@@ -833,6 +824,8 @@ class AuthenticationCookieTest extends AbstractNetworkTestCase
         );
     }
 
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
     public function testAuthFailsDBI(): void
     {
         $this->object = $this->getMockBuilder(AuthenticationCookie::class)
@@ -853,23 +846,30 @@ class AuthenticationCookieTest extends AbstractNetworkTestCase
 
         $dbi->expects($this->once())
             ->method('getError')
-            ->will($this->returnValue(''));
+            ->willReturn('');
 
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
         $GLOBALS['errno'] = 42;
 
-        $this->mockResponse(
-            ['Cache-Control: no-store, no-cache, must-revalidate'],
-            ['Pragma: no-cache'],
-        );
+        $responseStub = new ResponseRendererStub();
+        (new ReflectionProperty(ResponseRenderer::class, 'instance'))->setValue(null, $responseStub);
+
         try {
             $this->object->showFailure('');
-        } catch (ExitException) {
+        } catch (Throwable $throwable) {
         }
+
+        $this->assertInstanceOf(ExitException::class, $throwable);
+        $response = $responseStub->getResponse();
+        $this->assertSame(['no-store, no-cache, must-revalidate'], $response->getHeader('Cache-Control'));
+        $this->assertSame(['no-cache'], $response->getHeader('Pragma'));
+        $this->assertSame(200, $response->getStatusCode());
 
         $this->assertEquals($GLOBALS['conn_error'], '#42 Cannot log in to the MySQL server');
     }
 
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
     public function testAuthFailsErrno(): void
     {
         $this->object = $this->getMockBuilder(AuthenticationCookie::class)
@@ -887,22 +887,27 @@ class AuthenticationCookieTest extends AbstractNetworkTestCase
 
         $dbi->expects($this->once())
             ->method('getError')
-            ->will($this->returnValue(''));
+            ->willReturn('');
 
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
         $GLOBALS['server'] = 2;
         $_COOKIE['pmaAuth-2'] = 'pass';
 
         unset($GLOBALS['errno']);
 
-        $this->mockResponse(
-            ['Cache-Control: no-store, no-cache, must-revalidate'],
-            ['Pragma: no-cache'],
-        );
+        $responseStub = new ResponseRendererStub();
+        (new ReflectionProperty(ResponseRenderer::class, 'instance'))->setValue(null, $responseStub);
+
         try {
             $this->object->showFailure('');
-        } catch (ExitException) {
+        } catch (Throwable $throwable) {
         }
+
+        $this->assertInstanceOf(ExitException::class, $throwable);
+        $response = $responseStub->getResponse();
+        $this->assertSame(['no-store, no-cache, must-revalidate'], $response->getHeader('Cache-Control'));
+        $this->assertSame(['no-cache'], $response->getHeader('Pragma'));
+        $this->assertSame(200, $response->getStatusCode());
 
         $this->assertEquals($GLOBALS['conn_error'], 'Cannot log in to the MySQL server');
     }
@@ -911,7 +916,7 @@ class AuthenticationCookieTest extends AbstractNetworkTestCase
     {
         $method = new ReflectionMethod(AuthenticationCookie::class, 'getEncryptionSecret');
 
-        $GLOBALS['cfg']['blowfish_secret'] = '';
+        Config::getInstance()->settings['blowfish_secret'] = '';
         $_SESSION['encryption_key'] = '';
 
         $result = $method->invoke($this->object, null);
@@ -925,7 +930,7 @@ class AuthenticationCookieTest extends AbstractNetworkTestCase
         $method = new ReflectionMethod(AuthenticationCookie::class, 'getEncryptionSecret');
 
         $key = str_repeat('a', SODIUM_CRYPTO_SECRETBOX_KEYBYTES);
-        $GLOBALS['cfg']['blowfish_secret'] = $key;
+        Config::getInstance()->settings['blowfish_secret'] = $key;
         $_SESSION['encryption_key'] = '';
 
         $result = $method->invoke($this->object, null);
@@ -938,7 +943,7 @@ class AuthenticationCookieTest extends AbstractNetworkTestCase
         $method = new ReflectionMethod(AuthenticationCookie::class, 'getEncryptionSecret');
 
         $key = str_repeat('a', SODIUM_CRYPTO_SECRETBOX_KEYBYTES);
-        $GLOBALS['cfg']['blowfish_secret'] = 'blowfish_secret';
+        Config::getInstance()->settings['blowfish_secret'] = 'blowfish_secret';
         $_SESSION['encryption_key'] = $key;
 
         $result = $method->invoke($this->object, null);
@@ -972,15 +977,18 @@ class AuthenticationCookieTest extends AbstractNetworkTestCase
     {
         $GLOBALS['server'] = 1;
         $newPassword = 'PMAPASSWD2';
-        $GLOBALS['config']->set('is_https', false);
-        $GLOBALS['cfg']['AllowArbitraryServer'] = true;
+        $config = Config::getInstance();
+        $config->set('is_https', false);
+        $config->settings['AllowArbitraryServer'] = true;
         $GLOBALS['pma_auth_server'] = 'b 2';
         $_SESSION['encryption_key'] = '';
+        $_COOKIE = [];
 
         $this->object->handlePasswordChange($newPassword);
 
         $payload = ['password' => $newPassword, 'server' => 'b 2'];
 
+        /** @psalm-suppress EmptyArrayAccess */
         $this->assertIsString($_COOKIE['pmaAuth-' . $GLOBALS['server']]);
         $decryptedCookie = $this->object->cookieDecrypt(
             $_COOKIE['pmaAuth-' . $GLOBALS['server']],
@@ -991,13 +999,14 @@ class AuthenticationCookieTest extends AbstractNetworkTestCase
 
     public function testAuthenticate(): void
     {
-        $GLOBALS['cfg']['CaptchaApi'] = '';
-        $GLOBALS['cfg']['CaptchaRequestParam'] = '';
-        $GLOBALS['cfg']['CaptchaResponseParam'] = '';
-        $GLOBALS['cfg']['CaptchaLoginPrivateKey'] = '';
-        $GLOBALS['cfg']['CaptchaLoginPublicKey'] = '';
-        $GLOBALS['cfg']['Server']['AllowRoot'] = false;
-        $GLOBALS['cfg']['Server']['AllowNoPassword'] = false;
+        $config = Config::getInstance();
+        $config->settings['CaptchaApi'] = '';
+        $config->settings['CaptchaRequestParam'] = '';
+        $config->settings['CaptchaResponseParam'] = '';
+        $config->settings['CaptchaLoginPrivateKey'] = '';
+        $config->settings['CaptchaLoginPublicKey'] = '';
+        $config->selectedServer['AllowRoot'] = false;
+        $config->selectedServer['AllowNoPassword'] = false;
         $_REQUEST['old_usr'] = '';
         $_POST['pma_username'] = 'testUser';
         $_POST['pma_password'] = 'testPassword';
@@ -1014,8 +1023,8 @@ class AuthenticationCookieTest extends AbstractNetworkTestCase
         $this->assertEquals('testPassword', $this->object->password);
 
         /* Verify storeCredentials worked */
-        $this->assertEquals('testUser', $GLOBALS['cfg']['Server']['user']);
-        $this->assertEquals('testPassword', $GLOBALS['cfg']['Server']['password']);
+        $this->assertEquals('testUser', $config->selectedServer['user']);
+        $this->assertEquals('testPassword', $config->selectedServer['password']);
     }
 
     /**
@@ -1027,6 +1036,8 @@ class AuthenticationCookieTest extends AbstractNetworkTestCase
      * @param mixed[] $rules    rules
      * @param string  $expected expected result
      */
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
     #[DataProvider('checkRulesProvider')]
     public function testCheckRules(
         string $user,
@@ -1043,33 +1054,36 @@ class AuthenticationCookieTest extends AbstractNetworkTestCase
 
         $_SERVER['REMOTE_ADDR'] = $ip;
 
-        $GLOBALS['cfg']['Server']['AllowRoot'] = $root;
-        $GLOBALS['cfg']['Server']['AllowNoPassword'] = $nopass;
-        $GLOBALS['cfg']['Server']['AllowDeny'] = $rules;
+        $config = Config::getInstance();
+        $config->selectedServer['AllowRoot'] = $root;
+        $config->selectedServer['AllowNoPassword'] = $nopass;
+        $config->selectedServer['AllowDeny'] = $rules;
 
-        if (! empty($expected)) {
+        if ($expected !== '') {
             $this->getAuthErrorMockResponse();
         }
 
-        ob_start();
+        $responseStub = new ResponseRendererStub();
+        (new ReflectionProperty(ResponseRenderer::class, 'instance'))->setValue(null, $responseStub);
+
         try {
             $this->object->checkRules();
         } catch (Throwable $throwable) {
         }
 
-        $result = ob_get_clean();
+        $result = $responseStub->getHTMLResult();
 
-        if (! empty($expected)) {
+        if ($expected !== '') {
             $this->assertInstanceOf(ExitException::class, $throwable ?? null);
         }
 
-        $this->assertIsString($result);
-
-        if (empty($expected)) {
+        if ($expected === '') {
             $this->assertEquals($expected, $result);
         } else {
             $this->assertStringContainsString($expected, $result);
         }
+
+        ErrorHandler::$instance = null;
     }
 
     /** @return mixed[] */

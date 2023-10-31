@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\ConfigStorage;
 
+use PhpMyAdmin\ColumnFull;
+use PhpMyAdmin\Config;
 use PhpMyAdmin\ConfigStorage\Relation;
 use PhpMyAdmin\ConfigStorage\RelationParameters;
 use PhpMyAdmin\DatabaseInterface;
@@ -26,9 +28,10 @@ class RelationTest extends AbstractTestCase
      */
     public function testPMAGetDisplayField(): void
     {
-        $GLOBALS['cfg']['Server']['user'] = 'root';
-        $GLOBALS['cfg']['Server']['pmadb'] = 'phpmyadmin';
-        $GLOBALS['cfg']['Server']['DisableIS'] = false;
+        $config = Config::getInstance();
+        $config->selectedServer['user'] = 'root';
+        $config->selectedServer['pmadb'] = 'phpmyadmin';
+        $config->selectedServer['DisableIS'] = false;
 
         $dummyDbi = $this->createDbiDummy();
         $dbi = $this->createDatabaseInterface($dummyDbi);
@@ -64,23 +67,24 @@ class RelationTest extends AbstractTestCase
      */
     public function testPMAGetComments(): void
     {
-        $GLOBALS['cfg']['Server']['DisableIS'] = false;
-        $GLOBALS['cfg']['ServerDefault'] = 0;
+        $config = Config::getInstance();
+        $config->selectedServer['DisableIS'] = false;
+        $config->settings['ServerDefault'] = 0;
 
         $dbi = $this->getMockBuilder(DatabaseInterface::class)
             ->disableOriginalConstructor()
             ->getMock();
 
         $getColumnsResult = [
-            ['Field' => 'field1', 'Type' => 'int(11)', 'Comment' => 'Comment1'],
-            ['Field' => 'field2', 'Type' => 'text', 'Comment' => 'Comment1'],
+            new ColumnFull('field1', 'int(11)', null, false, '', null, '', '', 'Comment1'),
+            new ColumnFull('field2', 'text', null, false, '', null, '', '', 'Comment1'),
         ];
         $dbi->expects($this->any())->method('getColumns')
-            ->will($this->returnValue($getColumnsResult));
+            ->willReturn($getColumnsResult);
 
         $relation = new Relation($dbi);
 
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
 
         $db = 'information_schema';
         $this->assertEquals(
@@ -108,19 +112,20 @@ class RelationTest extends AbstractTestCase
             ->getMock();
         $dbi->expects($this->any())
             ->method('tryQueryAsControlUser')
-            ->will($this->returnValue($resultStub));
+            ->willReturn($resultStub);
         $resultStub->expects($this->any())
             ->method('numRows')
-            ->will($this->returnValue(0));
+            ->willReturn(0);
         $dbi->expects($this->any())
             ->method('getError')
-            ->will($this->onConsecutiveCalls('Error', ''));
-        $GLOBALS['dbi'] = $dbi;
+            ->willReturn('Error', '');
+        DatabaseInterface::$instance = $dbi;
 
         $relation = new Relation($dbi);
 
-        $GLOBALS['cfg']['Server']['pmadb'] = 'pmadb';
-        $GLOBALS['cfg']['Server']['column_info'] = 'column_info';
+        $config = Config::getInstance();
+        $config->selectedServer['pmadb'] = 'pmadb';
+        $config->selectedServer['column_info'] = 'column_info';
 
         // Case 1
         $actual = $relation->tryUpgradeTransformations();
@@ -194,27 +199,28 @@ class RelationTest extends AbstractTestCase
     {
         $GLOBALS['db'] = '';
         $GLOBALS['server'] = 1;
-        $GLOBALS['cfg']['Server']['user'] = '';
-        $GLOBALS['cfg']['Server']['pmadb'] = '';
-        $GLOBALS['cfg']['Server']['bookmarktable'] = '';
-        $GLOBALS['cfg']['Server']['relation'] = '';
-        $GLOBALS['cfg']['Server']['table_info'] = '';
-        $GLOBALS['cfg']['Server']['table_coords'] = '';
-        $GLOBALS['cfg']['Server']['column_info'] = '';
-        $GLOBALS['cfg']['Server']['pdf_pages'] = '';
-        $GLOBALS['cfg']['Server']['history'] = '';
-        $GLOBALS['cfg']['Server']['recent'] = '';
-        $GLOBALS['cfg']['Server']['favorite'] = '';
-        $GLOBALS['cfg']['Server']['table_uiprefs'] = '';
-        $GLOBALS['cfg']['Server']['tracking'] = '';
-        $GLOBALS['cfg']['Server']['userconfig'] = '';
-        $GLOBALS['cfg']['Server']['users'] = '';
-        $GLOBALS['cfg']['Server']['usergroups'] = '';
-        $GLOBALS['cfg']['Server']['navigationhiding'] = '';
-        $GLOBALS['cfg']['Server']['savedsearches'] = '';
-        $GLOBALS['cfg']['Server']['central_columns'] = '';
-        $GLOBALS['cfg']['Server']['designer_settings'] = '';
-        $GLOBALS['cfg']['Server']['export_templates'] = '';
+        $config = Config::getInstance();
+        $config->selectedServer['user'] = '';
+        $config->selectedServer['pmadb'] = '';
+        $config->selectedServer['bookmarktable'] = '';
+        $config->selectedServer['relation'] = '';
+        $config->selectedServer['table_info'] = '';
+        $config->selectedServer['table_coords'] = '';
+        $config->selectedServer['column_info'] = '';
+        $config->selectedServer['pdf_pages'] = '';
+        $config->selectedServer['history'] = '';
+        $config->selectedServer['recent'] = '';
+        $config->selectedServer['favorite'] = '';
+        $config->selectedServer['table_uiprefs'] = '';
+        $config->selectedServer['tracking'] = '';
+        $config->selectedServer['userconfig'] = '';
+        $config->selectedServer['users'] = '';
+        $config->selectedServer['usergroups'] = '';
+        $config->selectedServer['navigationhiding'] = '';
+        $config->selectedServer['savedsearches'] = '';
+        $config->selectedServer['central_columns'] = '';
+        $config->selectedServer['designer_settings'] = '';
+        $config->selectedServer['export_templates'] = '';
 
         $dummyDbi = $this->createDbiDummy();
         $dbi = $this->createDatabaseInterface($dummyDbi);
@@ -255,27 +261,28 @@ class RelationTest extends AbstractTestCase
     {
         $GLOBALS['db'] = '';
         $GLOBALS['server'] = 1;
-        $GLOBALS['cfg']['Server']['user'] = '';
-        $GLOBALS['cfg']['Server']['pmadb'] = '';
-        $GLOBALS['cfg']['Server']['bookmarktable'] = '';
-        $GLOBALS['cfg']['Server']['relation'] = '';
-        $GLOBALS['cfg']['Server']['table_info'] = '';
-        $GLOBALS['cfg']['Server']['table_coords'] = '';
-        $GLOBALS['cfg']['Server']['column_info'] = '';
-        $GLOBALS['cfg']['Server']['pdf_pages'] = '';
-        $GLOBALS['cfg']['Server']['history'] = '';
-        $GLOBALS['cfg']['Server']['recent'] = '';
-        $GLOBALS['cfg']['Server']['favorite'] = '';
-        $GLOBALS['cfg']['Server']['table_uiprefs'] = '';
-        $GLOBALS['cfg']['Server']['tracking'] = '';
-        $GLOBALS['cfg']['Server']['userconfig'] = '';
-        $GLOBALS['cfg']['Server']['users'] = '';
-        $GLOBALS['cfg']['Server']['usergroups'] = '';
-        $GLOBALS['cfg']['Server']['navigationhiding'] = '';
-        $GLOBALS['cfg']['Server']['savedsearches'] = '';
-        $GLOBALS['cfg']['Server']['central_columns'] = '';
-        $GLOBALS['cfg']['Server']['designer_settings'] = '';
-        $GLOBALS['cfg']['Server']['export_templates'] = '';
+        $config = Config::getInstance();
+        $config->selectedServer['user'] = '';
+        $config->selectedServer['pmadb'] = '';
+        $config->selectedServer['bookmarktable'] = '';
+        $config->selectedServer['relation'] = '';
+        $config->selectedServer['table_info'] = '';
+        $config->selectedServer['table_coords'] = '';
+        $config->selectedServer['column_info'] = '';
+        $config->selectedServer['pdf_pages'] = '';
+        $config->selectedServer['history'] = '';
+        $config->selectedServer['recent'] = '';
+        $config->selectedServer['favorite'] = '';
+        $config->selectedServer['table_uiprefs'] = '';
+        $config->selectedServer['tracking'] = '';
+        $config->selectedServer['userconfig'] = '';
+        $config->selectedServer['users'] = '';
+        $config->selectedServer['usergroups'] = '';
+        $config->selectedServer['navigationhiding'] = '';
+        $config->selectedServer['savedsearches'] = '';
+        $config->selectedServer['central_columns'] = '';
+        $config->selectedServer['designer_settings'] = '';
+        $config->selectedServer['export_templates'] = '';
 
         $dummyDbi = $this->createDbiDummy();
         $dbi = $this->createDatabaseInterface($dummyDbi);
@@ -504,13 +511,13 @@ class RelationTest extends AbstractTestCase
             true,
         );
 
-        $this->assertSame('', $GLOBALS['cfg']['Server']['pmadb']);
+        $this->assertSame('', $config->selectedServer['pmadb']);
 
         (new ReflectionProperty(Relation::class, 'cache'))->setValue(null, null);
 
         $relation->fixPmaTables('db_pma', true);
         $this->assertArrayNotHasKey('message', $GLOBALS);
-        $this->assertSame('db_pma', $GLOBALS['cfg']['Server']['pmadb']);
+        $this->assertSame('db_pma', $config->selectedServer['pmadb']);
 
         $relationParameters = RelationParameters::fromArray([
             'db' => 'db_pma',
@@ -527,27 +534,28 @@ class RelationTest extends AbstractTestCase
     {
         $GLOBALS['db'] = '';
         $GLOBALS['server'] = 1;
-        $GLOBALS['cfg']['Server']['user'] = '';
-        $GLOBALS['cfg']['Server']['pmadb'] = 'db_pma';
-        $GLOBALS['cfg']['Server']['bookmarktable'] = '';
-        $GLOBALS['cfg']['Server']['relation'] = 'custom_relation_pma';
-        $GLOBALS['cfg']['Server']['table_info'] = '';
-        $GLOBALS['cfg']['Server']['table_coords'] = '';
-        $GLOBALS['cfg']['Server']['column_info'] = '';
-        $GLOBALS['cfg']['Server']['pdf_pages'] = '';
-        $GLOBALS['cfg']['Server']['history'] = '';
-        $GLOBALS['cfg']['Server']['recent'] = '';
-        $GLOBALS['cfg']['Server']['favorite'] = '';
-        $GLOBALS['cfg']['Server']['table_uiprefs'] = '';
-        $GLOBALS['cfg']['Server']['tracking'] = '';
-        $GLOBALS['cfg']['Server']['userconfig'] = '';
-        $GLOBALS['cfg']['Server']['users'] = '';
-        $GLOBALS['cfg']['Server']['usergroups'] = '';
-        $GLOBALS['cfg']['Server']['navigationhiding'] = '';
-        $GLOBALS['cfg']['Server']['savedsearches'] = '';
-        $GLOBALS['cfg']['Server']['central_columns'] = '';
-        $GLOBALS['cfg']['Server']['designer_settings'] = '';
-        $GLOBALS['cfg']['Server']['export_templates'] = '';
+        $config = Config::getInstance();
+        $config->selectedServer['user'] = '';
+        $config->selectedServer['pmadb'] = 'db_pma';
+        $config->selectedServer['bookmarktable'] = '';
+        $config->selectedServer['relation'] = 'custom_relation_pma';
+        $config->selectedServer['table_info'] = '';
+        $config->selectedServer['table_coords'] = '';
+        $config->selectedServer['column_info'] = '';
+        $config->selectedServer['pdf_pages'] = '';
+        $config->selectedServer['history'] = '';
+        $config->selectedServer['recent'] = '';
+        $config->selectedServer['favorite'] = '';
+        $config->selectedServer['table_uiprefs'] = '';
+        $config->selectedServer['tracking'] = '';
+        $config->selectedServer['userconfig'] = '';
+        $config->selectedServer['users'] = '';
+        $config->selectedServer['usergroups'] = '';
+        $config->selectedServer['navigationhiding'] = '';
+        $config->selectedServer['savedsearches'] = '';
+        $config->selectedServer['central_columns'] = '';
+        $config->selectedServer['designer_settings'] = '';
+        $config->selectedServer['export_templates'] = '';
 
         $dummyDbi = $this->createDbiDummy();
         $dbi = $this->createDatabaseInterface($dummyDbi);
@@ -784,7 +792,7 @@ class RelationTest extends AbstractTestCase
             true,
         );
 
-        $this->assertSame('db_pma', $GLOBALS['cfg']['Server']['pmadb']);
+        $this->assertSame('db_pma', $config->selectedServer['pmadb']);
 
         (new ReflectionProperty(Relation::class, 'cache'))->setValue(null, null);
 
@@ -792,7 +800,7 @@ class RelationTest extends AbstractTestCase
         $dummyDbi->addSelectDb('db_pma');
         $relation->fixPmaTables('db_pma', true);
         $this->assertArrayNotHasKey('message', $GLOBALS);
-        $this->assertSame('db_pma', $GLOBALS['cfg']['Server']['pmadb']);
+        $this->assertSame('db_pma', $config->selectedServer['pmadb']);
 
         $relationParameters = RelationParameters::fromArray([
             'db' => 'db_pma',
@@ -809,27 +817,28 @@ class RelationTest extends AbstractTestCase
     {
         $GLOBALS['db'] = '';
         $GLOBALS['server'] = 1;
-        $GLOBALS['cfg']['Server']['user'] = '';
-        $GLOBALS['cfg']['Server']['pmadb'] = '';
-        $GLOBALS['cfg']['Server']['bookmarktable'] = '';
-        $GLOBALS['cfg']['Server']['relation'] = '';
-        $GLOBALS['cfg']['Server']['table_info'] = '';
-        $GLOBALS['cfg']['Server']['table_coords'] = '';
-        $GLOBALS['cfg']['Server']['column_info'] = '';
-        $GLOBALS['cfg']['Server']['pdf_pages'] = '';
-        $GLOBALS['cfg']['Server']['history'] = '';
-        $GLOBALS['cfg']['Server']['recent'] = '';
-        $GLOBALS['cfg']['Server']['favorite'] = '';
-        $GLOBALS['cfg']['Server']['table_uiprefs'] = '';
-        $GLOBALS['cfg']['Server']['tracking'] = '';
-        $GLOBALS['cfg']['Server']['userconfig'] = '';
-        $GLOBALS['cfg']['Server']['users'] = '';
-        $GLOBALS['cfg']['Server']['usergroups'] = '';
-        $GLOBALS['cfg']['Server']['navigationhiding'] = '';
-        $GLOBALS['cfg']['Server']['savedsearches'] = '';
-        $GLOBALS['cfg']['Server']['central_columns'] = '';
-        $GLOBALS['cfg']['Server']['designer_settings'] = '';
-        $GLOBALS['cfg']['Server']['export_templates'] = '';
+        $config = Config::getInstance();
+        $config->selectedServer['user'] = '';
+        $config->selectedServer['pmadb'] = '';
+        $config->selectedServer['bookmarktable'] = '';
+        $config->selectedServer['relation'] = '';
+        $config->selectedServer['table_info'] = '';
+        $config->selectedServer['table_coords'] = '';
+        $config->selectedServer['column_info'] = '';
+        $config->selectedServer['pdf_pages'] = '';
+        $config->selectedServer['history'] = '';
+        $config->selectedServer['recent'] = '';
+        $config->selectedServer['favorite'] = '';
+        $config->selectedServer['table_uiprefs'] = '';
+        $config->selectedServer['tracking'] = '';
+        $config->selectedServer['userconfig'] = '';
+        $config->selectedServer['users'] = '';
+        $config->selectedServer['usergroups'] = '';
+        $config->selectedServer['navigationhiding'] = '';
+        $config->selectedServer['savedsearches'] = '';
+        $config->selectedServer['central_columns'] = '';
+        $config->selectedServer['designer_settings'] = '';
+        $config->selectedServer['export_templates'] = '';
 
         $dummyDbi = $this->createDbiDummy();
         $dbi = $this->createDatabaseInterface($dummyDbi);
@@ -859,7 +868,7 @@ class RelationTest extends AbstractTestCase
         );
         $dummyDbi->addSelectDb('db_pma');
 
-        $this->assertSame('', $GLOBALS['cfg']['Server']['pmadb']);
+        $this->assertSame('', $config->selectedServer['pmadb']);
 
         (new ReflectionProperty(Relation::class, 'cache'))->setValue(null, null);
 
@@ -867,7 +876,7 @@ class RelationTest extends AbstractTestCase
 
         $this->assertArrayHasKey('message', $GLOBALS);
         $this->assertSame('MYSQL_ERROR', $GLOBALS['message']);
-        $this->assertSame('', $GLOBALS['cfg']['Server']['pmadb']);
+        $this->assertSame('', $config->selectedServer['pmadb']);
 
         $this->assertNull((new ReflectionProperty(Relation::class, 'cache'))->getValue());
 
@@ -878,8 +887,9 @@ class RelationTest extends AbstractTestCase
 
     public function testCreatePmaDatabase(): void
     {
-        $GLOBALS['cfg']['Server']['user'] = 'root';
-        $GLOBALS['cfg']['Server']['pmadb'] = 'phpmyadmin';
+        $config = Config::getInstance();
+        $config->selectedServer['user'] = 'root';
+        $config->selectedServer['pmadb'] = 'phpmyadmin';
 
         $dummyDbi = $this->createDbiDummy();
         $dbi = $this->createDatabaseInterface($dummyDbi);
@@ -1410,7 +1420,8 @@ class RelationTest extends AbstractTestCase
     {
         $GLOBALS['db'] = '';
         $GLOBALS['server'] = 0;
-        $GLOBALS['cfg']['Server'] = [];
+        $config = Config::getInstance();
+        $config->selectedServer = [];
 
         $dummyDbi = $this->createDbiDummy();
         $dbi = $this->createDatabaseInterface($dummyDbi);
@@ -1434,7 +1445,7 @@ class RelationTest extends AbstractTestCase
         $this->assertEquals([
             'userconfig' => 'pma__userconfig',
             'pmadb' => false,// This is the expected value for server = 0
-        ], $GLOBALS['cfg']['Server']);
+        ], $config->selectedServer);
         $dummyDbi->assertAllQueriesConsumed();
     }
 
@@ -1442,28 +1453,29 @@ class RelationTest extends AbstractTestCase
     {
         $GLOBALS['db'] = '';
         $GLOBALS['server'] = 1;
-        $GLOBALS['cfg']['Server'] = [];
-        $GLOBALS['cfg']['Server']['user'] = '';
-        $GLOBALS['cfg']['Server']['pmadb'] = '';
-        $GLOBALS['cfg']['Server']['bookmarktable'] = '';
-        $GLOBALS['cfg']['Server']['relation'] = '';
-        $GLOBALS['cfg']['Server']['table_info'] = '';
-        $GLOBALS['cfg']['Server']['table_coords'] = '';
-        $GLOBALS['cfg']['Server']['column_info'] = '';
-        $GLOBALS['cfg']['Server']['pdf_pages'] = '';
-        $GLOBALS['cfg']['Server']['history'] = '';
-        $GLOBALS['cfg']['Server']['recent'] = '';
-        $GLOBALS['cfg']['Server']['favorite'] = '';
-        $GLOBALS['cfg']['Server']['table_uiprefs'] = '';
-        $GLOBALS['cfg']['Server']['tracking'] = '';
-        $GLOBALS['cfg']['Server']['userconfig'] = '';
-        $GLOBALS['cfg']['Server']['users'] = '';
-        $GLOBALS['cfg']['Server']['usergroups'] = '';
-        $GLOBALS['cfg']['Server']['navigationhiding'] = '';
-        $GLOBALS['cfg']['Server']['savedsearches'] = '';
-        $GLOBALS['cfg']['Server']['central_columns'] = '';
-        $GLOBALS['cfg']['Server']['designer_settings'] = '';
-        $GLOBALS['cfg']['Server']['export_templates'] = '';
+        $config = Config::getInstance();
+        $config->selectedServer = [];
+        $config->selectedServer['user'] = '';
+        $config->selectedServer['pmadb'] = '';
+        $config->selectedServer['bookmarktable'] = '';
+        $config->selectedServer['relation'] = '';
+        $config->selectedServer['table_info'] = '';
+        $config->selectedServer['table_coords'] = '';
+        $config->selectedServer['column_info'] = '';
+        $config->selectedServer['pdf_pages'] = '';
+        $config->selectedServer['history'] = '';
+        $config->selectedServer['recent'] = '';
+        $config->selectedServer['favorite'] = '';
+        $config->selectedServer['table_uiprefs'] = '';
+        $config->selectedServer['tracking'] = '';
+        $config->selectedServer['userconfig'] = '';
+        $config->selectedServer['users'] = '';
+        $config->selectedServer['usergroups'] = '';
+        $config->selectedServer['navigationhiding'] = '';
+        $config->selectedServer['savedsearches'] = '';
+        $config->selectedServer['central_columns'] = '';
+        $config->selectedServer['designer_settings'] = '';
+        $config->selectedServer['export_templates'] = '';
 
         $dummyDbi = $this->createDbiDummy();
         $dbi = $this->createDatabaseInterface($dummyDbi);
@@ -1520,7 +1532,7 @@ class RelationTest extends AbstractTestCase
             'central_columns' => '',
             'designer_settings' => '',
             'export_templates' => '',
-        ], $GLOBALS['cfg']['Server']);
+        ], $config->selectedServer);
 
         $dummyDbi->assertAllQueriesConsumed();
     }
@@ -1529,28 +1541,29 @@ class RelationTest extends AbstractTestCase
     {
         $GLOBALS['db'] = '';
         $GLOBALS['server'] = 1;
-        $GLOBALS['cfg']['Server'] = [];
-        $GLOBALS['cfg']['Server']['user'] = '';
-        $GLOBALS['cfg']['Server']['pmadb'] = '';
-        $GLOBALS['cfg']['Server']['bookmarktable'] = '';
-        $GLOBALS['cfg']['Server']['relation'] = '';
-        $GLOBALS['cfg']['Server']['table_info'] = '';
-        $GLOBALS['cfg']['Server']['table_coords'] = '';
-        $GLOBALS['cfg']['Server']['column_info'] = '';
-        $GLOBALS['cfg']['Server']['pdf_pages'] = '';
-        $GLOBALS['cfg']['Server']['history'] = '';
-        $GLOBALS['cfg']['Server']['recent'] = '';
-        $GLOBALS['cfg']['Server']['favorite'] = '';
-        $GLOBALS['cfg']['Server']['table_uiprefs'] = '';
-        $GLOBALS['cfg']['Server']['tracking'] = '';
-        $GLOBALS['cfg']['Server']['userconfig'] = '';
-        $GLOBALS['cfg']['Server']['users'] = '';
-        $GLOBALS['cfg']['Server']['usergroups'] = '';
-        $GLOBALS['cfg']['Server']['navigationhiding'] = '';
-        $GLOBALS['cfg']['Server']['savedsearches'] = '';
-        $GLOBALS['cfg']['Server']['central_columns'] = '';
-        $GLOBALS['cfg']['Server']['designer_settings'] = '';
-        $GLOBALS['cfg']['Server']['export_templates'] = '';
+        $config = Config::getInstance();
+        $config->selectedServer = [];
+        $config->selectedServer['user'] = '';
+        $config->selectedServer['pmadb'] = '';
+        $config->selectedServer['bookmarktable'] = '';
+        $config->selectedServer['relation'] = '';
+        $config->selectedServer['table_info'] = '';
+        $config->selectedServer['table_coords'] = '';
+        $config->selectedServer['column_info'] = '';
+        $config->selectedServer['pdf_pages'] = '';
+        $config->selectedServer['history'] = '';
+        $config->selectedServer['recent'] = '';
+        $config->selectedServer['favorite'] = '';
+        $config->selectedServer['table_uiprefs'] = '';
+        $config->selectedServer['tracking'] = '';
+        $config->selectedServer['userconfig'] = '';
+        $config->selectedServer['users'] = '';
+        $config->selectedServer['usergroups'] = '';
+        $config->selectedServer['navigationhiding'] = '';
+        $config->selectedServer['savedsearches'] = '';
+        $config->selectedServer['central_columns'] = '';
+        $config->selectedServer['designer_settings'] = '';
+        $config->selectedServer['export_templates'] = '';
 
         $dummyDbi = $this->createDbiDummy();
         $dbi = $this->createDatabaseInterface($dummyDbi);
@@ -1606,7 +1619,7 @@ class RelationTest extends AbstractTestCase
             'central_columns' => '',
             'designer_settings' => '',
             'export_templates' => '',
-        ], $GLOBALS['cfg']['Server']);
+        ], $config->selectedServer);
 
         $dummyDbi->assertAllQueriesConsumed();
     }
@@ -1615,28 +1628,29 @@ class RelationTest extends AbstractTestCase
     {
         $GLOBALS['db'] = '';
         $GLOBALS['server'] = 1;
-        $GLOBALS['cfg']['Server'] = [];
-        $GLOBALS['cfg']['Server']['user'] = '';
-        $GLOBALS['cfg']['Server']['pmadb'] = 'PMA-storage';
-        $GLOBALS['cfg']['Server']['bookmarktable'] = '';
-        $GLOBALS['cfg']['Server']['relation'] = '';
-        $GLOBALS['cfg']['Server']['table_info'] = '';
-        $GLOBALS['cfg']['Server']['table_coords'] = '';
-        $GLOBALS['cfg']['Server']['column_info'] = '';
-        $GLOBALS['cfg']['Server']['pdf_pages'] = '';
-        $GLOBALS['cfg']['Server']['history'] = '';
-        $GLOBALS['cfg']['Server']['recent'] = '';
-        $GLOBALS['cfg']['Server']['favorite'] = '';
-        $GLOBALS['cfg']['Server']['table_uiprefs'] = '';
-        $GLOBALS['cfg']['Server']['tracking'] = '';
-        $GLOBALS['cfg']['Server']['userconfig'] = 'pma__userconfig_custom';
-        $GLOBALS['cfg']['Server']['users'] = '';
-        $GLOBALS['cfg']['Server']['usergroups'] = '';
-        $GLOBALS['cfg']['Server']['navigationhiding'] = '';
-        $GLOBALS['cfg']['Server']['savedsearches'] = '';
-        $GLOBALS['cfg']['Server']['central_columns'] = '';
-        $GLOBALS['cfg']['Server']['designer_settings'] = '';
-        $GLOBALS['cfg']['Server']['export_templates'] = '';
+        $config = Config::getInstance();
+        $config->selectedServer = [];
+        $config->selectedServer['user'] = '';
+        $config->selectedServer['pmadb'] = 'PMA-storage';
+        $config->selectedServer['bookmarktable'] = '';
+        $config->selectedServer['relation'] = '';
+        $config->selectedServer['table_info'] = '';
+        $config->selectedServer['table_coords'] = '';
+        $config->selectedServer['column_info'] = '';
+        $config->selectedServer['pdf_pages'] = '';
+        $config->selectedServer['history'] = '';
+        $config->selectedServer['recent'] = '';
+        $config->selectedServer['favorite'] = '';
+        $config->selectedServer['table_uiprefs'] = '';
+        $config->selectedServer['tracking'] = '';
+        $config->selectedServer['userconfig'] = 'pma__userconfig_custom';
+        $config->selectedServer['users'] = '';
+        $config->selectedServer['usergroups'] = '';
+        $config->selectedServer['navigationhiding'] = '';
+        $config->selectedServer['savedsearches'] = '';
+        $config->selectedServer['central_columns'] = '';
+        $config->selectedServer['designer_settings'] = '';
+        $config->selectedServer['export_templates'] = '';
 
         $dummyDbi = $this->createDbiDummy();
         $dbi = $this->createDatabaseInterface($dummyDbi);
@@ -1715,7 +1729,7 @@ class RelationTest extends AbstractTestCase
             'central_columns' => '',
             'designer_settings' => '',
             'export_templates' => '',
-        ], $GLOBALS['cfg']['Server']);
+        ], $config->selectedServer);
 
         $dummyDbi->assertAllQueriesConsumed();
     }
@@ -1724,28 +1738,29 @@ class RelationTest extends AbstractTestCase
     {
         $GLOBALS['db'] = '';
         $GLOBALS['server'] = 1;
-        $GLOBALS['cfg']['Server'] = [];
-        $GLOBALS['cfg']['Server']['user'] = '';
-        $GLOBALS['cfg']['Server']['pmadb'] = 'PMA-storage';
-        $GLOBALS['cfg']['Server']['bookmarktable'] = '';
-        $GLOBALS['cfg']['Server']['relation'] = '';
-        $GLOBALS['cfg']['Server']['table_info'] = '';
-        $GLOBALS['cfg']['Server']['table_coords'] = '';
-        $GLOBALS['cfg']['Server']['column_info'] = '';
-        $GLOBALS['cfg']['Server']['pdf_pages'] = '';
-        $GLOBALS['cfg']['Server']['history'] = '';
-        $GLOBALS['cfg']['Server']['recent'] = '';
-        $GLOBALS['cfg']['Server']['favorite'] = '';
-        $GLOBALS['cfg']['Server']['table_uiprefs'] = '';
-        $GLOBALS['cfg']['Server']['tracking'] = false;
-        $GLOBALS['cfg']['Server']['userconfig'] = '';
-        $GLOBALS['cfg']['Server']['users'] = '';
-        $GLOBALS['cfg']['Server']['usergroups'] = '';
-        $GLOBALS['cfg']['Server']['navigationhiding'] = '';
-        $GLOBALS['cfg']['Server']['savedsearches'] = '';
-        $GLOBALS['cfg']['Server']['central_columns'] = '';
-        $GLOBALS['cfg']['Server']['designer_settings'] = '';
-        $GLOBALS['cfg']['Server']['export_templates'] = '';
+        $config = Config::getInstance();
+        $config->selectedServer = [];
+        $config->selectedServer['user'] = '';
+        $config->selectedServer['pmadb'] = 'PMA-storage';
+        $config->selectedServer['bookmarktable'] = '';
+        $config->selectedServer['relation'] = '';
+        $config->selectedServer['table_info'] = '';
+        $config->selectedServer['table_coords'] = '';
+        $config->selectedServer['column_info'] = '';
+        $config->selectedServer['pdf_pages'] = '';
+        $config->selectedServer['history'] = '';
+        $config->selectedServer['recent'] = '';
+        $config->selectedServer['favorite'] = '';
+        $config->selectedServer['table_uiprefs'] = '';
+        $config->selectedServer['tracking'] = false;
+        $config->selectedServer['userconfig'] = '';
+        $config->selectedServer['users'] = '';
+        $config->selectedServer['usergroups'] = '';
+        $config->selectedServer['navigationhiding'] = '';
+        $config->selectedServer['savedsearches'] = '';
+        $config->selectedServer['central_columns'] = '';
+        $config->selectedServer['designer_settings'] = '';
+        $config->selectedServer['export_templates'] = '';
 
         $dummyDbi = $this->createDbiDummy();
         $dbi = $this->createDatabaseInterface($dummyDbi);
@@ -1834,7 +1849,7 @@ class RelationTest extends AbstractTestCase
             'central_columns' => '',
             'designer_settings' => '',
             'export_templates' => '',
-        ], $GLOBALS['cfg']['Server']);
+        ], $config->selectedServer);
 
         $dummyDbi->assertAllQueriesConsumed();
     }
@@ -1843,32 +1858,33 @@ class RelationTest extends AbstractTestCase
     {
         $GLOBALS['db'] = '';
         $GLOBALS['server'] = 1;
-        $GLOBALS['cfg']['Server'] = [];
-        $GLOBALS['cfg']['Server']['user'] = '';
-        $GLOBALS['cfg']['Server']['pmadb'] = 'PMA-storage';
-        $GLOBALS['cfg']['Server']['bookmarktable'] = '';
-        $GLOBALS['cfg']['Server']['relation'] = '';
-        $GLOBALS['cfg']['Server']['table_info'] = '';
-        $GLOBALS['cfg']['Server']['table_coords'] = '';
-        $GLOBALS['cfg']['Server']['column_info'] = '';
-        $GLOBALS['cfg']['Server']['pdf_pages'] = '';
-        $GLOBALS['cfg']['Server']['history'] = '';
-        $GLOBALS['cfg']['Server']['recent'] = '';
-        $GLOBALS['cfg']['Server']['favorite'] = 'pma__favorite_custom';
-        $GLOBALS['cfg']['Server']['table_uiprefs'] = '';
-        $GLOBALS['cfg']['Server']['tracking'] = false;
-        $GLOBALS['cfg']['Server']['userconfig'] = '';
-        $GLOBALS['cfg']['Server']['users'] = '';
-        $GLOBALS['cfg']['Server']['usergroups'] = '';
-        $GLOBALS['cfg']['Server']['navigationhiding'] = '';
-        $GLOBALS['cfg']['Server']['savedsearches'] = '';
-        $GLOBALS['cfg']['Server']['central_columns'] = '';
-        $GLOBALS['cfg']['Server']['designer_settings'] = '';
-        $GLOBALS['cfg']['Server']['export_templates'] = '';
+        $config = Config::getInstance();
+        $config->selectedServer = [];
+        $config->selectedServer['user'] = '';
+        $config->selectedServer['pmadb'] = 'PMA-storage';
+        $config->selectedServer['bookmarktable'] = '';
+        $config->selectedServer['relation'] = '';
+        $config->selectedServer['table_info'] = '';
+        $config->selectedServer['table_coords'] = '';
+        $config->selectedServer['column_info'] = '';
+        $config->selectedServer['pdf_pages'] = '';
+        $config->selectedServer['history'] = '';
+        $config->selectedServer['recent'] = '';
+        $config->selectedServer['favorite'] = 'pma__favorite_custom';
+        $config->selectedServer['table_uiprefs'] = '';
+        $config->selectedServer['tracking'] = false;
+        $config->selectedServer['userconfig'] = '';
+        $config->selectedServer['users'] = '';
+        $config->selectedServer['usergroups'] = '';
+        $config->selectedServer['navigationhiding'] = '';
+        $config->selectedServer['savedsearches'] = '';
+        $config->selectedServer['central_columns'] = '';
+        $config->selectedServer['designer_settings'] = '';
+        $config->selectedServer['export_templates'] = '';
 
         $dummyDbi = $this->createDbiDummy();
         $dbi = $this->createDatabaseInterface($dummyDbi);
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
 
         $dummyDbi->removeDefaultResults();
         $dummyDbi->addSelectDb('PMA-storage');
@@ -1942,35 +1958,36 @@ class RelationTest extends AbstractTestCase
             'central_columns' => '',
             'designer_settings' => '',
             'export_templates' => '',
-        ], $GLOBALS['cfg']['Server']);
+        ], $config->selectedServer);
 
         $dummyDbi->assertAllQueriesConsumed();
     }
 
     public function testArePmadbTablesDefinedAndArePmadbTablesAllDisabled(): void
     {
-        $GLOBALS['cfg']['Server']['bookmarktable'] = '';
-        $GLOBALS['cfg']['Server']['relation'] = '';
-        $GLOBALS['cfg']['Server']['table_info'] = '';
-        $GLOBALS['cfg']['Server']['table_coords'] = '';
-        $GLOBALS['cfg']['Server']['column_info'] = '';
-        $GLOBALS['cfg']['Server']['pdf_pages'] = '';
-        $GLOBALS['cfg']['Server']['history'] = '';
-        $GLOBALS['cfg']['Server']['recent'] = '';
-        $GLOBALS['cfg']['Server']['favorite'] = '';
-        $GLOBALS['cfg']['Server']['table_uiprefs'] = '';
-        $GLOBALS['cfg']['Server']['tracking'] = '';
-        $GLOBALS['cfg']['Server']['userconfig'] = '';
-        $GLOBALS['cfg']['Server']['users'] = '';
-        $GLOBALS['cfg']['Server']['usergroups'] = '';
-        $GLOBALS['cfg']['Server']['navigationhiding'] = '';
-        $GLOBALS['cfg']['Server']['savedsearches'] = '';
-        $GLOBALS['cfg']['Server']['central_columns'] = '';
-        $GLOBALS['cfg']['Server']['designer_settings'] = '';
-        $GLOBALS['cfg']['Server']['export_templates'] = '';
+        $config = Config::getInstance();
+        $config->selectedServer['bookmarktable'] = '';
+        $config->selectedServer['relation'] = '';
+        $config->selectedServer['table_info'] = '';
+        $config->selectedServer['table_coords'] = '';
+        $config->selectedServer['column_info'] = '';
+        $config->selectedServer['pdf_pages'] = '';
+        $config->selectedServer['history'] = '';
+        $config->selectedServer['recent'] = '';
+        $config->selectedServer['favorite'] = '';
+        $config->selectedServer['table_uiprefs'] = '';
+        $config->selectedServer['tracking'] = '';
+        $config->selectedServer['userconfig'] = '';
+        $config->selectedServer['users'] = '';
+        $config->selectedServer['usergroups'] = '';
+        $config->selectedServer['navigationhiding'] = '';
+        $config->selectedServer['savedsearches'] = '';
+        $config->selectedServer['central_columns'] = '';
+        $config->selectedServer['designer_settings'] = '';
+        $config->selectedServer['export_templates'] = '';
 
         $dbi = $this->createDatabaseInterface();
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
 
         (new ReflectionProperty(Relation::class, 'cache'))->setValue(null, null);
 
@@ -1979,117 +1996,117 @@ class RelationTest extends AbstractTestCase
         $this->assertFalse($relation->arePmadbTablesDefined());
         $this->assertFalse($relation->arePmadbTablesAllDisabled());
 
-        $GLOBALS['cfg']['Server']['bookmarktable'] = '';
-        $GLOBALS['cfg']['Server']['relation'] = '';
-        $GLOBALS['cfg']['Server']['table_info'] = '';
-        $GLOBALS['cfg']['Server']['table_coords'] = '';
-        $GLOBALS['cfg']['Server']['column_info'] = '';
-        $GLOBALS['cfg']['Server']['pdf_pages'] = '';
-        $GLOBALS['cfg']['Server']['history'] = '';
-        $GLOBALS['cfg']['Server']['recent'] = '';
-        $GLOBALS['cfg']['Server']['favorite'] = 'pma__favorite_custom';
-        $GLOBALS['cfg']['Server']['table_uiprefs'] = '';
-        $GLOBALS['cfg']['Server']['tracking'] = false;
-        $GLOBALS['cfg']['Server']['userconfig'] = '';
-        $GLOBALS['cfg']['Server']['users'] = '';
-        $GLOBALS['cfg']['Server']['usergroups'] = '';
-        $GLOBALS['cfg']['Server']['navigationhiding'] = '';
-        $GLOBALS['cfg']['Server']['savedsearches'] = '';
-        $GLOBALS['cfg']['Server']['central_columns'] = '';
-        $GLOBALS['cfg']['Server']['designer_settings'] = '';
-        $GLOBALS['cfg']['Server']['export_templates'] = '';
+        $config->selectedServer['bookmarktable'] = '';
+        $config->selectedServer['relation'] = '';
+        $config->selectedServer['table_info'] = '';
+        $config->selectedServer['table_coords'] = '';
+        $config->selectedServer['column_info'] = '';
+        $config->selectedServer['pdf_pages'] = '';
+        $config->selectedServer['history'] = '';
+        $config->selectedServer['recent'] = '';
+        $config->selectedServer['favorite'] = 'pma__favorite_custom';
+        $config->selectedServer['table_uiprefs'] = '';
+        $config->selectedServer['tracking'] = false;
+        $config->selectedServer['userconfig'] = '';
+        $config->selectedServer['users'] = '';
+        $config->selectedServer['usergroups'] = '';
+        $config->selectedServer['navigationhiding'] = '';
+        $config->selectedServer['savedsearches'] = '';
+        $config->selectedServer['central_columns'] = '';
+        $config->selectedServer['designer_settings'] = '';
+        $config->selectedServer['export_templates'] = '';
 
         $this->assertFalse($relation->arePmadbTablesDefined());
         $this->assertFalse($relation->arePmadbTablesAllDisabled());
 
-        $GLOBALS['cfg']['Server']['bookmarktable'] = 'pma__bookmark';
-        $GLOBALS['cfg']['Server']['relation'] = 'pma__relation';
-        $GLOBALS['cfg']['Server']['table_info'] = 'pma__table_info';
-        $GLOBALS['cfg']['Server']['table_coords'] = 'pma__table_coords';
-        $GLOBALS['cfg']['Server']['pdf_pages'] = 'pma__pdf_pages';
-        $GLOBALS['cfg']['Server']['column_info'] = 'pma__column_info';
-        $GLOBALS['cfg']['Server']['history'] = 'pma__history';
-        $GLOBALS['cfg']['Server']['table_uiprefs'] = 'pma__table_uiprefs';
-        $GLOBALS['cfg']['Server']['tracking'] = 'pma__tracking';
-        $GLOBALS['cfg']['Server']['userconfig'] = 'pma__userconfig';
-        $GLOBALS['cfg']['Server']['recent'] = 'pma__recent';
-        $GLOBALS['cfg']['Server']['favorite'] = 'pma__favorite';
-        $GLOBALS['cfg']['Server']['users'] = 'pma__users';
-        $GLOBALS['cfg']['Server']['usergroups'] = 'pma__usergroups';
-        $GLOBALS['cfg']['Server']['navigationhiding'] = 'pma__navigationhiding';
-        $GLOBALS['cfg']['Server']['savedsearches'] = 'pma__savedsearches';
-        $GLOBALS['cfg']['Server']['central_columns'] = 'pma__central_columns';
-        $GLOBALS['cfg']['Server']['designer_settings'] = 'pma__designer_settings';
-        $GLOBALS['cfg']['Server']['export_templates'] = 'pma__export_templates';
+        $config->selectedServer['bookmarktable'] = 'pma__bookmark';
+        $config->selectedServer['relation'] = 'pma__relation';
+        $config->selectedServer['table_info'] = 'pma__table_info';
+        $config->selectedServer['table_coords'] = 'pma__table_coords';
+        $config->selectedServer['pdf_pages'] = 'pma__pdf_pages';
+        $config->selectedServer['column_info'] = 'pma__column_info';
+        $config->selectedServer['history'] = 'pma__history';
+        $config->selectedServer['table_uiprefs'] = 'pma__table_uiprefs';
+        $config->selectedServer['tracking'] = 'pma__tracking';
+        $config->selectedServer['userconfig'] = 'pma__userconfig';
+        $config->selectedServer['recent'] = 'pma__recent';
+        $config->selectedServer['favorite'] = 'pma__favorite';
+        $config->selectedServer['users'] = 'pma__users';
+        $config->selectedServer['usergroups'] = 'pma__usergroups';
+        $config->selectedServer['navigationhiding'] = 'pma__navigationhiding';
+        $config->selectedServer['savedsearches'] = 'pma__savedsearches';
+        $config->selectedServer['central_columns'] = 'pma__central_columns';
+        $config->selectedServer['designer_settings'] = 'pma__designer_settings';
+        $config->selectedServer['export_templates'] = 'pma__export_templates';
 
         $this->assertTrue($relation->arePmadbTablesDefined());
         $this->assertFalse($relation->arePmadbTablesAllDisabled());
 
-        $GLOBALS['cfg']['Server']['bookmarktable'] = 'pma__bookmark';
-        $GLOBALS['cfg']['Server']['relation'] = 'pma__relation';
-        $GLOBALS['cfg']['Server']['table_info'] = 'pma__table_info';
-        $GLOBALS['cfg']['Server']['table_coords'] = 'pma__table_coords';
-        $GLOBALS['cfg']['Server']['pdf_pages'] = 'pma__pdf_pages';
-        $GLOBALS['cfg']['Server']['column_info'] = 'pma__column_info';
-        $GLOBALS['cfg']['Server']['history'] = 'custom_name';
-        $GLOBALS['cfg']['Server']['table_uiprefs'] = 'pma__table_uiprefs';
-        $GLOBALS['cfg']['Server']['tracking'] = 'pma__tracking';
-        $GLOBALS['cfg']['Server']['userconfig'] = 'pma__userconfig';
-        $GLOBALS['cfg']['Server']['recent'] = 'pma__recent';
-        $GLOBALS['cfg']['Server']['favorite'] = 'pma__favorite';
-        $GLOBALS['cfg']['Server']['users'] = 'pma__users';
-        $GLOBALS['cfg']['Server']['usergroups'] = 'pma__usergroups';
-        $GLOBALS['cfg']['Server']['navigationhiding'] = 'pma__navigationhiding';
-        $GLOBALS['cfg']['Server']['savedsearches'] = 'pma__savedsearches';
-        $GLOBALS['cfg']['Server']['central_columns'] = 'pma__central_columns';
-        $GLOBALS['cfg']['Server']['designer_settings'] = 'pma__designer_settings';
-        $GLOBALS['cfg']['Server']['export_templates'] = 'pma__export_templates';
+        $config->selectedServer['bookmarktable'] = 'pma__bookmark';
+        $config->selectedServer['relation'] = 'pma__relation';
+        $config->selectedServer['table_info'] = 'pma__table_info';
+        $config->selectedServer['table_coords'] = 'pma__table_coords';
+        $config->selectedServer['pdf_pages'] = 'pma__pdf_pages';
+        $config->selectedServer['column_info'] = 'pma__column_info';
+        $config->selectedServer['history'] = 'custom_name';
+        $config->selectedServer['table_uiprefs'] = 'pma__table_uiprefs';
+        $config->selectedServer['tracking'] = 'pma__tracking';
+        $config->selectedServer['userconfig'] = 'pma__userconfig';
+        $config->selectedServer['recent'] = 'pma__recent';
+        $config->selectedServer['favorite'] = 'pma__favorite';
+        $config->selectedServer['users'] = 'pma__users';
+        $config->selectedServer['usergroups'] = 'pma__usergroups';
+        $config->selectedServer['navigationhiding'] = 'pma__navigationhiding';
+        $config->selectedServer['savedsearches'] = 'pma__savedsearches';
+        $config->selectedServer['central_columns'] = 'pma__central_columns';
+        $config->selectedServer['designer_settings'] = 'pma__designer_settings';
+        $config->selectedServer['export_templates'] = 'pma__export_templates';
 
         $this->assertTrue($relation->arePmadbTablesDefined());
         $this->assertFalse($relation->arePmadbTablesAllDisabled());
 
-        $GLOBALS['cfg']['Server']['bookmarktable'] = 'pma__bookmark';
-        $GLOBALS['cfg']['Server']['relation'] = 'pma__relation';
-        $GLOBALS['cfg']['Server']['table_info'] = 'pma__table_info';
-        $GLOBALS['cfg']['Server']['table_coords'] = 'pma__table_coords';
-        $GLOBALS['cfg']['Server']['pdf_pages'] = 'pma__pdf_pages';
-        $GLOBALS['cfg']['Server']['column_info'] = 'pma__column_info';
-        $GLOBALS['cfg']['Server']['history'] = 'pma__history';
-        $GLOBALS['cfg']['Server']['table_uiprefs'] = 'pma__table_uiprefs';
-        $GLOBALS['cfg']['Server']['tracking'] = 'pma__tracking';
-        $GLOBALS['cfg']['Server']['userconfig'] = '';
-        $GLOBALS['cfg']['Server']['recent'] = 'pma__recent';
-        $GLOBALS['cfg']['Server']['favorite'] = 'pma__favorite';
-        $GLOBALS['cfg']['Server']['users'] = 'pma__users';
-        $GLOBALS['cfg']['Server']['usergroups'] = 'pma__usergroups';
-        $GLOBALS['cfg']['Server']['navigationhiding'] = 'pma__navigationhiding';
-        $GLOBALS['cfg']['Server']['savedsearches'] = 'pma__savedsearches';
-        $GLOBALS['cfg']['Server']['central_columns'] = 'pma__central_columns';
-        $GLOBALS['cfg']['Server']['designer_settings'] = 'pma__designer_settings';
-        $GLOBALS['cfg']['Server']['export_templates'] = 'pma__export_templates';
+        $config->selectedServer['bookmarktable'] = 'pma__bookmark';
+        $config->selectedServer['relation'] = 'pma__relation';
+        $config->selectedServer['table_info'] = 'pma__table_info';
+        $config->selectedServer['table_coords'] = 'pma__table_coords';
+        $config->selectedServer['pdf_pages'] = 'pma__pdf_pages';
+        $config->selectedServer['column_info'] = 'pma__column_info';
+        $config->selectedServer['history'] = 'pma__history';
+        $config->selectedServer['table_uiprefs'] = 'pma__table_uiprefs';
+        $config->selectedServer['tracking'] = 'pma__tracking';
+        $config->selectedServer['userconfig'] = '';
+        $config->selectedServer['recent'] = 'pma__recent';
+        $config->selectedServer['favorite'] = 'pma__favorite';
+        $config->selectedServer['users'] = 'pma__users';
+        $config->selectedServer['usergroups'] = 'pma__usergroups';
+        $config->selectedServer['navigationhiding'] = 'pma__navigationhiding';
+        $config->selectedServer['savedsearches'] = 'pma__savedsearches';
+        $config->selectedServer['central_columns'] = 'pma__central_columns';
+        $config->selectedServer['designer_settings'] = 'pma__designer_settings';
+        $config->selectedServer['export_templates'] = 'pma__export_templates';
 
         $this->assertFalse($relation->arePmadbTablesDefined());
         $this->assertFalse($relation->arePmadbTablesAllDisabled());
 
-        $GLOBALS['cfg']['Server']['bookmarktable'] = false; //'pma__bookmark';
-        $GLOBALS['cfg']['Server']['relation'] = false; //'pma__relation';
-        $GLOBALS['cfg']['Server']['table_info'] = false; //'pma__table_info';
-        $GLOBALS['cfg']['Server']['table_coords'] = false; //'pma__table_coords';
-        $GLOBALS['cfg']['Server']['pdf_pages'] = false; //'pma__pdf_pages';
-        $GLOBALS['cfg']['Server']['column_info'] = false; //'pma__column_info';
-        $GLOBALS['cfg']['Server']['history'] = false; //'pma__history';
-        $GLOBALS['cfg']['Server']['table_uiprefs'] = false; //'pma__table_uiprefs';
-        $GLOBALS['cfg']['Server']['tracking'] = false; //'pma__tracking';
-        $GLOBALS['cfg']['Server']['userconfig'] = false; //'pma__userconfig';
-        $GLOBALS['cfg']['Server']['recent'] = false; //'pma__recent';
-        $GLOBALS['cfg']['Server']['favorite'] = false; //'pma__favorite';
-        $GLOBALS['cfg']['Server']['users'] = false; //'pma__users';
-        $GLOBALS['cfg']['Server']['usergroups'] = false; //'pma__usergroups';
-        $GLOBALS['cfg']['Server']['navigationhiding'] = false; //'pma__navigationhiding';
-        $GLOBALS['cfg']['Server']['savedsearches'] = false; //'pma__savedsearches';
-        $GLOBALS['cfg']['Server']['central_columns'] = false; //'pma__central_columns';
-        $GLOBALS['cfg']['Server']['designer_settings'] = false; //'pma__designer_settings';
-        $GLOBALS['cfg']['Server']['export_templates'] = false; //'pma__export_templates';
+        $config->selectedServer['bookmarktable'] = false; //'pma__bookmark';
+        $config->selectedServer['relation'] = false; //'pma__relation';
+        $config->selectedServer['table_info'] = false; //'pma__table_info';
+        $config->selectedServer['table_coords'] = false; //'pma__table_coords';
+        $config->selectedServer['pdf_pages'] = false; //'pma__pdf_pages';
+        $config->selectedServer['column_info'] = false; //'pma__column_info';
+        $config->selectedServer['history'] = false; //'pma__history';
+        $config->selectedServer['table_uiprefs'] = false; //'pma__table_uiprefs';
+        $config->selectedServer['tracking'] = false; //'pma__tracking';
+        $config->selectedServer['userconfig'] = false; //'pma__userconfig';
+        $config->selectedServer['recent'] = false; //'pma__recent';
+        $config->selectedServer['favorite'] = false; //'pma__favorite';
+        $config->selectedServer['users'] = false; //'pma__users';
+        $config->selectedServer['usergroups'] = false; //'pma__usergroups';
+        $config->selectedServer['navigationhiding'] = false; //'pma__navigationhiding';
+        $config->selectedServer['savedsearches'] = false; //'pma__savedsearches';
+        $config->selectedServer['central_columns'] = false; //'pma__central_columns';
+        $config->selectedServer['designer_settings'] = false; //'pma__designer_settings';
+        $config->selectedServer['export_templates'] = false; //'pma__export_templates';
 
         $this->assertFalse($relation->arePmadbTablesDefined());
         $this->assertTrue($relation->arePmadbTablesAllDisabled());

@@ -685,6 +685,11 @@ Server connection settings
     login is still tried first, but as fallback, no password method is
     tried.
 
+    .. note::
+
+        It is possible to allow logging in with no password with
+        the :config:option:`$cfg['Servers'][$i]['AllowNoPassword']` directive.
+
 .. _servers_only_db:
 .. config:option:: $cfg['Servers'][$i]['only_db']
 
@@ -954,7 +959,7 @@ Server connection settings
     transformation system to work. phpMyAdmin will upgrade it automatically
     for you by analyzing your current column\_info table structure.
     However, if something goes wrong with the auto-upgrade then you can
-    use the SQL script found in ``./sql/upgrade_column_info_4_3_0+.sql``
+    use the SQL script found in ``./resources/sql/upgrade_column_info_4_3_0+.sql``
     to upgrade it manually.
 
     To allow the usage of this functionality:
@@ -974,7 +979,7 @@ Server connection settings
            ADD `transformation` VARCHAR( 255 ) NOT NULL,
            ADD `transformation_options` VARCHAR( 255 ) NOT NULL;
     * to update your PRE-4.3.0 Column\_info table manually use this
-      ``./sql/upgrade_column_info_4_3_0+.sql`` SQL script.
+      ``./resources/sql/upgrade_column_info_4_3_0+.sql`` SQL script.
 
     This feature can be disabled by setting the configuration to ``false``.
 
@@ -3615,7 +3620,7 @@ Various display setting
 
     Contains names of configuration options (keys in ``$cfg`` array) that
     users can't set through user preferences. For possible values, refer
-    to classes under :file:`libraries/classes/Config/Forms/User/`.
+    to classes under :file:`src/Config/Forms/User/`.
 
 .. config:option:: $cfg['UserprefsDeveloperTab']
 

@@ -24,7 +24,7 @@ class EnumValuesControllerTest extends AbstractTestCase
 
         $this->dummyDbi = $this->createDbiDummy();
         $this->dbi = $this->createDatabaseInterface($this->dummyDbi);
-        $GLOBALS['dbi'] = $this->dbi;
+        DatabaseInterface::$instance = $this->dbi;
 
         parent::loadContainerBuilder();
 
@@ -39,6 +39,7 @@ class EnumValuesControllerTest extends AbstractTestCase
     public function testGetEnumValuesError(): void
     {
         $this->dummyDbi->addResult('SHOW COLUMNS FROM `cvv`.`enums` LIKE \'set\'', false);
+        $this->dummyDbi->addResult('SHOW INDEXES FROM `cvv`.`enums`', false);
 
         $GLOBALS['db'] = 'cvv';
         $GLOBALS['table'] = 'enums';
@@ -72,7 +73,7 @@ class EnumValuesControllerTest extends AbstractTestCase
             [
                 [
                     'set',
-                    'set(\'<script>alert("ok")</script>\',\'a&b\',\'b&c\',\'vrai&amp\',\'\')',
+                    "set('<script>alert(\"ok\")</script>','a&b','b&c','vrai&amp','','漢字','''','\\','\\\"\\\\''')",
                     'No',
                     '',
                     'NULL',
@@ -81,6 +82,7 @@ class EnumValuesControllerTest extends AbstractTestCase
             ],
             ['Field', 'Type', 'Null', 'Key', 'Default', 'Extra'],
         );
+        $this->dummyDbi->addResult('SHOW INDEXES FROM `cvv`.`enums`', []);
 
         $GLOBALS['db'] = 'cvv';
         $GLOBALS['table'] = 'enums';
@@ -104,13 +106,16 @@ class EnumValuesControllerTest extends AbstractTestCase
         $this->assertSame(
             [
                 'dropdown' => '<select>' . "\n"
-                    . '  <option value="">&nbsp;</option>' . "\n"
                     . '      <option value="&lt;script&gt;alert(&quot;ok&quot;)&lt;/script&gt;">'
                     . '&lt;script&gt;alert(&quot;ok&quot;)&lt;/script&gt;</option>' . "\n"
                     . '      <option value="a&amp;b">a&amp;b</option>' . "\n"
                     . '      <option value="b&amp;c" selected>b&amp;c</option>' . "\n"
                     . '      <option value="vrai&amp;amp">vrai&amp;amp</option>' . "\n"
                     . '      <option value=""></option>' . "\n"
+                    . '      <option value="漢字">漢字</option>' . "\n"
+                    . '      <option value="&#039;">&#039;</option>' . "\n"
+                    . '      <option value="\">\</option>' . "\n"
+                    . '      <option value="\&quot;\&#039;">\&quot;\&#039;</option>' . "\n"
                     . '  </select>' . "\n",
             ],
             $this->getResponseJsonResult(),

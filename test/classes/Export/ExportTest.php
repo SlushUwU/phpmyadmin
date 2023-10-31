@@ -4,9 +4,13 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Export;
 
+use PhpMyAdmin\Config;
 use PhpMyAdmin\ConfigStorage\Relation;
+use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\Export\Export;
+use PhpMyAdmin\FlashMessages;
 use PhpMyAdmin\Identifiers\DatabaseName;
+use PhpMyAdmin\Message;
 use PhpMyAdmin\Plugins\Export\ExportPhparray;
 use PhpMyAdmin\Plugins\Export\ExportSql;
 use PhpMyAdmin\Tests\AbstractTestCase;
@@ -24,8 +28,8 @@ class ExportTest extends AbstractTestCase
 {
     public function testMergeAliases(): void
     {
-        $GLOBALS['dbi'] = $this->createDatabaseInterface();
-        $export = new Export($GLOBALS['dbi']);
+        DatabaseInterface::$instance = $this->createDatabaseInterface();
+        $export = new Export(DatabaseInterface::getInstance());
         $aliases1 = [
             'test_db' => [
                 'alias' => 'aliastest',
@@ -57,11 +61,12 @@ class ExportTest extends AbstractTestCase
 
     public function testGetFinalFilenameAndMimetypeForFilename(): void
     {
-        $GLOBALS['dbi'] = $this->createDatabaseInterface();
-        $export = new Export($GLOBALS['dbi']);
+        $dbi = $this->createDatabaseInterface();
+        DatabaseInterface::$instance = $dbi;
+        $export = new Export($dbi);
         $exportPlugin = new ExportPhparray(
-            new Relation($GLOBALS['dbi']),
-            new Export($GLOBALS['dbi']),
+            new Relation($dbi),
+            new Export($dbi),
             new Transformations(),
         );
         $finalFileName = $export->getFinalFilenameAndMimetypeForFilename($exportPlugin, 'zip', 'myfilename');
@@ -84,7 +89,7 @@ class ExportTest extends AbstractTestCase
         $GLOBALS['buffer_needed'] = false;
         $GLOBALS['asfile'] = false;
         $GLOBALS['sql_structure_or_data'] = 'structure_and_data';
-        $GLOBALS['cfg']['Server']['DisableIS'] = false;
+        Config::getInstance()->selectedServer['DisableIS'] = false;
         $GLOBALS['sql_insert_syntax'] = 'both';
         $GLOBALS['sql_max_query_size'] = '50000';
 
@@ -112,7 +117,7 @@ class ExportTest extends AbstractTestCase
         // phpcs:enable
 
         $dbi = $this->createDatabaseInterface($dbiDummy);
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
         $export = new Export($dbi);
 
         $export->exportDatabase(
@@ -150,8 +155,9 @@ SQL;
         $GLOBALS['output_kanji_conversion'] = false;
         $GLOBALS['buffer_needed'] = false;
         $GLOBALS['asfile'] = false;
-        $GLOBALS['cfg']['Server']['DisableIS'] = false;
-        $GLOBALS['cfg']['Server']['only_db'] = '';
+        $config = Config::getInstance();
+        $config->selectedServer['DisableIS'] = false;
+        $config->selectedServer['only_db'] = '';
         $GLOBALS['sql_structure_or_data'] = 'structure_and_data';
         $GLOBALS['sql_insert_syntax'] = 'both';
         $GLOBALS['sql_max_query_size'] = '50000';
@@ -195,7 +201,7 @@ SQL;
         // phpcs:enable
 
         $dbi = $this->createDatabaseInterface($dbiDummy);
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
         $export = new Export($dbi);
 
         $export->exportServer(
@@ -224,5 +230,89 @@ INSERT INTO test_table (id, name, datetimefield) VALUES
 SQL;
 
         $this->assertSame(htmlspecialchars($expected, ENT_COMPAT), $this->getActualOutputForAssertion());
+    }
+
+    public function testGetPageLocationAndSaveMessageForServerExportWithError(): void
+    {
+        $GLOBALS['lang'] = 'en';
+        $GLOBALS['server'] = 2;
+        $_SESSION = [];
+        $dbi = $this->createDatabaseInterface();
+        $export = new Export($dbi);
+        $location = $export->getPageLocationAndSaveMessage('server', Message::error('Error message!'));
+        $this->assertSame('index.php?route=/server/export&server=2&lang=en', $location);
+        $this->assertSame(['danger' => ['Error message!']], (new FlashMessages())->getMessages());
+    }
+
+    public function testGetPageLocationAndSaveMessageForServerExportWithSuccess(): void
+    {
+        $GLOBALS['lang'] = 'en';
+        $GLOBALS['server'] = 2;
+        $_SESSION = [];
+        $dbi = $this->createDatabaseInterface();
+        $export = new Export($dbi);
+        $location = $export->getPageLocationAndSaveMessage('server', Message::success('Success message!'));
+        $this->assertSame('index.php?route=/server/export&server=2&lang=en', $location);
+        $this->assertSame(['success' => ['Success message!']], (new FlashMessages())->getMessages());
+    }
+
+    public function testGetPageLocationAndSaveMessageForDatabaseExportWithError(): void
+    {
+        $GLOBALS['lang'] = 'en';
+        $GLOBALS['server'] = 2;
+        $GLOBALS['db'] = 'test_db';
+        $_SESSION = [];
+        $dbi = $this->createDatabaseInterface();
+        $export = new Export($dbi);
+        $location = $export->getPageLocationAndSaveMessage('database', Message::error('Error message!'));
+        $this->assertSame('index.php?route=/database/export&db=test_db&server=2&lang=en', $location);
+        $this->assertSame(['danger' => ['Error message!']], (new FlashMessages())->getMessages());
+    }
+
+    public function testGetPageLocationAndSaveMessageForDatabaseExportWithSuccess(): void
+    {
+        $GLOBALS['lang'] = 'en';
+        $GLOBALS['server'] = 2;
+        $GLOBALS['db'] = 'test_db';
+        $_SESSION = [];
+        $dbi = $this->createDatabaseInterface();
+        $export = new Export($dbi);
+        $location = $export->getPageLocationAndSaveMessage('database', Message::success('Success message!'));
+        $this->assertSame('index.php?route=/database/export&db=test_db&server=2&lang=en', $location);
+        $this->assertSame(['success' => ['Success message!']], (new FlashMessages())->getMessages());
+    }
+
+    public function testGetPageLocationAndSaveMessageForTableExportWithError(): void
+    {
+        $GLOBALS['lang'] = 'en';
+        $GLOBALS['server'] = 2;
+        $GLOBALS['db'] = 'test_db';
+        $GLOBALS['table'] = 'test_table';
+        $_SESSION = [];
+        $dbi = $this->createDatabaseInterface();
+        $export = new Export($dbi);
+        $location = $export->getPageLocationAndSaveMessage('table', Message::error('Error message!'));
+        $this->assertSame(
+            'index.php?route=/table/export&db=test_db&table=test_table&single_table=true&server=2&lang=en',
+            $location,
+        );
+        $this->assertSame(['danger' => ['Error message!']], (new FlashMessages())->getMessages());
+    }
+
+    public function testGetPageLocationAndSaveMessageForTableExportWithSuccess(): void
+    {
+        $GLOBALS['lang'] = 'en';
+        $GLOBALS['server'] = 2;
+        $GLOBALS['db'] = 'test_db';
+        $GLOBALS['table'] = 'test_table';
+        $_SESSION = [];
+        $dbi = $this->createDatabaseInterface();
+        $export = new Export($dbi);
+        $location = $export->getPageLocationAndSaveMessage('table', Message::success('Success message!'));
+        $this->assertSame(
+            'index.php?route=/table/export&db=test_db&table=test_table&single_table=true&server=2&lang=en',
+            $location,
+        );
+        $this->assertSame(['success' => ['Success message!']], (new FlashMessages())->getMessages());
     }
 }

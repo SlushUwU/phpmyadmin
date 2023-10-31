@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Plugins\Export;
 
+use PhpMyAdmin\Column;
+use PhpMyAdmin\Config;
 use PhpMyAdmin\ConfigStorage\Relation;
 use PhpMyAdmin\ConfigStorage\RelationParameters;
 use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\Export\Export;
+use PhpMyAdmin\Identifiers\TableName;
+use PhpMyAdmin\Identifiers\TriggerName;
 use PhpMyAdmin\Plugins\Export\ExportHtmlword;
 use PhpMyAdmin\Properties\Options\Groups\OptionsPropertyMainGroup;
 use PhpMyAdmin\Properties\Options\Groups\OptionsPropertyRootGroup;
@@ -19,6 +23,9 @@ use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Tests\Stubs\DbiDummy;
 use PhpMyAdmin\Tests\Stubs\DummyResult;
 use PhpMyAdmin\Transformations;
+use PhpMyAdmin\Triggers\Event;
+use PhpMyAdmin\Triggers\Timing;
+use PhpMyAdmin\Triggers\Trigger;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Group;
 use ReflectionMethod;
@@ -47,11 +54,11 @@ class ExportHtmlwordTest extends AbstractTestCase
 
         $this->dummyDbi = $this->createDbiDummy();
         $this->dbi = $this->createDatabaseInterface($this->dummyDbi);
-        $GLOBALS['dbi'] = $this->dbi;
+        DatabaseInterface::$instance = $this->dbi;
         $GLOBALS['server'] = 0;
         $this->object = new ExportHtmlword(
-            new Relation($GLOBALS['dbi']),
-            new Export($GLOBALS['dbi']),
+            new Relation($this->dbi),
+            new Export($this->dbi),
             new Transformations(),
         );
         $GLOBALS['output_kanji_conversion'] = false;
@@ -63,7 +70,7 @@ class ExportHtmlwordTest extends AbstractTestCase
         $GLOBALS['table'] = '';
         $GLOBALS['lang'] = '';
         $GLOBALS['text_dir'] = '';
-        $GLOBALS['cfg']['Server']['DisableIS'] = true;
+        Config::getInstance()->selectedServer['DisableIS'] = true;
     }
 
     /**
@@ -338,19 +345,21 @@ class ExportHtmlwordTest extends AbstractTestCase
         $dbi->expects($this->once())
             ->method('getTableIndexes')
             ->with('database', 'view')
-            ->will($this->returnValue($keys));
+            ->willReturn($keys);
+
+        $column = new Column('column', '', false, '', null, '');
 
         $dbi->expects($this->once())
             ->method('getColumns')
             ->with('database', 'view')
-            ->will($this->returnValue([['Field' => 'column']]));
+            ->willReturn([$column]);
 
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
 
         $this->object->expects($this->once())
             ->method('formatOneColumnDefinition')
-            ->with(['Field' => 'column'], ['name1'], 'column')
-            ->will($this->returnValue('1'));
+            ->with($column, ['name1'], 'column')
+            ->willReturn('1');
 
         $this->assertEquals(
             '<table width="100%" cellspacing="1">' .
@@ -367,7 +376,7 @@ class ExportHtmlwordTest extends AbstractTestCase
     {
         $this->object = $this->getMockBuilder(ExportHtmlword::class)
             ->onlyMethods(['formatOneColumnDefinition'])
-            ->setConstructorArgs([new Relation($GLOBALS['dbi']), new Export($GLOBALS['dbi']), new Transformations()])
+            ->setConstructorArgs([new Relation($this->dbi), new Export($this->dbi), new Transformations()])
             ->getMock();
 
         $keys = [['Non_unique' => 0, 'Column_name' => 'name1'], ['Non_unique' => 1, 'Column_name' => 'name2']];
@@ -382,7 +391,7 @@ class ExportHtmlwordTest extends AbstractTestCase
 
         $dbi->expects($this->exactly(2))
             ->method('fetchResult')
-            ->willReturnOnConsecutiveCalls(
+            ->willReturn(
                 [],
                 ['fieldname' => ['values' => 'test-', 'transformation' => 'testfoo', 'mimetype' => 'test<']],
             );
@@ -390,36 +399,33 @@ class ExportHtmlwordTest extends AbstractTestCase
         $dbi->expects($this->once())
             ->method('getTableIndexes')
             ->with('database', '')
-            ->will($this->returnValue($keys));
+            ->willReturn($keys);
 
-        $columns = ['Field' => 'fieldname'];
+        $column = new Column('fieldname', '', false, '', null, '');
         $dbi->expects($this->once())
             ->method('getColumns')
             ->with('database', '')
-            ->will($this->returnValue([$columns]));
+            ->willReturn([$column]);
 
         $dbi->expects($this->once())
             ->method('tryQueryAsControlUser')
-            ->will($this->returnValue($resultStub));
+            ->willReturn($resultStub);
 
         $resultStub->expects($this->once())
             ->method('numRows')
-            ->will($this->returnValue(1));
+            ->willReturn(1);
 
         $resultStub->expects($this->once())
             ->method('fetchAssoc')
-            ->will($this->returnValue(['comment' => 'testComment']));
+            ->willReturn(['comment' => 'testComment']);
 
-        $dbi->expects($this->any())->method('escapeString')
-            ->will($this->returnArgument(0));
-
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
         $this->object->relation = new Relation($dbi);
 
         $this->object->expects($this->exactly(3))
             ->method('formatOneColumnDefinition')
-            ->with($columns, ['name1'])
-            ->will($this->returnValue('1'));
+            ->with($column, ['name1'])
+            ->willReturn('1');
 
         $relationParameters = RelationParameters::fromArray([
             'relwork' => true,
@@ -455,7 +461,7 @@ class ExportHtmlwordTest extends AbstractTestCase
 
         $dbi->expects($this->exactly(2))
             ->method('fetchResult')
-            ->willReturnOnConsecutiveCalls(
+            ->willReturn(
                 ['fieldname' => ['foreign_table' => 'ftable', 'foreign_field' => 'ffield']],
                 ['field' => ['values' => 'test-', 'transformation' => 'testfoo', 'mimetype' => 'test<']],
             );
@@ -463,31 +469,28 @@ class ExportHtmlwordTest extends AbstractTestCase
         $dbi->expects($this->once())
             ->method('getTableIndexes')
             ->with('database', '')
-            ->will($this->returnValue($keys));
+            ->willReturn($keys);
 
-        $columns = ['Field' => 'fieldname'];
+        $column = new Column('fieldname', '', false, '', null, '');
 
         $dbi->expects($this->once())
             ->method('getColumns')
             ->with('database', '')
-            ->will($this->returnValue([$columns]));
+            ->willReturn([$column]);
 
         $dbi->expects($this->once())
             ->method('tryQueryAsControlUser')
-            ->will($this->returnValue($resultStub));
+            ->willReturn($resultStub);
 
         $resultStub->expects($this->once())
             ->method('numRows')
-            ->will($this->returnValue(1));
+            ->willReturn(1);
 
         $resultStub->expects($this->once())
             ->method('fetchAssoc')
-            ->will($this->returnValue(['comment' => 'testComment']));
+            ->willReturn(['comment' => 'testComment']);
 
-        $dbi->expects($this->any())->method('escapeString')
-            ->will($this->returnArgument(0));
-
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
         $this->object->relation = new Relation($dbi);
 
         $relationParameters = RelationParameters::fromArray([
@@ -515,22 +518,19 @@ class ExportHtmlwordTest extends AbstractTestCase
         $dbi->expects($this->once())
             ->method('getTableIndexes')
             ->with('database', '')
-            ->will($this->returnValue($keys));
+            ->willReturn($keys);
 
-        $columns = ['Field' => 'fieldname'];
+        $column = new Column('fieldname', '', false, '', null, '');
 
         $dbi->expects($this->once())
             ->method('getColumns')
             ->with('database', '')
-            ->will($this->returnValue([$columns]));
+            ->willReturn([$column]);
 
         $dbi->expects($this->never())
             ->method('tryQuery');
 
-        $dbi->expects($this->any())->method('escapeString')
-            ->will($this->returnArgument(0));
-
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
 
         $relationParameters = RelationParameters::fromArray([
             'db' => 'database',
@@ -553,33 +553,19 @@ class ExportHtmlwordTest extends AbstractTestCase
 
     public function testGetTriggers(): void
     {
-        $GLOBALS['cfg']['Server']['DisableIS'] = false;
-
-        $dbi = $this->getMockBuilder(DatabaseInterface::class)
-            ->disableOriginalConstructor()
-            ->getMock();
-
         $triggers = [
-            [
-                'TRIGGER_SCHEMA' => 'database',
-                'TRIGGER_NAME' => 'tna"me',
-                'EVENT_MANIPULATION' => 'UPDATE',
-                'EVENT_OBJECT_TABLE' => 'table',
-                'ACTION_TIMING' => 'BEFORE',
-                'ACTION_STATEMENT' => 'def',
-                'EVENT_OBJECT_SCHEMA' => 'database',
-                'DEFINER' => 'test_user@localhost',
-            ],
+            new Trigger(
+                TriggerName::from('tna"me'),
+                Timing::Before,
+                Event::Update,
+                TableName::from('table'),
+                'def',
+                'test_user@localhost',
+            ),
         ];
 
-        $dbi->expects($this->once())
-            ->method('fetchResult')
-            ->willReturnOnConsecutiveCalls($triggers);
-
-        $GLOBALS['dbi'] = $dbi;
-
         $method = new ReflectionMethod(ExportHtmlword::class, 'getTriggers');
-        $result = $method->invoke($this->object, 'database', 'table');
+        $result = $method->invoke($this->object, 'database', 'table', $triggers);
 
         $this->assertStringContainsString(
             '<td class="print">tna&quot;me</td>' .
@@ -702,7 +688,7 @@ class ExportHtmlwordTest extends AbstractTestCase
     {
         $method = new ReflectionMethod(ExportHtmlword::class, 'formatOneColumnDefinition');
 
-        $cols = ['Null' => 'Yes', 'Field' => 'field', 'Key' => 'PRI', 'Type' => 'set(abc)enum123'];
+        $column = new Column('field', 'set(abc)enum123', true, 'PRI', null, '');
 
         $uniqueKeys = ['field'];
 
@@ -710,10 +696,10 @@ class ExportHtmlwordTest extends AbstractTestCase
             '<tr class="print-category"><td class="print"><em>' .
             '<strong>field</strong></em></td><td class="print">set(abc)</td>' .
             '<td class="print">Yes</td><td class="print">NULL</td>',
-            $method->invoke($this->object, $cols, $uniqueKeys),
+            $method->invoke($this->object, $column, $uniqueKeys),
         );
 
-        $cols = ['Null' => 'NO', 'Field' => 'fields', 'Key' => 'COMP', 'Type' => '', 'Default' => 'def'];
+        $column = new Column('fields', '', false, 'COMP', 'def', '');
 
         $uniqueKeys = ['field'];
 
@@ -721,7 +707,7 @@ class ExportHtmlwordTest extends AbstractTestCase
             '<tr class="print-category"><td class="print">fields</td>' .
             '<td class="print">&amp;nbsp;</td><td class="print">No</td>' .
             '<td class="print">def</td>',
-            $method->invoke($this->object, $cols, $uniqueKeys),
+            $method->invoke($this->object, $column, $uniqueKeys),
         );
     }
 }

@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Controllers\Table;
 
+use PhpMyAdmin\Bookmarks\BookmarkRepository;
 use PhpMyAdmin\CheckUserPrivileges;
+use PhpMyAdmin\Config;
 use PhpMyAdmin\Config\PageSettings;
 use PhpMyAdmin\ConfigStorage\Relation;
 use PhpMyAdmin\ConfigStorage\RelationCleanup;
@@ -13,7 +15,9 @@ use PhpMyAdmin\Controllers\Sql\SqlController;
 use PhpMyAdmin\Controllers\Table\ChangeController;
 use PhpMyAdmin\Controllers\Table\ReplaceController;
 use PhpMyAdmin\DatabaseInterface;
+use PhpMyAdmin\DbTableExists;
 use PhpMyAdmin\FileListing;
+use PhpMyAdmin\Http\Factory\ServerRequestFactory;
 use PhpMyAdmin\Http\ServerRequest;
 use PhpMyAdmin\InsertEdit;
 use PhpMyAdmin\Operations;
@@ -40,14 +44,15 @@ class ReplaceControllerTest extends AbstractTestCase
 
         $this->dummyDbi = $this->createDbiDummy();
         $this->dbi = $this->createDatabaseInterface($this->dummyDbi);
-        $GLOBALS['dbi'] = $this->dbi;
+        DatabaseInterface::$instance = $this->dbi;
         $GLOBALS['server'] = 1;
         $GLOBALS['showtable'] = null;
         $GLOBALS['db'] = 'my_db';
         $GLOBALS['table'] = 'test_tbl';
 
-        $GLOBALS['cfg']['Server']['user'] = 'user';
-        $GLOBALS['cfg']['Server']['DisableIS'] = false;
+        $config = Config::getInstance();
+        $config->selectedServer['user'] = 'user';
+        $config->selectedServer['DisableIS'] = false;
 
         $relationParameters = RelationParameters::fromArray([
             'table_coords' => 'table_name',
@@ -107,6 +112,7 @@ class ReplaceControllerTest extends AbstractTestCase
         );
 
         $pageSettings = $this->createStub(PageSettings::class);
+        $bookmarkRepository = new BookmarkRepository($dbi, $relation);
         $sqlController = new SqlController(
             $response,
             $template,
@@ -117,10 +123,12 @@ class ReplaceControllerTest extends AbstractTestCase
                 new Operations($dbi, $relation),
                 $transformations,
                 $template,
+                $bookmarkRepository,
             ),
             new CheckUserPrivileges($dbi),
             $dbi,
             $pageSettings,
+            $bookmarkRepository,
         );
         $GLOBALS['containerBuilder'] = $this->createStub(ContainerBuilder::class);
         $GLOBALS['containerBuilder']->method('get')->willReturn($sqlController);
@@ -143,13 +151,14 @@ class ReplaceControllerTest extends AbstractTestCase
         $GLOBALS['urlParams'] = [];
         $GLOBALS['goto'] = 'index.php?route=/sql';
         $_POST['sql_query'] = 'SELECT 1';
-        $GLOBALS['cfg']['InsertRows'] = 2;
-        $GLOBALS['cfg']['Server']['host'] = 'host.tld';
-        $GLOBALS['cfg']['Server']['verbose'] = '';
+        $config = Config::getInstance();
+        $config->settings['InsertRows'] = 2;
+        $config->selectedServer['host'] = 'host.tld';
+        $config->selectedServer['verbose'] = '';
 
         $dummyDbi = $this->createDbiDummy();
         $dbi = $this->createDatabaseInterface($dummyDbi);
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
         $relation = new Relation($dbi);
         $transformations = new Transformations();
         $template = new Template();
@@ -164,14 +173,19 @@ class ReplaceControllerTest extends AbstractTestCase
             $dbi,
         );
 
-        $request = $this->createStub(ServerRequest::class);
-        $request->method('getParsedBodyParam')->willReturnMap([
-            ['insert_rows', null, 5],
-            ['sql_query', '', 'SELECT 1'],
-        ]);
+        $request = ServerRequestFactory::create()->createServerRequest('POST', 'http://example.com/')
+            ->withQueryParams(['db' => 'my_db', 'table' => 'test_tbl'])
+            ->withParsedBody(['insert_rows' => '5', 'sql_query' => 'SELECT 1']);
 
         $pageSettings = $this->createStub(PageSettings::class);
-        $changeController = new ChangeController($response, $template, $insertEdit, $relation, $pageSettings);
+        $changeController = new ChangeController(
+            $response,
+            $template,
+            $insertEdit,
+            $relation,
+            $pageSettings,
+            new DbTableExists($dbi),
+        );
         $GLOBALS['containerBuilder'] = $this->createStub(ContainerBuilder::class);
         $GLOBALS['containerBuilder']->method('get')->willReturn($changeController);
 
@@ -184,7 +198,7 @@ class ReplaceControllerTest extends AbstractTestCase
         $replaceController($request);
         $output = $response->getHTMLResult();
         $this->dummyDbi->assertAllSelectsConsumed();
-        $this->assertEquals(5, $GLOBALS['cfg']['InsertRows']);
+        $this->assertEquals(5, $config->settings['InsertRows']);
         $this->assertStringContainsString(
             '<form id="continueForm" method="post" '
             . 'action="index.php?route=/table/replace&lang=en" name="continueForm">',

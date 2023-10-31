@@ -4,16 +4,20 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Plugins\Auth;
 
+use PhpMyAdmin\Config;
 use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\Exceptions\ExitException;
-use PhpMyAdmin\Header;
 use PhpMyAdmin\Plugins\Auth\AuthenticationHttp;
 use PhpMyAdmin\ResponseRenderer;
-use PhpMyAdmin\Tests\AbstractNetworkTestCase;
+use PhpMyAdmin\Tests\AbstractTestCase;
+use PhpMyAdmin\Tests\Stubs\ResponseRenderer as ResponseRendererStub;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
+use PHPUnit\Framework\Attributes\Medium;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
 use PHPUnit\Framework\Attributes\RunInSeparateProcess;
+use ReflectionProperty;
 use Throwable;
 
 use function base64_encode;
@@ -21,7 +25,8 @@ use function ob_get_clean;
 use function ob_start;
 
 #[CoversClass(AuthenticationHttp::class)]
-class AuthenticationHttpTest extends AbstractNetworkTestCase
+#[Medium]
+class AuthenticationHttpTest extends AbstractTestCase
 {
     protected AuthenticationHttp $object;
 
@@ -36,8 +41,8 @@ class AuthenticationHttpTest extends AbstractNetworkTestCase
 
         parent::setTheme();
 
-        $GLOBALS['dbi'] = $this->createDatabaseInterface();
-        $GLOBALS['cfg']['Servers'] = [];
+        DatabaseInterface::$instance = $this->createDatabaseInterface();
+        Config::getInstance()->settings['Servers'] = [];
         $GLOBALS['server'] = 0;
         $GLOBALS['db'] = 'db';
         $GLOBALS['table'] = 'table';
@@ -58,103 +63,90 @@ class AuthenticationHttpTest extends AbstractNetworkTestCase
         unset($this->object);
     }
 
-    public function doMockResponse(int $setMinimal, int $bodyId, int $setTitle, mixed ...$headers): void
-    {
-        $mockHeader = $this->getMockBuilder(Header::class)
-            ->disableOriginalConstructor()
-            ->onlyMethods(
-                ['setBodyId', 'setTitle', 'disableMenuAndConsole'],
-            )
-            ->getMock();
-
-        $mockHeader->expects($this->exactly($bodyId))
-            ->method('setBodyId')
-            ->with('loginform');
-
-        $mockHeader->expects($this->exactly($setTitle))
-            ->method('setTitle')
-            ->with('Access denied!');
-
-        $mockHeader->expects($this->exactly($setTitle))
-            ->method('disableMenuAndConsole')
-            ->with();
-
-        // set mocked headers and footers
-        $mockResponse = $this->mockResponse($headers);
-
-        $mockResponse->expects($this->exactly($setMinimal))
-            ->method('setMinimalFooter')
-            ->with();
-
-        $mockResponse->expects($this->exactly($setTitle))
-            ->method('getHeader')
-            ->with()
-            ->will($this->returnValue($mockHeader));
-
-        if (! empty($_REQUEST['old_usr'])) {
-            $this->object->logOut();
-        } else {
-            $this->expectException(ExitException::class);
-            $this->object->showLoginForm();
-        }
-    }
-
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
     public function testAuthLogoutUrl(): void
     {
-        $_REQUEST['old_usr'] = '1';
-        $GLOBALS['cfg']['Server']['LogoutURL'] = 'https://example.com/logout';
+        $config = Config::getInstance();
+        $config->selectedServer['auth_type'] = 'http';
+        $config->selectedServer['LogoutURL'] = 'https://example.com/logout';
 
-        $this->doMockResponse(
-            0,
-            0,
-            0,
-            ['Location: https://example.com/logout'],
-        );
+        $responseStub = new ResponseRendererStub();
+        (new ReflectionProperty(ResponseRenderer::class, 'instance'))->setValue(null, $responseStub);
+
+        $this->object->logOut();
+
+        $response = $responseStub->getResponse();
+        $this->assertSame(['https://example.com/logout'], $response->getHeader('Location'));
+        $this->assertSame(302, $response->getStatusCode());
     }
 
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
     public function testAuthVerbose(): void
     {
-        $_REQUEST['old_usr'] = '';
-        $GLOBALS['cfg']['Server']['verbose'] = 'verboseMessagê';
+        $config = Config::getInstance();
+        $config->selectedServer['auth_type'] = 'http';
+        $config->selectedServer['verbose'] = 'verboseMessagê';
 
-        $this->doMockResponse(
-            1,
-            1,
-            1,
-            ['WWW-Authenticate: Basic realm="phpMyAdmin verboseMessag"'],
-            ['status: 401 Unauthorized'],
-            401,
-        );
+        $responseStub = new ResponseRendererStub();
+        (new ReflectionProperty(ResponseRenderer::class, 'instance'))->setValue(null, $responseStub);
+
+        try {
+            $this->object->showLoginForm();
+        } catch (Throwable $throwable) {
+        }
+
+        $this->assertInstanceOf(ExitException::class, $throwable);
+        $response = $responseStub->getResponse();
+        $this->assertSame(['Basic realm="phpMyAdmin verboseMessag"'], $response->getHeader('WWW-Authenticate'));
+        $this->assertSame(401, $response->getStatusCode());
     }
 
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
     public function testAuthHost(): void
     {
-        $GLOBALS['cfg']['Server']['verbose'] = '';
-        $GLOBALS['cfg']['Server']['host'] = 'hòst';
+        $config = Config::getInstance();
+        $config->selectedServer['auth_type'] = 'http';
+        $config->selectedServer['verbose'] = '';
+        $config->selectedServer['host'] = 'hòst';
 
-        $this->doMockResponse(
-            1,
-            1,
-            1,
-            ['WWW-Authenticate: Basic realm="phpMyAdmin hst"'],
-            ['status: 401 Unauthorized'],
-            401,
-        );
+        $responseStub = new ResponseRendererStub();
+        (new ReflectionProperty(ResponseRenderer::class, 'instance'))->setValue(null, $responseStub);
+
+        try {
+            $this->object->showLoginForm();
+        } catch (Throwable $throwable) {
+        }
+
+        $this->assertInstanceOf(ExitException::class, $throwable);
+        $response = $responseStub->getResponse();
+        $this->assertSame(['Basic realm="phpMyAdmin hst"'], $response->getHeader('WWW-Authenticate'));
+        $this->assertSame(401, $response->getStatusCode());
     }
 
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
     public function testAuthRealm(): void
     {
-        $GLOBALS['cfg']['Server']['host'] = '';
-        $GLOBALS['cfg']['Server']['auth_http_realm'] = 'rêäealmmessage';
+        $config = Config::getInstance();
+        $config->selectedServer['auth_type'] = 'http';
+        $config->selectedServer['host'] = '';
+        $config->selectedServer['auth_http_realm'] = 'rêäealmmessage';
 
-        $this->doMockResponse(
-            1,
-            1,
-            1,
-            ['WWW-Authenticate: Basic realm="realmmessage"'],
-            ['status: 401 Unauthorized'],
-            401,
-        );
+        $responseStub = new ResponseRendererStub();
+        (new ReflectionProperty(ResponseRenderer::class, 'instance'))->setValue(null, $responseStub);
+
+        try {
+            $this->object->showLoginForm();
+        } catch (Throwable $throwable) {
+        }
+
+        $this->assertInstanceOf(ExitException::class, $throwable);
+        $response = $responseStub->getResponse();
+        $this->assertSame(['Basic realm="realmmessage"'], $response->getHeader('WWW-Authenticate'));
+        $this->assertSame(401, $response->getStatusCode());
     }
 
     /**
@@ -192,8 +184,8 @@ class AuthenticationHttpTest extends AbstractNetworkTestCase
 
         $this->assertEquals($expectedPass, $this->object->password);
 
-        $_SERVER[$userIndex] = null;
-        $_SERVER[$passIndex] = null;
+        unset($_SERVER[$userIndex]);
+        unset($_SERVER[$passIndex]);
     }
 
     /**
@@ -235,15 +227,16 @@ class AuthenticationHttpTest extends AbstractNetworkTestCase
         $this->object->user = 'testUser';
         $this->object->password = 'testPass';
         $GLOBALS['server'] = 2;
-        $GLOBALS['cfg']['Server']['user'] = 'testUser';
+        $config = Config::getInstance();
+        $config->selectedServer['user'] = 'testUser';
 
         $this->assertTrue(
             $this->object->storeCredentials(),
         );
 
-        $this->assertEquals('testUser', $GLOBALS['cfg']['Server']['user']);
+        $this->assertEquals('testUser', $config->selectedServer['user']);
 
-        $this->assertEquals('testPass', $GLOBALS['cfg']['Server']['password']);
+        $this->assertEquals('testPass', $config->selectedServer['password']);
 
         $this->assertArrayNotHasKey('PHP_AUTH_PW', $_SERVER);
 
@@ -252,9 +245,9 @@ class AuthenticationHttpTest extends AbstractNetworkTestCase
         // case 2
         $this->object->user = 'testUser';
         $this->object->password = 'testPass';
-        $GLOBALS['cfg']['Servers'][1] = ['host' => 'a', 'user' => 'testUser', 'foo' => 'bar'];
+        $config->settings['Servers'][1] = ['host' => 'a', 'user' => 'testUser', 'foo' => 'bar'];
 
-        $GLOBALS['cfg']['Server'] = ['host' => 'a', 'user' => 'user2'];
+        $config->selectedServer = ['host' => 'a', 'user' => 'user2'];
 
         $this->assertTrue(
             $this->object->storeCredentials(),
@@ -262,7 +255,7 @@ class AuthenticationHttpTest extends AbstractNetworkTestCase
 
         $this->assertEquals(
             ['user' => 'testUser', 'password' => 'testPass', 'host' => 'a'],
-            $GLOBALS['cfg']['Server'],
+            $config->selectedServer,
         );
 
         $this->assertEquals(2, $GLOBALS['server']);
@@ -271,9 +264,9 @@ class AuthenticationHttpTest extends AbstractNetworkTestCase
         $GLOBALS['server'] = 3;
         $this->object->user = 'testUser';
         $this->object->password = 'testPass';
-        $GLOBALS['cfg']['Servers'][1] = ['host' => 'a', 'user' => 'testUsers', 'foo' => 'bar'];
+        $config->settings['Servers'][1] = ['host' => 'a', 'user' => 'testUsers', 'foo' => 'bar'];
 
-        $GLOBALS['cfg']['Server'] = ['host' => 'a', 'user' => 'user2'];
+        $config->selectedServer = ['host' => 'a', 'user' => 'user2'];
 
         $this->assertTrue(
             $this->object->storeCredentials(),
@@ -281,7 +274,7 @@ class AuthenticationHttpTest extends AbstractNetworkTestCase
 
         $this->assertEquals(
             ['user' => 'testUser', 'password' => 'testPass', 'host' => 'a'],
-            $GLOBALS['cfg']['Server'],
+            $config->selectedServer,
         );
 
         $this->assertEquals(3, $GLOBALS['server']);
@@ -289,9 +282,11 @@ class AuthenticationHttpTest extends AbstractNetworkTestCase
 
     #[Group('medium')]
     #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
     public function testAuthFails(): void
     {
-        $GLOBALS['cfg']['Server']['host'] = '';
+        $config = Config::getInstance();
+        $config->selectedServer['host'] = '';
         $_REQUEST = [];
         ResponseRenderer::getInstance()->setAjax(false);
 
@@ -301,9 +296,9 @@ class AuthenticationHttpTest extends AbstractNetworkTestCase
 
         $dbi->expects($this->exactly(3))
             ->method('getError')
-            ->will($this->onConsecutiveCalls('error 123', 'error 321', ''));
+            ->willReturn('error 123', 'error 321', '');
 
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
         $GLOBALS['errno'] = 31;
 
         ob_start();
@@ -329,7 +324,7 @@ class AuthenticationHttpTest extends AbstractNetworkTestCase
             ->method('authForm')
             ->willThrowException(new ExitException());
         // case 2
-        $GLOBALS['cfg']['Server']['host'] = 'host';
+        $config->selectedServer['host'] = 'host';
         $GLOBALS['errno'] = 1045;
 
         try {

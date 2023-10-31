@@ -4,15 +4,20 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests;
 
+use PhpMyAdmin\Config;
 use PhpMyAdmin\Config\ConfigFile;
 use PhpMyAdmin\ConfigStorage\Relation;
 use PhpMyAdmin\ConfigStorage\RelationParameters;
 use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\Dbal\Connection;
 use PhpMyAdmin\Message;
+use PhpMyAdmin\ResponseRenderer;
+use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\Stubs\DummyResult;
+use PhpMyAdmin\Tests\Stubs\ResponseRenderer as ResponseRendererStub;
 use PhpMyAdmin\Url;
 use PhpMyAdmin\UserPreferences;
+use PHPUnit\Framework\Attributes\BackupStaticProperties;
 use PHPUnit\Framework\Attributes\CoversClass;
 use ReflectionProperty;
 
@@ -20,7 +25,7 @@ use function json_encode;
 use function time;
 
 #[CoversClass(UserPreferences::class)]
-class UserPreferencesTest extends AbstractNetworkTestCase
+class UserPreferencesTest extends AbstractTestCase
 {
     /**
      * Setup various pre conditions
@@ -29,7 +34,7 @@ class UserPreferencesTest extends AbstractNetworkTestCase
     {
         parent::setUp();
 
-        $GLOBALS['dbi'] = $this->createDatabaseInterface();
+        DatabaseInterface::$instance = $this->createDatabaseInterface();
         $GLOBALS['server'] = 0;
         $GLOBALS['text_dir'] = 'ltr';
         $_SERVER['PHP_SELF'] = '/phpmyadmin/';
@@ -40,11 +45,13 @@ class UserPreferencesTest extends AbstractNetworkTestCase
      */
     public function testPageInit(): void
     {
-        $GLOBALS['cfg'] = ['Server/hide_db' => 'testval123', 'Server/port' => '213'];
-        $GLOBALS['cfg']['AvailableCharsets'] = [];
-        $GLOBALS['cfg']['UserprefsDeveloperTab'] = null;
+        $config = Config::getInstance();
+        $config->settings = ['Server/hide_db' => 'testval123', 'Server/port' => '213'];
+        $config->settings['AvailableCharsets'] = [];
+        $config->settings['UserprefsDeveloperTab'] = null;
 
-        $userPreferences = new UserPreferences($GLOBALS['dbi']);
+        $dbi = DatabaseInterface::getInstance();
+        $userPreferences = new UserPreferences($dbi, new Relation($dbi), new Template());
         $userPreferences->pageInit(new ConfigFile());
 
         $this->assertEquals(
@@ -63,7 +70,8 @@ class UserPreferencesTest extends AbstractNetworkTestCase
 
         unset($_SESSION['userconfig']);
 
-        $userPreferences = new UserPreferences($GLOBALS['dbi']);
+        $dbi1 = DatabaseInterface::getInstance();
+        $userPreferences = new UserPreferences($dbi1, new Relation($dbi1), new Template());
         $result = $userPreferences->load();
 
         $this->assertCount(3, $result);
@@ -101,16 +109,12 @@ class UserPreferencesTest extends AbstractNetworkTestCase
         $dbi->expects($this->once())
             ->method('fetchSingleRow')
             ->with($query, DatabaseInterface::FETCH_ASSOC, Connection::TYPE_CONTROL)
-            ->will(
-                $this->returnValue(
-                    ['ts' => '123', 'config_data' => json_encode([1, 2])],
-                ),
-            );
+            ->willReturn(['ts' => '123', 'config_data' => json_encode([1, 2])]);
         $dbi->expects($this->any())
             ->method('quoteString')
-            ->will($this->returnCallback(static fn (string $string): string => "'" . $string . "'"));
+            ->willReturnCallback(static fn (string $string): string => "'" . $string . "'");
 
-        $userPreferences = new UserPreferences($dbi);
+        $userPreferences = new UserPreferences($dbi, new Relation($dbi), new Template());
         $result = $userPreferences->load();
 
         $this->assertEquals(
@@ -124,14 +128,15 @@ class UserPreferencesTest extends AbstractNetworkTestCase
      */
     public function testSave(): void
     {
-        $GLOBALS['cfg']['Server']['DisableIS'] = true;
+        Config::getInstance()->selectedServer['DisableIS'] = true;
         $GLOBALS['server'] = 2;
         $relationParameters = RelationParameters::fromArray([]);
         (new ReflectionProperty(Relation::class, 'cache'))->setValue(null, $relationParameters);
 
         unset($_SESSION['userconfig']);
 
-        $userPreferences = new UserPreferences($GLOBALS['dbi']);
+        $dbi1 = DatabaseInterface::getInstance();
+        $userPreferences = new UserPreferences($dbi1, new Relation($dbi1), new Template());
         $result = $userPreferences->save([1]);
 
         $this->assertTrue($result);
@@ -180,18 +185,18 @@ class UserPreferencesTest extends AbstractNetworkTestCase
         $dbi->expects($this->once())
             ->method('fetchValue')
             ->with($query1, 0, Connection::TYPE_CONTROL)
-            ->will($this->returnValue('1'));
+            ->willReturn('1');
 
         $dbi->expects($this->once())
             ->method('tryQuery')
             ->with($query2, Connection::TYPE_CONTROL)
-            ->will($this->returnValue($this->createStub(DummyResult::class)));
+            ->willReturn($this->createStub(DummyResult::class));
 
         $dbi->expects($this->any())
             ->method('quoteString')
-            ->will($this->returnCallback(static fn (string $string): string => "'" . $string . "'"));
+            ->willReturnCallback(static fn (string $string): string => "'" . $string . "'");
 
-        $userPreferences = new UserPreferences($dbi);
+        $userPreferences = new UserPreferences($dbi, new Relation($dbi1), new Template());
         $result = $userPreferences->save([1]);
 
         $this->assertTrue($result);
@@ -210,22 +215,22 @@ class UserPreferencesTest extends AbstractNetworkTestCase
         $dbi->expects($this->once())
             ->method('fetchValue')
             ->with($query1, 0, Connection::TYPE_CONTROL)
-            ->will($this->returnValue(false));
+            ->willReturn(false);
 
         $dbi->expects($this->once())
             ->method('tryQuery')
             ->with($query2, Connection::TYPE_CONTROL)
-            ->will($this->returnValue(false));
+            ->willReturn(false);
 
         $dbi->expects($this->once())
             ->method('getError')
             ->with(Connection::TYPE_CONTROL)
-            ->will($this->returnValue('err1'));
+            ->willReturn('err1');
         $dbi->expects($this->any())
             ->method('quoteString')
-            ->will($this->returnCallback(static fn (string $string): string => "'" . $string . "'"));
+            ->willReturnCallback(static fn (string $string): string => "'" . $string . "'");
 
-        $userPreferences = new UserPreferences($dbi);
+        $userPreferences = new UserPreferences($dbi, new Relation($dbi1), new Template());
         $result = $userPreferences->save([1]);
 
         $this->assertInstanceOf(Message::class, $result);
@@ -241,10 +246,12 @@ class UserPreferencesTest extends AbstractNetworkTestCase
      */
     public function testApply(): void
     {
-        $GLOBALS['cfg']['UserprefsDisallow'] = ['test' => 'val', 'foo' => 'bar'];
-        $GLOBALS['cfg']['UserprefsDeveloperTab'] = null;
+        $config = Config::getInstance();
+        $config->settings['UserprefsDisallow'] = ['test' => 'val', 'foo' => 'bar'];
+        $config->settings['UserprefsDeveloperTab'] = null;
 
-        $userPreferences = new UserPreferences($GLOBALS['dbi']);
+        $dbi = DatabaseInterface::getInstance();
+        $userPreferences = new UserPreferences($dbi, new Relation($dbi), new Template());
         $result = $userPreferences->apply(
             [
                 'DBG/sql' => true,
@@ -266,9 +273,10 @@ class UserPreferencesTest extends AbstractNetworkTestCase
      */
     public function testApplyDevel(): void
     {
-        $GLOBALS['cfg']['UserprefsDeveloperTab'] = true;
+        Config::getInstance()->settings['UserprefsDeveloperTab'] = true;
 
-        $userPreferences = new UserPreferences($GLOBALS['dbi']);
+        $dbi = DatabaseInterface::getInstance();
+        $userPreferences = new UserPreferences($dbi, new Relation($dbi), new Template());
         $result = $userPreferences->apply(
             ['DBG/sql' => true],
         );
@@ -294,7 +302,8 @@ class UserPreferencesTest extends AbstractNetworkTestCase
         $GLOBALS['server'] = 2;
         (new ReflectionProperty(Relation::class, 'cache'))->setValue(null, $relationParameters);
 
-        $userPreferences = new UserPreferences($GLOBALS['dbi']);
+        $dbi = DatabaseInterface::getInstance();
+        $userPreferences = new UserPreferences($dbi, new Relation($dbi), new Template());
         $this->assertTrue(
             $userPreferences->persistOption('Server/hide_db', 'val', 'val'),
         );
@@ -308,26 +317,29 @@ class UserPreferencesTest extends AbstractNetworkTestCase
         );
     }
 
-    /**
-     * Test for redirect
-     */
+    #[BackupStaticProperties(true)]
     public function testRedirect(): void
     {
+        $responseStub = new ResponseRendererStub();
+        (new ReflectionProperty(ResponseRenderer::class, 'instance'))->setValue(null, $responseStub);
+
         $GLOBALS['lang'] = '';
         $GLOBALS['db'] = 'db';
         $GLOBALS['table'] = 'table';
 
-        $this->mockResponse('Location: /phpmyadmin/file.html?a=b&saved=1&server=0#h+ash');
+        Config::getInstance()->set('PmaAbsoluteUri', '');
 
-        $GLOBALS['config']->set('PmaAbsoluteUri', '');
-        $GLOBALS['config']->set('PMA_IS_IIS', false);
-
-        $userPreferences = new UserPreferences($GLOBALS['dbi']);
+        $dbi = DatabaseInterface::getInstance();
+        $userPreferences = new UserPreferences($dbi, new Relation($dbi), new Template());
         $userPreferences->redirect(
             'file.html',
             ['a' => 'b'],
             'h ash',
         );
+
+        $response = $responseStub->getResponse();
+        $this->assertSame(['/phpmyadmin/file.html?a=b&saved=1&server=0#h+ash'], $response->getHeader('Location'));
+        $this->assertSame(302, $response->getStatusCode());
     }
 
     /**
@@ -338,7 +350,8 @@ class UserPreferencesTest extends AbstractNetworkTestCase
         $_SESSION['userprefs_autoload'] = false;
         $_REQUEST['prefs_autoload'] = 'hide';
 
-        $userPreferences = new UserPreferences($GLOBALS['dbi']);
+        $dbi = DatabaseInterface::getInstance();
+        $userPreferences = new UserPreferences($dbi, new Relation($dbi), new Template());
         $this->assertEquals(
             '',
             $userPreferences->autoloadGetHeader(),
@@ -347,7 +360,7 @@ class UserPreferencesTest extends AbstractNetworkTestCase
         $this->assertTrue($_SESSION['userprefs_autoload']);
 
         $_REQUEST['prefs_autoload'] = 'nohide';
-        $GLOBALS['cfg']['ServerDefault'] = 1;
+        Config::getInstance()->settings['ServerDefault'] = 1;
         $result = $userPreferences->autoloadGetHeader();
 
         $this->assertStringContainsString(

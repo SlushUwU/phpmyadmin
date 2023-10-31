@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Display;
 
+use PhpMyAdmin\Config;
 use PhpMyAdmin\ConfigStorage\Relation;
 use PhpMyAdmin\ConfigStorage\RelationParameters;
 use PhpMyAdmin\DatabaseInterface;
@@ -29,7 +30,6 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use ReflectionProperty;
 use stdClass;
 
-use function count;
 use function explode;
 use function hex2bin;
 use function htmlspecialchars_decode;
@@ -70,14 +70,14 @@ class ResultsTest extends AbstractTestCase
 
         $this->dummyDbi = $this->createDbiDummy();
         $this->dbi = $this->createDatabaseInterface($this->dummyDbi);
-        $GLOBALS['dbi'] = $this->dbi;
+        DatabaseInterface::$instance = $this->dbi;
         $this->setTheme();
         $GLOBALS['server'] = 0;
         $GLOBALS['db'] = 'db';
         $GLOBALS['table'] = 'table';
         $this->object = new DisplayResults($this->dbi, 'as', '', 0, '', '');
         $GLOBALS['text_dir'] = 'ltr';
-        $GLOBALS['cfg']['Server']['DisableIS'] = false;
+        Config::getInstance()->selectedServer['DisableIS'] = false;
         $_SESSION[' HMAC_secret '] = 'test';
     }
 
@@ -283,9 +283,7 @@ class ResultsTest extends AbstractTestCase
         return [
             [
                 $fieldsMeta,
-                count($fieldsMeta),
                 [0 => 'localhost', 1 => 'phpmyadmin', 2 => 'pmauser', 3 => 'Y'],
-                [0 => '0', 1 => '3', 2 => '1', 3 => '2'],
                 ['host' => 'localhost', 'select_privilages' => 'Y', 'db' => 'phpmyadmin', 'user' => 'pmauser'],
             ],
         ];
@@ -294,22 +292,17 @@ class ResultsTest extends AbstractTestCase
     /**
      * Test getRowInfoForSpecialLinks
      *
-     * @param FieldMetadata[] $fieldsMeta  meta information about fields
-     * @param int             $fieldsCount number of fields
-     * @param mixed[]         $row         current row data
-     * @param mixed[]         $colOrder    the column order
-     * @param mixed[]         $output      output of getRowInfoForSpecialLinks
+     * @param FieldMetadata[] $fieldsMeta meta information about fields
+     * @param mixed[]         $row        current row data
+     * @param mixed[]         $output     output of getRowInfoForSpecialLinks
      */
     #[DataProvider('dataProviderForTestGetRowInfoForSpecialLinks')]
     public function testGetRowInfoForSpecialLinks(
         array $fieldsMeta,
-        int $fieldsCount,
         array $row,
-        array $colOrder,
         array $output,
     ): void {
-        $this->object->properties['fields_meta'] = $fieldsMeta;
-        $this->object->properties['fields_cnt'] = $fieldsCount;
+        (new ReflectionProperty(DisplayResults::class, 'fieldsMeta'))->setValue($this->object, $fieldsMeta);
 
         $this->assertEquals(
             $output,
@@ -317,7 +310,7 @@ class ResultsTest extends AbstractTestCase
                 $this->object,
                 DisplayResults::class,
                 'getRowInfoForSpecialLinks',
-                [$row, $colOrder],
+                [$row],
             ),
         );
     }
@@ -333,10 +326,10 @@ class ResultsTest extends AbstractTestCase
         );
 
         $this->assertEquals([
-            'db_name' => 'true',
-            'tbl' => 'true',
-            'id' => 'true',
-        ], $this->object->properties['highlight_columns']);
+            'db_name' => true,
+            'tbl' => true,
+            'id' => true,
+        ], (new ReflectionProperty(DisplayResults::class, 'highlightColumns'))->getValue($this->object));
     }
 
     /**
@@ -366,7 +359,7 @@ class ResultsTest extends AbstractTestCase
     public function testGetPartialText(string $pftext, int $limitChars, string $str, array $output): void
     {
         $_SESSION['tmpval']['pftext'] = $pftext;
-        $GLOBALS['cfg']['LimitChars'] = $limitChars;
+        Config::getInstance()->settings['LimitChars'] = $limitChars;
         $this->assertEquals(
             $output,
             $this->callFunction(
@@ -445,7 +438,7 @@ class ResultsTest extends AbstractTestCase
     ): void {
         $_SESSION['tmpval']['display_binary'] = $displayBinary;
         $_SESSION['tmpval']['display_blob'] = $displayBlob;
-        $GLOBALS['cfg']['LimitChars'] = 50;
+        Config::getInstance()->settings['LimitChars'] = 50;
         $this->assertStringContainsString(
             $output,
             $this->callFunction(
@@ -618,8 +611,9 @@ class ResultsTest extends AbstractTestCase
         $_SESSION['tmpval']['display_binary'] = true;
         $_SESSION['tmpval']['display_blob'] = false;
         $_SESSION['tmpval']['relational_display'] = false;
-        $GLOBALS['cfg']['LimitChars'] = 50;
-        $GLOBALS['cfg']['ProtectBinary'] = $protectBinary;
+        $config = Config::getInstance();
+        $config->settings['LimitChars'] = 50;
+        $config->settings['ProtectBinary'] = $protectBinary;
         $statementInfo = $this->createStub(StatementInfo::class);
         $this->assertStringContainsString(
             $output,
@@ -658,15 +652,14 @@ class ResultsTest extends AbstractTestCase
             'column_info' => 'column_info',
         ]);
         (new ReflectionProperty(Relation::class, 'cache'))->setValue(null, $relationParameters);
-        $GLOBALS['cfg']['BrowseMIME'] = true;
+        Config::getInstance()->settings['BrowseMIME'] = true;
 
         // Basic data
         $query = 'SELECT 1';
-        $this->object->properties['db'] = 'db';
-        $this->object->properties['fields_cnt'] = 2;
+        $this->object = new DisplayResults($this->dbi, 'db', '', 0, '', '');
 
         // Field meta information
-        $this->object->properties['fields_meta'] = [
+        (new ReflectionProperty(DisplayResults::class, 'fieldsMeta'))->setValue($this->object, [
             FieldHelper::fromArray([
                 'type' => MYSQLI_TYPE_LONG,
                 'flags' => MYSQLI_NUM_FLAG | MYSQLI_NOT_NULL_FLAG,
@@ -683,7 +676,7 @@ class ResultsTest extends AbstractTestCase
                 'name' => '2',
                 'orgname' => '2',
             ]),
-        ];
+        ]);
 
         $dbi = $this->getMockBuilder(DatabaseInterface::class)
             ->disableOriginalConstructor()
@@ -699,17 +692,29 @@ class ResultsTest extends AbstractTestCase
                 ],
             );
 
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
 
         $transformations = new Transformations();
-        $this->object->properties['mime_map'] = $transformations->getMime('db', 'table');
+        (new ReflectionProperty(DisplayResults::class, 'mediaTypeMap'))->setValue(
+            $this->object,
+            $transformations->getMime('db', 'table'),
+        );
 
         // Actually invoke tested method
         $output = $this->callFunction(
             $this->object,
             DisplayResults::class,
             'getRowValues',
-            [[3600, 'true'], 0, false, [], 'disabled', false, $query, StatementInfo::fromArray(Query::getAll($query))],
+            [
+                ['3600', 'true'],
+                0,
+                false,
+                [],
+                'disabled',
+                false,
+                $query,
+                StatementInfo::fromArray(Query::getAll($query)),
+            ],
         );
 
         // Dateformat
@@ -1124,14 +1129,15 @@ class ResultsTest extends AbstractTestCase
 
     public function testGetTable(): void
     {
-        $GLOBALS['cfg']['Server']['DisableIS'] = true;
+        Config::getInstance()->selectedServer['DisableIS'] = true;
 
         $GLOBALS['db'] = 'test_db';
         $GLOBALS['table'] = 'test_table';
         $query = 'SELECT * FROM `test_db`.`test_table`;';
 
         $object = new DisplayResults($this->dbi, $GLOBALS['db'], $GLOBALS['table'], 1, '', $query);
-        $object->properties['unique_id'] = 1234567890;
+
+        (new ReflectionProperty(DisplayResults::class, 'uniqueId'))->setValue($object, 1234567890);
 
         [$statementInfo] = ParseAnalyze::sqlQuery($query, $GLOBALS['db']);
         $fieldsMeta = [
@@ -1160,14 +1166,13 @@ class ResultsTest extends AbstractTestCase
             $statementInfo->isFunction,
             $statementInfo->isAnalyse,
             3,
-            count($fieldsMeta),
             1.234,
             'ltr',
             $statementInfo->isMaint,
             $statementInfo->isExplain,
             $statementInfo->isShow,
             null,
-            null,
+            false,
             true,
             false,
         );
@@ -1417,7 +1422,7 @@ class ResultsTest extends AbstractTestCase
 
     public function testGetTable2(): void
     {
-        $GLOBALS['cfg']['Server']['DisableIS'] = true;
+        Config::getInstance()->selectedServer['DisableIS'] = true;
 
         $GLOBALS['db'] = 'test_db';
         $GLOBALS['table'] = 'test_table';
@@ -1427,7 +1432,8 @@ class ResultsTest extends AbstractTestCase
         $dbi = $this->createDatabaseInterface($dummyDbi);
 
         $object = new DisplayResults($dbi, $GLOBALS['db'], $GLOBALS['table'], 1, '', $query);
-        $object->properties['unique_id'] = 1234567890;
+
+        (new ReflectionProperty(DisplayResults::class, 'uniqueId'))->setValue($object, 1234567890);
 
         [$statementInfo] = ParseAnalyze::sqlQuery($query, $GLOBALS['db']);
         $fieldsMeta = [
@@ -1453,14 +1459,13 @@ class ResultsTest extends AbstractTestCase
             $statementInfo->isFunction,
             $statementInfo->isAnalyse,
             2,
-            count($fieldsMeta),
             1.234,
             'ltr',
             $statementInfo->isMaint,
             $statementInfo->isExplain,
             $statementInfo->isShow,
             null,
-            null,
+            false,
             true,
             true,
         );
@@ -1738,7 +1743,7 @@ class ResultsTest extends AbstractTestCase
         string $querySortDirection,
         int $metaType,
     ): void {
-        $GLOBALS['cfg']['Order'] = $orderSetting;
+        Config::getInstance()->settings['Order'] = $orderSetting;
 
         $data = $this->callFunction(
             $this->object,

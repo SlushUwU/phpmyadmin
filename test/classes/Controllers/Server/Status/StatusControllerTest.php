@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Controllers\Server\Status;
 
+use PhpMyAdmin\Config;
 use PhpMyAdmin\Controllers\Server\Status\StatusController;
 use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\Http\ServerRequest;
@@ -35,18 +36,19 @@ class StatusControllerTest extends AbstractTestCase
 
         $this->dummyDbi = $this->createDbiDummy();
         $this->dbi = $this->createDatabaseInterface($this->dummyDbi);
-        $GLOBALS['dbi'] = $this->dbi;
+        DatabaseInterface::$instance = $this->dbi;
 
         $GLOBALS['server'] = 1;
         $GLOBALS['db'] = 'db';
         $GLOBALS['table'] = 'table';
-        $GLOBALS['cfg']['Server']['DisableIS'] = false;
-        $GLOBALS['cfg']['Server']['host'] = 'localhost';
+        $config = Config::getInstance();
+        $config->selectedServer['DisableIS'] = false;
+        $config->selectedServer['host'] = 'localhost';
     }
 
     public function testIndex(): void
     {
-        $data = new Data($GLOBALS['dbi'], $GLOBALS['config']);
+        $data = new Data(DatabaseInterface::getInstance(), Config::getInstance());
 
         $bytesReceived = 100;
         $bytesSent = 200;
@@ -67,8 +69,8 @@ class StatusControllerTest extends AbstractTestCase
             $response,
             $template,
             $data,
-            new ReplicationGui(new Replication($GLOBALS['dbi']), $template),
-            $GLOBALS['dbi'],
+            new ReplicationGui(new Replication(DatabaseInterface::getInstance()), $template),
+            DatabaseInterface::getInstance(),
         );
 
         $replicationInfo = $data->getReplicationInfo();

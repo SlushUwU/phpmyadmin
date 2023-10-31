@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Utils;
 
+use PhpMyAdmin\Config;
 use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Utils\ForeignKey;
@@ -17,7 +18,7 @@ class ForeignKeyTest extends AbstractTestCase
     {
         parent::setUp();
 
-        $GLOBALS['dbi'] = $this->createDatabaseInterface();
+        DatabaseInterface::$instance = $this->createDatabaseInterface();
     }
 
     /**
@@ -51,17 +52,18 @@ class ForeignKeyTest extends AbstractTestCase
     {
         $GLOBALS['server'] = 1;
 
-        $GLOBALS['cfg']['DefaultForeignKeyChecks'] = 'enable';
+        $config = Config::getInstance();
+        $config->settings['DefaultForeignKeyChecks'] = 'enable';
         $this->assertTrue(
             ForeignKey::isCheckEnabled(),
         );
 
-        $GLOBALS['cfg']['DefaultForeignKeyChecks'] = 'disable';
+        $config->settings['DefaultForeignKeyChecks'] = 'disable';
         $this->assertFalse(
             ForeignKey::isCheckEnabled(),
         );
 
-        $GLOBALS['cfg']['DefaultForeignKeyChecks'] = 'default';
+        $config->settings['DefaultForeignKeyChecks'] = 'default';
         $this->assertTrue(
             ForeignKey::isCheckEnabled(),
         );
@@ -79,18 +81,18 @@ class ForeignKeyTest extends AbstractTestCase
         $dbi = $this->getMockBuilder(DatabaseInterface::class)
             ->disableOriginalConstructor()
             ->getMock();
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
 
         $_REQUEST['fk_checks'] = $checksValue;
 
         $dbi->expects($this->once())
             ->method('getVariable')
-            ->will($this->returnValue('ON'));
+            ->willReturn('ON');
 
         $dbi->expects($this->once())
             ->method('setVariable')
             ->with('FOREIGN_KEY_CHECKS', $setVariableParam)
-            ->will($this->returnValue(true));
+            ->willReturn(true);
 
         $this->assertTrue(ForeignKey::handleDisableCheckInit());
     }
@@ -101,18 +103,18 @@ class ForeignKeyTest extends AbstractTestCase
         $dbi = $this->getMockBuilder(DatabaseInterface::class)
             ->disableOriginalConstructor()
             ->getMock();
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
 
         $_REQUEST['fk_checks'] = $checksValue;
 
         $dbi->expects($this->once())
             ->method('getVariable')
-            ->will($this->returnValue('OFF'));
+            ->willReturn('OFF');
 
         $dbi->expects($this->once())
             ->method('setVariable')
             ->with('FOREIGN_KEY_CHECKS', $setVariableParam)
-            ->will($this->returnValue(true));
+            ->willReturn(true);
 
         $this->assertFalse(ForeignKey::handleDisableCheckInit());
     }
@@ -129,12 +131,12 @@ class ForeignKeyTest extends AbstractTestCase
         $dbi = $this->getMockBuilder(DatabaseInterface::class)
             ->disableOriginalConstructor()
             ->getMock();
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
 
         $dbi->expects($this->once())
             ->method('setVariable')
             ->with('FOREIGN_KEY_CHECKS', $setVariableParam)
-            ->will($this->returnValue(true));
+            ->willReturn(true);
 
         ForeignKey::handleDisableCheckCleanup($checkValue);
     }

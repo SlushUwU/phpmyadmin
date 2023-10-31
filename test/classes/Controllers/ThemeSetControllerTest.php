@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Controllers;
 
+use PhpMyAdmin\Config;
 use PhpMyAdmin\Controllers\ThemeSetController;
+use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\Http\ServerRequest;
 use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\AbstractTestCase;
@@ -23,14 +25,14 @@ class ThemeSetControllerTest extends AbstractTestCase
     {
         parent::setUp();
 
-        $GLOBALS['dbi'] = $this->createDatabaseInterface();
+        DatabaseInterface::$instance = $this->createDatabaseInterface();
     }
 
     #[PreserveGlobalState(false)]
     #[RunInSeparateProcess]
     public function testSetTheme(): void
     {
-        $GLOBALS['cfg']['ThemeManager'] = true;
+        Config::getInstance()->settings['ThemeManager'] = true;
 
         $request = $this->createStub(ServerRequest::class);
         $request->method('getParsedBodyParam')->willReturnMap([['set_theme', null, 'theme_name']]);
@@ -54,7 +56,7 @@ class ThemeSetControllerTest extends AbstractTestCase
     #[RunInSeparateProcess]
     public function testWithoutTheme(bool $hasThemes, array|string|null $themeName): void
     {
-        $GLOBALS['cfg']['ThemeManager'] = $hasThemes;
+        Config::getInstance()->settings['ThemeManager'] = $hasThemes;
 
         $request = $this->createStub(ServerRequest::class);
         $request->method('getParsedBodyParam')->willReturnMap([['set_theme', null, $themeName]]);

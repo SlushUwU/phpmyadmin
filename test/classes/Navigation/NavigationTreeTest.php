@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Navigation;
 
+use PhpMyAdmin\Config;
 use PhpMyAdmin\ConfigStorage\Relation;
+use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\Navigation\NavigationTree;
 use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\AbstractTestCase;
@@ -28,19 +30,21 @@ class NavigationTreeTest extends AbstractTestCase
 
         parent::setTheme();
 
-        $GLOBALS['dbi'] = $this->createDatabaseInterface();
+        $dbi = $this->createDatabaseInterface();
+        DatabaseInterface::$instance = $dbi;
         $GLOBALS['server'] = 1;
-        $GLOBALS['cfg']['Server']['host'] = 'localhost';
-        $GLOBALS['cfg']['Server']['user'] = 'user';
-        $GLOBALS['cfg']['Server']['pmadb'] = '';
-        $GLOBALS['cfg']['Server']['DisableIS'] = false;
-        $GLOBALS['cfg']['NavigationTreeEnableGrouping'] = true;
-        $GLOBALS['cfg']['ShowDatabasesNavigationAsTree'] = true;
+        $config = Config::getInstance();
+        $config->selectedServer['host'] = 'localhost';
+        $config->selectedServer['user'] = 'user';
+        $config->selectedServer['pmadb'] = '';
+        $config->selectedServer['DisableIS'] = false;
+        $config->settings['NavigationTreeEnableGrouping'] = true;
+        $config->settings['ShowDatabasesNavigationAsTree'] = true;
 
         $GLOBALS['db'] = 'db';
         $GLOBALS['table'] = '';
 
-        $this->object = new NavigationTree(new Template(), $GLOBALS['dbi'], new Relation($GLOBALS['dbi']));
+        $this->object = new NavigationTree(new Template(), $dbi, new Relation($dbi));
     }
 
     /**
@@ -84,7 +88,7 @@ class NavigationTreeTest extends AbstractTestCase
     public function testDatabaseGrouping(): void
     {
         $GLOBALS['db'] = '';
-        $GLOBALS['cfg']['NavigationTreeDbSeparator'] = '__';
+        Config::getInstance()->settings['NavigationTreeDbSeparator'] = '__';
 
         // phpcs:disable Generic.Files.LineLength.TooLong
         $dummyDbi = $this->createDbiDummy();
@@ -104,7 +108,7 @@ class NavigationTreeTest extends AbstractTestCase
         // phpcs:enable
 
         $dbi = $this->createDatabaseInterface($dummyDbi);
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
 
         $object = new NavigationTree(new Template(), $dbi, new Relation($dbi));
         $result = $object->renderState();

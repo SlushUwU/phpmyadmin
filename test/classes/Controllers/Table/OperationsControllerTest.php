@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace PhpMyAdmin\Tests\Controllers\Table;
 
 use PhpMyAdmin\Charsets;
+use PhpMyAdmin\Config;
 use PhpMyAdmin\Controllers\Table\OperationsController;
 use PhpMyAdmin\DatabaseInterface;
-use PhpMyAdmin\Http\ServerRequest;
+use PhpMyAdmin\Http\Factory\ServerRequestFactory;
 use PhpMyAdmin\StorageEngine;
 use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\AbstractTestCase;
@@ -28,7 +29,7 @@ class OperationsControllerTest extends AbstractTestCase
         $this->loadContainerBuilder();
         $this->dummyDbi = $this->createDbiDummy();
         $this->dbi = $this->createDatabaseInterface($this->dummyDbi);
-        $GLOBALS['dbi'] = $this->dbi;
+        DatabaseInterface::$instance = $this->dbi;
     }
 
     public function testOperationsController(): void
@@ -39,9 +40,9 @@ class OperationsControllerTest extends AbstractTestCase
         $GLOBALS['db'] = 'test_db';
         $GLOBALS['table'] = 'test_table';
 
-        $GLOBALS['config']->selectServer('1');
-        $GLOBALS['cfg'] = $GLOBALS['config']->settings;
-        $GLOBALS['cfg']['MaxDbList'] = 0;
+        $config = Config::getInstance();
+        $config->selectServer('1');
+        $config->settings['MaxDbList'] = 0;
 
         $this->loadDbiIntoContainerBuilder();
         $this->loadResponseIntoContainerBuilder();
@@ -119,9 +120,12 @@ class OperationsControllerTest extends AbstractTestCase
             'foreigners' => [],
         ]);
 
+        $request = ServerRequestFactory::create()->createServerRequest('GET', 'http://example.com/')
+            ->withQueryParams(['db' => 'test_db', 'table' => 'test_table']);
+
         /** @var OperationsController $controller */
         $controller = $GLOBALS['containerBuilder']->get(OperationsController::class);
-        $controller($this->createStub(ServerRequest::class));
+        $controller($request);
 
         $this->assertEquals($expectedOutput, $this->getResponseHtmlResult());
     }

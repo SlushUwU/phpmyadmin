@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Controllers\Import;
 
+use PhpMyAdmin\Config;
 use PhpMyAdmin\Controllers\Import\ImportController;
 use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\Http\ServerRequest;
@@ -24,7 +25,7 @@ class ImportControllerTest extends AbstractTestCase
 
         $this->dummyDbi = $this->createDbiDummy();
         $this->dbi = $this->createDatabaseInterface($this->dummyDbi);
-        $GLOBALS['dbi'] = $this->dbi;
+        DatabaseInterface::$instance = $this->dbi;
     }
 
     public function testIndexParametrized(): void
@@ -38,7 +39,7 @@ class ImportControllerTest extends AbstractTestCase
         parent::setTheme();
 
         $GLOBALS['server'] = 1;
-        $GLOBALS['cfg']['Server']['user'] = 'user';
+        Config::getInstance()->selectedServer['user'] = 'user';
 
         parent::loadResponseIntoContainerBuilder();
 
@@ -67,6 +68,7 @@ class ImportControllerTest extends AbstractTestCase
             'SELECT A.* FROM table1 A WHERE A.nomEtablissement = \'Saint-Louis - Châteaulin\''
             . ' AND foo = 4 AND `:a` IS NULL LIMIT 0, 25',
             [],
+            ['nomEtablissement', 'foo'],
         );
 
         $this->dummyDbi->addResult(

@@ -49,7 +49,8 @@ class ExportOdsTest extends AbstractTestCase
     {
         parent::setUp();
 
-        $GLOBALS['dbi'] = $this->createDatabaseInterface();
+        $dbi = $this->createDatabaseInterface();
+        DatabaseInterface::$instance = $dbi;
         $GLOBALS['server'] = 0;
         $GLOBALS['output_kanji_conversion'] = false;
         $GLOBALS['output_charset_conversion'] = false;
@@ -57,8 +58,8 @@ class ExportOdsTest extends AbstractTestCase
         $GLOBALS['asfile'] = true;
         $GLOBALS['save_on_server'] = false;
         $this->object = new ExportOds(
-            new Relation($GLOBALS['dbi']),
-            new Export($GLOBALS['dbi']),
+            new Relation($dbi),
+            new Export($dbi),
             new Transformations(),
         );
     }
@@ -70,6 +71,7 @@ class ExportOdsTest extends AbstractTestCase
     {
         parent::tearDown();
 
+        DatabaseInterface::$instance = null;
         unset($this->object);
     }
 
@@ -235,25 +237,25 @@ class ExportOdsTest extends AbstractTestCase
         $dbi->expects($this->once())
             ->method('getFieldsMeta')
             ->with($resultStub)
-            ->will($this->returnValue($fields));
+            ->willReturn($fields);
 
         $dbi->expects($this->once())
             ->method('query')
             ->with('SELECT', Connection::TYPE_USER, DatabaseInterface::QUERY_UNBUFFERED)
-            ->will($this->returnValue($resultStub));
+            ->willReturn($resultStub);
 
         $resultStub->expects($this->once())
             ->method('numFields')
-            ->will($this->returnValue(8));
+            ->willReturn(8);
 
         $resultStub->expects($this->exactly(2))
             ->method('fetchRow')
-            ->willReturnOnConsecutiveCalls(
+            ->willReturn(
                 [null, '01-01-2000', '01-01-2000', '01-01-2000 10:00:00', '01-01-2014 10:02:00', 't>s', 'a&b', '<'],
                 [],
             );
 
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
         $GLOBALS['mediawiki_caption'] = true;
         $GLOBALS['mediawiki_headers'] = true;
         $GLOBALS['what'] = 'foo';
@@ -313,22 +315,22 @@ class ExportOdsTest extends AbstractTestCase
         $dbi->expects($this->once())
             ->method('getFieldsMeta')
             ->with($resultStub)
-            ->will($this->returnValue($fields));
+            ->willReturn($fields);
 
         $dbi->expects($this->once())
             ->method('query')
             ->with('SELECT', Connection::TYPE_USER, DatabaseInterface::QUERY_UNBUFFERED)
-            ->will($this->returnValue($resultStub));
+            ->willReturn($resultStub);
 
         $resultStub->expects($this->once())
             ->method('numFields')
-            ->will($this->returnValue(2));
+            ->willReturn(2);
 
         $resultStub->expects($this->exactly(1))
             ->method('fetchRow')
-            ->will($this->returnValue([]));
+            ->willReturn([]);
 
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
         $GLOBALS['mediawiki_caption'] = true;
         $GLOBALS['mediawiki_headers'] = true;
         $GLOBALS['what'] = 'foo';
@@ -365,22 +367,22 @@ class ExportOdsTest extends AbstractTestCase
         $dbi->expects($this->once())
             ->method('getFieldsMeta')
             ->with($resultStub)
-            ->will($this->returnValue($flags));
+            ->willReturn($flags);
 
         $dbi->expects($this->once())
             ->method('query')
             ->with('SELECT', Connection::TYPE_USER, DatabaseInterface::QUERY_UNBUFFERED)
-            ->will($this->returnValue($resultStub));
+            ->willReturn($resultStub);
 
         $resultStub->expects($this->once())
             ->method('numFields')
-            ->will($this->returnValue(0));
+            ->willReturn(0);
 
         $resultStub->expects($this->once())
             ->method('fetchRow')
-            ->will($this->returnValue([]));
+            ->willReturn([]);
 
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
         $GLOBALS['mediawiki_caption'] = true;
         $GLOBALS['mediawiki_headers'] = true;
         $GLOBALS['what'] = 'foo';

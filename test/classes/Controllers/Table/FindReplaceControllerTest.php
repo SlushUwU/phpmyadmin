@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Controllers\Table;
 
+use PhpMyAdmin\ColumnFull;
+use PhpMyAdmin\Config;
 use PhpMyAdmin\Controllers\Table\FindReplaceController;
 use PhpMyAdmin\DatabaseInterface;
+use PhpMyAdmin\DbTableExists;
 use PhpMyAdmin\ResponseRenderer;
 use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\AbstractTestCase;
@@ -28,7 +31,7 @@ class FindReplaceControllerTest extends AbstractTestCase
         $GLOBALS['server'] = 1;
         $GLOBALS['db'] = 'db';
         $GLOBALS['table'] = 'table';
-        $GLOBALS['cfg']['Server']['DisableIS'] = false;
+        Config::getInstance()->selectedServer['DisableIS'] = false;
 
         $dbi = $this->getMockBuilder(DatabaseInterface::class)
             ->disableOriginalConstructor()
@@ -36,11 +39,11 @@ class FindReplaceControllerTest extends AbstractTestCase
         $dbi->types = new Types($dbi);
 
         $columns = [
-            ['Field' => 'Field1', 'Type' => 'Type1', 'Null' => 'Null1', 'Collation' => 'Collation1'],
-            ['Field' => 'Field2', 'Type' => 'Type2', 'Null' => 'Null2', 'Collation' => 'Collation2'],
+            new ColumnFull('Field1', 'Type1', 'Collation1', false, '', null, '', '', ''),
+            new ColumnFull('Field2', 'Type2', 'Collation2', false, '', null, '', '', ''),
         ];
         $dbi->expects($this->any())->method('getColumns')
-            ->will($this->returnValue($columns));
+            ->willReturn($columns);
 
         $showCreateTable = "CREATE TABLE `table` (
         `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -54,19 +57,21 @@ class FindReplaceControllerTest extends AbstractTestCase
             . "COMMENT='table'";
 
         $dbi->expects($this->any())->method('fetchValue')
-            ->will($this->returnValue($showCreateTable));
+            ->willReturn($showCreateTable);
         $dbi->expects($this->any())->method('quoteString')
-            ->will($this->returnCallback(static fn (string $string): string => "'" . $string . "'"));
+            ->willReturnCallback(static fn (string $string): string => "'" . $string . "'");
 
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
     }
 
     public function testReplace(): void
     {
+        $dbi = DatabaseInterface::getInstance();
         $tableSearch = new FindReplaceController(
             ResponseRenderer::getInstance(),
             new Template(),
-            $GLOBALS['dbi'],
+            $dbi,
+            new DbTableExists($dbi),
         );
         $columnIndex = 0;
         $find = 'Field';
@@ -84,7 +89,13 @@ class FindReplaceControllerTest extends AbstractTestCase
 
     public function testReplaceWithRegex(): void
     {
-        $tableSearch = new FindReplaceController(ResponseRenderer::getInstance(), new Template(), $GLOBALS['dbi']);
+        $dbi = DatabaseInterface::getInstance();
+        $tableSearch = new FindReplaceController(
+            ResponseRenderer::getInstance(),
+            new Template(),
+            $dbi,
+            new DbTableExists($dbi),
+        );
 
         $columnIndex = 0;
         $find = 'Field';

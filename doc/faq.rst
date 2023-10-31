@@ -63,7 +63,7 @@ Please use instead the cookie authentication mode.
 
 This seems to be a PWS bug. Filippo Simoncini found a workaround (at
 this time there is no better fix): remove or comment the ``DOCTYPE``
-declarations (2 lines) from the scripts :file:`libraries/classes/Header.php`
+declarations (2 lines) from the scripts :file:`src/Header.php`
 and :file:`index.php`.
 
 .. _faq1_7:
@@ -689,13 +689,13 @@ A list of files and corresponding functionality which degrade gracefully when re
 
 * :file:`./locale/` folder, or unused subfolders (interface translations)
 * Any unused themes in :file:`./public/themes/` except the default theme `pmahomme`.
-* :file:`./libraries/language_stats.inc.php` (translation statistics)
+* :file:`./app/language_stats.inc.php` (translation statistics)
 * :file:`./doc/` (documentation)
 * :file:`./setup/` (setup script)
 * :file:`./examples/` (configuration examples)
-* :file:`./sql/` (SQL scripts to configure advanced functionalities)
-* :file:`./js/src/` (Source files to re-build `./js/dist/`)
-* :file:`./js/global.d.ts` JS type declaration file
+* :file:`./resources/sql/` (SQL scripts to configure advanced functionalities)
+* :file:`./resources/js/src/` (Source files to re-build `./public/js/dist/`)
+* :file:`./resources/js/global.d.ts` JS type declaration file
 * Run `rm -rv vendor/tecnickcom/tcpdf && composer dump-autoload --no-interaction --optimize --dev` (exporting to PDF)
 * Run `rm -rv vendor/williamdes/mariadb-mysql-kbs && composer dump-autoload --no-interaction --optimize --dev` (external links to MariaDB and MySQL documentations)
 * Run `rm -rv vendor/code-lts/u2f-php-server && composer dump-autoload --no-interaction --optimize --dev` (U2F second factor authentication)

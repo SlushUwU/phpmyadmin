@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Controllers\Table;
 
+use PhpMyAdmin\Config;
 use PhpMyAdmin\ConfigStorage\Relation;
 use PhpMyAdmin\Controllers\Table\CreateController;
-use PhpMyAdmin\Http\ServerRequest;
+use PhpMyAdmin\DatabaseInterface;
+use PhpMyAdmin\Http\Factory\ServerRequestFactory;
 use PhpMyAdmin\Table\ColumnsDefinition;
 use PhpMyAdmin\Template;
 use PhpMyAdmin\Tests\AbstractTestCase;
@@ -23,8 +25,9 @@ class CreateControllerTest extends AbstractTestCase
     {
         $GLOBALS['db'] = 'test_db';
         $GLOBALS['table'] = 'new_test_table';
-        $GLOBALS['cfg']['Server'] = $GLOBALS['config']->getSettings()->Servers[1]->asArray();
-        $_POST = ['db' => 'test_db', 'table' => 'new_test_table', 'num_fields' => '2'];
+        $config = Config::getInstance();
+        $config->selectedServer = $config->getSettings()->Servers[1]->asArray();
+        $_POST = ['db' => 'test_db', 'table' => 'new_test_table'];
 
         $dummyDbi = $this->createDbiDummy();
         $dummyDbi->addSelectDb('test_db');
@@ -32,7 +35,7 @@ class CreateControllerTest extends AbstractTestCase
         $dummyDbi->addResult('SHOW FULL COLUMNS FROM `test_db`.`new_test_table`', false);
         $dummyDbi->addResult('SHOW CREATE TABLE `test_db`.`new_test_table`', false);
         $dbi = $this->createDatabaseInterface($dummyDbi);
-        $GLOBALS['dbi'] = $dbi;
+        DatabaseInterface::$instance = $dbi;
 
         $contentCell = [
             'column_number' => 0,
@@ -244,6 +247,9 @@ class CreateControllerTest extends AbstractTestCase
             'disable_is' => false,
         ]);
 
+        $request = ServerRequestFactory::create()->createServerRequest('POST', 'http://example.com/')
+            ->withParsedBody(['num_fields' => '2']);
+
         $transformations = new Transformations();
         (new CreateController(
             $response,
@@ -252,7 +258,7 @@ class CreateControllerTest extends AbstractTestCase
             $this->createConfig(),
             $dbi,
             new ColumnsDefinition($dbi, $relation, $transformations),
-        ))($this->createStub(ServerRequest::class));
+        ))($request);
 
         $this->assertSame($expected, $response->getHTMLResult());
     }

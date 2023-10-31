@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Controllers\Server\Status\Monitor;
 
+use PhpMyAdmin\Config;
 use PhpMyAdmin\Controllers\Server\Status\Monitor\SlowLogController;
 use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\Http\ServerRequest;
@@ -36,27 +37,29 @@ class SlowLogControllerTest extends AbstractTestCase
 
         $this->dummyDbi = $this->createDbiDummy();
         $this->dbi = $this->createDatabaseInterface($this->dummyDbi);
-        $GLOBALS['dbi'] = $this->dbi;
+        DatabaseInterface::$instance = $this->dbi;
 
         $GLOBALS['server'] = 1;
         $GLOBALS['db'] = 'db';
         $GLOBALS['table'] = 'table';
-        $GLOBALS['cfg']['Server']['DisableIS'] = false;
-        $GLOBALS['cfg']['Server']['host'] = 'localhost';
+        $config = Config::getInstance();
+        $config->selectedServer['DisableIS'] = false;
+        $config->selectedServer['host'] = 'localhost';
 
-        $this->data = new Data($this->dbi, $GLOBALS['config']);
+        $this->data = new Data($this->dbi, $config);
     }
 
     public function testSlowLog(): void
     {
         $response = new ResponseRenderer();
 
+        $dbi = DatabaseInterface::getInstance();
         $controller = new SlowLogController(
             $response,
             new Template(),
             $this->data,
-            new Monitor($GLOBALS['dbi']),
-            $GLOBALS['dbi'],
+            new Monitor($dbi),
+            $dbi,
         );
 
         $request = $this->createStub(ServerRequest::class);

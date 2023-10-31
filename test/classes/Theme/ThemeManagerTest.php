@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Theme;
 
-use PhpMyAdmin\DatabaseInterface;
+use PhpMyAdmin\Config;
 use PhpMyAdmin\Tests\AbstractTestCase;
 use PhpMyAdmin\Theme\ThemeManager;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -21,16 +21,11 @@ class ThemeManagerTest extends AbstractTestCase
 
         parent::setGlobalConfig();
 
-        $GLOBALS['cfg']['ThemePerServer'] = false;
-        $GLOBALS['cfg']['ThemeDefault'] = 'pmahomme';
-        $GLOBALS['cfg']['ServerDefault'] = 0;
+        $config = Config::getInstance();
+        $config->settings['ThemePerServer'] = false;
+        $config->settings['ThemeDefault'] = 'pmahomme';
+        $config->settings['ServerDefault'] = 0;
         $GLOBALS['server'] = 99;
-
-        $dbi = $this->getMockBuilder(DatabaseInterface::class)
-            ->disableOriginalConstructor()
-            ->getMock();
-        $dbi->expects($this->any())->method('escapeString')
-            ->will($this->returnArgument(0));
     }
 
     /**

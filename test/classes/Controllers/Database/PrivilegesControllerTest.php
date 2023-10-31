@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PhpMyAdmin\Tests\Controllers\Database;
 
+use PhpMyAdmin\Config;
 use PhpMyAdmin\Controllers\Database\PrivilegesController;
 use PhpMyAdmin\DatabaseInterface;
 use PhpMyAdmin\Http\ServerRequest;
@@ -34,14 +35,14 @@ class PrivilegesControllerTest extends AbstractTestCase
 
         $this->dummyDbi = $this->createDbiDummy();
         $this->dbi = $this->createDatabaseInterface($this->dummyDbi);
-        $GLOBALS['dbi'] = $this->dbi;
+        DatabaseInterface::$instance = $this->dbi;
     }
 
     public function testIndex(): void
     {
         $GLOBALS['db'] = 'test_db';
         $GLOBALS['server'] = 0;
-        $GLOBALS['cfg']['Server']['DisableIS'] = false;
+        Config::getInstance()->selectedServer['DisableIS'] = false;
 
         $this->dummyDbi->addResult(
             'SHOW TABLES FROM `test_db`;',
@@ -71,7 +72,7 @@ class PrivilegesControllerTest extends AbstractTestCase
             $response,
             new Template(),
             $serverPrivileges,
-            $GLOBALS['dbi'],
+            DatabaseInterface::getInstance(),
         ))($request);
         $actual = $response->getHTMLResult();
 
